@@ -29,6 +29,16 @@ body {
 }
 
 /* =========================
+   CUSTOM CURSOR
+========================= */
+html,
+body,
+a,
+button {
+  cursor: url("./images/cursor.png") 16 16, auto;
+}
+
+/* =========================
    LANDING IMAGE + BUTTONS
 ========================= */
 .landing-wrapper {
