@@ -91,6 +91,33 @@ img {
   background-color: #333;
 }
 
+/* Mobile adjustments */
+@media (max-width: 768px) {
+
+  /* Make About image larger */
+  .about-image {
+    width: 75%;      /* increases image size on mobile */
+    margin: 0 auto;  /* centers it */
+    display: block;
+  }
+
+  /* Portfolio grid: 2 tiles across on mobile */
+  .portfolio {
+    grid-template-columns: repeat(2, 1fr); /* 2 tiles per row */
+    gap: 15px; /* optional: spacing between tiles */
+  }
+
+  /* Make tiles take full width of the column */
+  .tile {
+    width: 100%;
+  }
+
+  /* Keep overlay styling consistent */
+  .overlay {
+    opacity: 1;
+    background: rgba(0,0,0,0.3);
+  }
+}
 
 @media (max-width: 768px) {
   .overlay {
