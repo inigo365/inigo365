@@ -90,7 +90,9 @@ section {
   width: 100%;
 }
 
-/* Portfolio grid */
+/* =========================
+   PORTFOLIO GRID
+========================= */
 .portfolio {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -126,6 +128,7 @@ section {
   opacity: 1;
 }
 
+/* Touch devices */
 @media (hover: none) {
   .tile:active .overlay,
   .tile:focus .overlay {
@@ -133,7 +136,9 @@ section {
   }
 }
 
-/* Project pages */
+/* =========================
+   PROJECT PAGES
+========================= */
 .project {
   max-width: 1000px;
   margin: 80px auto 0;
@@ -153,7 +158,9 @@ section {
   z-index: 10;
 }
 
-/* Video */
+/* =========================
+   VIDEO
+========================= */
 .video-container {
   position: relative;
   width: 100%;
@@ -183,7 +190,9 @@ section {
   background-color: #333;
 }
 
-/* Fade-in animation */
+/* =========================
+   FADE IN
+========================= */
 .fade-in {
   opacity: 0;
   transform: translateY(10px);
@@ -197,7 +206,9 @@ section {
   }
 }
 
-/* Responsive portfolio grid */
+/* =========================
+   RESPONSIVE GRID
+========================= */
 @media (max-width: 1024px) {
   .portfolio {
     grid-template-columns: repeat(2, 1fr);
@@ -211,15 +222,16 @@ section {
 }
 
 /* =========================
-   ABOUT SECTION
+   ABOUT SECTION (FIXED)
 ========================= */
 .about-section {
   width: 100%;
-  max-width: 1200px;   /* optional constraint for desktop */
+  max-width: 1200px;
   margin: 0 auto;
+  display: block;
 }
 
-/* Picture container styling */
+/* Make picture element fully responsive */
 .about-section picture {
   display: block;
   width: 100%;
@@ -229,13 +241,13 @@ section {
 .about-section picture img {
   display: block;
   width: 100%;
-  height: auto;          /* preserves aspect ratio */
-  object-fit: cover;     /* prevents flicker/stretching */
+  height: auto;       /* maintain aspect ratio */
+  object-fit: contain; /* prevents desktop image from overriding mobile */
 }
 
-/* Ensure picture and img do not switch after initial load */
+/* Ensure mobile image stays on mobile */
 @media (max-width: 768px) {
   .about-section picture img {
-    content-visibility: auto; /* hint to browser to render correctly once */
+    content-visibility: auto; /* helps prevent flicker */
   }
 }
