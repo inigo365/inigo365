@@ -256,32 +256,28 @@ section {
 }
 
 /* =========================
-   ABOUT SECTION
+   ABOUT SECTION BACKGROUND IMAGES
 ========================= */
 .about-section {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  display: block;
 }
 
-/* Make picture element fully responsive */
-.about-section picture {
-  display: block;
-  width: 100%;
-}
-
-/* Images inside picture */
-.about-section picture img {
-  display: block;
+.about-image {
   width: 100%;
   height: auto;
-  object-fit: cover; /* ensures image fills container width nicely */
+  aspect-ratio: 16/9; /* adjust to your image’s aspect ratio */
+  background-image: url('images/about/about-mobile.jpg'); /* mobile default */
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
 }
 
-/* Prevent flicker on mobile while loading */
-@media (max-width: 768px) {
-  .about-section picture img {
-    content-visibility: auto;
+/* Desktop version */
+@media (min-width: 769px) {
+  .about-image {
+    background-image: url('images/about/about-desktop.jpg');
   }
 }
+
