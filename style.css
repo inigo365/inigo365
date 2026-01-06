@@ -15,9 +15,22 @@ body {
   padding: 0;
 }
 
+/* -------------------------
+   GLOBAL PAGE FIX FOR SCROLL
+------------------------- */
 html, body {
-  overflow-x: hidden;             /* prevent horizontal scroll */
+  margin: 0;
+  padding: 0;
+  height: 100%;                 /* ensures body fills viewport */
+  overflow-x: hidden;           /* prevent horizontal scroll */
   overscroll-behavior-y: contain; /* prevent mobile bounce past bottom */
+}
+
+/* Wrapper for all content */
+.page-wrapper {
+  min-height: 100%;             /* ensures full page */
+  display: flex;
+  flex-direction: column;
 }
 
 /* -------------------------
@@ -34,7 +47,7 @@ img {
 
 .project {
   max-width: 1000px;
-  margin: 80px auto 0 auto; /* no bottom margin to prevent extra scroll */
+  margin: 80px auto 0 auto;
   padding: 0 20px;
 }
 
@@ -57,7 +70,7 @@ img {
 .portfolio {
   display: grid;
   grid-template-columns: repeat(3, 1fr); /* desktop: 3 columns */
-  gap: 0; /* no gaps between tiles */
+  gap: 0; /* no gaps */
 }
 
 .tile {
@@ -147,17 +160,20 @@ img {
 
 /* -------------------------
    ABOUT SECTION (BOTTOM)
-   LOCK SCROLL PAST IMAGE
+   HARD SCROLL STOP
 ------------------------- */
 .about-section {
   width: 100%;
-  margin: 0;
+  flex-shrink: 0;               /* prevent shrinking */
+  height: 100vh;                /* exactly one viewport height */
+  overflow: hidden;             /* prevent scrolling past bottom */
 }
 
 .about-section img.about-image {
-  display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;            /* fills the section without stretching */
+  display: block;
 }
 
 /* -------------------------
