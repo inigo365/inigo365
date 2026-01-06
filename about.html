@@ -12,7 +12,28 @@
   <a class="back" href="index.html">← Back</a>
 
   <!-- About section -->
-  <section class="about-section about-image"></section>
+  <section class="about-section">
+    <img id="about-image" src="images/about/about-desktop1.jpg?v=1" alt="About Inigo" class="about-image">
+  </section>
+
+  <script>
+    // JS ensures correct image loads depending on screen width
+    const aboutImg = document.getElementById('about-image');
+
+    function setAboutImage() {
+      if (window.innerWidth <= 768) {
+        aboutImg.src = 'images/about/about-mobile1.jpg?v=1';
+      } else {
+        aboutImg.src = 'images/about/about-desktop1.jpg?v=1';
+      }
+    }
+
+    // Run once on page load
+    setAboutImage();
+
+    // Optional: update on resize
+    window.addEventListener('resize', setAboutImage);
+  </script>
 
 </body>
 </html>
