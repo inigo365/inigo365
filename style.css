@@ -51,12 +51,17 @@ img {
 .portfolio {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 20px; /* desktop gap */
 }
 
 .tile {
   position: relative;
   width: 100%;
+}
+
+.tile img {
+  width: 100%; /* fill tile */
+  display: block;
 }
 
 .overlay {
@@ -138,15 +143,20 @@ img {
     display: block;
   }
 
-  /* Portfolio grid: 2 tiles across */
+  /* Portfolio grid: 2 tiles across, minimal gap */
   .portfolio {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 15px;
+    gap: 5px; /* small gap to make images look flush */
   }
 
   .tile {
     width: 100%;
+  }
+
+  .tile img {
+    width: 100%;
+    display: block;
   }
 
   .overlay {
@@ -166,10 +176,15 @@ img {
   /* Portfolio grid: 1 tile per row */
   .portfolio {
     grid-template-columns: 1fr !important;
-    gap: 12px;
+    gap: 5px;
   }
 
   .tile {
     width: 100%;
+  }
+
+  .tile img {
+    width: 100%;
+    display: block;
   }
 }
