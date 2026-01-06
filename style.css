@@ -86,6 +86,7 @@ img {
   display: block;
 }
 
+/* Default overlay (desktop & mobile) */
 .overlay {
   position: absolute;
   inset: 0;
@@ -94,12 +95,38 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: 0.3s;
+  opacity: 0; /* hidden by default */
+  transition: opacity 0.3s;
 }
 
+/* Show overlay on hover (desktop) */
 .tile:hover .overlay {
   opacity: 1;
+}
+
+/* Touch devices (mobile/tablet): show overlay only while tapping */
+@media (hover: none) {
+  .tile:active .overlay,
+  .tile:focus .overlay {
+    opacity: 1;
+  }
+}
+
+/* -------------------------
+   Mobile grids
+------------------------- */
+@media (max-width: 1024px) {
+  .portfolio {
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 tiles on tablets */
+    gap: 0 !important; /* no gap */
+  }
+}
+
+@media (max-width: 480px) {
+  .portfolio {
+    grid-template-columns: 1fr !important; /* 1 tile on small phones */
+    gap: 0 !important; /* no gap */
+  }
 }
 
 /* -------------------------
