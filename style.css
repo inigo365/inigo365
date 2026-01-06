@@ -61,6 +61,13 @@ body {
   height: 11%;
 }
 
+.imdb-link {
+  left: 78%;
+  top: 69%;
+  width: 17%;
+  height: 11%;
+}
+
 /* Remove tap/click highlight */
 .landing-link,
 .landing-link:active,
