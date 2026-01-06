@@ -128,7 +128,7 @@ section {
   transition: opacity 0.3s ease;
   text-align: center;
   padding: 20px;
-  font-size: 18px; /* set overlay text to 18px */
+  font-size: 26px; /* set overlay text to 18px */
 }
 
 .tile:hover .overlay {
