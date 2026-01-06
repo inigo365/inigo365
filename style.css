@@ -41,16 +41,12 @@ body {
   display: block;
 }
 
-/* DEBUG MODE: visible click zones */
 .landing-link {
   position: absolute;
   display: block;
   cursor: pointer;
-  /*background: rgba(255, 0, 0, 0.35); /* DEBUG ON */
 }
 
-/* ABOUT ME button
-   Positioned over text on right side */
 .about-link {
   left: 78%;
   top: 38%;
@@ -58,7 +54,6 @@ body {
   height: 11%;
 }
 
-/* INSTAGRAM button */
 .instagram-link {
   left: 78%;
   top: 52%;
@@ -66,9 +61,7 @@ body {
   height: 11%;
 }
 
-/* =========================
-   REMOVE TAP / CLICK HIGHLIGHT
-========================= */
+/* Remove tap/click highlight */
 .landing-link,
 .landing-link:active,
 .landing-link:focus,
@@ -78,7 +71,6 @@ body {
   box-shadow: none !important;
 }
 
-/* Disable mobile tap highlight */
 .landing-link {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
@@ -98,15 +90,7 @@ section {
   width: 100%;
 }
 
-img {
-  width: 100%;
-  display: block;
-}
-
-/* =========================
-   PORTFOLIO GRID
-   NO GAPS — ALL SCREENS
-========================= */
+/* Portfolio grid */
 .portfolio {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -142,7 +126,6 @@ img {
   opacity: 1;
 }
 
-/* Touch devices */
 @media (hover: none) {
   .tile:active .overlay,
   .tile:focus .overlay {
@@ -150,9 +133,7 @@ img {
   }
 }
 
-/* =========================
-   PROJECT PAGES
-========================= */
+/* Project pages */
 .project {
   max-width: 1000px;
   margin: 80px auto 0;
@@ -172,9 +153,7 @@ img {
   z-index: 10;
 }
 
-/* =========================
-   VIDEO
-========================= */
+/* Video */
 .video-container {
   position: relative;
   width: 100%;
@@ -204,9 +183,7 @@ img {
   background-color: #333;
 }
 
-/* =========================
-   FADE IN
-========================= */
+/* Fade-in animation */
 .fade-in {
   opacity: 0;
   transform: translateY(10px);
@@ -220,9 +197,7 @@ img {
   }
 }
 
-/* =========================
-   RESPONSIVE GRID
-========================= */
+/* Responsive portfolio grid */
 @media (max-width: 1024px) {
   .portfolio {
     grid-template-columns: repeat(2, 1fr);
