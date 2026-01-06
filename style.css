@@ -1,6 +1,6 @@
-/* -------------------------
+/* =========================
    FONTS
-------------------------- */
+========================= */
 @font-face {
   font-family: "RuneScape UF";
   src: url("./fonts/RuneScape-UF.woff2") format("woff2"),
@@ -9,33 +9,66 @@
   font-style: normal;
 }
 
-body {
-  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
-  margin: 0;
-  padding: 0;
+/* =========================
+   GLOBAL RESET
+========================= */
+* {
+  box-sizing: border-box;
 }
 
-/* -------------------------
-   GLOBAL PAGE FIX FOR SCROLL
-------------------------- */
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;                 /* ensures body fills viewport */
-  overflow-x: hidden;           /* prevent horizontal scroll */
-  overscroll-behavior-y: contain; /* prevent mobile bounce past bottom */
+  width: 100%;
+  overflow-x: hidden;
 }
 
-/* Wrapper for all content */
-.page-wrapper {
-  min-height: 100%;             /* ensures full page */
-  display: flex;
-  flex-direction: column;
+body {
+  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+  background: #fff;
 }
 
-/* -------------------------
-   GENERAL STYLES
-------------------------- */
+/* =========================
+   LANDING IMAGE + BUTTONS
+========================= */
+.landing-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.landing-image {
+  width: 100%;
+  display: block;
+}
+
+/* DEBUG MODE: visible click zones */
+.landing-link {
+  position: absolute;
+  display: block;
+  cursor: pointer;
+  /*background: rgba(255, 0, 0, 0.35); /* DEBUG ON */
+}
+
+/* ABOUT ME button
+   Positioned over text on right side */
+.about-link {
+  left: 78%;
+  top: 38%;
+  width: 17%;
+  height: 11%;
+}
+
+/* INSTAGRAM button */
+.instagram-link {
+  left: 78%;
+  top: 52%;
+  width: 17%;
+  height: 11%;
+}
+
+/* =========================
+   SECTIONS
+========================= */
 section {
   width: 100%;
 }
@@ -45,9 +78,59 @@ img {
   display: block;
 }
 
+/* =========================
+   PORTFOLIO GRID
+   NO GAPS — ALL SCREENS
+========================= */
+.portfolio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.tile {
+  position: relative;
+  width: 100%;
+}
+
+.tile img {
+  width: 100%;
+  display: block;
+}
+
+/* Overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  text-align: center;
+  padding: 20px;
+}
+
+.tile:hover .overlay {
+  opacity: 1;
+}
+
+/* Touch devices */
+@media (hover: none) {
+  .tile:active .overlay,
+  .tile:focus .overlay {
+    opacity: 1;
+  }
+}
+
+/* =========================
+   PROJECT PAGES
+========================= */
 .project {
   max-width: 1000px;
-  margin: 80px auto 0 auto;
+  margin: 80px auto 0;
   padding: 0 20px;
 }
 
@@ -61,57 +144,44 @@ img {
   left: 20px;
   font-size: 32px;
   text-decoration: none;
+  z-index: 10;
 }
 
-/* -------------------------
-   PORTFOLIO GRID
-   0 GAP ON ALL SCREEN SIZES
-------------------------- */
-.portfolio {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr); /* desktop: 3 columns */
-  gap: 0; /* no gaps */
-}
-
-.tile {
+/* =========================
+   VIDEO
+========================= */
+.video-container {
   position: relative;
   width: 100%;
+  padding-bottom: 56.25%;
+  margin-top: 40px;
 }
 
-.tile img {
-  width: 100%; /* fill tile */
-  display: block;
-}
-
-/* Overlay for project tiles */
-.overlay {
+.video-container iframe {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.3);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0; /* hidden by default */
-  transition: opacity 0.3s;
+  width: 100%;
+  height: 100%;
 }
 
-/* Desktop hover */
-.tile:hover .overlay {
-  opacity: 1;
+.video-link {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: #000;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 6px;
+  margin: 20px 0 15px;
+  font-weight: bold;
 }
 
-/* Touch devices: show overlay only while tapping/focusing */
-@media (hover: none) {
-  .tile:active .overlay,
-  .tile:focus .overlay {
-    opacity: 1;
-  }
+.video-link:hover {
+  background-color: #333;
 }
 
-/* -------------------------
+/* =========================
    FADE IN
-------------------------- */
+========================= */
 .fade-in {
   opacity: 0;
   transform: translateY(10px);
@@ -125,107 +195,17 @@ img {
   }
 }
 
-/* -------------------------
-   VIDEO CONTAINER
-------------------------- */
-.video-container {
-  position: relative;
-  width: 100%;
-  padding-bottom: 56.25%; /* 16:9 ratio */
-  margin-top: 40px;
-}
-
-.video-container iframe {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-}
-
-.video-link {
-  display: inline-block;
-  padding: 12px 24px;
-  background-color: #000;
-  color: #fff;
-  text-decoration: none;
-  border-radius: 6px;
-  margin: 20px 0 15px 0;
-  font-weight: bold;
-}
-
-.video-link:hover {
-  background-color: #333;
-}
-
-/* -------------------------
-   ABOUT SECTION (BOTTOM)
-   HARD SCROLL STOP
-------------------------- */
-.about-section {
-  width: 100%;
-  flex-shrink: 0;               /* prevent shrinking */
-  height: 100vh;                /* exactly one viewport height */
-  overflow: hidden;             /* prevent scrolling past bottom */
-}
-
-.about-section img.about-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;            /* fills the section without stretching */
-  display: block;
-}
-
-/* -------------------------
-   MOBILE & TABLET ADJUSTMENTS
-------------------------- */
-
-/* Tablets and large phones (≤1024px) */
+/* =========================
+   RESPONSIVE GRID
+========================= */
 @media (max-width: 1024px) {
-
-  /* About image larger */
-  .about-image {
-    width: 90%;
-    margin: 0 auto;
-    display: block;
-  }
-
-  /* Portfolio grid: 2 tiles across, 0 gap */
   .portfolio {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 0 !important;
-  }
-
-  .tile {
-    width: 100%;
-  }
-
-  .tile img {
-    width: 100%;
-    display: block;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Small phones (≤480px) */
 @media (max-width: 480px) {
-
-  /* About image almost full width */
-  .about-image {
-    width: 95%;
-  }
-
-  /* Portfolio grid: 1 tile per row, 0 gap */
   .portfolio {
-    grid-template-columns: 1fr !important;
-    gap: 0 !important;
-  }
-
-  .tile {
-    width: 100%;
-  }
-
-  .tile img {
-    width: 100%;
-    display: block;
+    grid-template-columns: 1fr;
   }
 }
