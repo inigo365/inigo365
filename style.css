@@ -91,31 +91,49 @@ img {
   background-color: #333;
 }
 
-/* Mobile adjustments */
+/* Mobile adjustments for tablets and larger phones */
 @media (max-width: 768px) {
 
   /* Make About image larger */
   .about-image {
-    width: 75%;      /* increases image size on mobile */
+    width: 90%;      /* increases image size on mobile */
     margin: 0 auto;  /* centers it */
     display: block;
   }
 
-  /* Portfolio grid: 2 tiles across on mobile */
+  /* Portfolio grid: 2 tiles across */
   .portfolio {
-    grid-template-columns: repeat(2, 1fr); /* 2 tiles per row */
-    gap: 15px; /* optional: spacing between tiles */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px; /* spacing between tiles */
   }
 
-  /* Make tiles take full width of the column */
   .tile {
-    width: 100%;
+    width: 100%; /* fill column */
   }
 
-  /* Keep overlay styling consistent */
+  /* Overlay consistent */
   .overlay {
     opacity: 1;
     background: rgba(0,0,0,0.3);
+  }
+}
+
+/* Mobile adjustments for small phones */
+@media (max-width: 480px) {
+
+  /* About image almost full width */
+  .about-image {
+    width: 95%;
+  }
+
+  /* Portfolio grid: 1 tile per row */
+  .portfolio {
+    grid-template-columns: 1fr; /* single column */
+    gap: 12px;
+  }
+
+  .tile {
+    width: 100%;
   }
 }
 
