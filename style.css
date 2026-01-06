@@ -16,19 +16,16 @@
   box-sizing: border-box;
 }
 
-html {
-  font-size: 17px; /* slightly bigger than default for readability */
-}
-
-body {
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   overflow-x: hidden;
+}
+
+body {
   font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
   background: #fff;
-  font-size: 1rem; /* inherits from html */
-  line-height: 1.6; /* improves readability */
 }
 
 /* =========================
@@ -50,7 +47,6 @@ body {
   cursor: pointer;
 }
 
-/* Specific landing buttons */
 .about-link {
   left: 78%;
   top: 38%;
@@ -72,7 +68,6 @@ body {
   height: 11%;
 }
 
-/* Remove tap/click highlight */
 .landing-link,
 .landing-link:active,
 .landing-link:focus,
@@ -118,7 +113,6 @@ section {
 .tile img {
   width: 100%;
   display: block;
-  object-fit: cover;
 }
 
 /* Overlay */
@@ -134,7 +128,6 @@ section {
   transition: opacity 0.3s ease;
   text-align: center;
   padding: 20px;
-  font-size: 1rem; /* text inside overlays readable */
 }
 
 .tile:hover .overlay {
@@ -153,15 +146,21 @@ section {
    PROJECT PAGES
 ========================= */
 .project {
-  max-width: 1000px;  /* keeps layout intact */
+  max-width: 1000px;
   margin: 80px auto 0;
   padding: 0 20px;
-  font-size: 1rem; /* inherit readable font */
-  line-height: 1.6;
 }
 
 .project img {
   margin-bottom: 40px;
+}
+
+/* Make project page description text slightly larger */
+.project p,
+.project li,
+.project span {
+  font-size: 1.1rem;
+  line-height: 1.6;
 }
 
 /* Back button */
@@ -200,7 +199,6 @@ section {
   border-radius: 6px;
   margin: 20px 0 15px;
   font-weight: bold;
-  font-size: 1rem; /* readable */
 }
 
 .video-link:hover {
@@ -246,43 +244,16 @@ section {
   max-width: 1200px;
   margin: 0 auto;
   display: block;
-  font-size: 1rem; /* readable text */
-  line-height: 1.6;
 }
 
 /* Make picture element fully responsive */
-.about-section picture,
+.about-section picture {
+  display: block;
+  width: 100%;
+}
+
 .about-section picture img {
   display: block;
   width: 100%;
   height: auto;
-}
-
-/* =========================
-   TEXT ELEMENTS (global readability)
-========================= */
-p, li, span, a {
-  font-size: 1.1rem; /* slightly bigger than default */
-}
-
-h1 {
-  font-size: 2rem;
-}
-
-h2 {
-  font-size: 1.8rem;
-}
-
-h3 {
-  font-size: 1.5rem;
-}
-
-/* Small adjustments for mobile readability */
-@media (max-width: 768px) {
-  html {
-    font-size: 18px; /* slightly bigger on mobile */
-  }
-  .video-link, .overlay {
-    font-size: 1rem;
-  }
 }
