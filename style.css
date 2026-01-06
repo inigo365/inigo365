@@ -47,11 +47,12 @@ img {
 
 /* -------------------------
    PORTFOLIO GRID
+   0 GAP ON ALL SCREEN SIZES
 ------------------------- */
 .portfolio {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px; /* desktop gap */
+  grid-template-columns: repeat(3, 1fr); /* desktop: 3 columns */
+  gap: 0; /* no gaps between tiles */
 }
 
 .tile {
@@ -131,10 +132,11 @@ img {
 
 /* -------------------------
    MOBILE ADJUSTMENTS
+   FLUSH TILES, NO GAP
 ------------------------- */
 
-/* Tablets and large phones (≤768px) */
-@media (max-width: 768px) {
+/* Tablets and large phones (≤1024px) */
+@media (max-width: 1024px) {
 
   /* About image larger */
   .about-image {
@@ -143,11 +145,10 @@ img {
     display: block;
   }
 
-  /* Portfolio grid: 2 tiles across, minimal gap */
+  /* Portfolio grid: 2 tiles across, 0 gap */
   .portfolio {
-    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 5px; /* small gap to make images look flush */
+    gap: 0 !important;
   }
 
   .tile {
@@ -173,10 +174,10 @@ img {
     width: 95%;
   }
 
-  /* Portfolio grid: 1 tile per row */
+  /* Portfolio grid: 1 tile per row, 0 gap */
   .portfolio {
     grid-template-columns: 1fr !important;
-    gap: 5px;
+    gap: 0 !important;
   }
 
   .tile {
