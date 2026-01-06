@@ -16,6 +16,27 @@ body {
 }
 
 /* -------------------------
+   PAGE SCROLL FIX FOR LAST SECTION
+------------------------- */
+body {
+  margin: 0;          /* remove default body margin */
+  padding: 0;         /* remove default body padding */
+  overflow-x: hidden; /* prevent horizontal scroll */
+  overscroll-behavior-y: contain; /* prevent mobile “bounce” past bottom */
+}
+
+.about-section {
+  width: 100%;
+  margin: 0;
+}
+
+.about-section img.about-image {
+  display: block;
+  width: 100%;
+  height: auto;      /* maintain aspect ratio */
+}
+
+/* -------------------------
    GENERAL STYLES
 ------------------------- */
 section {
