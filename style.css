@@ -1,10 +1,13 @@
 @font-face {
   font-family: "RuneScape UF";
-  src: url("./fonts/runescape.ttf");
+  src: url("./fonts/RuneScape-UF.woff2") format("woff2"),
+       url("./fonts/RuneScape-UF.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
 }
 
 body {
-  font-family: "RuneScape UF";
+  font-family: "RuneScape UF", Arial, Helvetica, sans-serif; /* fallback fonts */
 }
 
 section {
