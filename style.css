@@ -15,25 +15,9 @@ body {
   padding: 0;
 }
 
-/* -------------------------
-   PAGE SCROLL FIX FOR LAST SECTION
-------------------------- */
-body {
-  margin: 0;          /* remove default body margin */
-  padding: 0;         /* remove default body padding */
-  overflow-x: hidden; /* prevent horizontal scroll */
-  overscroll-behavior-y: contain; /* prevent mobile “bounce” past bottom */
-}
-
-.about-section {
-  width: 100%;
-  margin: 0;
-}
-
-.about-section img.about-image {
-  display: block;
-  width: 100%;
-  height: auto;      /* maintain aspect ratio */
+html, body {
+  overflow-x: hidden;             /* prevent horizontal scroll */
+  overscroll-behavior-y: contain; /* prevent mobile bounce past bottom */
 }
 
 /* -------------------------
@@ -50,7 +34,7 @@ img {
 
 .project {
   max-width: 1000px;
-  margin: 80px auto;
+  margin: 80px auto 0 auto; /* no bottom margin to prevent extra scroll */
   padding: 0 20px;
 }
 
@@ -86,7 +70,7 @@ img {
   display: block;
 }
 
-/* Default overlay (desktop & mobile) */
+/* Overlay for project tiles */
 .overlay {
   position: absolute;
   inset: 0;
@@ -99,33 +83,16 @@ img {
   transition: opacity 0.3s;
 }
 
-/* Show overlay on hover (desktop) */
+/* Desktop hover */
 .tile:hover .overlay {
   opacity: 1;
 }
 
-/* Touch devices (mobile/tablet): show overlay only while tapping */
+/* Touch devices: show overlay only while tapping/focusing */
 @media (hover: none) {
   .tile:active .overlay,
   .tile:focus .overlay {
     opacity: 1;
-  }
-}
-
-/* -------------------------
-   Mobile grids
-------------------------- */
-@media (max-width: 1024px) {
-  .portfolio {
-    grid-template-columns: repeat(2, 1fr) !important; /* 2 tiles on tablets */
-    gap: 0 !important; /* no gap */
-  }
-}
-
-@media (max-width: 480px) {
-  .portfolio {
-    grid-template-columns: 1fr !important; /* 1 tile on small phones */
-    gap: 0 !important; /* no gap */
   }
 }
 
@@ -179,8 +146,22 @@ img {
 }
 
 /* -------------------------
-   MOBILE ADJUSTMENTS
-   FLUSH TILES, NO GAP
+   ABOUT SECTION (BOTTOM)
+   LOCK SCROLL PAST IMAGE
+------------------------- */
+.about-section {
+  width: 100%;
+  margin: 0;
+}
+
+.about-section img.about-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* -------------------------
+   MOBILE & TABLET ADJUSTMENTS
 ------------------------- */
 
 /* Tablets and large phones (≤1024px) */
@@ -206,11 +187,6 @@ img {
   .tile img {
     width: 100%;
     display: block;
-  }
-
-  .overlay {
-    opacity: 1;
-    background: rgba(0,0,0,0.3);
   }
 }
 
