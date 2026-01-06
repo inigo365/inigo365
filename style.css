@@ -115,7 +115,7 @@ section {
   display: block;
 }
 
-/* Overlay */
+/* Overlay text */
 .overlay {
   position: absolute;
   inset: 0;
@@ -128,6 +128,7 @@ section {
   transition: opacity 0.3s ease;
   text-align: center;
   padding: 20px;
+  font-size: 18px; /* set overlay text to 18px */
 }
 
 .tile:hover .overlay {
@@ -151,16 +152,33 @@ section {
   padding: 0 20px;
 }
 
+/* =========================
+   PROJECT PAGE IMAGES
+========================= */
 .project img {
-  margin-bottom: 40px;
+  display: block;       /* removes inline spacing below images */
+  width: 100%;          /* make image span full width of container */
+  max-width: 100%;      /* ensures it never overflows container */
+  height: auto;         /* preserve aspect ratio */
+  margin-bottom: 40px;  /* spacing between images */
 }
 
-/* Make project page description text slightly larger */
+/* Project page body text */
 .project p,
 .project li,
-.project span {
-  font-size: 1.1rem;
+.project span,
+.project .blurb {
+  font-size: 24px; /* body text 18px */
   line-height: 1.6;
+}
+
+/* Project headers */
+.project h1,
+.project h2,
+.project h3 {
+  font-size: 32px; /* headers 24px */
+  line-height: 1.3;
+  margin-bottom: 16px;
 }
 
 /* Back button */
@@ -199,6 +217,7 @@ section {
   border-radius: 6px;
   margin: 20px 0 15px;
   font-weight: bold;
+  font-size: 18px; /* make video links same size as body text */
 }
 
 .video-link:hover {
