@@ -211,9 +211,31 @@ section {
 }
 
 /* =========================
-   ABOUT IMAGE
+   ABOUT SECTION
 ========================= */
-.about-image {
+.about-section {
   width: 100%;
+  max-width: 1200px;   /* optional constraint for desktop */
+  margin: 0 auto;
+}
+
+/* Picture container styling */
+.about-section picture {
   display: block;
+  width: 100%;
+}
+
+/* Images inside picture */
+.about-section picture img {
+  display: block;
+  width: 100%;
+  height: auto;          /* preserves aspect ratio */
+  object-fit: cover;     /* prevents flicker/stretching */
+}
+
+/* Ensure picture and img do not switch after initial load */
+@media (max-width: 768px) {
+  .about-section picture img {
+    content-visibility: auto; /* hint to browser to render correctly once */
+  }
 }
