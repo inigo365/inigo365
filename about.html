@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>About — Inigo</title>
+  <title>inigo365-about me</title>
+  <link rel="icon" type="image/png" href="./images/icon.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,15 +12,16 @@
   <a class="back" href="index.html">← Back</a>
 
   <!-- About section -->
-<section class="about-section">
-  <picture>
-    <!-- Mobile image for screens <= 768px -->
-    <source srcset="images/about/about-mobile.jpg" media="(max-width: 768px)">
-    <!-- Desktop image fallback -->
-    <img src="images/about/about-desktop.jpg" class="about-image" alt="About Inigo">
-  </picture>
-</section>
-
+  <section class="about-section">
+    <picture>
+      <!-- Mobile first: screens <= 768px -->
+      <source srcset="images/about/about-mobile.jpg" media="(max-width: 768px)">
+      <!-- Desktop fallback -->
+      <source srcset="images/about/about-desktop.jpg" media="(min-width: 769px)">
+      <!-- Fallback for older browsers -->
+      <img src="images/about/about-desktop.jpg" class="about-image" alt="About Inigo">
+    </picture>
+  </section>
 
 </body>
 </html>
