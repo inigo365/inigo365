@@ -128,7 +128,7 @@ section {
   transition: opacity 0.3s ease;
   text-align: center;
   padding: 20px;
-  font-size: 26px; /* set overlay text to 18px */
+  font-size: 26px; /* <-- preserved exactly as in your last working file */
 }
 
 .tile:hover .overlay {
@@ -156,10 +156,10 @@ section {
    PROJECT PAGE IMAGES
 ========================= */
 .project img {
-  display: block;       /* removes inline spacing below images */
-  width: 100%;          /* make image span full width of container */
-  max-width: 100%;      /* ensures it never overflows container */
-  height: auto;         /* preserve aspect ratio */
+  display: block;       /* removes inline spacing */
+  width: 100%;          /* full width */
+  max-width: 100%;      
+  height: auto;         /* maintain aspect ratio */
   margin-bottom: 40px;  /* spacing between images */
 }
 
@@ -168,7 +168,7 @@ section {
 .project li,
 .project span,
 .project .blurb {
-  font-size: 24px; /* body text 18px */
+  font-size: 24px; /* preserved from your last working file */
   line-height: 1.6;
 }
 
@@ -176,7 +176,7 @@ section {
 .project h1,
 .project h2,
 .project h3 {
-  font-size: 32px; /* headers 24px */
+  font-size: 32px; /* preserved from your last working file */
   line-height: 1.3;
   margin-bottom: 16px;
 }
@@ -217,7 +217,7 @@ section {
   border-radius: 6px;
   margin: 20px 0 15px;
   font-weight: bold;
-  font-size: 18px; /* make video links same size as body text */
+  font-size: 18px; /* preserved from your last working file */
 }
 
 .video-link:hover {
@@ -271,8 +271,17 @@ section {
   width: 100%;
 }
 
+/* Images inside picture */
 .about-section picture img {
   display: block;
   width: 100%;
   height: auto;
+  object-fit: cover; /* ensures image fills container width nicely */
+}
+
+/* Prevent flicker on mobile while loading */
+@media (max-width: 768px) {
+  .about-section picture img {
+    content-visibility: auto;
+  }
 }

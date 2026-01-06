@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>inigo365-about me</title>
+  <title>inigo365 — About Me</title>
   <link rel="icon" type="image/png" href="./images/icon.png">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -14,12 +14,12 @@
   <!-- About section -->
   <section class="about-section">
     <picture>
-      <!-- Mobile first: screens <= 768px -->
+      <!-- Mobile first -->
       <source srcset="images/about/about-mobile.jpg" media="(max-width: 768px)">
-      <!-- Desktop fallback -->
+      <!-- Desktop -->
       <source srcset="images/about/about-desktop.jpg" media="(min-width: 769px)">
-      <!-- Fallback for older browsers -->
-      <img src="images/about/about-desktop.jpg" class="about-image" alt="About Inigo">
+      <!-- Fallback for browsers that don't support <picture> -->
+      <img src="images/about/about-desktop.jpg" alt="About Inigo">
     </picture>
   </section>
 
