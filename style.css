@@ -1,3 +1,6 @@
+/* -------------------------
+   FONTS
+------------------------- */
 @font-face {
   font-family: "RuneScape UF";
   src: url("./fonts/RuneScape-UF.woff2") format("woff2"),
@@ -7,9 +10,14 @@
 }
 
 body {
-  font-family: "RuneScape UF", Arial, Helvetica, sans-serif; /* fallback fonts */
+  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
+/* -------------------------
+   GENERAL STYLES
+------------------------- */
 section {
   width: 100%;
 }
@@ -17,27 +25,6 @@ section {
 img {
   width: 100%;
   display: block;
-}
-
-.portfolio {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-}
-
-.tile {
-  position: relative;
-}
-
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.3);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: 0.3s;
 }
 
 .project {
@@ -58,12 +45,55 @@ img {
   text-decoration: none;
 }
 
+/* -------------------------
+   PORTFOLIO GRID
+------------------------- */
+.portfolio {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.tile {
+  position: relative;
+  width: 100%;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: 0.3s;
+}
+
+.tile:hover .overlay {
+  opacity: 1;
+}
+
+/* -------------------------
+   FADE IN
+------------------------- */
 .fade-in {
   opacity: 0;
   transform: translateY(10px);
   animation: fadeIn 1.5s ease forwards;
 }
 
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* -------------------------
+   VIDEO CONTAINER
+------------------------- */
 .video-container {
   position: relative;
   width: 100%;
@@ -86,7 +116,7 @@ img {
   color: #fff;
   text-decoration: none;
   border-radius: 6px;
-  margin: 20px 0 15px 0; /* top 20px, bottom 15px for spacing */
+  margin: 20px 0 15px 0;
   font-weight: bold;
 }
 
@@ -94,34 +124,38 @@ img {
   background-color: #333;
 }
 
-/* Mobile adjustments for tablets and larger phones */
+/* -------------------------
+   MOBILE ADJUSTMENTS
+------------------------- */
+
+/* Tablets and large phones (≤768px) */
 @media (max-width: 768px) {
 
-  /* Make About image larger */
+  /* About image larger */
   .about-image {
-    width: 90%;      /* increases image size on mobile */
-    margin: 0 auto;  /* centers it */
+    width: 90%;
+    margin: 0 auto;
     display: block;
   }
 
   /* Portfolio grid: 2 tiles across */
   .portfolio {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px; /* spacing between tiles */
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 15px;
   }
 
   .tile {
-    width: 100%; /* fill column */
+    width: 100%;
   }
 
-  /* Overlay consistent */
   .overlay {
     opacity: 1;
     background: rgba(0,0,0,0.3);
   }
 }
 
-/* Mobile adjustments for small phones */
+/* Small phones (≤480px) */
 @media (max-width: 480px) {
 
   /* About image almost full width */
@@ -131,29 +165,11 @@ img {
 
   /* Portfolio grid: 1 tile per row */
   .portfolio {
-    grid-template-columns: 1fr; /* single column */
+    grid-template-columns: 1fr !important;
     gap: 12px;
   }
 
   .tile {
     width: 100%;
   }
-}
-
-@media (max-width: 768px) {
-  .overlay {
-    opacity: 1;
-    background: rgba(0,0,0,0.3);
-  }
-}
-
-@keyframes fadeIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.tile:hover .overlay {
-  opacity: 1;
 }
