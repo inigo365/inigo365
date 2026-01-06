@@ -234,3 +234,11 @@ img {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================
+   ABOUT IMAGE
+========================= */
+.about-image {
+  width: 100%;
+  display: block;
+}
