@@ -67,6 +67,31 @@ body {
 }
 
 /* =========================
+   REMOVE TAP / CLICK HIGHLIGHT
+========================= */
+.landing-link,
+.landing-link:active,
+.landing-link:focus,
+.landing-link:visited {
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Disable mobile tap highlight */
+.landing-link {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+@media (hover: hover) {
+  .landing-link {
+    cursor: pointer;
+  }
+}
+
+/* =========================
    SECTIONS
 ========================= */
 section {
