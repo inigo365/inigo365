@@ -47,6 +47,7 @@ body {
   cursor: pointer;
 }
 
+/* Specific landing buttons */
 .about-link {
   left: 78%;
   top: 38%;
@@ -229,7 +230,7 @@ section {
 }
 
 /* =========================
-   ABOUT SECTION (FIXED)
+   ABOUT SECTION
 ========================= */
 .about-section {
   width: 100%;
@@ -239,22 +240,9 @@ section {
 }
 
 /* Make picture element fully responsive */
-.about-section picture {
-  display: block;
-  width: 100%;
-}
-
-/* Images inside picture */
+.about-section picture,
 .about-section picture img {
   display: block;
   width: 100%;
-  height: auto;       /* maintain aspect ratio */
-  object-fit: contain; /* prevents desktop image from overriding mobile */
-}
-
-/* Ensure mobile image stays on mobile */
-@media (max-width: 768px) {
-  .about-section picture img {
-    content-visibility: auto; /* helps prevent flicker */
-  }
+  height: auto;
 }
