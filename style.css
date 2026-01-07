@@ -41,52 +41,40 @@ body {
   display: block;
 }
 
+/* =========================
+   INVISIBLE LANDING LINKS (CLICKABLE HITBOXES)
+========================= */
 .landing-link {
   position: absolute;
   display: block;
-  cursor: pointer;
-}
-
-.about-link {
-  left: 10%;
-  top: 34%;
   width: 17%;
   height: 11%;
+  cursor: pointer;
+  z-index: 10;
+  background: transparent;
+  text-indent: -9999px; /* hides text if any */
+  pointer-events: auto;  /* ensures click works */
+}
+
+/* Specific link positions */
+.about-link {
+  top: 34%;
+  left: 10%;
 }
 
 .instagram-link {
-  left: 10%;
   top: 54%;
-  width: 17%;
-  height: 11%;
+  left: 10%;
 }
 
 .imdb-link {
-  left: 10%;
   top: 75%;
-  width: 17%;
-  height: 11%;
+  left: 10%;
 }
 
-.landing-link,
-.landing-link:active,
-.landing-link:focus,
-.landing-link:visited {
-  background: transparent !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.landing-link {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  user-select: none;
-}
-
-@media (hover: hover) {
-  .landing-link {
-    cursor: pointer;
-  }
+/* Optional hover for debugging */
+.landing-link:hover {
+  /* background: rgba(255,0,0,0.1); */
 }
 
 /* =========================
@@ -101,20 +89,19 @@ section {
 ========================= */
 .portfolio {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* changed from 3 to 4 for desktop */
+  grid-template-columns: repeat(4, 1fr); /* desktop: 4 columns */
   gap: 0;
 }
 
-/* Responsive overrides remain the same */
 @media (max-width: 1024px) {
   .portfolio {
-    grid-template-columns: repeat(2, 1fr); /* tablets/small desktops */
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 480px) {
   .portfolio {
-    grid-template-columns: 1fr; /* mobile */
+    grid-template-columns: 1fr;
   }
 }
 
@@ -148,7 +135,6 @@ section {
   opacity: 1;
 }
 
-/* Touch devices */
 @media (hover: none) {
   .tile:active .overlay,
   .tile:focus .overlay {
@@ -165,18 +151,16 @@ section {
   padding: 0 20px;
 }
 
-/* =========================
-   PROJECT PAGE IMAGES
-========================= */
+/* Project images */
 .project img {
-  display: block;       /* removes inline spacing below images */
-  width: 100%;          /* make image span full width of container */
-  max-width: 100%;      /* ensures it never overflows container */
-  height: auto;         /* preserve aspect ratio */
-  margin-bottom: 40px;  /* spacing between images */
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 40px;
 }
 
-/* Project page body text */
+/* Project text */
 .project p,
 .project li,
 .project span,
@@ -230,7 +214,7 @@ section {
   border-radius: 6px;
   margin: 20px 0 15px;
   font-weight: bold;
-  font-size: 18px; /* video link text same as body text */
+  font-size: 18px;
 }
 
 .video-link:hover {
@@ -254,22 +238,7 @@ section {
 }
 
 /* =========================
-   RESPONSIVE GRID
-========================= */
-@media (max-width: 1024px) {
-  .portfolio {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .portfolio {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* =========================
-   ABOUT SECTION (JS-SWAP IMAGES)
+   ABOUT SECTION
 ========================= */
 .about-section {
   width: 100%;
@@ -284,9 +253,8 @@ section {
 }
 
 /* =========================
-   FOOTER – FULL BLEED
+   FOOTER
 ========================= */
-
 .site-footer {
   width: 100vw;
   margin-left: calc(50% - 50vw);
@@ -306,16 +274,13 @@ section {
 }
 
 /* =========================
-   PAGE TRANSITION – FADE OUT
+   PAGE TRANSITIONS
 ========================= */
 .fade-out {
   opacity: 0;
-  transition: opacity 1s ease; /* 1 second fade */
+  transition: opacity 1s ease;
 }
 
-/* =========================
-   PAGE FADE-IN ON LOAD
-========================= */
 .fade-in-page {
   opacity: 0;
   animation: fadeInPage 1s ease forwards;
@@ -328,11 +293,9 @@ section {
 /* =========================
    CUSTOM CURSOR – DESKTOP ONLY
 ========================= */
-
-/* Desktop only: apply custom cursor globally */
 @media (min-width: 769px) {
   body {
-    cursor: url('./images/cursor/cursor.png?v=1') 16 16, auto; /* 16 16 = hotspot center */
+    cursor: url('./images/cursor/cursor.png?v=1') 16 16, auto;
   }
 
   /* Hover cursor for interactive elements */
@@ -345,7 +308,6 @@ section {
   }
 }
 
-/* Mobile/tablet fallback: default pointer */
 @media (max-width: 768px) {
   body,
   a,
@@ -360,18 +322,4 @@ section {
 /* Ensure overlays don’t block clicks */
 .tile .overlay {
   pointer-events: none;
-}
-
-/* Confirm cursor hotspot is centered for click accuracy */
-body {
-  cursor: url('./images/cursor/cursor.png?v=1') 0 0, auto;
-}
-
-/* Hover cursor */
-a,
-.landing-link,
-.video-link,
-.back,
-button {
-  cursor: url('./images/cursor/cursor-hover.png?v=1') 0 0, pointer;
 }
