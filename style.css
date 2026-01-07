@@ -101,8 +101,21 @@ section {
 ========================= */
 .portfolio {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr); /* changed from 3 to 4 for desktop */
   gap: 0;
+}
+
+/* Responsive overrides remain the same */
+@media (max-width: 1024px) {
+  .portfolio {
+    grid-template-columns: repeat(2, 1fr); /* tablets/small desktops */
+  }
+}
+
+@media (max-width: 480px) {
+  .portfolio {
+    grid-template-columns: 1fr; /* mobile */
+  }
 }
 
 .tile {
