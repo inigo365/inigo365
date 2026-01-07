@@ -105,45 +105,45 @@
 ===================== -->
 <section id="projects" class="portfolio">
 
-  <a href="projects/martino.html" class="tile">
-    <img src="images/tiles/martino.jpg" alt="Martino Gamper OBE 'Before, After & Beyond'">
-    <div class="overlay">Martino Gamper OBE 'Before, After & Beyond'</div>
-  </a>
+  <a href="projects/martino.html" class="tile" id="tile-martino">
+  <img src="images/tiles/martino.jpg" alt="Martino Gamper OBE 'Before, After & Beyond'">
+  <div class="overlay">Martino Gamper OBE 'Before, After & Beyond'</div>
+</a>
 
-  <a href="projects/minecraft.html" class="tile">
-    <img src="images/tiles/minecraft.jpg" alt="Minecraft Movie (Released 2025)">
-    <div class="overlay">Minecraft Movie (Released 2025)</div>
-  </a>
+<a href="projects/minecraft.html" class="tile" id="tile-minecraft">
+  <img src="images/tiles/minecraft.jpg" alt="Minecraft Movie (Released 2025)">
+  <div class="overlay">Minecraft Movie (Released 2025)</div>
+</a>
 
-  <a href="projects/ash.html" class="tile">
-    <img src="images/tiles/ash.jpg" alt="Ash Feature Length (Released 2025)">
-    <div class="overlay">Ash Feature Length (Released 2025)</div>
-  </a>
+<a href="projects/ash.html" class="tile" id="tile-ash">
+  <img src="images/tiles/ash.jpg" alt="Ash Feature Length (Released 2025)">
+  <div class="overlay">Ash Feature Length (Released 2025)</div>
+</a>
 
-  <a href="projects/ols.html" class="tile">
-    <img src="images/tiles/ols.jpg" alt="One Last Shot (Releasing 2026)">
-    <div class="overlay">One Last Shot (Releasing 2026)</div>
-  </a>
+<a href="projects/ols.html" class="tile" id="tile-ols">
+  <img src="images/tiles/ols.jpg" alt="One Last Shot (Releasing 2026)">
+  <div class="overlay">One Last Shot (Releasing 2026)</div>
+</a>
 
-  <a href="projects/chopova.html" class="tile">
-    <img src="images/tiles/chopova.jpg" alt="Chopova Lowena Spring/Summer 26">
-    <div class="overlay">Chopova Lowena Spring/Summer 26</div>
-  </a>
+<a href="projects/chopova.html" class="tile" id="tile-chopova">
+  <img src="images/tiles/chopova.jpg" alt="Chopova Lowena Spring/Summer 26">
+  <div class="overlay">Chopova Lowena Spring/Summer 26</div>
+</a>
 
-  <a href="projects/canyon.html" class="tile">
-    <img src="images/tiles/canyon.jpg" alt="Canyon Feature Length (Unreleased)">
-    <div class="overlay">Canyon Feature Length (Unreleased)</div>
-  </a>
+<a href="projects/canyon.html" class="tile" id="tile-canyon">
+  <img src="images/tiles/canyon.jpg" alt="Canyon Feature Length (Unreleased)">
+  <div class="overlay">Canyon Feature Length (Unreleased)</div>
+</a>
 
-  <a href="projects/remz.html" class="tile">
-    <img src="images/tiles/remz.jpg" alt="SR MPOFU & STOLEN REMZ - SCOOPGARDEN">
-    <div class="overlay">SR MPOFU & STOLEN REMZ - SCOOPGARDEN</div>
-  </a>
+<a href="projects/remz.html" class="tile" id="tile-remz">
+  <img src="images/tiles/remz.jpg" alt="SR MPOFU & STOLEN REMZ - SCOOPGARDEN">
+  <div class="overlay">SR MPOFU & STOLEN REMZ - SCOOPGARDEN</div>
+</a>
 
-  <a href="projects/nanushka.html" class="tile">
-    <img src="images/tiles/nanushka.jpg" alt="Nanushka Spring/Summer 26">
-    <div class="overlay">Nanushka Spring/Summer 26</div>
-  </a>
+<a href="projects/nanushka.html" class="tile" id="tile-nanushka">
+  <img src="images/tiles/nanushka.jpg" alt="Nanushka Spring/Summer 26">
+  <div class="overlay">Nanushka Spring/Summer 26</div>
+</a>
 
 </section>
 
@@ -174,6 +174,30 @@ document.querySelectorAll('.landing-link').forEach(link => {
       window.location.href = href;
     }, 1000); // matches CSS fade
   });
+});
+</script>
+
+<script>
+// 1. Store last clicked tile when navigating away
+document.querySelectorAll('.tile').forEach(tile => {
+  tile.addEventListener('click', function(e) {
+    sessionStorage.setItem('lastTile', this.id);
+    // Let the normal navigation happen
+  });
+});
+
+// 2. When returning to index.html, scroll to last clicked tile
+window.addEventListener('pageshow', () => {
+  // pageshow is triggered even on back/forward navigation
+  const lastTileId = sessionStorage.getItem('lastTile');
+  if (lastTileId) {
+    const tile = document.getElementById(lastTileId);
+    if (tile) {
+      // scroll instantly without animation for back-button
+      tile.scrollIntoView({ block: 'center' });
+    }
+    sessionStorage.removeItem('lastTile');
+  }
 });
 </script>
 
