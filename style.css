@@ -324,3 +324,54 @@ section {
 @keyframes fadeInPage {
   to { opacity: 1; }
 }
+
+/* =========================
+   CUSTOM CURSOR – DESKTOP ONLY
+========================= */
+
+/* Desktop only: apply custom cursor globally */
+@media (min-width: 769px) {
+  body {
+    cursor: url('./images/cursor/cursor.png?v=1') 16 16, auto; /* 16 16 = hotspot center */
+  }
+
+  /* Hover cursor for interactive elements */
+  a,
+  .landing-link,
+  .video-link,
+  .back,
+  button {
+    cursor: url('./images/cursor/cursor-hover.png?v=1') 16 16, pointer;
+  }
+}
+
+/* Mobile/tablet fallback: default pointer */
+@media (max-width: 768px) {
+  body,
+  a,
+  .landing-link,
+  .video-link,
+  .back,
+  button {
+    cursor: auto;
+  }
+}
+
+/* Ensure overlays don’t block clicks */
+.tile .overlay {
+  pointer-events: none;
+}
+
+/* Confirm cursor hotspot is centered for click accuracy */
+body {
+  cursor: url('./images/cursor/cursor.png?v=1') 0 0, auto;
+}
+
+/* Hover cursor */
+a,
+.landing-link,
+.video-link,
+.back,
+button {
+  cursor: url('./images/cursor/cursor-hover.png?v=1') 0 0, pointer;
+}
