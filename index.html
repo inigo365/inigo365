@@ -22,18 +22,16 @@
          class="landing-image"
          alt="Landing">
 
-    <!-- ABOUT ME -->
+    <!-- ABOUT ME (internal page) -->
     <a href="about.html"
        class="landing-link about-link"
-       target="_blank"
-       rel="noopener noreferrer"
        aria-label="About Me">
       <span>About Me</span>
     </a>
 
     <!-- INSTAGRAM -->
     <a href="https://www.instagram.com/iggysmalllls/"
-       class="landing-link instagram-link"
+       class="landing-link instagram-link external-link"
        target="_blank"
        rel="noopener noreferrer"
        aria-label="Instagram">
@@ -42,16 +40,33 @@
 
     <!-- IMDB -->
     <a href="https://www.imdb.com/name/nm17192091/"
-       class="landing-link imdb-link"
+       class="landing-link imdb-link external-link"
        target="_blank"
        rel="noopener noreferrer"
        aria-label="IMDB">
       <span>IMDB</span>
     </a>
 
+    <!-- WHATSAPP -->
+    <a href="https://wa.me/447432435885"
+       class="landing-link whatsapp-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="WhatsApp">
+      <span>WhatsApp</span>
+    </a>
+
+    <!-- EMAIL -->
+    <a href="mailto:macdonald.iggy@gmail.com"
+       class="landing-link email-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Email">
+      <span>Email</span>
+    </a>
+
   </div>
 </section>
-
 
 <!-- =====================
      PORTFOLIO
@@ -110,11 +125,19 @@
   document.querySelectorAll('.landing-link').forEach(link => {
     link.addEventListener('click', function(e) {
       e.preventDefault(); // prevent immediate navigation
-      document.body.classList.add('fade-out'); // trigger 1s fade
       const href = this.href;
+      const target = this.target; // grab target="_blank" if set
+
+      // Trigger fade-out
+      document.body.classList.add('fade-out');
+
       setTimeout(() => {
-        window.location = href; // navigate after fade
-      }, 1000); // match CSS 1s duration
+        if (target === "_blank") {
+          window.open(href, "_blank"); // opens in a new tab
+        } else {
+          window.location.href = href; // fallback same-tab navigation
+        }
+      }, 1000); // match CSS 1s fade
     });
   });
 </script>

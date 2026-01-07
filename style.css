@@ -60,21 +60,31 @@ body {
 .about-link {
   top: 34%;
   left: 10%;
+  height: 10%;
 }
 
 .instagram-link {
-  top: 54%;
-  left: 10%;
+  top: 56%;
+  left: 11%;
 }
 
 .imdb-link {
   top: 75%;
   left: 10%;
+  width: 13%;
 }
 
-/* Optional hover for debugging */
-.landing-link:hover {
-  /* background: rgba(255,0,0,0.1); */
+.whatsapp-link {
+  top: 46%;
+  left: 18%;
+  width: 29%;
+  height: 8%;
+}
+
+.email-link {
+  top: 66%;
+  left: 30%;
+  width: 40%
 }
 
 /* =========================
