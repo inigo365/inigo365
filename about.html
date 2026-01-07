@@ -18,5 +18,20 @@
     <img src="images/about/about-mobile1.jpg" class="about-image" alt="About Inigo">
   </section>
 
+  <script>
+  // Fade-out on Back button click
+  const backButton = document.querySelector('.back');
+  if (backButton) {
+    backButton.addEventListener('click', function(e) {
+      e.preventDefault(); // stop immediate navigation
+      document.body.classList.add('fade-out'); // trigger fade-out
+      const href = this.href;
+      setTimeout(() => {
+        window.location = href; // navigate after 1s fade
+      }, 1000); // match CSS transition duration
+    });
+  }
+</script>
+
 </body>
 </html>
