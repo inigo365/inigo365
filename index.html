@@ -9,6 +9,8 @@
 
 <body>
 
+<body class="fade-in-page">
+
 <!-- =====================
      LANDING
 ===================== -->
@@ -94,6 +96,18 @@
   </div>
 </footer>
 
+<script>
+  document.querySelectorAll('.landing-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault(); // prevent immediate navigation
+      document.body.classList.add('fade-out'); // trigger 1s fade
+      const href = this.href;
+      setTimeout(() => {
+        window.location = href; // navigate after fade
+      }, 1000); // match CSS 1s duration
+    });
+  });
+</script>
 
 </body>
 </html>

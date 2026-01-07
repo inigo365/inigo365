@@ -305,3 +305,22 @@ section {
   max-width: none;
 }
 
+/* =========================
+   PAGE TRANSITION – FADE OUT
+========================= */
+.fade-out {
+  opacity: 0;
+  transition: opacity 1s ease; /* 1 second fade */
+}
+
+/* =========================
+   PAGE FADE-IN ON LOAD
+========================= */
+.fade-in-page {
+  opacity: 0;
+  animation: fadeInPage 1s ease forwards;
+}
+
+@keyframes fadeInPage {
+  to { opacity: 1; }
+}
