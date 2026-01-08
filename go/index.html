@@ -93,6 +93,7 @@ html, body {
   background: white;
   opacity: 0;
   transition: opacity 1s ease;
+  display: none; /* hidden initially for Donovan */
 }
 
 /* Video scaling */
@@ -168,10 +169,7 @@ video {
 <!-- CONTENT PAGE -->
 <div class="content-page" id="contentPage">
   <div class="content-wrapper">
-    <div class="video-wrapper" id="videoWrapper">
-      <video id="video" playsinline disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback"></video>
-      <button class="back-button" id="backButton">back</button>
-    </div>
+    <div class="video-wrapper" id="videoWrapper"></div>
     <button class="play-button" id="playButton">play</button>
   </div>
 </div>
@@ -180,9 +178,7 @@ video {
 const passwordInput = document.getElementById("passwordInput");
 const passwordScreen = document.getElementById("passwordScreen");
 const contentPage = document.getElementById("contentPage");
-const video = document.getElementById("video");
 const playButton = document.getElementById("playButton");
-const backButton = document.getElementById("backButton");
 const videoWrapper = document.getElementById("videoWrapper");
 
 let currentAction = null;
@@ -197,23 +193,23 @@ const actions = {
 
 // Reset to password screen
 function resetToPassword() {
-  video.pause();
-  video.removeAttribute("src");
-  video.load();
-  video.currentTime = 0;
+  const oldVideo = videoWrapper.querySelector("video");
+  if (oldVideo) {
+    oldVideo.pause();
+    oldVideo.remove();
+  }
 
   contentPage.style.display = "none";
   passwordScreen.style.display = "flex";
   passwordScreen.style.opacity = 1;
 
   playButton.classList.remove("show");
-  backButton.classList.remove("show");
   videoWrapper.style.opacity = 0;
-  videoWrapper.style.display = "block"; 
+  videoWrapper.style.display = "none"; 
   passwordInput.disabled = false;
   passwordInput.value = "";
 
-  if (endedListener) video.removeEventListener("ended", endedListener);
+  if (endedListener) oldVideo?.removeEventListener("ended", endedListener);
   endedListener = null;
 
   history.replaceState(null, "", "/go");
@@ -251,51 +247,44 @@ passwordInput.addEventListener("keydown", e => {
 
   contentPage.style.display = "block";
 
-  // Force fresh video every time (cache-busting)
-  video.src = action.src + "?v=" + Date.now();
-  video.load();
+  // Create fresh video element
+  const video = document.createElement("video");
+  video.id = "video";
+  video.playsInline = true;
+  video.disablePictureInPicture = true;
+  video.controlsList = "nodownload nofullscreen noremoteplayback";
+  video.src = action.src + "?v=" + Date.now(); // cache-busting
+  videoWrapper.innerHTML = "";
+  videoWrapper.appendChild(video);
   video.muted = false;
   video.volume = 1;
   video.pause();
 
+  // Hide video until play pressed
   if (action.hideVideoUntilPlay) {
-    videoWrapper.style.display = "none"; // hide until play pressed
+    videoWrapper.style.display = "none";
   } else {
     videoWrapper.style.display = "block";
-    backButton.classList.add("show");
   }
 
   playButton.classList.add("show");
 
   if (endedListener) video.removeEventListener("ended", endedListener);
-
-  endedListener = () => {
-    resetToPassword();
-  };
+  endedListener = () => resetToPassword();
   video.addEventListener("ended", endedListener);
-});
 
-// Play button
-playButton.addEventListener("click", () => {
-  playButton.classList.remove("show");
-
-  // Fade in video wrapper
-  videoWrapper.style.display = "block";
-  videoWrapper.style.opacity = 0;
-  setTimeout(() => videoWrapper.style.opacity = 1, 20);
-
-  video.play();
-  backButton.classList.remove("show"); // hidden for Donovan
+  // Play button
+  playButton.onclick = () => {
+    playButton.classList.remove("show");
+    videoWrapper.style.display = "block";
+    videoWrapper.style.opacity = 0;
+    setTimeout(() => videoWrapper.style.opacity = 1, 20);
+    video.play();
+  };
 });
 
 // Back button (future use)
-backButton.addEventListener("click", () => {
-  resetToPassword();
-});
-
-window.addEventListener("popstate", () => {
-  resetToPassword();
-});
+window.addEventListener("popstate", () => resetToPassword());
 
 // Disable right-click
 document.addEventListener("contextmenu", e => e.preventDefault());
