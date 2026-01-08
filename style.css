@@ -53,10 +53,9 @@ body {
   z-index: 10;
   background: transparent;
   text-indent: -9999px; /* hides text if any */
-  pointer-events: auto;  /* ensures click works */
+  pointer-events: auto;
 }
 
-/* Specific link positions */
 .about-link {
   top: 34%;
   left: 10%;
@@ -84,7 +83,7 @@ body {
 .email-link {
   top: 66%;
   left: 30%;
-  width: 40%
+  width: 40%;
 }
 
 /* =========================
@@ -92,6 +91,8 @@ body {
 ========================= */
 section {
   width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* =========================
@@ -99,8 +100,10 @@ section {
 ========================= */
 .portfolio {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* desktop: 4 columns */
+  grid-template-columns: repeat(4, 1fr);
   gap: 0;
+  margin: 0;
+  padding: 0;
 }
 
 @media (max-width: 1024px) {
@@ -118,11 +121,17 @@ section {
 .tile {
   position: relative;
   width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .tile img {
   width: 100%;
   display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 /* Overlay text */
@@ -138,7 +147,7 @@ section {
   transition: opacity 0.3s ease;
   text-align: center;
   padding: 20px;
-  font-size: 26px; /* overlay text size */
+  font-size: 26px;
 }
 
 .tile:hover .overlay {
@@ -161,7 +170,6 @@ section {
   padding: 0 20px;
 }
 
-/* Project images */
 .project img {
   display: block;
   width: 100%;
@@ -170,20 +178,18 @@ section {
   margin-bottom: 40px;
 }
 
-/* Project text */
 .project p,
 .project li,
 .project span,
 .project .blurb {
-  font-size: 24px; /* body text 18px */
+  font-size: 24px;
   line-height: 1.6;
 }
 
-/* Project headers */
 .project h1,
 .project h2,
 .project h3 {
-  font-size: 32px; /* headers 24px */
+  font-size: 32px;
   line-height: 1.3;
   margin-bottom: 16px;
 }
@@ -270,10 +276,13 @@ section {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
   margin-top: 120px;
+  padding: 0;
 }
 
 .footer-inner {
   width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .site-footer img {
@@ -281,6 +290,8 @@ section {
   width: 100%;
   height: auto;
   max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* =========================
@@ -308,7 +319,6 @@ section {
     cursor: url('./images/cursor/cursor.png?v=1') 16 16, auto;
   }
 
-  /* Hover cursor for interactive elements */
   a,
   .landing-link,
   .video-link,
@@ -334,31 +344,26 @@ section {
   pointer-events: none;
 }
 
-/* Remove unwanted spacing under portfolio tiles */
-.portfolio,
-.portfolio .tile,
-.portfolio img,
-.portfolio .overlay {
+/* =========================
+   FIX PORTFOLIO BOTTOM GAP
+========================= */
+body, html {
+  margin: 0;
+  padding: 0;
+}
+
+.portfolio {
+  margin: 0;
+  padding: 0;
+}
+
+.tile, .tile img {
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-/* Make sure section containing portfolio has no extra spacing */
-.portfolio {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-}
-
-/* Remove bottom spacing in sections */
-section {
-  margin: 0;
-  padding: 0;
-}
-
-/* Optional: make sure footer doesn’t add spacing unexpectedly */
 .site-footer {
-  margin-top: 0;
-  padding: 0;
+  margin-top: 0; /* remove extra space above footer */
+  padding-top: 0;
 }
