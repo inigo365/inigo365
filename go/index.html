@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>go</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Favicon (same as main site) -->
+  <link rel="icon" type="image/png" href="../images/icon.png">
+
+  <!-- RuneScape Font -->
+  <style>
+    @font-face {
+      font-family: "RuneScape UF";
+      src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
+           url("../fonts/RuneScape-UF.woff") format("woff");
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      overflow: hidden;
+    }
+
+    /* PASSWORD SCREEN */
+    .password-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      background: white;
+      font-family: "RuneScape UF", Arial, sans-serif;
+    }
+
+    .password-box {
+      text-align: center;
+    }
+
+    .password-box label {
+      font-size: 32px;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .password-box input {
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 24px;
+      padding: 8px 12px;
+      border: 2px solid black;
+      outline: none;
+      text-align: center;
+      background: white;
+      color: black;
+    }
+
+    /* VIDEO PAGE */
+    .video-page {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      background: black;
+    }
+
+    .video-wrapper {
+      flex: 1;
+      background: black;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      animation: fadeInVideo 1.5s ease forwards;
+    }
+
+    @keyframes fadeInVideo {
+      to { opacity: 1; }
+    }
+
+    /* FOOTER */
+    .footer img {
+      width: 100%;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- PASSWORD SCREEN -->
+<div class="password-screen" id="passwordScreen">
+  <div class="password-box">
+    <label for="passwordInput">password:</label>
+    <input
+      type="password"
+      id="passwordInput"
+      autocomplete="off"
+    >
+  </div>
+</div>
+
+<!-- VIDEO PAGE -->
+<div class="video-page" id="videoPage">
+  <div class="video-wrapper">
+    <video
+      id="video"
+      playsinline
+      autoplay
+      loop
+      muted
+      disablePictureInPicture
+      controlslist="nodownload nofullscreen noremoteplayback"
+    >
+      <source src="video.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <div class="footer">
+    <img src="../images/footer.jpg" alt="Footer">
+  </div>
+</div>
+
+<script>
+const passwordInput = document.getElementById("passwordInput");
+const passwordScreen = document.getElementById("passwordScreen");
+const videoPage = document.getElementById("videoPage");
+const video = document.getElementById("video");
+
+passwordInput.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    if (passwordInput.value === "donovan") {
+
+      passwordScreen.style.display = "none";
+      videoPage.style.display = "flex";
+
+      // Enable sound after user interaction
+      video.muted = false;
+      video.volume = 1;
+      video.play();
+
+      // Delayed redirect fallback (in case loop is active)
+      setTimeout(() => {
+        window.location.href = "https://inigo365.com/index.html";
+      }, 12000);
+
+    } else {
+      passwordInput.value = "";
+    }
+  }
+});
+
+// Redirect when video naturally ends
+video.addEventListener("ended", () => {
+  window.location.href = "https://inigo365.com/index.html";
+});
+
+// Disable right-click
+document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
+
+</body>
+</html>
