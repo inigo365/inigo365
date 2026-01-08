@@ -40,7 +40,6 @@ html, body {
   font-size: 18px;
   text-align: center;
   margin-top: 24px;
-  font-family: "RuneScape UF", Arial, sans-serif;
 }
 
 .password-box {
@@ -89,9 +88,11 @@ html, body {
 .video-wrapper {
   position: relative;
   width: 100%;
-  max-width: 854px;  /* actual video width */
+  max-width: 854px;
   aspect-ratio: 854 / 480;
   background: white;
+  opacity: 0;
+  transition: opacity 1s ease; /* fade-in */
 }
 
 /* Video scaling */
@@ -100,14 +101,12 @@ video {
   height: 100%;
   object-fit: contain;
   display: block;
-  opacity: 0;
-  animation: fadeIn 1.2s ease forwards;
 }
 
 /* Slightly enlarge on desktop */
 @media (min-width: 1200px) {
   .video-wrapper {
-    max-width: 1000px; /* desktop scale-up */
+    max-width: 1000px;
   }
 }
 
@@ -126,15 +125,15 @@ video {
   transition: opacity 0.4s ease;
   z-index: 10;
   font-family: "RuneScape UF", Arial, sans-serif;
-  pointer-events: none; /* ignore mouse events when hidden */
+  pointer-events: none;
 }
 
 .play-button.show {
   opacity: 1;
-  pointer-events: auto; /* enable mouse events when visible */
+  pointer-events: auto;
 }
 
-/* Back button over video */
+/* Back button over video (future use) */
 .back-button {
   position: absolute;
   top: 2px;
@@ -152,8 +151,6 @@ video {
 
 .back-button.show { opacity: 1; }
 
-/* Fade animation for video */
-@keyframes fadeIn { to { opacity: 1; } }
 </style>
 </head>
 
@@ -171,7 +168,7 @@ video {
 <!-- CONTENT PAGE -->
 <div class="content-page" id="contentPage">
   <div class="content-wrapper">
-    <div class="video-wrapper">
+    <div class="video-wrapper" id="videoWrapper">
       <video id="video" playsinline disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback"></video>
       <button class="back-button" id="backButton">back</button>
     </div>
@@ -186,12 +183,13 @@ const contentPage = document.getElementById("contentPage");
 const video = document.getElementById("video");
 const playButton = document.getElementById("playButton");
 const backButton = document.getElementById("backButton");
+const videoWrapper = document.getElementById("videoWrapper");
 
 let currentAction = null;
 let endedListener = null;
 
 const actions = {
-  "donovan": { type: "video", src: "video.mp4", redirect: null },
+  "donovan": { type: "video", src: "video.mp4", hideVideoUntilPlay: true, redirectAfter: true },
   "home": { type: "redirect", url: "https://inigo365.com/", sameTab: true },
   "rick": { type: "redirect", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
   "bart simpson": { type: "video", src: "bart.mp4", redirect: null }
@@ -200,7 +198,8 @@ const actions = {
 // Reset to password screen
 function resetToPassword() {
   video.pause();
-  video.src = ""; // fully reset video
+  video.removeAttribute("src");
+  video.load();
   video.currentTime = 0;
 
   contentPage.style.display = "none";
@@ -209,6 +208,8 @@ function resetToPassword() {
 
   playButton.classList.remove("show");
   backButton.classList.remove("show");
+  videoWrapper.style.opacity = 0;
+  videoWrapper.style.display = "block"; 
   passwordInput.disabled = false;
   passwordInput.value = "";
 
@@ -243,7 +244,6 @@ passwordInput.addEventListener("keydown", e => {
   }
 
   currentAction = action;
-
   history.pushState({ page: "content" }, "", "#content");
 
   passwordScreen.style.opacity = 0;
@@ -251,26 +251,24 @@ passwordInput.addEventListener("keydown", e => {
 
   contentPage.style.display = "block";
 
-  // Set video src fresh
   video.src = action.src;
+  video.load();
   video.muted = false;
   video.volume = 1;
   video.pause();
 
-  playButton.classList.add("show");
-
-  // Show back button overlay only for video pages
-  if (action.type === "video") {
-    backButton.classList.add("show");
+  if (action.hideVideoUntilPlay) {
+    videoWrapper.style.display = "none"; 
   } else {
-    backButton.classList.remove("show");
+    videoWrapper.style.display = "block";
+    backButton.classList.add("show");
   }
 
-  // Clear previous ended listener
+  playButton.classList.add("show");
+
   if (endedListener) video.removeEventListener("ended", endedListener);
 
   endedListener = () => {
-    if (action.redirect) window.open(action.redirect, "_blank");
     resetToPassword();
   };
   video.addEventListener("ended", endedListener);
@@ -278,12 +276,18 @@ passwordInput.addEventListener("keydown", e => {
 
 // Play button
 playButton.addEventListener("click", () => {
-  video.play();
   playButton.classList.remove("show");
-  backButton.classList.remove("show"); // hide back button when video plays
+
+  // Fade in video smoothly
+  videoWrapper.style.display = "block";
+  videoWrapper.style.opacity = 0;
+  setTimeout(() => videoWrapper.style.opacity = 1, 20);
+
+  video.play();
+  backButton.classList.remove("show"); 
 });
 
-// Back button
+// Back button (future use)
 backButton.addEventListener("click", () => {
   resetToPassword();
 });
