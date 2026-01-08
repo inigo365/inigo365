@@ -334,3 +334,31 @@ section {
   pointer-events: none;
 }
 
+/* Remove unwanted spacing under portfolio tiles */
+.portfolio,
+.portfolio .tile,
+.portfolio img,
+.portfolio .overlay {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Make sure section containing portfolio has no extra spacing */
+.portfolio {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+/* Remove bottom spacing in sections */
+section {
+  margin: 0;
+  padding: 0;
+}
+
+/* Optional: make sure footer doesn’t add spacing unexpectedly */
+.site-footer {
+  margin-top: 0;
+  padding: 0;
+}
