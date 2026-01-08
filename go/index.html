@@ -1,111 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>go</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>go</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="../images/icon.png">
+<link rel="icon" type="image/png" href="../images/icon.png">
 
-  <!-- RuneScape Font -->
-  <style>
-    @font-face {
-      font-family: "RuneScape UF";
-      src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
-           url("../fonts/RuneScape-UF.woff") format("woff");
-      font-weight: normal;
-      font-style: normal;
-    }
+<style>
+  @font-face {
+    font-family: "RuneScape UF";
+    src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
+         url("../fonts/RuneScape-UF.woff") format("woff");
+    font-weight: normal;
+    font-style: normal;
+  }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: white; /* White space around video */
-      overflow: hidden;
-      cursor: url("../images/cursor/cursor.png"), auto;
-    }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    overflow: hidden;
+    cursor: url("../images/cursor/cursor.png"), auto;
+  }
 
-    /* PASSWORD SCREEN */
-    .password-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      background: white;
-      font-family: "RuneScape UF", Arial, sans-serif;
-    }
+  /* PASSWORD SCREEN */
+  .password-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: white;
+    font-family: "RuneScape UF", Arial, sans-serif;
+  }
 
-    .password-box {
-      text-align: center;
-    }
+  .password-box { text-align: center; }
 
-    .password-box label {
-      font-size: 32px;
-      display: block;
-      margin-bottom: 12px;
-    }
+  .password-box label {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 12px;
+  }
 
-    .password-box input {
-      font-family: "RuneScape UF", Arial, sans-serif;
-      font-size: 24px;
-      padding: 8px 12px;
-      border: 2px solid black;
-      outline: none;
-      text-align: center;
-      background: white;
-      color: black;
-    }
+  .password-box input {
+    font-family: "RuneScape UF", Arial, sans-serif;
+    font-size: 24px;
+    padding: 8px 12px;
+    border: 2px solid black;
+    outline: none;
+    text-align: center;
+    background: white;
+    color: black;
+  }
 
-    .password-box input:hover,
-    .password-box input:focus {
-      cursor: url("../images/cursor/cursor-hover.png"), auto;
-    }
+  .password-box input:hover,
+  .password-box input:focus {
+    cursor: url("../images/cursor/cursor-hover.png"), auto;
+  }
 
-    /* VIDEO PAGE */
-    .video-page {
-      display: none;
-      width: 100%;
-      height: 100%;
-      background: white; 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+  /* VIDEO PAGE */
+  .video-page {
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-    .video-wrapper {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: white;
-    }
+  .video-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+  }
 
-    video {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain; /* Full video visible */
-      opacity: 0;
-      animation: fadeInVideo 1.5s ease forwards;
-      transform: scale(1.3); /* Slight zoom */
-      transition: transform 0.3s ease;
-    }
+  video {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    animation: fadeInVideo 1.5s ease forwards;
+    transform: scale(1.3);
+    transition: transform 0.3s ease;
+  }
 
-    @media (max-width: 768px) {
-      video {
-        transform: scale(1.1); /* Adjust zoom on mobile */
-      }
-    }
+  @media (max-width: 768px) {
+    video { transform: scale(1.1); }
+  }
 
-    @keyframes fadeInVideo {
-      to { opacity: 1; }
-    }
-
-  </style>
+  @keyframes fadeInVideo { to { opacity: 1; } }
+</style>
 </head>
 
 <body>
@@ -134,41 +125,65 @@ const passwordScreen = document.getElementById("passwordScreen");
 const videoPage = document.getElementById("videoPage");
 const video = document.getElementById("video");
 
-// Define passwords and their actions
+// Define password actions
 const passwordActions = {
-  "donovan": () => {
-    // Show the video
-    passwordScreen.style.display = "none";
-    videoPage.style.display = "flex";
-    video.muted = false;
-    video.volume = 1;
-    video.play();
-    passwordInput.disabled = true;
-
-    // Redirect after video ends
-    video.addEventListener("ended", () => {
-      window.location.href = "https://www.betterhelp.com/";
-    });
+  "donovan": {
+    type: "video",
+    src: "video.mp4",
+    redirect: "https://www.betterhelp.com/"
   },
-  "cat": () => {
-    // Redirect to SPCA
-    window.location.href = "https://www.spca.net/";
+  "rick": {
+    type: "redirect",
+    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
   },
-  "dog": () => {
-    // Example: show alert message
-    alert("You entered the dog password!");
+  "bart simpson": {
+    type: "video",
+    src: "bart.mp4",
+    redirect: null // no redirect; resets to password screen after finished
   }
-  // Add more passwords and actions here
+  // Add more passwords here
 };
 
 passwordInput.addEventListener("keydown", function(e) {
   if (e.key === "Enter") {
-    const action = passwordActions[passwordInput.value];
-    if (action) {
-      action(); // Execute corresponding action
-    } else {
-      passwordInput.value = ""; // Wrong password resets input
+    const key = passwordInput.value.toLowerCase();
+    const action = passwordActions[key];
+
+    if (!action) {
+      passwordInput.value = "";
       alert("Incorrect password, try again.");
+      return;
+    }
+
+    passwordInput.disabled = true;
+
+    if (action.type === "redirect") {
+      window.location.href = action.url;
+    } else if (action.type === "video") {
+      // Show video page
+      passwordScreen.style.display = "none";
+      videoPage.style.display = "flex";
+
+      video.src = action.src;
+      video.muted = false;
+      video.volume = 1;
+      video.play();
+
+      // Remove old ended listeners to prevent duplicates
+      video.replaceWith(video.cloneNode(true));
+      const newVideo = document.getElementById("video");
+
+      newVideo.addEventListener("ended", () => {
+        if (action.redirect) {
+          window.location.href = action.redirect;
+        } else {
+          // Reset to password screen
+          videoPage.style.display = "none";
+          passwordScreen.style.display = "flex";
+          passwordInput.disabled = false;
+          passwordInput.value = "";
+        }
+      });
     }
   }
 });
