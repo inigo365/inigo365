@@ -251,7 +251,7 @@ passwordInput.addEventListener("keydown", e => {
 
   contentPage.style.display = "block";
 
-  // Add cache-busting to video
+  // Force fresh video every time (cache-busting)
   video.src = action.src + "?v=" + Date.now();
   video.load();
   video.muted = false;
@@ -259,7 +259,7 @@ passwordInput.addEventListener("keydown", e => {
   video.pause();
 
   if (action.hideVideoUntilPlay) {
-    videoWrapper.style.display = "none";
+    videoWrapper.style.display = "none"; // hide until play pressed
   } else {
     videoWrapper.style.display = "block";
     backButton.classList.add("show");
@@ -279,12 +279,13 @@ passwordInput.addEventListener("keydown", e => {
 playButton.addEventListener("click", () => {
   playButton.classList.remove("show");
 
+  // Fade in video wrapper
   videoWrapper.style.display = "block";
   videoWrapper.style.opacity = 0;
   setTimeout(() => videoWrapper.style.opacity = 1, 20);
 
   video.play();
-  backButton.classList.remove("show"); 
+  backButton.classList.remove("show"); // hidden for Donovan
 });
 
 // Back button (future use)
