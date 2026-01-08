@@ -92,7 +92,7 @@ html, body {
   aspect-ratio: 854 / 480;
   background: white;
   opacity: 0;
-  transition: opacity 1s ease; /* fade-in */
+  transition: opacity 1s ease;
 }
 
 /* Video scaling */
@@ -251,14 +251,15 @@ passwordInput.addEventListener("keydown", e => {
 
   contentPage.style.display = "block";
 
-  video.src = action.src;
+  // Add cache-busting to video
+  video.src = action.src + "?v=" + Date.now();
   video.load();
   video.muted = false;
   video.volume = 1;
   video.pause();
 
   if (action.hideVideoUntilPlay) {
-    videoWrapper.style.display = "none"; 
+    videoWrapper.style.display = "none";
   } else {
     videoWrapper.style.display = "block";
     backButton.classList.add("show");
@@ -278,7 +279,6 @@ passwordInput.addEventListener("keydown", e => {
 playButton.addEventListener("click", () => {
   playButton.classList.remove("show");
 
-  // Fade in video smoothly
   videoWrapper.style.display = "block";
   videoWrapper.style.opacity = 0;
   setTimeout(() => videoWrapper.style.opacity = 1, 20);
