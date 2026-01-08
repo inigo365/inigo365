@@ -5,7 +5,7 @@
   <title>go</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Favicon (same as main site) -->
+  <!-- Favicon -->
   <link rel="icon" type="image/png" href="../images/icon.png">
 
   <!-- RuneScape Font -->
@@ -23,10 +23,8 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      background: white;
+      background: white; /* White space around video */
       overflow: hidden;
-
-      /* CUSTOM CURSOR */
       cursor: url("../images/cursor/cursor.png"), auto;
     }
 
@@ -72,21 +70,35 @@
       display: none;
       width: 100%;
       height: 100%;
-      background: black;
+      background: white; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .video-wrapper {
       width: 100%;
       height: 100%;
-      background: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
     }
 
     video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain; /* Full video visible */
       opacity: 0;
       animation: fadeInVideo 1.5s ease forwards;
+      transform: scale(1.3); /* Slight zoom */
+      transition: transform 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      video {
+        transform: scale(1.1); /* Adjust zoom on mobile */
+      }
     }
 
     @keyframes fadeInVideo {
@@ -102,25 +114,14 @@
 <div class="password-screen" id="passwordScreen">
   <div class="password-box">
     <label for="passwordInput">password:</label>
-    <input
-      type="password"
-      id="passwordInput"
-      autocomplete="off"
-    >
+    <input type="password" id="passwordInput" autocomplete="off">
   </div>
 </div>
 
 <!-- VIDEO PAGE -->
 <div class="video-page" id="videoPage">
   <div class="video-wrapper">
-    <video
-      id="video"
-      playsinline
-      autoplay
-      muted
-      disablePictureInPicture
-      controlslist="nodownload nofullscreen noremoteplayback"
-    >
+    <video id="video" playsinline autoplay muted disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback">
       <source src="video.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
@@ -133,31 +134,43 @@ const passwordScreen = document.getElementById("passwordScreen");
 const videoPage = document.getElementById("videoPage");
 const video = document.getElementById("video");
 
+// Define passwords and their actions
+const passwordActions = {
+  "donovan": () => {
+    // Show the video
+    passwordScreen.style.display = "none";
+    videoPage.style.display = "flex";
+    video.muted = false;
+    video.volume = 1;
+    video.play();
+    passwordInput.disabled = true;
+
+    // Redirect after video ends
+    video.addEventListener("ended", () => {
+      window.location.href = "https://www.betterhelp.com/";
+    });
+  },
+  "cat": () => {
+    // Redirect to SPCA
+    window.location.href = "https://www.spca.net/";
+  },
+  "dog": () => {
+    // Example: show alert message
+    alert("You entered the dog password!");
+  }
+  // Add more passwords and actions here
+};
+
 passwordInput.addEventListener("keydown", function(e) {
   if (e.key === "Enter") {
-    if (passwordInput.value === "donovan") {
-
-      // Hide password screen, show video
-      passwordScreen.style.display = "none";
-      videoPage.style.display = "block";
-
-      // Enable sound after user interaction
-      video.muted = false;
-      video.volume = 1;
-      video.play();
-
-      // Disable further input
-      passwordInput.disabled = true;
-
+    const action = passwordActions[passwordInput.value];
+    if (action) {
+      action(); // Execute corresponding action
     } else {
-      passwordInput.value = "";
+      passwordInput.value = ""; // Wrong password resets input
+      alert("Incorrect password, try again.");
     }
   }
-});
-
-// Redirect when video naturally ends
-video.addEventListener("ended", () => {
-  window.location.href = "https://inigo365.com/index.html";
 });
 
 // Disable right-click
