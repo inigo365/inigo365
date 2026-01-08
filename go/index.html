@@ -84,7 +84,7 @@ html, body {
   position: relative;
 }
 
-/* VIDEO + BACK BUTTON CONTAINER */
+/* VIDEO WRAPPER */
 .video-wrapper {
   position: relative;
   width: 100%;
@@ -93,10 +93,9 @@ html, body {
   background: white;
   opacity: 0;
   transition: opacity 1s ease;
-  display: none; /* hidden initially for Donovan */
+  display: none;
 }
 
-/* Video scaling */
 video {
   width: 100%;
   height: 100%;
@@ -104,7 +103,6 @@ video {
   display: block;
 }
 
-/* Slightly enlarge on desktop */
 @media (min-width: 1200px) {
   .video-wrapper {
     max-width: 1000px;
@@ -133,31 +131,11 @@ video {
   opacity: 1;
   pointer-events: auto;
 }
-
-/* Back button over video (future use) */
-.back-button {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  font-size: 28px;
-  color: #2d93ea;
-  background: transparent;
-  border: none;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
-  z-index: 20;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  font-family: "RuneScape UF", Arial, sans-serif;
-}
-
-.back-button.show { opacity: 1; }
-
 </style>
 </head>
 
 <body>
 
-<!-- PASSWORD SCREEN -->
 <div class="password-screen" id="passwordScreen">
   <div class="password-box">
     <label>password:</label>
@@ -166,7 +144,6 @@ video {
   </div>
 </div>
 
-<!-- CONTENT PAGE -->
 <div class="content-page" id="contentPage">
   <div class="content-wrapper">
     <div class="video-wrapper" id="videoWrapper"></div>
@@ -185,13 +162,12 @@ let currentAction = null;
 let endedListener = null;
 
 const actions = {
-  "donovan": { type: "video", src: "video.mp4", hideVideoUntilPlay: true, redirectAfter: true },
+  "donovan": { type: "video", src: "video.mp4", hideVideoUntilPlay: true },
   "home": { type: "redirect", url: "https://inigo365.com/", sameTab: true },
   "rick": { type: "redirect", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-  "bart simpson": { type: "video", src: "bart.mp4", redirect: null }
+  "bart simpson": { type: "video", src: "bart.mp4" }
 };
 
-// Reset to password screen
 function resetToPassword() {
   const oldVideo = videoWrapper.querySelector("video");
   if (oldVideo) {
@@ -205,7 +181,6 @@ function resetToPassword() {
   endedListener = null;
 
   contentPage.style.display = "none";
-
   passwordScreen.style.display = "flex";
   passwordScreen.style.opacity = 1;
 
@@ -223,12 +198,10 @@ function resetToPassword() {
   history.replaceState(null, "", "/go");
 }
 
-// Password input listener
 passwordInput.addEventListener("keydown", e => {
   if (e.key !== "Enter") return;
 
-  const key = passwordInput.value.toLowerCase();
-  const action = actions[key];
+  const action = actions[passwordInput.value.toLowerCase()];
   if (!action) {
     passwordInput.value = "";
     return;
@@ -237,71 +210,47 @@ passwordInput.addEventListener("keydown", e => {
   passwordInput.disabled = true;
 
   if (action.type === "redirect") {
-    if (action.sameTab) {
-      window.location.href = action.url;
-    } else {
-      window.open(action.url, "_blank");
-      passwordInput.disabled = false;
-      passwordInput.value = "";
-    }
+    action.sameTab ? location.href = action.url : window.open(action.url, "_blank");
+    passwordInput.disabled = false;
+    passwordInput.value = "";
     return;
   }
 
   currentAction = action;
-  history.pushState({ page: "content" }, "", "#content");
 
   passwordScreen.style.opacity = 0;
   setTimeout(() => passwordScreen.style.display = "none", 400);
-
   contentPage.style.display = "block";
-
-  // Create fresh video element
-  const video = document.createElement("video");
-  video.id = "video";
-  video.playsInline = true;
-  video.disablePictureInPicture = true;
-  video.controlsList = "nodownload nofullscreen noremoteplayback";
-  video.src = action.src + "?v=" + Date.now(); // cache-busting
-  videoWrapper.innerHTML = "";
-  videoWrapper.appendChild(video);
-  video.muted = false;
-  video.volume = 1;
-  video.pause();
-
-  // Hide video until play pressed
-  if (action.hideVideoUntilPlay) {
-    videoWrapper.style.display = "none";
-  } else {
-    videoWrapper.style.display = "block";
-  }
 
   playButton.classList.add("show");
 
-  if (endedListener) video.removeEventListener("ended", endedListener);
-  endedListener = () => resetToPassword();
-  video.addEventListener("ended", endedListener);
-
-  // Play button
   playButton.onclick = () => {
-  playButton.classList.remove("show");
+    playButton.classList.remove("show");
 
-  // iOS-safe: create + play inside same gesture
-  videoWrapper.style.display = "block";
-  videoWrapper.style.opacity = 0;
+    const video = document.createElement("video");
+    video.playsInline = true;
+    video.disablePictureInPicture = true;
+    video.controlsList = "nodownload nofullscreen noremoteplayback";
+    video.src = currentAction.src + "?v=" + Date.now();
+    video.muted = false;
+    video.volume = 1;
 
-  requestAnimationFrame(() => {
-    video.currentTime = 0;
-    videoWrapper.style.opacity = 1;
-    video.play().catch(() => {});
-  });
-};
+    videoWrapper.innerHTML = "";
+    videoWrapper.appendChild(video);
+    videoWrapper.style.display = "block";
+    videoWrapper.style.opacity = 0;
 
+    requestAnimationFrame(() => {
+      videoWrapper.style.opacity = 1;
+      video.play().catch(() => {});
+    });
+
+    endedListener = () => resetToPassword();
+    video.addEventListener("ended", endedListener, { once: true });
+  };
 });
 
-// Back button (future use)
-window.addEventListener("popstate", () => resetToPassword());
-
-// Disable right-click
+window.addEventListener("popstate", resetToPassword);
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 
