@@ -19,36 +19,43 @@
       display: block;
     }
 
- .go-button {
-  position: absolute;
-  top: 94%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #2d93ea;
-  color: white;
-  border: none;
-  padding: 14px 40px;
-  font-size: 3vw;
-  font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("./images/cursor/cursor.png"), auto !important; /* enforce default cursor */
-  border-radius: 6px;
-  text-align: center;
-  z-index: 10;
-  transition: transform 0.2s ease, opacity 0.3s ease;
-  white-space: nowrap;
-}
+    /* Go button */
+    .go-button {
+      position: absolute;
+      top: 94%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: transparent; /* default transparent */
+      color: #2d93ea;               /* blue text */
+      border: none;
+      padding: 0;                   /* no padding initially */
+      font-size: 3vw;
+      font-family: "RuneScape UF", Arial, sans-serif;
+      cursor: url("./images/cursor/cursor.png"), auto !important;
+      border-radius: 6px;
+      text-align: center;
+      z-index: 10;
+      transition: all 0.3s ease;    /* smooth transition for hover */
+      white-space: nowrap;
+    }
 
-.go-button:hover {
-  transform: translateX(-50%) scale(1.05);
-  opacity: 0.9;
-  cursor: url("./images/cursor/cursor-hover.png"), pointer !important; /* enforce hover cursor */
-}
+    /* Hover state */
+    .go-button:hover {
+      background-color: #2d93ea;     /* blue background */
+      color: white;                  /* white text */
+      padding: 14px 40px;
+      transform: translateX(-50%) scale(1.05);
+      opacity: 0.9;
+      cursor: url("./images/cursor/cursor-hover.png"), pointer !important;
+    }
 
-
-    /* Responsive adjustments for small screens */
+    /* Responsive adjustments */
     @media (max-width: 768px) {
       .go-button {
-        font-size: 5vw;       /* slightly larger for mobile */
+        font-size: 5vw;
+      }
+
+      .go-button:hover {
         padding: 12px 32px;
       }
     }
@@ -80,6 +87,13 @@
         }, 1000);
       });
     }
+  </script>
+
+  <script>
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
   </script>
 
 </body>
