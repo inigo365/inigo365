@@ -333,3 +333,11 @@ section {
 .tile .overlay {
   pointer-events: none;
 }
+
+.play-button,
+.back-button {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-weight: normal;
+  line-height: 1;
+}
+

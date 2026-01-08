@@ -12,8 +12,6 @@
     font-family: "RuneScape UF";
     src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
          url("../fonts/RuneScape-UF.woff") format("woff");
-    font-weight: normal;
-    font-style: normal;
   }
 
   html, body {
@@ -23,8 +21,8 @@
     height: 100%;
     background: white;
     overflow: hidden;
-    cursor: url("../images/cursor/cursor.png"), auto;
     font-family: "RuneScape UF", Arial, sans-serif;
+    cursor: url("../images/cursor/cursor.png"), auto;
   }
 
   /* PASSWORD SCREEN */
@@ -35,15 +33,17 @@
     width: 100%;
     height: 100%;
     background: white;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.4s ease;
   }
 
-  .password-box { text-align: center; }
+  .password-box {
+    text-align: center;
+  }
 
   .password-box label {
     font-size: 32px;
-    display: block;
     margin-bottom: 12px;
+    display: block;
   }
 
   .password-box input {
@@ -51,10 +51,9 @@
     font-size: 24px;
     padding: 8px 12px;
     border: 2px solid black;
+    background: white;
     outline: none;
     text-align: center;
-    background: white;
-    color: black;
   }
 
   .password-box input:hover,
@@ -62,44 +61,39 @@
     cursor: url("../images/cursor/cursor-hover.png"), auto;
   }
 
-  /* VIDEO PAGE */
-  .video-page {
+  /* CONTENT PAGE (VIDEO ETC) */
+  .content-page {
     display: none;
+    position: relative;
     width: 100%;
     height: 100%;
     background: white;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    transition: opacity 0.5s ease;
-    position: relative;
   }
 
-  .video-wrapper {
+  .content-wrapper {
     width: 100%;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
-    position: relative;
   }
 
   video {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    opacity: 0;
-    animation: fadeInVideo 1.5s ease forwards;
     transform: scale(1.3);
-    transition: transform 0.3s ease;
+    opacity: 0;
+    animation: fadeIn 1.2s ease forwards;
   }
 
   @media (max-width: 768px) {
     video { transform: scale(1.1); }
   }
 
-  @keyframes fadeInVideo { to { opacity: 1; } }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
 
   /* PLAY BUTTON */
   .play-button {
@@ -107,21 +101,32 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-family: "RuneScape UF", Arial, sans-serif;
-    font-size: 48px;
+    font-size: 52px;
     color: #2d93ea;
-    text-transform: lowercase;
     background: transparent;
     border: none;
+    text-transform: lowercase;
     cursor: url("../images/cursor/cursor-hover.png"), pointer;
     opacity: 0;
-    transition: opacity 0.5s ease;
-    user-select: none;
+    transition: opacity 0.4s ease;
     z-index: 10;
   }
 
   .play-button.show {
     opacity: 1;
+  }
+
+  /* BACK BUTTON (ONLY ON CONTENT) */
+  .back-button {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    font-size: 28px;
+    color: #2d93ea;
+    background: transparent;
+    border: none;
+    cursor: url("../images/cursor/cursor-hover.png"), pointer;
+    z-index: 20;
   }
 </style>
 </head>
@@ -131,97 +136,116 @@
 <!-- PASSWORD SCREEN -->
 <div class="password-screen" id="passwordScreen">
   <div class="password-box">
-    <label for="passwordInput">password:</label>
+    <label>password:</label>
     <input type="password" id="passwordInput" autocomplete="off">
   </div>
 </div>
 
-<!-- VIDEO PAGE -->
-<div class="video-page" id="videoPage">
-  <div class="video-wrapper">
+<!-- CONTENT PAGE -->
+<div class="content-page" id="contentPage">
+<div class="back-button" id="backButton" role="button" tabindex="0">back</div>
+
+  <div class="content-wrapper">
     <video id="video" playsinline disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback">
       <source src="video.mp4" type="video/mp4">
-      Your browser does not support the video tag.
     </video>
-    <div class="play-button" id="playButton">play</div>
+
+   <div class="play-button" id="playButton" role="button" tabindex="0">play</div>
+
   </div>
 </div>
 
 <script>
 const passwordInput = document.getElementById("passwordInput");
 const passwordScreen = document.getElementById("passwordScreen");
-const videoPage = document.getElementById("videoPage");
+const contentPage = document.getElementById("contentPage");
 const video = document.getElementById("video");
 const playButton = document.getElementById("playButton");
+const backButton = document.getElementById("backButton");
 
-let currentEndedListener = null;
+let currentAction = null;
+let endedListener = null;
 
-const passwordActions = {
-  "donovan": { type: "video", src: "video.mp4", redirect: "https://www.betterhelp.com/" },
+const actions = {
+  "donovan": { type: "video", src: "video.mp4", redirect: null },
+  "home": { type: "redirect", url: "https://inigo365.com/", sameTab: true },
   "rick": { type: "redirect", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
   "bart simpson": { type: "video", src: "bart.mp4", redirect: null }
 };
 
-passwordInput.addEventListener("keydown", function(e) {
-  if (e.key === "Enter") {
-    const key = passwordInput.value.toLowerCase();
-    const action = passwordActions[key];
+function resetToPassword() {
+  video.pause();
+  video.currentTime = 0;
 
-    if (!action) {
-      passwordInput.value = "";
-      alert("Incorrect password, try again.");
-      return;
-    }
+  contentPage.style.display = "none";
+  passwordScreen.style.display = "flex";
+  passwordScreen.style.opacity = 1;
 
-    passwordInput.disabled = true;
+  playButton.classList.remove("show");
+  passwordInput.disabled = false;
+  passwordInput.value = "";
 
-    if (action.type === "redirect") {
-      window.open(action.url, "_blank");
-      passwordInput.disabled = false;
-      passwordInput.value = "";
-    } else if (action.type === "video") {
-      // Fade password screen
-      passwordScreen.style.opacity = 0;
-      setTimeout(() => { passwordScreen.style.display = "none"; }, 500);
+  history.replaceState(null, "", "/go");
+}
 
-      // Show video page
-      videoPage.style.display = "flex";
-      setTimeout(() => { videoPage.style.opacity = 1; }, 50);
+passwordInput.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
 
-      // Set video
-      video.src = action.src;
-      video.muted = false;
-      video.volume = 1;
-      video.pause(); // Wait for PLAY click
-
-      // Show play button
-      playButton.classList.add("show");
-
-      if (currentEndedListener) video.removeEventListener("ended", currentEndedListener);
-
-      currentEndedListener = () => {
-        if (action.redirect) window.open(action.redirect, "_blank");
-        // Reset to password screen
-        videoPage.style.display = "none";
-        passwordScreen.style.display = "flex";
-        passwordScreen.style.opacity = 1;
-        passwordInput.disabled = false;
-        passwordInput.value = "";
-        playButton.classList.remove("show");
-      };
-
-      video.addEventListener("ended", currentEndedListener);
-    }
+  const key = passwordInput.value.toLowerCase();
+  const action = actions[key];
+  if (!action) {
+    passwordInput.value = "";
+    return;
   }
+
+  passwordInput.disabled = true;
+
+  if (action.type === "redirect") {
+    window.open(action.url, "_blank");
+    passwordInput.disabled = false;
+    passwordInput.value = "";
+    return;
+  }
+
+  currentAction = action;
+
+  history.pushState({ page: "content" }, "", "#content");
+
+  passwordScreen.style.opacity = 0;
+  setTimeout(() => passwordScreen.style.display = "none", 400);
+
+  contentPage.style.display = "block";
+
+  video.src = action.src;
+  video.muted = false;
+  video.volume = 1;
+  video.pause();
+
+  playButton.classList.add("show");
+
+  if (endedListener) video.removeEventListener("ended", endedListener);
+
+  endedListener = () => {
+    if (action.redirect) window.open(action.redirect, "_blank");
+    resetToPassword();
+  };
+
+  video.addEventListener("ended", endedListener);
 });
 
-// Play button click
 playButton.addEventListener("click", () => {
-  video.play().catch(() => console.log("Autoplay failed"));
+  video.play();
   playButton.classList.remove("show");
 });
 
-// Disable right-click
+backButton.addEventListener("click", () => {
+  history.back();
+});
+
+window.addEventListener("popstate", () => {
+  resetToPassword();
+});
+
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 
