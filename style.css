@@ -334,18 +334,5 @@ section {
   pointer-events: none;
 }
 
-.play-button,
-.back-button {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-weight: normal;
-  line-height: 1;
-}
 
-.password-hint {
-  font-size: 29px;
-  color: #2d93ea;
-  text-align: center;
-  margin-top: 20px;
-  font-family: "RuneScape UF", Arial, sans-serif;
-}
 

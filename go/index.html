@@ -36,6 +36,13 @@ html, body {
   transition: opacity 0.4s ease;
 }
 
+.password-hint {
+  font-size: 18px;
+  text-align: center;
+  margin-top: 24px; /* increased from 12px to 24px */
+  font-family: "RuneScape UF", Arial, sans-serif;
+}
+
 .password-box {
   text-align: center;
 }
@@ -104,7 +111,6 @@ video {
   }
 }
 
-/* Play button */
 .play-button {
   position: absolute;
   top: 50%;
@@ -120,9 +126,13 @@ video {
   transition: opacity 0.4s ease;
   z-index: 10;
   font-family: "RuneScape UF", Arial, sans-serif;
+  pointer-events: none; /* ignore mouse events when hidden */
 }
 
-.play-button.show { opacity: 1; }
+.play-button.show {
+  opacity: 1;
+  pointer-events: auto; /* enable mouse events when visible */
+}
 
 /* Back button over video */
 .back-button {
