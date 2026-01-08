@@ -213,6 +213,8 @@ function resetToPassword() {
   passwordInput.focus();
 
   history.replaceState(null, "", "/go");
+
+  location.reload();
 }
 
 passwordInput.addEventListener("keydown", e => {
