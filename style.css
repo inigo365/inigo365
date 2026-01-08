@@ -51,7 +51,7 @@ body {
   height: 11%;
   cursor: pointer;
   z-index: 10;
-  background: transparent;
+  background: transparent; /* debug mode: rgba(255, 0, 0, 0.3) */ /* transparent normally */
   text-indent: -9999px; /* hides text if any */
   pointer-events: auto;
 }
@@ -87,6 +87,13 @@ body {
   left: 25%;
   width: 48%;
   height: 13%;
+}
+
+.go-link {
+  top: 49%;       
+  left: 72%;     
+  width: 7%;     
+  height: 12%;    
 }
 
 /* =========================
