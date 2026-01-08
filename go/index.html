@@ -84,7 +84,7 @@ html, body {
   position: relative;
 }
 
-/* VIDEO WRAPPER */
+/* VIDEO + BACK BUTTON CONTAINER */
 .video-wrapper {
   position: relative;
   width: 100%;
@@ -96,6 +96,7 @@ html, body {
   display: none;
 }
 
+/* Video scaling */
 video {
   width: 100%;
   height: 100%;
@@ -103,6 +104,7 @@ video {
   display: block;
 }
 
+/* Slightly enlarge on desktop */
 @media (min-width: 1200px) {
   .video-wrapper {
     max-width: 1000px;
@@ -131,11 +133,30 @@ video {
   opacity: 1;
   pointer-events: auto;
 }
+
+.back-button {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 28px;
+  color: #2d93ea;
+  background: transparent;
+  border: none;
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  font-family: "RuneScape UF", Arial, sans-serif;
+}
+
+.back-button.show { opacity: 1; }
+
 </style>
 </head>
 
 <body>
 
+<!-- PASSWORD SCREEN -->
 <div class="password-screen" id="passwordScreen">
   <div class="password-box">
     <label>password:</label>
@@ -144,6 +165,7 @@ video {
   </div>
 </div>
 
+<!-- CONTENT PAGE -->
 <div class="content-page" id="contentPage">
   <div class="content-wrapper">
     <div class="video-wrapper" id="videoWrapper"></div>
@@ -162,12 +184,13 @@ let currentAction = null;
 let endedListener = null;
 
 const actions = {
-  "donovan": { type: "video", src: "video.mp4", hideVideoUntilPlay: true },
+  "donovan": { type: "video", src: "video.mp4", hideVideoUntilPlay: true, redirectAfter: true },
+  "gambosi": { type: "video", src: "skud.mp4", hideVideoUntilPlay: true },
   "home": { type: "redirect", url: "https://inigo365.com/", sameTab: true },
-  "rick": { type: "redirect", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-  "bart simpson": { type: "video", src: "bart.mp4" }
+  "rick": { type: "redirect", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }
 };
 
+// Reset to password screen
 function resetToPassword() {
   const oldVideo = videoWrapper.querySelector("video");
   if (oldVideo) {
@@ -181,6 +204,7 @@ function resetToPassword() {
   endedListener = null;
 
   contentPage.style.display = "none";
+
   passwordScreen.style.display = "flex";
   passwordScreen.style.opacity = 1;
 
@@ -198,10 +222,12 @@ function resetToPassword() {
   history.replaceState(null, "", "/go");
 }
 
+// Password input listener
 passwordInput.addEventListener("keydown", e => {
   if (e.key !== "Enter") return;
 
-  const action = actions[passwordInput.value.toLowerCase()];
+  const key = passwordInput.value.toLowerCase();
+  const action = actions[key];
   if (!action) {
     passwordInput.value = "";
     return;
@@ -210,23 +236,37 @@ passwordInput.addEventListener("keydown", e => {
   passwordInput.disabled = true;
 
   if (action.type === "redirect") {
-    action.sameTab ? location.href = action.url : window.open(action.url, "_blank");
-    passwordInput.disabled = false;
-    passwordInput.value = "";
+    if (action.sameTab) {
+      window.location.href = action.url;
+    } else {
+      window.open(action.url, "_blank");
+      passwordInput.disabled = false;
+      passwordInput.value = "";
+    }
     return;
   }
 
   currentAction = action;
+  history.pushState({ page: "content" }, "", "#content");
 
   passwordScreen.style.opacity = 0;
   setTimeout(() => passwordScreen.style.display = "none", 400);
+
   contentPage.style.display = "block";
+
+  // Hide video until play pressed
+  if (action.hideVideoUntilPlay) {
+    videoWrapper.style.display = "none";
+  } else {
+    videoWrapper.style.display = "block";
+  }
 
   playButton.classList.add("show");
 
   playButton.onclick = () => {
     playButton.classList.remove("show");
 
+    // iOS-safe: create video inside user gesture
     const video = document.createElement("video");
     video.playsInline = true;
     video.disablePictureInPicture = true;
@@ -237,6 +277,7 @@ passwordInput.addEventListener("keydown", e => {
 
     videoWrapper.innerHTML = "";
     videoWrapper.appendChild(video);
+
     videoWrapper.style.display = "block";
     videoWrapper.style.opacity = 0;
 
@@ -245,12 +286,16 @@ passwordInput.addEventListener("keydown", e => {
       video.play().catch(() => {});
     });
 
+    // clean + reliable ended handler
     endedListener = () => resetToPassword();
     video.addEventListener("ended", endedListener, { once: true });
   };
 });
 
-window.addEventListener("popstate", resetToPassword);
+// Back button (future use)
+window.addEventListener("popstate", () => resetToPassword());
+
+// Disable right-click
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 
