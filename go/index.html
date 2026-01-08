@@ -39,7 +39,7 @@ html, body {
 .password-hint {
   font-size: 18px;
   text-align: center;
-  margin-top: 24px; /* increased from 12px to 24px */
+  margin-top: 24px;
   font-family: "RuneScape UF", Arial, sans-serif;
 }
 
@@ -172,9 +172,7 @@ video {
 <div class="content-page" id="contentPage">
   <div class="content-wrapper">
     <div class="video-wrapper">
-      <video id="video" playsinline disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback">
-        <source src="video.mp4" type="video/mp4">
-      </video>
+      <video id="video" playsinline disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback"></video>
       <button class="back-button" id="backButton">back</button>
     </div>
     <button class="play-button" id="playButton">play</button>
@@ -199,8 +197,10 @@ const actions = {
   "bart simpson": { type: "video", src: "bart.mp4", redirect: null }
 };
 
+// Reset to password screen
 function resetToPassword() {
   video.pause();
+  video.src = ""; // fully reset video
   video.currentTime = 0;
 
   contentPage.style.display = "none";
@@ -212,9 +212,13 @@ function resetToPassword() {
   passwordInput.disabled = false;
   passwordInput.value = "";
 
+  if (endedListener) video.removeEventListener("ended", endedListener);
+  endedListener = null;
+
   history.replaceState(null, "", "/go");
 }
 
+// Password input listener
 passwordInput.addEventListener("keydown", e => {
   if (e.key !== "Enter") return;
 
@@ -247,6 +251,7 @@ passwordInput.addEventListener("keydown", e => {
 
   contentPage.style.display = "block";
 
+  // Set video src fresh
   video.src = action.src;
   video.muted = false;
   video.volume = 1;
@@ -261,22 +266,24 @@ passwordInput.addEventListener("keydown", e => {
     backButton.classList.remove("show");
   }
 
+  // Clear previous ended listener
   if (endedListener) video.removeEventListener("ended", endedListener);
 
   endedListener = () => {
     if (action.redirect) window.open(action.redirect, "_blank");
     resetToPassword();
   };
-
   video.addEventListener("ended", endedListener);
 });
 
+// Play button
 playButton.addEventListener("click", () => {
   video.play();
   playButton.classList.remove("show");
-  backButton.classList.remove("show"); // hide back button on play
+  backButton.classList.remove("show"); // hide back button when video plays
 });
 
+// Back button
 backButton.addEventListener("click", () => {
   resetToPassword();
 });
@@ -285,6 +292,7 @@ window.addEventListener("popstate", () => {
   resetToPassword();
 });
 
+// Disable right-click
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 

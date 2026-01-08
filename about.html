@@ -5,10 +5,56 @@
   <title>inigo365 — About Me</title>
   <link rel="icon" type="image/png" href="./images/icon.png">
   <link rel="stylesheet" href="style.css">
-</head>
-<body>
+  <style>
+    /* Ensure section relative for button positioning */
+    .about-section {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
 
-  <body class="fade-in-page">
+    .about-image {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+ .go-button {
+  position: absolute;
+  top: 94%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #2d93ea;
+  color: white;
+  border: none;
+  padding: 14px 40px;
+  font-size: 3vw;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("./images/cursor/cursor.png"), auto !important; /* enforce default cursor */
+  border-radius: 6px;
+  text-align: center;
+  z-index: 10;
+  transition: transform 0.2s ease, opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.go-button:hover {
+  transform: translateX(-50%) scale(1.05);
+  opacity: 0.9;
+  cursor: url("./images/cursor/cursor-hover.png"), pointer !important; /* enforce hover cursor */
+}
+
+
+    /* Responsive adjustments for small screens */
+    @media (max-width: 768px) {
+      .go-button {
+        font-size: 5vw;       /* slightly larger for mobile */
+        padding: 12px 32px;
+      }
+    }
+  </style>
+</head>
+<body class="fade-in-page">
 
   <!-- Back button -->
   <a class="back" href="index.html">← Back</a>
@@ -16,22 +62,25 @@
   <!-- About section -->
   <section class="about-section">
     <img src="images/about/about-mobile1.jpg" class="about-image" alt="About Inigo">
+
+    <!-- Go button -->
+    <button class="go-button" onclick="window.location.href='https://inigo365.com/go'">go</button>
   </section>
 
   <script>
-  // Fade-out on Back button click
-  const backButton = document.querySelector('.back');
-  if (backButton) {
-    backButton.addEventListener('click', function(e) {
-      e.preventDefault(); // stop immediate navigation
-      document.body.classList.add('fade-out'); // trigger fade-out
-      const href = this.href;
-      setTimeout(() => {
-        window.location = href; // navigate after 1s fade
-      }, 1000); // match CSS transition duration
-    });
-  }
-</script>
+    // Fade-out on Back button click
+    const backButton = document.querySelector('.back');
+    if (backButton) {
+      backButton.addEventListener('click', function(e) {
+        e.preventDefault(); // stop immediate navigation
+        document.body.classList.add('fade-out'); // trigger fade-out
+        const href = this.href;
+        setTimeout(() => {
+          window.location = href; // navigate after 1s fade
+        }, 1000);
+      });
+    }
+  </script>
 
 </body>
 </html>
