@@ -341,3 +341,11 @@ section {
   line-height: 1;
 }
 
+.password-hint {
+  font-size: 29px;
+  color: #2d93ea;
+  text-align: center;
+  margin-top: 20px;
+  font-family: "RuneScape UF", Arial, sans-serif;
+}
+
