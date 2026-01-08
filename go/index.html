@@ -24,6 +24,7 @@
     background: white;
     overflow: hidden;
     cursor: url("../images/cursor/cursor.png"), auto;
+    font-family: "RuneScape UF", Arial, sans-serif;
   }
 
   /* PASSWORD SCREEN */
@@ -34,7 +35,7 @@
     width: 100%;
     height: 100%;
     background: white;
-    font-family: "RuneScape UF", Arial, sans-serif;
+    transition: opacity 0.5s ease;
   }
 
   .password-box { text-align: center; }
@@ -67,9 +68,11 @@
     width: 100%;
     height: 100%;
     background: white;
-    display: flex;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
+    transition: opacity 0.5s ease;
+    position: relative;
   }
 
   .video-wrapper {
@@ -79,6 +82,7 @@
     align-items: center;
     justify-content: center;
     background: white;
+    position: relative;
   }
 
   video {
@@ -96,6 +100,29 @@
   }
 
   @keyframes fadeInVideo { to { opacity: 1; } }
+
+  /* PLAY BUTTON */
+  .play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: "RuneScape UF", Arial, sans-serif;
+    font-size: 48px;
+    color: #2d93ea;
+    text-transform: lowercase;
+    background: transparent;
+    border: none;
+    cursor: url("../images/cursor/cursor-hover.png"), pointer;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    user-select: none;
+    z-index: 10;
+  }
+
+  .play-button.show {
+    opacity: 1;
+  }
 </style>
 </head>
 
@@ -116,6 +143,7 @@
       <source src="video.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
+    <div class="play-button" id="playButton">play</div>
   </div>
 </div>
 
@@ -124,23 +152,14 @@ const passwordInput = document.getElementById("passwordInput");
 const passwordScreen = document.getElementById("passwordScreen");
 const videoPage = document.getElementById("videoPage");
 const video = document.getElementById("video");
+const playButton = document.getElementById("playButton");
 
-// Define password actions
+let currentEndedListener = null;
+
 const passwordActions = {
-  "donovan": {
-    type: "video",
-    src: "video.mp4",
-    redirect: "https://www.betterhelp.com/"
-  },
-  "rick": {
-    type: "redirect",
-    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-  },
-  "bart simpson": {
-    type: "video",
-    src: "bart.mp4",
-    redirect: null // resets to password screen after finished
-  }
+  "donovan": { type: "video", src: "video.mp4", redirect: "https://www.betterhelp.com/" },
+  "rick": { type: "redirect", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+  "bart simpson": { type: "video", src: "bart.mp4", redirect: null }
 };
 
 passwordInput.addEventListener("keydown", function(e) {
@@ -157,45 +176,49 @@ passwordInput.addEventListener("keydown", function(e) {
     passwordInput.disabled = true;
 
     if (action.type === "redirect") {
-      // Open link in new tab, reset input for next use
       window.open(action.url, "_blank");
       passwordInput.disabled = false;
       passwordInput.value = "";
-    } 
-    else if (action.type === "video") {
+    } else if (action.type === "video") {
+      // Fade password screen
+      passwordScreen.style.opacity = 0;
+      setTimeout(() => { passwordScreen.style.display = "none"; }, 500);
+
       // Show video page
-      passwordScreen.style.display = "none";
       videoPage.style.display = "flex";
+      setTimeout(() => { videoPage.style.opacity = 1; }, 50);
 
+      // Set video
       video.src = action.src;
-      video.muted = false; // ensure audio plays
+      video.muted = false;
       video.volume = 1;
-      video.play().catch(() => {
-        console.log("Autoplay with sound may be blocked on this browser.");
-      });
+      video.pause(); // Wait for PLAY click
 
-      // Remove old ended listeners to prevent duplicates
-      video.replaceWith(video.cloneNode(true));
-      const newVideo = document.getElementById("video");
+      // Show play button
+      playButton.classList.add("show");
 
-      newVideo.addEventListener("ended", () => {
-        if (action.redirect) {
-          window.open(action.redirect, "_blank");
-          // reset to password screen after redirect
-          videoPage.style.display = "none";
-          passwordScreen.style.display = "flex";
-          passwordInput.disabled = false;
-          passwordInput.value = "";
-        } else {
-          // Reset to password screen
-          videoPage.style.display = "none";
-          passwordScreen.style.display = "flex";
-          passwordInput.disabled = false;
-          passwordInput.value = "";
-        }
-      });
+      if (currentEndedListener) video.removeEventListener("ended", currentEndedListener);
+
+      currentEndedListener = () => {
+        if (action.redirect) window.open(action.redirect, "_blank");
+        // Reset to password screen
+        videoPage.style.display = "none";
+        passwordScreen.style.display = "flex";
+        passwordScreen.style.opacity = 1;
+        passwordInput.disabled = false;
+        passwordInput.value = "";
+        playButton.classList.remove("show");
+      };
+
+      video.addEventListener("ended", currentEndedListener);
     }
   }
+});
+
+// Play button click
+playButton.addEventListener("click", () => {
+  video.play().catch(() => console.log("Autoplay failed"));
+  playButton.classList.remove("show");
 });
 
 // Disable right-click
