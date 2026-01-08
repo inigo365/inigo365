@@ -112,7 +112,7 @@
 <!-- VIDEO PAGE -->
 <div class="video-page" id="videoPage">
   <div class="video-wrapper">
-    <video id="video" playsinline autoplay muted disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback">
+    <video id="video" playsinline disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback">
       <source src="video.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
@@ -139,9 +139,8 @@ const passwordActions = {
   "bart simpson": {
     type: "video",
     src: "bart.mp4",
-    redirect: null // no redirect; resets to password screen after finished
+    redirect: null // resets to password screen after finished
   }
-  // Add more passwords here
 };
 
 passwordInput.addEventListener("keydown", function(e) {
@@ -158,16 +157,22 @@ passwordInput.addEventListener("keydown", function(e) {
     passwordInput.disabled = true;
 
     if (action.type === "redirect") {
-      window.location.href = action.url;
-    } else if (action.type === "video") {
+      // Open link in new tab, reset input for next use
+      window.open(action.url, "_blank");
+      passwordInput.disabled = false;
+      passwordInput.value = "";
+    } 
+    else if (action.type === "video") {
       // Show video page
       passwordScreen.style.display = "none";
       videoPage.style.display = "flex";
 
       video.src = action.src;
-      video.muted = false;
+      video.muted = false; // ensure audio plays
       video.volume = 1;
-      video.play();
+      video.play().catch(() => {
+        console.log("Autoplay with sound may be blocked on this browser.");
+      });
 
       // Remove old ended listeners to prevent duplicates
       video.replaceWith(video.cloneNode(true));
@@ -175,7 +180,12 @@ passwordInput.addEventListener("keydown", function(e) {
 
       newVideo.addEventListener("ended", () => {
         if (action.redirect) {
-          window.location.href = action.redirect;
+          window.open(action.redirect, "_blank");
+          // reset to password screen after redirect
+          videoPage.style.display = "none";
+          passwordScreen.style.display = "flex";
+          passwordInput.disabled = false;
+          passwordInput.value = "";
         } else {
           // Reset to password screen
           videoPage.style.display = "none";
