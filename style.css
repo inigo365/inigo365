@@ -58,32 +58,35 @@ body {
 
 .about-link {
   top: 34%;
-  left: 10%;
+  left: 5%;
   height: 10%;
+  width: 20%;
 }
 
 .instagram-link {
   top: 56%;
-  left: 11%;
+  left: 5%;
+  width: 20%;
 }
 
 .imdb-link {
-  top: 75%;
-  left: 10%;
-  width: 13%;
+  top: 78%;
+  left: 5%;
+  width: 14%;
 }
 
 .whatsapp-link {
   top: 46%;
-  left: 18%;
-  width: 29%;
+  left: 14%;
+  width: 35%;
   height: 8%;
 }
 
 .email-link {
-  top: 66%;
-  left: 30%;
-  width: 40%;
+  top: 69%;
+  left: 25%;
+  width: 48%;
+  height: 13%;
 }
 
 /* =========================
