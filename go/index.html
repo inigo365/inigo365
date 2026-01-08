@@ -194,23 +194,39 @@ const actions = {
 // Reset to password screen
 function resetToPassword() {
   const oldVideo = videoWrapper.querySelector("video");
+
   if (oldVideo) {
+    if (endedListener) {
+      oldVideo.removeEventListener("ended", endedListener);
+    }
+
     oldVideo.pause();
+
+    // HARD mobile-safe reset
+    oldVideo.removeAttribute("src");
+    oldVideo.load();
+
     oldVideo.remove();
   }
 
+  endedListener = null;
+
+  // Full UI reset
   contentPage.style.display = "none";
+
   passwordScreen.style.display = "flex";
   passwordScreen.style.opacity = 1;
 
   playButton.classList.remove("show");
+  playButton.onclick = null;
+
   videoWrapper.style.opacity = 0;
-  videoWrapper.style.display = "none"; 
+  videoWrapper.style.display = "none";
+  videoWrapper.innerHTML = "";
+
   passwordInput.disabled = false;
   passwordInput.value = "";
-
-  if (endedListener) oldVideo?.removeEventListener("ended", endedListener);
-  endedListener = null;
+  passwordInput.focus();
 
   history.replaceState(null, "", "/go");
 }
