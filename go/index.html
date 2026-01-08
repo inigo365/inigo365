@@ -8,157 +8,142 @@
 <link rel="icon" type="image/png" href="../images/icon.png">
 
 <style>
-  @font-face {
-    font-family: "RuneScape UF";
-    src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
-         url("../fonts/RuneScape-UF.woff") format("woff");
-  }
+@font-face {
+  font-family: "RuneScape UF";
+  src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
+       url("../fonts/RuneScape-UF.woff") format("woff");
+}
 
-  html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    background: white;
-    overflow: hidden;
-    font-family: "RuneScape UF", Arial, sans-serif;
-    cursor: url("../images/cursor/cursor.png"), auto;
-  }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  overflow: hidden;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../images/cursor/cursor.png"), auto;
+}
 
-  /* PASSWORD SCREEN */
-  .password-screen {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    background: white;
-    transition: opacity 0.4s ease;
-  }
+/* PASSWORD SCREEN */
+.password-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: white;
+  transition: opacity 0.4s ease;
+}
 
-  .password-box {
-    text-align: center;
-  }
+.password-box {
+  text-align: center;
+}
 
-  .password-box label {
-    font-size: 32px;
-    margin-bottom: 12px;
-    display: block;
-  }
+.password-box label {
+  font-size: 32px;
+  margin-bottom: 12px;
+  display: block;
+}
 
-  .password-box input {
-    font-family: "RuneScape UF", Arial, sans-serif;
-    font-size: 24px;
-    padding: 8px 12px;
-    border: 2px solid black;
-    background: white;
-    outline: none;
-    text-align: center;
-  }
+.password-box input {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  padding: 8px 12px;
+  border: 2px solid black;
+  background: white;
+  outline: none;
+  text-align: center;
+}
 
-  .password-box input:hover,
-  .password-box input:focus {
-    cursor: url("../images/cursor/cursor-hover.png"), auto;
-  }
+.password-box input:hover,
+.password-box input:focus {
+  cursor: url("../images/cursor/cursor-hover.png"), auto;
+}
 
-  /* CONTENT PAGE */
-  .content-page {
-    display: none;
-    width: 100%;
-    height: 100%;
-    background: white;
-  }
+/* CONTENT PAGE */
+.content-page {
+  display: none;
+  width: 100%;
+  height: 100%;
+  background: white;
+}
 
-  .content-wrapper {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
+.content-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
 
-  .video-container {
-    position: relative;
-    display: inline-block; /* shrink-wrap video */
-    max-width: 100%;
-    max-height: 100%;
-  }
+/* VIDEO + BACK BUTTON CONTAINER */
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 854px;  /* actual video width */
+  aspect-ratio: 854 / 480;
+  background: white;
+}
 
-  video {
-    display: block;
-    width: auto;
-    height: auto;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    transform: scale(1.35); /* desktop zoom */
-    opacity: 0;
-    animation: fadeIn 1.2s ease forwards;
-  }
+/* Video scaling */
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  opacity: 0;
+  animation: fadeIn 1.2s ease forwards;
+}
 
-  @media (max-width: 1024px) {
-    video { transform: scale(1.25); } /* tablet zoom */
+/* Slightly enlarge on desktop */
+@media (min-width: 1200px) {
+  .video-wrapper {
+    max-width: 1000px; /* desktop scale-up */
   }
+}
 
-  @media (max-width: 768px) {
-    video { transform: scale(1.1); } /* mobile zoom */
-  }
+/* Play button */
+.play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 52px;
+  color: #2d93ea;
+  background: transparent;
+  border: none;
+  text-transform: lowercase;
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 10;
+  font-family: "RuneScape UF", Arial, sans-serif;
+}
 
-  @media (max-width: 480px) {
-    video { transform: scale(1); } /* small mobile safe */
-  }
+.play-button.show { opacity: 1; }
 
-  @keyframes fadeIn {
-    to { opacity: 1; }
-  }
+/* Back button over video */
+.back-button {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  font-size: 28px;
+  color: #2d93ea;
+  background: transparent;
+  border: none;
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  font-family: "RuneScape UF", Arial, sans-serif;
+}
 
-  /* PLAY BUTTON */
-  .play-button {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 52px; /* desktop default */
-    color: #2d93ea;
-    background: transparent;
-    border: none;
-    text-transform: lowercase;
-    cursor: url("../images/cursor/cursor-hover.png"), pointer;
-    opacity: 0;
-    transition: opacity 0.4s ease, font-size 0.2s ease;
-    z-index: 10;
-    font-family: "RuneScape UF", Arial, sans-serif;
-  }
+.back-button.show { opacity: 1; }
 
-  .play-button.show {
-    opacity: 1;
-  }
-
-  /* Play button responsive font sizes */
-  @media (max-width: 1024px) { .play-button { font-size: 44px; } }
-  @media (max-width: 768px)  { .play-button { font-size: 36px; } }
-  @media (max-width: 480px)  { .play-button { font-size: 28px; } }
-
-  /* BACK BUTTON OVER VIDEO */
-  .back-button {
-    position: absolute;
-    top: 2px;  /* 2px from top of video */
-    left: 2px; /* 2px from left of video */
-    font-size: 28px;
-    color: #2d93ea;
-    background: transparent;
-    border: none;
-    cursor: url("../images/cursor/cursor-hover.png"), pointer;
-    z-index: 20;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    font-family: "RuneScape UF", Arial, sans-serif;
-  }
-
-  .back-button.show {
-    opacity: 1;
-  }
+/* Fade animation for video */
+@keyframes fadeIn { to { opacity: 1; } }
 </style>
 </head>
 
@@ -175,13 +160,13 @@
 <!-- CONTENT PAGE -->
 <div class="content-page" id="contentPage">
   <div class="content-wrapper">
-    <div class="video-container">
+    <div class="video-wrapper">
       <video id="video" playsinline disablePictureInPicture controlslist="nodownload nofullscreen noremoteplayback">
         <source src="video.mp4" type="video/mp4">
       </video>
-      <div class="back-button" id="backButton" role="button" tabindex="0">back</div>
+      <button class="back-button" id="backButton">back</button>
     </div>
-    <div class="play-button" id="playButton" role="button" tabindex="0">play</div>
+    <button class="play-button" id="playButton">play</button>
   </div>
 </div>
 
@@ -278,6 +263,7 @@ passwordInput.addEventListener("keydown", e => {
 playButton.addEventListener("click", () => {
   video.play();
   playButton.classList.remove("show");
+  backButton.classList.remove("show"); // hide back button on play
 });
 
 backButton.addEventListener("click", () => {
