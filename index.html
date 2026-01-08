@@ -1,303 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>go</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>inigo365</title>
+  <link rel="icon" type="image/png" href="./images/icon.png">
+  <link rel="stylesheet" href="style.css">
 
-<link rel="icon" type="image/png" href="../images/icon.png">
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="inigo365, a portfolio website showcasing creative projects across film, photography, music, and other media.">
 
-<style>
-@font-face {
-  font-family: "RuneScape UF";
-  src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
-       url("../fonts/RuneScape-UF.woff") format("woff");
-}
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:title" content="inigo365 – Creative Portfolio">
+  <meta property="og:description" content="Portfolio of creative projects across film, photography, music & other media.">
+  <meta property="og:image" content="https://inigo365.com/images/landing.jpg">
+  <meta property="og:url" content="https://inigo365.com/">
+  <meta property="og:type" content="website">
 
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: white;
-  overflow: hidden;
-  font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("../images/cursor/cursor.png"), auto;
-}
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="inigo365 – Creative Portfolio">
+  <meta name="twitter:description" content="Portfolio of creative projects across film, photography, music & other media.">
+  <meta name="twitter:image" content="https://inigo365.com/images/landing.jpg">
 
-/* PASSWORD SCREEN */
-.password-screen {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  background: white;
-  transition: opacity 0.4s ease;
-}
+  <!-- Viewport for mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-.password-hint {
-  font-size: 18px;
-  text-align: center;
-  margin-top: 24px;
-}
-
-.password-box {
-  text-align: center;
-}
-
-.password-box label {
-  font-size: 32px;
-  margin-bottom: 12px;
-  display: block;
-}
-
-.password-box input {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 24px;
-  padding: 8px 12px;
-  border: 2px solid black;
-  background: white;
-  outline: none;
-  text-align: center;
-}
-
-.password-box input:hover,
-.password-box input:focus {
-  cursor: url("../images/cursor/cursor-hover.png"), auto;
-}
-
-/* CONTENT PAGE */
-.content-page {
-  display: none;
-  width: 100%;
-  height: 100%;
-  background: white;
-}
-
-.content-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* VIDEO + BACK BUTTON CONTAINER */
-.video-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 854px;
-  aspect-ratio: 854 / 480;
-  background: white;
-  opacity: 0;
-  transition: opacity 1s ease;
-  display: none;
-}
-
-/* Video scaling */
-video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-@media (min-width: 1200px) {
-  .video-wrapper {
-    max-width: 1000px;
-  }
-}
-
-.play-button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 52px;
-  color: #2d93ea;
-  background: transparent;
-  border: none;
-  text-transform: lowercase;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  z-index: 10;
-  font-family: "RuneScape UF", Arial, sans-serif;
-  pointer-events: none;
-}
-
-.play-button.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.back-button {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  font-size: 28px;
-  color: #2d93ea;
-  background: transparent;
-  border: none;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
-  z-index: 20;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  font-family: "RuneScape UF", Arial, sans-serif;
-}
-
-.back-button.show { opacity: 1; }
-
-</style>
+  <!-- Hidden SEO Heading -->
+  <style>
+    .seo-h1 {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+  </style>
 </head>
 
-<body>
+<body class="fade-in-page">
 
-<!-- PASSWORD SCREEN -->
-<div class="password-screen" id="passwordScreen">
-  <div class="password-box">
-    <label>password:</label>
-    <input type="password" id="passwordInput" autocomplete="off">
-    <div class="password-hint">hint: home is where the heart is</div>
-  </div>
-</div>
+<!-- Hidden H1 for SEO -->
+<h1 class="seo-h1">Inigo Macdonald – Creative Portfolio</h1>
 
-<!-- CONTENT PAGE -->
-<div class="content-page" id="contentPage">
-  <div class="content-wrapper">
-    <div class="video-wrapper" id="videoWrapper"></div>
-    <button class="play-button" id="playButton">play</button>
+<!-- =====================
+     LANDING
+===================== -->
+<section class="landing">
+  <div class="landing-wrapper">
+
+    <!-- Landing Image -->
+    <img src="images/landing.jpg"
+         class="landing-image"
+         alt="Landing">
+
+    <!-- ABOUT ME (internal page) -->
+    <a href="about.html"
+       class="landing-link about-link"
+       aria-label="About Me">
+      <span>About Me</span>
+    </a>
+
+    <!-- INSTAGRAM -->
+    <a href="https://www.instagram.com/iggysmalllls/"
+       class="landing-link instagram-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Instagram">
+      <span>Instagram</span>
+    </a>
+
+    <!-- IMDB -->
+    <a href="https://www.imdb.com/name/nm17192091/"
+       class="landing-link imdb-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="IMDB">
+      <span>IMDB</span>
+    </a>
+
+    <!-- WHATSAPP -->
+    <a href="https://wa.me/447432435885"
+       class="landing-link whatsapp-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="WhatsApp">
+      <span>WhatsApp</span>
+    </a>
+
+    <!-- EMAIL -->
+    <a href="mailto:macdonald.iggy@gmail.com"
+       class="landing-link email-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Email">
+      <span>Email</span>
+    </a>
+    
+    <!-- GO PAGE LINK -->
+    <a href="go/index.html"
+       class="landing-link go-link"
+       aria-label="Go Page">
+      <span>Go Page</span>
+    </a>
+
   </div>
-</div>
+</section>
+
+<!-- =====================
+     PORTFOLIO
+===================== -->
+<section id="projects" class="portfolio">
+
+  <a href="projects/martino.html" class="tile" id="tile-martino">
+  <img src="images/tiles/martino.jpg" alt="Martino Gamper OBE 'Before, After & Beyond'">
+  <div class="overlay">Martino Gamper OBE 'Before, After & Beyond'</div>
+</a>
+
+<a href="projects/minecraft.html" class="tile" id="tile-minecraft">
+  <img src="images/tiles/minecraft.jpg" alt="Minecraft Movie (Released 2025)">
+  <div class="overlay">Minecraft Movie (Released 2025)</div>
+</a>
+
+<a href="projects/ash.html" class="tile" id="tile-ash">
+  <img src="images/tiles/ash.jpg" alt="Ash Feature Length (Released 2025)">
+  <div class="overlay">Ash Feature Length (Released 2025)</div>
+</a>
+
+<a href="projects/ols.html" class="tile" id="tile-ols">
+  <img src="images/tiles/ols.jpg" alt="One Last Shot (Releasing 2026)">
+  <div class="overlay">One Last Shot (Releasing 2026)</div>
+</a>
+
+<a href="projects/chopova.html" class="tile" id="tile-chopova">
+  <img src="images/tiles/chopova.jpg" alt="Chopova Lowena Spring/Summer 26">
+  <div class="overlay">Chopova Lowena Spring/Summer 26</div>
+</a>
+
+<a href="projects/canyon.html" class="tile" id="tile-canyon">
+  <img src="images/tiles/canyon.jpg" alt="Canyon Feature Length (Unreleased)">
+  <div class="overlay">Canyon Feature Length (Unreleased)</div>
+</a>
+
+<a href="projects/remz.html" class="tile" id="tile-remz">
+  <img src="images/tiles/remz.jpg" alt="SR MPOFU & STOLEN REMZ - SCOOPGARDEN">
+  <div class="overlay">SR MPOFU & STOLEN REMZ - SCOOPGARDEN</div>
+</a>
+
+<a href="projects/nanushka.html" class="tile" id="tile-nanushka">
+  <img src="images/tiles/nanushka.jpg" alt="Nanushka Spring/Summer 26">
+  <div class="overlay">Nanushka Spring/Summer 26</div>
+</a>
+
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <img src="images/footer.jpg" alt="Footer image">
+  </div>
+</footer>
 
 <script>
-const passwordInput = document.getElementById("passwordInput");
-const passwordScreen = document.getElementById("passwordScreen");
-const contentPage = document.getElementById("contentPage");
-const playButton = document.getElementById("playButton");
-const videoWrapper = document.getElementById("videoWrapper");
+document.querySelectorAll('.landing-link').forEach(link => {
+  link.addEventListener('click', function(e) {
+    const href = this.href;
+    const target = this.target;
 
-let currentAction = null;
-let endedListener = null;
-
-// =========================
-// 1. Passcodes & Videos
-// Add new passcode + video here: "passcode": { src: "video path", hideVideoUntilPlay: true/false, redirectAfter: true/false }
-// =========================
-const actions = {
-  "donovan": { src: "video.mp4", hideVideoUntilPlay: true, redirectAfter: true },
-  "gambosi": { src: "go/skud.mp4", hideVideoUntilPlay: true, redirectAfter: true },
-  "home": { redirect: "https://inigo365.com/", sameTab: true },
-  "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }
-};
-
-// =========================
-// Reset function
-// =========================
-function resetToPassword() {
-  const oldVideo = videoWrapper.querySelector("video");
-  if (oldVideo) {
-    if (endedListener) oldVideo.removeEventListener("ended", endedListener);
-    oldVideo.pause();
-    oldVideo.removeAttribute("src");
-    oldVideo.load();
-    oldVideo.remove();
-  }
-  endedListener = null;
-
-  contentPage.style.display = "none";
-  passwordScreen.style.display = "flex";
-  passwordScreen.style.opacity = 1;
-
-  videoWrapper.style.opacity = 0;
-  videoWrapper.style.display = "none";
-  videoWrapper.innerHTML = "";
-
-  playButton.classList.remove("show");
-  playButton.onclick = null;
-
-  passwordInput.disabled = false;
-  passwordInput.value = "";
-  passwordInput.focus();
-
-  history.replaceState(null, "", "/go");
-}
-
-// =========================
-// Password listener
-// =========================
-passwordInput.addEventListener("keydown", e => {
-  if (e.key !== "Enter") return;
-
-  const key = passwordInput.value.toLowerCase();
-  const action = actions[key];
-  if (!action) {
-    passwordInput.value = "";
-    return;
-  }
-
-  passwordInput.disabled = true;
-
-  if (action.redirect) {
-    if (action.sameTab) {
-      window.location.href = action.redirect;
-    } else {
-      window.open(action.redirect, "_blank");
-      passwordInput.disabled = false;
-      passwordInput.value = "";
+    // If external link, open in new tab immediately
+    if (target === "_blank") {
+      e.preventDefault(); // stop default
+      window.open(href, "_blank");
+      return; // exit
     }
-    return;
-  }
 
-  currentAction = action;
-  history.pushState({ page: "content" }, "", "#content");
+    // Otherwise, internal link — apply fade-out
+    e.preventDefault();
+    document.body.classList.add('fade-out');
 
-  passwordScreen.style.opacity = 0;
-  setTimeout(() => passwordScreen.style.display = "none", 400);
+    setTimeout(() => {
+      window.location.href = href;
+    }, 1000); // matches CSS fade
+  });
+});
+</script>
 
-  contentPage.style.display = "block";
-
-  if (action.hideVideoUntilPlay) videoWrapper.style.display = "none";
-  else videoWrapper.style.display = "block";
-
-  playButton.classList.add("show");
-
-  playButton.onclick = () => {
-    playButton.classList.remove("show");
-
-    // 🔒 iOS-safe: create video element inside click gesture
-    const video = document.createElement("video");
-    video.playsInline = true;
-    video.disablePictureInPicture = true;
-    video.controlsList = "nodownload nofullscreen noremoteplayback";
-    video.src = currentAction.src + "?v=" + Date.now();
-    video.muted = false;
-    video.volume = 1;
-
-    videoWrapper.innerHTML = "";
-    videoWrapper.appendChild(video);
-    videoWrapper.style.display = "block";
-    videoWrapper.style.opacity = 0;
-
-    requestAnimationFrame(() => {
-      videoWrapper.style.opacity = 1;
-      video.currentTime = 0;
-      video.play().catch(() => {});
-    });
-
-    // reliable ended handler
-    endedListener = () => resetToPassword();
-    video.addEventListener("ended", endedListener, { once: true });
-  };
+<script>
+// 1. Store last clicked tile when navigating away
+document.querySelectorAll('.tile').forEach(tile => {
+  tile.addEventListener('click', function(e) {
+    sessionStorage.setItem('lastTile', this.id);
+    // Let the normal navigation happen
+  });
 });
 
-// Back button handler
-window.addEventListener("popstate", () => resetToPassword());
+// 2. When returning to index.html, scroll to last clicked tile
+window.addEventListener('pageshow', () => {
+  // pageshow is triggered even on back/forward navigation
+  const lastTileId = sessionStorage.getItem('lastTile');
+  if (lastTileId) {
+    const tile = document.getElementById(lastTileId);
+    if (tile) {
+      // scroll instantly without animation for back-button
+      tile.scrollIntoView({ block: 'center' });
+    }
+    sessionStorage.removeItem('lastTile');
+  }
+});
+</script>
 
-// Disable right-click
-document.addEventListener("contextmenu", e => e.preventDefault());
+<script>
+// Disable right-click context menu
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+});
 </script>
 
 </body>
