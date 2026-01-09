@@ -46,13 +46,13 @@ html, body {
 
 /* SCALE */
 .scale-wrapper {
-  position: relative; /* keep it fixed in the center */
-  z-index: 5;         /* above GIF */
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 5;
 }
 
 .weight {
@@ -64,23 +64,18 @@ html, body {
 .instruction {
   font-size: 22px;
   color: #2d93ea;
-  margin-bottom: 12px;
 }
 
-/* GIF (absolutely positioned under the scale-wrapper) */
-.gif-container {
+/* GIF */
+.scale-gif {
   position: absolute;
-  top: 60%;       /* adjust vertical placement as needed */
+  bottom: 10%;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 1;
   display: none;
-  z-index: 1;     /* behind the scale-wrapper */
-}
-
-.gif-container img {
-  display: block;
-  max-width: 150px;
-  height: auto;
+  max-width: 90%;
+  pointer-events: none;
 }
 </style>
 </head>
@@ -94,78 +89,90 @@ html, body {
   <div class="instruction">click &amp; hold to weigh</div>
 </div>
 
-<div class="gif-container" id="gifContainer">
-  <img src="scale.gif" alt="scale gif">
-  <!-- Optional video fallback (uncomment to use MP4 instead of GIF) -->
-  <!-- <video src="scale.mp4" autoplay loop muted playsinline></video> -->
-</div>
+<!-- GIF -->
+<img src="scale.gif" alt="scale gif" id="scaleGif" class="scale-gif">
 
-<!-- MP3 audio -->
-<audio id="scaleSound" src="scale.mp3"></audio>
+<!-- Optional MP3 -->
+<audio id="scaleSound" src="scale.mp3" preload="auto"></audio>
 
 <script>
 let currentWeight = 0;
 let holding = false;
 let settleTimer = 0;
+let justHitOneGram = false;
+let userInteracted = false;
 
 const weightEl = document.getElementById("weight");
-const gifContainer = document.getElementById("gifContainer");
+const scaleGif = document.getElementById("scaleGif");
 const scaleSound = document.getElementById("scaleSound");
 
-let justHitOneGram = false;
-
-/* UPDATE DISPLAY WITH JITTER */
 function updateDisplay(jiggleX = 0, jiggleY = 0) {
   weightEl.textContent = currentWeight.toFixed(1) + "g";
   weightEl.style.transform = `translate(${jiggleX}px, ${jiggleY}px)`;
 }
 
-/* ANIMATION LOOP */
 function animate() {
   let jiggleX = 0;
   let jiggleY = 0;
 
   if (holding) {
-    // Faster climb to 1g
-    currentWeight += (1 - currentWeight) * 0.06; 
-    settleTimer++;
-
-    if (currentWeight >= 0.99) {
-      // Jiggle effect around 1g
+    if (currentWeight < 0.98) {
+      currentWeight += (1 - currentWeight) * 0.04; // faster climb
+      settleTimer = 0;
+    } else {
+      settleTimer += 1;
+      // micro-jiggle ±0.1g around 1g
       if (Math.random() < 0.16) {
-        currentWeight = 1 + (Math.random() - 0.5) * 0.06;
+        const jiggleWeight = (Math.random() - 0.5) * 0.06;
+        currentWeight = 1 + jiggleWeight;
         jiggleX = (Math.random() - 0.5) * 4;
         jiggleY = (Math.random() - 0.5) * 2;
       } else {
-        currentWeight += (1 - currentWeight) * 0.03;
+        currentWeight += (1 - currentWeight) * 0.05;
       }
+      if (settleTimer > 120) currentWeight = 1;
+    }
 
-      // GIF appears immediately when hitting 1g
-      if (gifContainer.style.display === "none") {
-        gifContainer.style.display = "block";
-      }
+    // Show GIF as soon as 1g reached
+    if (currentWeight >= 0.99) {
+      scaleGif.style.display = "block";
 
-      // Play MP3 once per press
-      if (!justHitOneGram) {
+      // Play MP3 once, only after user interaction (iOS-safe)
+      if (!justHitOneGram && userInteracted) {
         scaleSound.currentTime = 0;
-        scaleSound.play().catch(() => {});
+        scaleSound.play().catch(()=>{});
         justHitOneGram = true;
       }
     }
+
   } else {
-    // Released: drop quickly to zero
-    currentWeight += (0 - currentWeight) * 0.15;
-    settleTimer = 0;
+    // Hide GIF on release
+    scaleGif.style.display = "none";
     justHitOneGram = false;
-    gifContainer.style.display = "none"; // GIF disappears on release
+
+    settleTimer = 0;
+    currentWeight += (0 - currentWeight) * 0.15;
   }
 
+  // Clamp weight
   if (currentWeight > 1.1) currentWeight = 1.1;
   if (!holding && currentWeight < 0.01) currentWeight = 0;
 
   updateDisplay(jiggleX, jiggleY);
   requestAnimationFrame(animate);
 }
+
+/* USER INTERACTION FOR IOS AUDIO */
+function enableAudio() {
+  if (!userInteracted) {
+    scaleSound.play().then(() => scaleSound.pause()).catch(() => {});
+    userInteracted = true;
+    document.removeEventListener("touchstart", enableAudio);
+    document.removeEventListener("mousedown", enableAudio);
+  }
+}
+document.addEventListener("touchstart", enableAudio, { passive: true });
+document.addEventListener("mousedown", enableAudio);
 
 /* INPUT HANDLERS */
 document.addEventListener("mousedown", () => holding = true);
