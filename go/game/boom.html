@@ -358,6 +358,17 @@ function startGame(){
     leaderboardBtn.style.zIndex = 100; 
 }
 
+// ======== AUTO-START ON FIRST TOUCH/CLICK ========
+function autoStartGameOnce(e) {
+    startGame();             // start the game
+    e.preventDefault();      // prevent default browser behavior
+    window.removeEventListener('touchstart', autoStartGameOnce);
+    window.removeEventListener('mousedown', autoStartGameOnce);
+}
+
+window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
+window.addEventListener('mousedown', autoStartGameOnce);
+
 playOverlay.addEventListener('click',startGame);
 playOverlay.addEventListener('touchstart',startGame,{passive:true});
 
