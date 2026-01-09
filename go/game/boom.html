@@ -29,7 +29,25 @@ canvas {
   background: #ffffff;
 }
 
-/* UI */
+#startScreen {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 10;
+}
+
+#startScreen p {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 36px;
+  color: #2d93ea;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+
 .score {
   position: absolute;
   top: 12px;
@@ -48,12 +66,20 @@ canvas {
   text-align: center;
   display: none;
   z-index: 10;
+  opacity: 0;
+  transition: opacity 1s ease;
 }
 
 .game-over h1 {
   font-size: 48px;
   color: #2d93ea;
   margin-bottom: 20px;
+}
+
+.game-over p {
+  font-size: 28px;
+  color: #2d93ea;
+  margin-bottom: 16px;
 }
 
 .game-over button {
@@ -67,14 +93,15 @@ canvas {
 }
 </style>
 </head>
-
 <body>
 
+<div id="startScreen"><p>Click or tap to start!</p></div>
 <div class="score" id="score">0</div>
 
 <div class="game-over" id="gameOver">
   <h1>Game Over</h1>
   <p id="finalScore"></p>
+  <p id="highScore"></p>
   <button id="restartBtn">Restart</button>
 </div>
 
@@ -86,122 +113,188 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const GRAVITY = 0.5;
-const LIFT = -10;
-const BALL_RADIUS = 20;
+// Physics
+const GRAVITY = 0.4;
+const LIFT = -9;
+const BALL_RADIUS = 30; // 1.5x
 const HOOP_WIDTH = 100;
 const HOOP_HEIGHT = 15;
-const HOOP_GAP = 180; // vertical gap to pass through
-const HOOP_SPEED = 4;
+const HOOP_GAP = 180;
+const HOOP_SPEED = 2.0; // slower, smooth swing
+const MAX_ROT = Math.PI / 3.6; // ~50 degrees
 
-let ball = { x: 150, y: canvas.height/2, vy: 0 };
+let ball = { x: 150, y: canvas.height/2, vy: 0, angle: 0, falling:false };
 let hoops = [];
 let score = 0;
 let streak = 0;
 let gameOver = false;
+let gameStarted = false;
 
-// Sprites (customizable later)
+// Highscore
+let highScore = localStorage.getItem('highScore') || 0;
+
+// Sprites
 let ballImg = new Image();
-ballImg.src = "ball.png"; // replace with your png
-
+ballImg.src = "ball.png";
 let hoopImg = new Image();
-hoopImg.src = "hoop.png"; // replace with your png
+hoopImg.src = "hoop.png";
 
-// Initialize hoops
+// Particles
+let particles = [];
+
 function addHoop() {
-  const y = Math.random() * (canvas.height - HOOP_GAP - 100) + 50;
-  hoops.push({ x: canvas.width, y: y });
+  const y = Math.random() * (canvas.height - HOOP_GAP - 150) + 75;
+  hoops.push({ x: canvas.width, y: y, passed: false });
 }
 
-// Handle tap/click
-function jump() {
-  if (!gameOver) ball.vy = LIFT;
-}
-
-// Listen for desktop + mobile
-window.addEventListener('mousedown', jump);
-window.addEventListener('touchstart', jump, { passive: true });
-
-// Game loop
-function loop() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Gravity
-  ball.vy += GRAVITY;
-  ball.y += ball.vy;
-
-  // Ball collision with top/bottom
-  if(ball.y + BALL_RADIUS > canvas.height || ball.y - BALL_RADIUS < 0) {
-    endGame();
+function addParticles(x, y) {
+  for(let i=0;i<15;i++){
+    particles.push({x:x, y:y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*-4, alpha:1});
   }
+}
 
-  // Draw ball
-  ctx.drawImage(ballImg, ball.x - BALL_RADIUS, ball.y - BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
+function drawParticles() {
+  for(let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    ctx.fillStyle = `rgba(45,147,234,${p.alpha})`;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,3,0,2*Math.PI);
+    ctx.fill();
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.2;
+    p.alpha -= 0.03;
+    if(p.alpha <=0) particles.splice(i,1);
+  }
+}
 
-  // Move hoops
-  for (let i = hoops.length-1; i >= 0; i--) {
-    hoops[i].x -= HOOP_SPEED;
+// Click/tap input
+function handleInput() {
+  if(!gameStarted){
+    gameStarted = true;
+    document.getElementById('startScreen').style.display='none';
+    loop();
+  }
+  if(!gameOver && !ball.falling) ball.vy = LIFT;
+}
 
-    // Draw hoop (top)
-    ctx.drawImage(hoopImg, hoops[i].x, hoops[i].y, HOOP_WIDTH, HOOP_HEIGHT);
-    // Draw hoop (bottom)
-    ctx.drawImage(hoopImg, hoops[i].x, hoops[i].y + HOOP_GAP, HOOP_WIDTH, HOOP_HEIGHT);
+window.addEventListener('mousedown', handleInput);
+window.addEventListener('touchstart', handleInput, {passive:true});
 
-    // Check score
-    if (!hoops[i].passed && ball.x > hoops[i].x + HOOP_WIDTH/2) {
-      hoops[i].passed = true;
-      let ballCenter = ball.y;
-      let hoopCenter = hoops[i].y + HOOP_GAP/2;
-      let distance = Math.abs(ballCenter - hoopCenter);
+// Main loop
+function loop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-      if(distance < HOOP_GAP/4) {
-        streak++;
-        score += 1 + streak; // bonus for perfect
-      } else {
-        streak = 0;
-        score += 1;
-      }
+  if(gameStarted){
+    // Gravity
+    if(!ball.falling) ball.vy += GRAVITY;
+    ball.y += ball.vy;
 
-      document.getElementById('score').textContent = score;
+    // Limit rotation
+    ball.angle = Math.max(Math.min(ball.vy * 0.05, MAX_ROT), -MAX_ROT);
+
+    // Ball hits floor if falling
+    if(ball.falling && ball.y + BALL_RADIUS >= canvas.height){
+      ball.y = canvas.height - BALL_RADIUS;
+      ball.vy = 0;
+      showGameOver();
     }
 
-    // Remove hoops off screen
-    if (hoops[i].x + HOOP_WIDTH < 0) hoops.splice(i, 1);
-  }
+    // Draw ball rotated
+    ctx.save();
+    ctx.translate(ball.x, ball.y);
+    ctx.rotate(ball.angle);
+    ctx.drawImage(ballImg, -BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
+    ctx.restore();
 
-  // Add new hoop
-  if(hoops.length === 0 || hoops[hoops.length-1].x < canvas.width - 400) addHoop();
+    // Hoops
+    for(let i=hoops.length-1;i>=0;i--){
+      let h = hoops[i];
+      h.x -= HOOP_SPEED;
+
+      ctx.drawImage(hoopImg, h.x, h.y, HOOP_WIDTH, HOOP_HEIGHT);
+
+      // Collision detection
+      if(!h.passed && ball.x + BALL_RADIUS > h.x && ball.x - BALL_RADIUS < h.x + HOOP_WIDTH){
+        const top = h.y;
+        const bottom = h.y + HOOP_GAP;
+
+        if(ball.y - BALL_RADIUS < top){ 
+          // hit top rim
+          ball.vy = 0.5; 
+          ball.y = top - BALL_RADIUS;
+        } else if(ball.y + BALL_RADIUS > bottom){
+          // hit bottom rim
+          ball.vy = 0.5;
+          ball.y = bottom + BALL_RADIUS;
+        } else {
+          // Successful pass
+          const hoopCenter = top + HOOP_GAP/2;
+          const distance = Math.abs(ball.y - hoopCenter);
+          if(distance < HOOP_GAP/4){
+            streak++;
+            score += 1 + streak;
+            addParticles(ball.x, ball.y);
+          } else {
+            streak = 0;
+            score += 1;
+          }
+          document.getElementById('score').textContent = score;
+          h.passed = true;
+        }
+      }
+
+      // End game if hoop passed without entering
+      if(!h.passed && ball.x - BALL_RADIUS > h.x + HOOP_WIDTH){
+        ball.falling = true;
+        streak = 0;
+      }
+
+      // Remove offscreen hoops
+      if(h.x + HOOP_WIDTH < 0) hoops.splice(i,1);
+    }
+
+    // Add new hoops
+    if(hoops.length === 0 || hoops[hoops.length-1].x < canvas.width - 400) addHoop();
+
+    // Draw particles
+    drawParticles();
+  }
 
   if(!gameOver) requestAnimationFrame(loop);
 }
 
-// End game
-function endGame() {
+function showGameOver(){
   gameOver = true;
-  document.getElementById('finalScore').textContent = "Score: " + score;
-  document.getElementById('gameOver').style.display = 'block';
+  if(score > highScore){
+    highScore = score;
+    localStorage.setItem('highScore', highScore);
+  }
+  const goEl = document.getElementById('gameOver');
+  document.getElementById('finalScore').textContent = "Score: "+score;
+  document.getElementById('highScore').textContent = "Highscore: "+highScore;
+  goEl.style.display = 'block';
+  goEl.style.opacity = 1;
 }
 
 // Restart
-document.getElementById('restartBtn').addEventListener('click', () => {
-  ball = { x: 150, y: canvas.height/2, vy: 0 };
+document.getElementById('restartBtn').addEventListener('click',()=>{
+  ball = { x:150, y:canvas.height/2, vy:0, angle:0, falling:false };
   hoops = [];
   score = 0;
   streak = 0;
   gameOver = false;
-  document.getElementById('gameOver').style.display = 'none';
-  document.getElementById('score').textContent = score;
-  loop();
+  gameStarted = false;
+  document.getElementById('gameOver').style.display='none';
+  document.getElementById('score').textContent=score;
+  document.getElementById('startScreen').style.display='flex';
 });
 
 // Resize
-window.addEventListener('resize', () => {
+window.addEventListener('resize', ()=>{
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 });
-
-loop();
 </script>
-
 </body>
 </html>
