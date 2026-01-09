@@ -6,12 +6,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+/* FONT */
 @font-face {
   font-family: "RuneScape UF";
-  src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
-       url("../fonts/RuneScape-UF.woff") format("woff");
+  src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
+       url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
+/* RESET */
 html, body {
   margin: 0;
   padding: 0;
@@ -25,7 +27,7 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 
-  cursor: url("cursor/cursor.png"), auto; /* updated cursor path */
+  cursor: url("../../images/cursor/cursor.png"), auto;
 }
 
 /* BACK BUTTON */
@@ -38,13 +40,13 @@ html, body {
   border: none;
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("cursor/cursor-hover.png"), pointer; /* updated cursor path */
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
   z-index: 10;
 }
 
-/* SCALE */
+/* SCALE WRAPPER */
 .scale-wrapper {
   position: relative;
   z-index: 5;
@@ -53,6 +55,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 
 .weight {
@@ -125,12 +128,12 @@ function animate() {
 
   if (holding) {
     // Smooth realistic climb to 1g
-    const climbSpeed = 0.06; 
+    const climbSpeed = 0.06;
     currentWeight += (1 - currentWeight) * climbSpeed;
     settleTimer++;
 
     if (currentWeight >= 0.99) {
-      // Realistic micro-jiggle around 1g
+      // Micro-jiggle around 1g
       if (Math.random() < 0.16) {
         currentWeight = 1 + (Math.random() - 0.5) * 0.06;
         jiggleX = (Math.random() - 0.5) * 3;
@@ -157,7 +160,7 @@ function animate() {
     currentWeight += (0 - currentWeight) * 0.15;
     settleTimer = 0;
     justHitOneGram = false;
-    gifContainer.style.display = "none"; // hide GIF when released
+    gifContainer.style.display = "none";
   }
 
   // Clamp weight
