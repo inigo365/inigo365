@@ -29,16 +29,6 @@ canvas {
   background: #ffffff;
 }
 
-.score {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 36px;
-  color: #2d93ea;
-  z-index: 5;
-}
-
 .point-popup {
   position: absolute;
   font-size: 28px;
@@ -48,6 +38,21 @@ canvas {
   opacity: 0;
   transition: opacity 0.3s, transform 0.3s;
   z-index: 6;
+}
+
+/* Top scores */
+#topScores {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 28px;
+  font-family: 'RuneScape UF', Arial, sans-serif;
+  color: #2d93ea;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  gap: 40px;
 }
 </style>
 </head>
@@ -63,14 +68,14 @@ canvas {
     max-height: 80%;
     width: auto;
     height: auto;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(0.8);
     opacity: 0;
-    transition: opacity 0.5s;
+    transition: opacity 0.5s, transform 0.5s;
     z-index: 50;
     cursor: pointer;
 ">
 
-<!-- highscore overlay -->
+<!-- bottom overlays for death -->
 <div id="overlayHighscore" style="
     position: absolute;
     top: 84%;
@@ -85,7 +90,6 @@ canvas {
     transition: opacity 0.5s;
 "></div>
 
-<!-- last score overlay -->
 <div id="overlayLastScore" style="
     position: absolute;
     top: 90%;
@@ -100,7 +104,11 @@ canvas {
     transition: opacity 0.5s;
 "></div>
 
-<div class="score" id="score">0</div>
+<!-- top scores -->
+<div id="topScores">
+    <div id="topCurrentScore">current score: 0</div>
+    <div id="topHighscore">highscore: 0</div>
+</div>
 
 <canvas id="gameCanvas"></canvas>
 <div class="point-popup" id="pointPopup">+1</div>
@@ -143,47 +151,110 @@ mythicImg.src = 'sprites/mythic1.png';
 mythicImg.onload = ()=>{ loadedCount++; if(loadedCount===NUM_SPRITES+1) assetsLoaded=true; };
 
 // Rarity logic
-function getRarityRange(score){ if(score>=250) return {min:NUM_SPRITES,max:NUM_SPRITES}; let maxSprite=Math.min(4+Math.floor(score/5),NUM_SPRITES-1); return {min:0,max:maxSprite}; }
+function getRarityRange(score){ 
+  if(score>=250) return {min:NUM_SPRITES,max:NUM_SPRITES}; 
+  let maxSprite=Math.min(4+Math.floor(score/5),NUM_SPRITES-1); 
+  return {min:0,max:maxSprite}; 
+}
 function getWeightedSpriteIndex(first=false){
-  const used=new Set(); used.add(ball.spriteIndex); hoops.forEach(h=>used.add(h.spriteIndex));
-  let {min,max}=getRarityRange(score); if(first){min=0; max=4;}
-  const candidates=[]; for(let i=min;i<=max;i++) if(!used.has(i)) candidates.push(i);
+  const used=new Set(); 
+  used.add(ball.spriteIndex); 
+  hoops.forEach(h=>used.add(h.spriteIndex));
+  let {min,max}=getRarityRange(score); 
+  if(first){min=0; max=4;}
+  const candidates=[]; 
+  for(let i=min;i<=max;i++) if(!used.has(i)) candidates.push(i);
   if(candidates.length===0) return Math.floor(Math.random()*(max-min+1))+min;
   if(score>=250) return NUM_SPRITES;
-  const newestBag=max; const weighted=[]; candidates.forEach(i=>{ if(i===newestBag){for(let w=0;w<5;w++) weighted.push(i);} else{for(let w=0;w<2;w++) weighted.push(i);} });
+  const newestBag=max; 
+  const weighted=[]; 
+  candidates.forEach(i=>{
+    if(i===newestBag){for(let w=0;w<5;w++) weighted.push(i);} 
+    else{for(let w=0;w<2;w++) weighted.push(i);}
+  });
   return weighted[Math.floor(Math.random()*weighted.length)];
 }
 
 // Popup
 const pointPopup = document.getElementById('pointPopup');
-function showPopup(text,x,y){ pointPopup.textContent=text; pointPopup.style.left=x+'px'; pointPopup.style.top=y+'px'; pointPopup.style.opacity=1; pointPopup.style.transform="translateY(-30px)"; setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400); }
+function showPopup(text,x,y){ 
+  pointPopup.textContent=text; 
+  pointPopup.style.left=x+'px'; 
+  pointPopup.style.top=y+'px'; 
+  pointPopup.style.opacity=1; 
+  pointPopup.style.transform="translateY(-30px)"; 
+  setTimeout(()=>{pointPopup.style.opacity=0; pointPopup.style.transform="translateY(-50px)";},400); 
+}
 
 // Hoops
-function addHoop(){ const y=Math.random()*(canvas.height-240)+120; const spriteIndex=getWeightedSpriteIndex(); hoops.push({x:canvas.width+50,y,spriteIndex}); }
+function addHoop(){ 
+  const y=Math.random()*(canvas.height-240)+120; 
+  const spriteIndex=getWeightedSpriteIndex(); 
+  hoops.push({x:canvas.width+50,y,spriteIndex}); 
+}
 
-// Overlay
+// Overlays
 const playOverlay = document.getElementById('playOverlay');
 const overlayHighscore = document.getElementById('overlayHighscore');
 const overlayLastScore = document.getElementById('overlayLastScore');
+const topCurrentScore = document.getElementById('topCurrentScore');
+const topHighscore = document.getElementById('topHighscore');
 
-function updateHighscore(){ const hs=localStorage.getItem('flappyBasketHighscore')||0; overlayHighscore.textContent="highscore: "+hs; }
-
-function showOverlay(showLastScore=false){
-  updateHighscore();
-  playOverlay.style.opacity=1;
-  overlayHighscore.style.opacity=1;
-  if(showLastScore){ overlayLastScore.textContent="last score: "+score; overlayLastScore.style.opacity=1; }
-  else{ overlayLastScore.style.opacity=0; }
-  gameStarted=false;
+function updateTopScores() {
+    topCurrentScore.textContent = "current score: " + score;
+    const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+    topHighscore.textContent = "highscore: " + hs;
 }
 
-function hideOverlay(){ playOverlay.style.opacity=0; overlayHighscore.style.opacity=0; overlayLastScore.style.opacity=0; }
+function updateBottomHighscore() {
+    const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+    overlayHighscore.textContent = "highscore: " + hs;
+}
+
+function showOverlay(showLastScore=false){
+    playOverlay.style.opacity = 1;
+    playOverlay.style.transform = "translate(-50%, -50%) scale(1)";
+    updateBottomHighscore();
+    overlayHighscore.style.opacity = 1;
+
+    if(showLastScore){
+        overlayLastScore.textContent = "last score: " + score;
+        overlayLastScore.style.opacity = 1;
+    } else {
+        overlayLastScore.style.opacity = 0;
+    }
+
+    gameStarted = false;
+}
+
+function hideOverlay(){
+    playOverlay.style.opacity = 0;
+    playOverlay.style.transform = "translate(-50%, -50%) scale(0.8)";
+    overlayHighscore.style.opacity = 0;
+    overlayLastScore.style.opacity = 0;
+}
+
+// Update top scores continuously
+setInterval(updateTopScores,100);
 
 // Fade in on load
 window.addEventListener('load', ()=>{ showOverlay(false); });
 
 // Start / jump
-function startGame(){ if(gameStarted || !assetsLoaded) return; hideOverlay(); gameStarted=true; SPEED=4; hoops=[]; score=0; gameOver=false; ball.y=canvas.height/2; ball.vy=0; ball.spriteIndex=getWeightedSpriteIndex(true); document.getElementById('score').textContent=score; addHoop(); loop(); }
+function startGame(){ 
+  if(gameStarted || !assetsLoaded) return; 
+  hideOverlay(); 
+  gameStarted=true; 
+  SPEED=4; 
+  hoops=[]; 
+  score=0; 
+  gameOver=false; 
+  ball.y=canvas.height/2; 
+  ball.vy=0; 
+  ball.spriteIndex=getWeightedSpriteIndex(true); 
+  addHoop(); 
+  loop(); 
+}
 
 playOverlay.addEventListener('click', startGame);
 playOverlay.addEventListener('touchstart', startGame,{passive:true});
@@ -214,7 +285,7 @@ function loop(){
     else{ ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE); }
 
     const hit=ball.x+SPRITE_SIZE/2>h.x && ball.x-SPRITE_SIZE/2<h.x+SPRITE_SIZE && ball.y+SPRITE_SIZE/2>h.y && ball.y-SPRITE_SIZE/2<h.y+SPRITE_SIZE;
-    if(hit){ score++; document.getElementById('score').textContent=score; showPopup('+1',ball.x,ball.y-40); ball.spriteIndex=h.spriteIndex; ball.scaleX=1.25; ball.scaleY=0.75; hoops.splice(i,1); continue; }
+    if(hit){ score++; showPopup('+1',ball.x,ball.y-40); ball.spriteIndex=h.spriteIndex; ball.scaleX=1.25; ball.scaleY=0.75; hoops.splice(i,1); continue; }
     if(h.x+SPRITE_SIZE<ball.x-20) return endGame();
   }
 
@@ -226,14 +297,14 @@ function loop(){
 function endGame(){
   if(gameOver) return;
   gameOver=true;
-  const hs=localStorage.getItem('flappyBasketHighscore')||0;
+  const hs = localStorage.getItem('flappyBasketHighscore')||0;
   if(score>hs) localStorage.setItem('flappyBasketHighscore',score);
-  showOverlay(true);
+  showOverlay(true); // show overlay + last score on death
 }
 
 // Resize
 window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
-</script>
 
+</script>
 </body>
 </html>
