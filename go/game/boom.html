@@ -21,18 +21,13 @@ html, body {
   font-family: "RuneScape UF", Arial, sans-serif;
   cursor: url("../../images/cursor/cursor.png"), auto;
   background: #fff;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
 }
 
-/* BACK BUTTON */
 .back-button {
   position: fixed;
   top: 8px;
   left: 8px;
-  font-size: 28px;
+  font-size: 24px;
   background: transparent;
   border: none;
   color: #2d93ea;
@@ -40,10 +35,11 @@ html, body {
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
-  z-index: 9999;
+  z-index: 100; /* make sure it's above everything */
+  opacity: 1; /* start visible */
+  transition: opacity 0.5s ease;
 }
 
-/* Canvas & overlays */
 canvas {
   display: block;
   margin: 0 auto;
@@ -60,22 +56,6 @@ canvas {
   transition: opacity 0.3s, transform 0.3s;
   z-index: 6;
 }
-
-/* Top scores responsive */
-#topScores {
-  position: absolute;
-  white-space: nowrap;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: "RuneScape UF", Arial, sans-serif;
-  color: #2d93ea;
-  z-index: 50;
-  display: flex;
-  justify-content: center;
-  gap: 5vw;
-  font-size: 2vw;
-}
 </style>
 </head>
 
@@ -83,7 +63,6 @@ canvas {
 
 <button class="back-button" onclick="goBack()">← back</button>
 
-<!-- play.png overlay -->
 <img id="playOverlay" src="play.png" style="
     position: absolute;
     top: 50%;
@@ -99,7 +78,7 @@ canvas {
     cursor: pointer;
 ">
 
-<!-- bottom overlays for after death -->
+<!-- Bottom overlays -->
 <div id="overlayHighscore" style="
     position: absolute;
     top: 84%;
@@ -107,7 +86,7 @@ canvas {
     transform: translateX(-50%);
     font-size: 28px;
     color: #2d93ea;
-    z-index: 50;
+    z-index: 51;
     font-family: 'RuneScape UF', Arial, sans-serif;
     text-align: center;
     opacity: 0;
@@ -121,15 +100,28 @@ canvas {
     transform: translateX(-50%);
     font-size: 28px;
     color: #2d93ea;
-    z-index: 50;
+    z-index: 51;
     font-family: 'RuneScape UF', Arial, sans-serif;
     text-align: center;
     opacity: 0;
     transition: opacity 0.5s;
 "></div>
 
-<!-- top scores -->
-<div id="topScores">
+<!-- Top scores -->
+<div id="topScores" style="
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2vw;
+    font-family: 'RuneScape UF', Arial, sans-serif;
+    color: #2d93ea;
+    z-index: 50;
+    display: flex;
+    justify-content: center;
+    gap: 4vw;
+    white-space: nowrap;
+">
     <div id="topCurrentScore">current score: 0</div>
     <div id="topHighscore">highscore: 0</div>
 </div>
@@ -140,23 +132,20 @@ canvas {
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const backButton = document.querySelector('.back-button');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Physics (Flappy Bird style)
-const GRAVITY = 0.35;
-const JUMP_VELOCITY = -8.5;
-const MAX_FALL_SPEED = 12;
-let SPEED = 3.5;
-const MAX_SPEED = 6;
-const SPEED_INCREMENT = 0.02;
+// Flappy Bird physics
+const GRAVITY = 0.25;
+const LIFT = -6.5;
+let SPEED = 2; 
+const MAX_SPEED = 5; // cap for mythic
+const SPEED_INCREMENT = 0.002; 
 
-// Ball size relative to screen width
-let SPRITE_SIZE = canvas.width * 0.07;
-const NUM_SPRITES = 25;
+let SPRITE_SIZE = Math.round(canvas.height*0.12);
 
-// Game state
-let ball = { x: canvas.width*0.25, y: canvas.height/2, vy:0, spriteIndex:0, scaleX:1, scaleY:1 };
+let ball = { x: Math.round(canvas.width*0.4), y: canvas.height/2, vy:0, spriteIndex:0, scaleX:1, scaleY:1 };
 let hoops = [];
 let score = 0;
 let gameOver = false;
@@ -164,154 +153,139 @@ let gameStarted = false;
 let assetsLoaded = false;
 let glowPulse = 0;
 
-// Sprites
+const NUM_SPRITES = 25;
 const sprites = [];
 let loadedCount = 0;
 for(let i=1;i<=NUM_SPRITES;i++){
-  const img = new Image();
-  img.onload = ()=>{ loadedCount++; if(loadedCount===NUM_SPRITES+1) assetsLoaded=true; };
-  img.src = `sprites/${String(i).padStart(2,'0')}.png`;
+  const img=new Image();
+  img.onload=()=>{loadedCount++;if(loadedCount===NUM_SPRITES+1)assetsLoaded=true;};
+  img.src=`sprites/${String(i).padStart(2,'0')}.png`;
   sprites.push(img);
 }
-const mythicImg = new Image();
-mythicImg.src = 'sprites/mythic1.png';
-mythicImg.onload = ()=>{ loadedCount++; if(loadedCount===NUM_SPRITES+1) assetsLoaded=true; };
+const mythicImg=new Image();
+mythicImg.src='sprites/mythic1.png';
+mythicImg.onload=()=>{loadedCount++;if(loadedCount===NUM_SPRITES+1)assetsLoaded=true;};
 
-// Overlay elements
-const playOverlay = document.getElementById('playOverlay');
-const overlayHighscore = document.getElementById('overlayHighscore');
-const overlayLastScore = document.getElementById('overlayLastScore');
-const topCurrentScore = document.getElementById('topCurrentScore');
-const topHighscore = document.getElementById('topHighscore');
+function getRarityRange(score){if(score>=250)return {min:NUM_SPRITES,max:NUM_SPRITES}; let maxSprite=Math.min(4+Math.floor(score/5),NUM_SPRITES-1); return {min:0,max:maxSprite};}
+function getWeightedSpriteIndex(first=false){const used=new Set();used.add(ball.spriteIndex);hoops.forEach(h=>used.add(h.spriteIndex));let {min,max}=getRarityRange(score);if(first){min=0; max=4;}const candidates=[];for(let i=min;i<=max;i++)if(!used.has(i))candidates.push(i);if(candidates.length===0)return Math.floor(Math.random()*(max-min+1))+min;if(score>=250)return NUM_SPRITES;const newestBag=max;const weighted=[];candidates.forEach(i=>{if(i===newestBag){for(let w=0;w<5;w++)weighted.push(i);}else{for(let w=0;w<2;w++)weighted.push(i);}});return weighted[Math.floor(Math.random()*weighted.length)];}
 
-// Weighted sprite logic
-function getRarityRange(score){ if(score>=250) return {min:NUM_SPRITES,max:NUM_SPRITES}; let maxSprite=Math.min(4+Math.floor(score/5),NUM_SPRITES-1); return {min:0,max:maxSprite}; }
-function getWeightedSpriteIndex(first=false){
-  const used=new Set(); used.add(ball.spriteIndex); hoops.forEach(h=>used.add(h.spriteIndex));
-  let {min,max}=getRarityRange(score); if(first){min=0; max=4;}
-  const candidates=[]; for(let i=min;i<=max;i++) if(!used.has(i)) candidates.push(i);
-  if(candidates.length===0) return Math.floor(Math.random()*(max-min+1))+min;
-  if(score>=250) return NUM_SPRITES;
-  const newestBag=max; const weighted=[]; candidates.forEach(i=>{ if(i===newestBag){for(let w=0;w<5;w++) weighted.push(i);} else{for(let w=0;w<2;w++) weighted.push(i);} });
-  return weighted[Math.floor(Math.random()*weighted.length)];
+const pointPopup=document.getElementById('pointPopup');
+function showPopup(text,x,y){pointPopup.textContent=text;pointPopup.style.left=x+'px';pointPopup.style.top=y+'px';pointPopup.style.opacity=1;pointPopup.style.transform="translateY(-30px)";setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400);}
+
+function addHoop(){const y=Math.random()*(canvas.height-240)+120;const spriteIndex=getWeightedSpriteIndex();hoops.push({x:canvas.width+50,y,spriteIndex});}
+
+const playOverlay=document.getElementById('playOverlay');
+const overlayHighscore=document.getElementById('overlayHighscore');
+const overlayLastScore=document.getElementById('overlayLastScore');
+const topCurrentScore=document.getElementById('topCurrentScore');
+const topHighscore=document.getElementById('topHighscore');
+
+function updateTopScores(){
+    topCurrentScore.textContent="current score: "+score;
+    const hs=localStorage.getItem('flappyBasketHighscore')||0;
+    topHighscore.textContent="highscore: "+hs;
 }
 
-// Popup
-const pointPopup = document.getElementById('pointPopup');
-function showPopup(text,x,y){ pointPopup.textContent=text; pointPopup.style.left=x+'px'; pointPopup.style.top=y+'px'; pointPopup.style.opacity=1; pointPopup.style.transform="translateY(-30px)"; setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400); }
-
-// Hoops (Flappy Bird style spacing)
-function addHoop(){
-    const gapHeight = canvas.height*0.3; // gap relative to screen
-    const y = Math.random()*(canvas.height - gapHeight - 120) + 60;
-    const spriteIndex = getWeightedSpriteIndex();
-    hoops.push({x:canvas.width+SPRITE_SIZE, y, spriteIndex, gapHeight});
-}
-
-// Score updates
-function updateTopScores() {
-    topCurrentScore.textContent = "current score: " + score;
-    const hs = localStorage.getItem('flappyBasketHighscore') || 0;
-    topHighscore.textContent = "highscore: " + hs;
-}
-
-function updateOverlayHighscore(){
-    const hs = localStorage.getItem('flappyBasketHighscore') || 0;
-    overlayHighscore.textContent = "highscore: " + hs;
-}
-
-// Show overlay (bottom)
 function showOverlay(showLastScore=false){
-    playOverlay.style.opacity = 1;
-    playOverlay.style.transform = "translate(-50%, -50%) scale(1)";
-    overlayHighscore.style.opacity = 1;
-    updateOverlayHighscore();
-    overlayLastScore.style.opacity = showLastScore? 1 : 0;
-    if(showLastScore) overlayLastScore.textContent = "last score: " + score;
-    topCurrentScore.style.display = "none";
-    topHighscore.style.display = "none";
-    gameStarted = false;
+    playOverlay.style.opacity=1;
+    playOverlay.style.transform="translate(-50%,-50%) scale(1)";
+    overlayHighscore.style.opacity=1;
+    overlayHighscore.textContent="highscore: "+(localStorage.getItem('flappyBasketHighscore')||0);
+    topCurrentScore.style.display="none";
+    topHighscore.style.display="none";
+    if(showLastScore){overlayLastScore.textContent="last score: "+score; overlayLastScore.style.opacity=1;}
+    else{overlayLastScore.style.opacity=0;}
+    gameStarted=false;
 }
 
-// Hide overlay
 function hideOverlay(){
-    playOverlay.style.opacity = 0;
-    playOverlay.style.transform = "translate(-50%, -50%) scale(0.8)";
-    overlayHighscore.style.opacity = 0;
-    overlayLastScore.style.opacity = 0;
-    topCurrentScore.style.display = "flex";
-    topHighscore.style.display = "flex";
+    playOverlay.style.opacity=0;
+    playOverlay.style.transform="translate(-50%,-50%) scale(0.8)";
+    overlayHighscore.style.opacity=0;
+    overlayLastScore.style.opacity=0;
+    topCurrentScore.style.display="flex";
+    topHighscore.style.display="flex";
 }
 
-// Continuously update top scores
-setInterval(updateTopScores, 100);
+setInterval(updateTopScores,100);
+window.addEventListener('load',()=>{showOverlay(false);});
 
-// Load
-window.addEventListener('load', ()=>{ showOverlay(false); });
-
-// Start game
-function startGame(e){
-    if(gameStarted || !assetsLoaded) return;
-    if(e) e.stopPropagation();
+function startGame(){
+    if(gameStarted||!assetsLoaded)return;
     hideOverlay();
-    gameStarted = true;
-    SPEED = 3.5;
-    hoops = [];
-    score = 0;
-    gameOver = false;
-    SPRITE_SIZE = canvas.width * 0.07;
-    ball.x = canvas.width*0.25;
-    ball.y = canvas.height/2;
-    ball.vy = 0;
-    ball.spriteIndex = getWeightedSpriteIndex(true);
+    gameStarted=true;
+    SPEED=2;
+    hoops=[];
+    score=0;
+    gameOver=false;
+    ball.x=Math.round(canvas.width*0.4);
+    ball.y=canvas.height/2;
+    ball.vy=0;
+    ball.spriteIndex=getWeightedSpriteIndex(true);
     addHoop();
     loop();
+    backButton.style.opacity = 0;
 }
-playOverlay.addEventListener('click', startGame);
-playOverlay.addEventListener('touchstart', startGame, {passive:false});
 
-// Jump
-function jump(e){
-    if(!gameStarted || gameOver) return;
-    if(e) e.preventDefault();
-    ball.vy = JUMP_VELOCITY;
+playOverlay.addEventListener('click',startGame);
+playOverlay.addEventListener('touchstart',startGame,{passive:true});
+
+function jump(){
+  if(gameStarted && !gameOver) ball.vy = LIFT;
 }
-window.addEventListener('mousedown', jump);
-window.addEventListener('touchstart', jump, {passive:false});
+let touchActive = false;
 
-// Game loop
+window.addEventListener('touchstart', (e)=>{
+    e.preventDefault(); // prevent triggering mouse events
+    touchActive = true;
+    jump();
+}, { passive:false });
+
+window.addEventListener('touchend', ()=>{
+    touchActive = false;
+});
+
+window.addEventListener('mousedown', (e)=>{
+    if(!touchActive) jump();
+});
+
+function updateTopScoreSize() {
+    const vw = window.innerWidth;
+    if(vw <= 768){ // mobile
+        topCurrentScore.style.fontSize = '5.5vw';
+        topHighscore.style.fontSize = '5.5vw';
+    } else { // desktop
+        topCurrentScore.style.fontSize = '2vw';
+        topHighscore.style.fontSize = '2vw';
+    }
+}
+
+window.addEventListener('resize', updateTopScoreSize);
+window.addEventListener('load', updateTopScoreSize);
+
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  ball.vy+=GRAVITY;
+  ball.y+=ball.vy;
+  
+  if(ball.y<0||ball.y>canvas.height)return endGame();
+  
+  if(score<250 && SPEED<MAX_SPEED) SPEED+=SPEED_INCREMENT;
 
-  // physics
-  ball.vy += GRAVITY;
-  if(ball.vy > MAX_FALL_SPEED) ball.vy = MAX_FALL_SPEED;
-  ball.y += ball.vy;
-
-  if(ball.y < 0 || ball.y > canvas.height) return endGame();
-  if(score < 250 && SPEED < MAX_SPEED) SPEED += SPEED_INCREMENT;
-
-  ball.scaleX += (1-ball.scaleX)*0.15;
-  ball.scaleY += (1-ball.scaleY)*0.15;
-  glowPulse += 0.05;
-
+  glowPulse+=0.05;
+  
   ctx.save();
   ctx.translate(ball.x,ball.y);
   ctx.scale(ball.scaleX,ball.scaleY);
-  if(ball.spriteIndex===NUM_SPRITES){ ctx.shadowColor='yellow'; ctx.shadowBlur=20+Math.sin(glowPulse)*10; ctx.drawImage(mythicImg,-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE); ctx.shadowBlur=0; }
-  else if(ball.spriteIndex>=15){ const intensity=(ball.spriteIndex-14)*3+Math.sin(glowPulse)*4; ctx.shadowColor='rgba(255,215,0,0.8)'; ctx.shadowBlur=intensity; ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE); ctx.shadowBlur=0; }
-  else{ ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE); }
+  if(ball.spriteIndex===NUM_SPRITES){ctx.shadowColor='yellow';ctx.shadowBlur=20+Math.sin(glowPulse)*10;ctx.drawImage(mythicImg,-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
+  else if(ball.spriteIndex>=15){const intensity=(ball.spriteIndex-14)*3+Math.sin(glowPulse)*4;ctx.shadowColor='rgba(255,215,0,0.8)';ctx.shadowBlur=intensity;ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
+  else{ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);}
   ctx.restore();
 
-  // hoops
   for(let i=hoops.length-1;i>=0;i--){
-    const h=hoops[i]; h.x-=SPEED;
-    if(h.spriteIndex===NUM_SPRITES){ ctx.shadowColor='yellow'; ctx.shadowBlur=20+Math.sin(glowPulse)*10; ctx.drawImage(mythicImg,h.x,h.y,SPRITE_SIZE,SPRITE_SIZE); ctx.shadowBlur=0; }
-    else if(h.spriteIndex>=15){ const intensity=(h.spriteIndex-14)*3+Math.sin(glowPulse)*4; ctx.shadowColor='rgba(255,215,0,0.8)'; ctx.shadowBlur=intensity; ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE); ctx.shadowBlur=0; }
-    else{ ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE); }
-
+    const h=hoops[i];h.x-=SPEED;ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE);
     const hit = ball.x+SPRITE_SIZE/2>h.x && ball.x-SPRITE_SIZE/2<h.x+SPRITE_SIZE && ball.y+SPRITE_SIZE/2>h.y && ball.y-SPRITE_SIZE/2<h.y+SPRITE_SIZE;
-    if(hit){ score++; showPopup('+1',ball.x,ball.y-40); ball.spriteIndex=h.spriteIndex; ball.scaleX=1.25; ball.scaleY=0.75; hoops.splice(i,1); continue; }
+    if(hit){score++;showPopup('+1',ball.x,ball.y-40);ball.spriteIndex=h.spriteIndex;hoops.splice(i,1);continue;}
     if(h.x+SPRITE_SIZE<ball.x-20) return endGame();
   }
 
@@ -319,26 +293,22 @@ function loop(){
   if(!gameOver) requestAnimationFrame(loop);
 }
 
-// End game
 function endGame(){
-  if(gameOver) return;
+  if(gameOver)return;
   gameOver=true;
   const hs=localStorage.getItem('flappyBasketHighscore')||0;
-  if(score>hs) localStorage.setItem('flappyBasketHighscore',score);
+  if(score>hs)localStorage.setItem('flappyBasketHighscore',score);
   showOverlay(true);
+  backButton.style.opacity = 1;
 }
 
-// Back button
-function goBack(){ window.location.href = "../index.html"; }
-
-// Resize
 window.addEventListener('resize',()=>{
   canvas.width=window.innerWidth;
   canvas.height=window.innerHeight;
-  SPRITE_SIZE = canvas.width * 0.07;
-  ball.x = canvas.width*0.25;
+  SPRITE_SIZE=Math.round(canvas.height*0.12);
 });
-</script>
 
+function goBack(){window.location.href="../index.html";}
+</script>
 </body>
 </html>
