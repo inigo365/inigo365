@@ -23,10 +23,6 @@ html, body {
   background: #fff;
 }
 
-body.leaderboard-open > *:not(.leaderboard):not(script) {
-  pointer-events: none;
-}
-
 /* Back Button */
 .back-button {
   position: fixed;
@@ -128,24 +124,27 @@ canvas {
 }
 
 /* Leaderboard */
-.leaderboard {
+#leaderboardBackdrop {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.95);
+  display: none;
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+.leaderboard {
   background: white;
   border: 2px solid #2d93ea;
   padding: 24px;
-  z-index: 150;
-  display: none;
   min-width: 280px;
   max-height: 80vh;
   overflow-y: auto;
-  z-index: 10000;
-}
-
-.leaderboard.show {
-  display: block;
+  position: relative;
 }
 
 .leaderboard h3 {
@@ -209,12 +208,10 @@ canvas {
 }
 </style>
 </head>
-
 <body>
 
 <button class="back-button" onclick="goBack()">← back</button>
 
-<!-- Audio -->
 <audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
 
 <img id="playOverlay" src="play.png" style="
@@ -223,8 +220,6 @@ canvas {
     left: 50%;
     max-width: 80%;
     max-height: 80%;
-    width: auto;
-    height: auto;
     transform: translate(-50%, -50%) scale(0.8);
     opacity: 0;
     transition: opacity 0.5s, transform 0.5s;
@@ -232,57 +227,16 @@ canvas {
     cursor: pointer;
 ">
 
-<!-- Bottom overlays -->
-<div id="overlayHighscore" style="
-    position: absolute;
-    top: 84%;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 28px;
-    color: #2d93ea;
-    z-index: 51;
-    font-family: 'RuneScape UF', Arial, sans-serif;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.5s;
-"></div>
+<div id="overlayHighscore" style="position: absolute; top: 84%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
+<div id="overlayLastScore" style="position: absolute; top: 90%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
 
-<div id="overlayLastScore" style="
-    position: absolute;
-    top: 90%;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 28px;
-    color: #2d93ea;
-    z-index: 51;
-    font-family: 'RuneScape UF', Arial, sans-serif;
-    text-align: center;
-    opacity: 0;
-    transition: opacity 0.5s;
-"></div>
-
-<!-- Top scores -->
-<div id="topScores" style="
-    position: absolute;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-family: 'RuneScape UF', Arial, sans-serif;
-    color: #2d93ea;
-    z-index: 50;
-    display: flex;
-    justify-content: center;
-    gap: 4vw;
-    white-space: nowrap;
-">
-    <div id="topCurrentScore">current score: 0</div>
-    <div id="topHighscore">highscore: 0</div>
+<div id="topScores" style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); font-family: 'RuneScape UF', Arial, sans-serif; color: #2d93ea; z-index: 50; display: flex; justify-content: center; gap: 4vw; white-space: nowrap;">
+  <div id="topCurrentScore">current score: 0</div>
+  <div id="topHighscore">highscore: 0</div>
 </div>
 
-<!-- Leaderboard Button -->
 <button class="leaderboard-btn" onclick="toggleLeaderboard()">leaderboard</button>
 
-<!-- Name Input Modal -->
 <div class="name-modal" id="nameModal">
   <h2>game over!</h2>
   <div class="final-score" id="finalScore">score: 0</div>
@@ -291,19 +245,19 @@ canvas {
   <button onclick="playAgain()">play again</button>
 </div>
 
-<!-- Leaderboard -->
-<div class="leaderboard" id="leaderboard">
-  <button class="leaderboard-close" onclick="toggleLeaderboard()">×</button>
-  <h3>leaderboard</h3>
-  <div id="leaderboardEntries">loading...</div>
+<div id="leaderboardBackdrop">
+  <div class="leaderboard" id="leaderboard">
+    <button class="leaderboard-close" onclick="toggleLeaderboard()">×</button>
+    <h3>leaderboard</h3>
+    <div id="leaderboardEntries">loading...</div>
+  </div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
 <div class="point-popup" id="pointPopup">+1</div>
 
 <script>
-// ======= ORIGINAL GAME CODE (UNCHANGED) =======
-
+// ===================== GAME VARIABLES =====================
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const backButton = document.querySelector('.back-button');
@@ -311,7 +265,6 @@ const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Flappy Bird physics
 const GRAVITY = 0.32;
 const LIFT = -6.9;
 let SPEED = 3;
@@ -402,7 +355,7 @@ function startGame(){
     loop();
     backButton.style.opacity = 0;
     leaderboardBtn.style.display = 'none'; 
-    leaderboardBtn.style.zIndex = 100; // reset
+    leaderboardBtn.style.zIndex = 100; 
 }
 
 playOverlay.addEventListener('click',startGame);
@@ -410,10 +363,10 @@ playOverlay.addEventListener('touchstart',startGame,{passive:true});
 
 function playAgain() {
   const nameModal = document.getElementById('nameModal');
-  const leaderboardEl = document.getElementById('leaderboard');
+  const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
 
   nameModal.classList.remove('show');
-  leaderboardEl.classList.remove('show'); // 👈 auto-close leaderboard
+  leaderboardBackdrop.style.display = 'none';
 
   gameStarted = false;
   gameOver = false;
@@ -480,12 +433,7 @@ function endGame(){
   if(score>hs)localStorage.setItem('flappyBasketHighscore',score);
   backButton.style.opacity = 1;
   leaderboardBtn.style.display = 'block';
-  // Show name input modal instead of overlay
-  if(typeof showNameModal === 'function') {
-    showNameModal(score);
-  } else {
-    showOverlay(true);
-  }
+  showNameModal(score);
 }
 
 window.addEventListener('resize',()=>{
@@ -494,7 +442,7 @@ window.addEventListener('resize',()=>{
   SPRITE_SIZE=Math.round(canvas.height*0.12);
 });
 
-// ------------------- MUSIC FIX FOR ALL DEVICES -------------------
+// ------------------- MUSIC -------------------
 const bgMusic = document.getElementById('bgMusic');
 bgMusic.volume = 0.5;
 bgMusic.loop = true;
@@ -512,7 +460,6 @@ function startBgMusic() {
     window.removeEventListener('mousedown', startBgMusic);
 }
 
-// Fallback: attempt to play immediately and also on user gesture
 startBgMusic();
 window.addEventListener('touchstart', startBgMusic, {passive:true});
 window.addEventListener('mousedown', startBgMusic);
@@ -520,30 +467,23 @@ window.addEventListener('mousedown', startBgMusic);
 // ------------------- NAVIGATION -------------------
 function goBack(){window.location.href="../index.html";}
 
-// ======= LEADERBOARD CODE (LOADS AFTER GAME) =======
+// ================== LEADERBOARD ==================
 (function initLeaderboard() {
   const nameModal = document.getElementById('nameModal');
   const finalScoreEl = document.getElementById('finalScore');
   const playerNameInput = document.getElementById('playerName');
   const leaderboardEl = document.getElementById('leaderboard');
+  const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
   const leaderboardEntriesEl = document.getElementById('leaderboardEntries');
 
-  // Supabase config
   const SUPABASE_URL = 'https://rlxtggsefecwcpgkjern.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_4mNOVz4GqFxtlJWOtzfXIQ_OaI1hLGT';
   let supabaseClient = null;
 
-  // Load Supabase dynamically
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
   script.onload = function() {
-    try {
-      if (window.supabase) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-    } catch(e) {
-      console.error('Supabase init error:', e);
-    }
+    if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   };
   document.head.appendChild(script);
 
@@ -553,68 +493,53 @@ function goBack(){window.location.href="../index.html";}
       return [];
     }
     try {
-      const { data, error } = await supabaseClient
-        .from('highscores')
-        .select('*')
-        .order('score', { ascending: false })
-        .limit(20);
+      const { data, error } = await supabaseClient.from('highscores').select('*').order('score', { ascending: false }).limit(20);
       if (error) throw error;
       return data || [];
-    } catch(e) {
-      console.error('Fetch error:', e);
-      return [];
-    }
+    } catch(e){ console.error(e); return []; }
   }
 
   async function saveScoreToDb(name, scoreVal) {
     if (!supabaseClient) return;
-    try {
-      await supabaseClient.from('highscores').insert([{ name, score: scoreVal }]);
-    } catch(e) {
-      console.error('Save error:', e);
-    }
+    try { await supabaseClient.from('highscores').insert([{ name, score: scoreVal }]); }
+    catch(e){ console.error(e); }
   }
 
   function renderLeaderboard(entries) {
-    if (entries.length === 0) {
+    if (!entries.length) {
       leaderboardEntriesEl.innerHTML = '<div style="color:#999;font-size:16px;">no scores yet</div>';
       return;
     }
-    leaderboardEntriesEl.innerHTML = entries.map((entry, i) => `
+    leaderboardEntriesEl.innerHTML = entries.map((entry,i)=>`
       <div class="leaderboard-entry">
-        <span class="rank">${i + 1}.</span>
+        <span class="rank">${i+1}.</span>
         <span class="name">${entry.name}</span>
         <span class="score">${entry.score}</span>
       </div>
     `).join('');
   }
 
-  // Global functions
-window.toggleLeaderboard = async function() {
-  const isOpen = leaderboardEl.classList.contains('show');
+  window.toggleLeaderboard = async function() {
+    const isOpen = leaderboardBackdrop.style.display === 'flex';
+    if (isOpen) {
+      leaderboardBackdrop.style.display = 'none';
+    } else {
+      leaderboardEntriesEl.innerHTML = 'loading...';
+      leaderboardBackdrop.style.display = 'flex';
+      const entries = await fetchLeaderboard();
+      renderLeaderboard(entries);
+    }
+  };
 
-  if (isOpen) {
-    leaderboardEl.classList.remove('show');
-    document.body.classList.remove('leaderboard-open');
-  } else {
-    leaderboardEntriesEl.innerHTML = 'loading...';
-    leaderboardEl.classList.add('show');
-    document.body.classList.add('leaderboard-open');
-
-    const entries = await fetchLeaderboard();
-    renderLeaderboard(entries);
-  }
-};
-
- window.showNameModal = function(finalScore) {
-  finalScoreEl.textContent = 'score: ' + finalScore;
-  playerNameInput.value = localStorage.getItem('playerName') || '';
-  nameModal.classList.add('show');
-  backButton.style.opacity = 1; // 👈 ensure visible
-  leaderboardBtn.style.display = 'block';
-  leaderboardBtn.style.zIndex = 300;
-  setTimeout(() => playerNameInput.focus(), 100);
-};
+  window.showNameModal = function(finalScore) {
+    finalScoreEl.textContent = 'score: ' + finalScore;
+    playerNameInput.value = localStorage.getItem('playerName') || '';
+    nameModal.classList.add('show');
+    backButton.style.opacity = 1;
+    leaderboardBtn.style.display = 'block';
+    leaderboardBtn.style.zIndex = 300;
+    setTimeout(()=>playerNameInput.focus(), 100);
+  };
 
   window.submitScore = async function() {
     const name = playerNameInput.value.trim() || 'anonymous';
@@ -624,10 +549,7 @@ window.toggleLeaderboard = async function() {
     showOverlay(true);
   };
 
-  // Enter key to submit
-  playerNameInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') window.submitScore();
-  });
+  playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
 })();
 </script>
 </body>
