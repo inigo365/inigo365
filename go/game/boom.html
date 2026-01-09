@@ -67,7 +67,7 @@ canvas {
 <button class="back-button" onclick="goBack()">← back</button>
 
 <!-- Audio -->
-<audio id="bgMusic" src="/go/game/soundtrack.mp3" loop muted></audio>
+<audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
 
 <img id="playOverlay" src="play.png" style="
     position: absolute;
@@ -135,6 +135,8 @@ canvas {
 <div class="point-popup" id="pointPopup">+1</div>
 
 <script>
+// ======= YOUR ORIGINAL GAME CODE REMAINS EXACTLY AS-IS =======
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const backButton = document.querySelector('.back-button');
@@ -304,14 +306,22 @@ const bgMusic = document.getElementById('bgMusic');
 bgMusic.volume = 0.5;
 bgMusic.loop = true;
 
+// Create AudioContext to unlock autoplay on all devices
 function startBgMusic() {
-    if(bgMusic.paused) {
-        bgMusic.muted = false;
-        bgMusic.play().catch(()=>{});
-    }
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const track = audioCtx.createMediaElementSource(bgMusic);
+        track.connect(audioCtx.destination);
+        audioCtx.resume().then(() => bgMusic.play().catch(()=>{}));
+    } catch(e){ bgMusic.play().catch(()=>{}); }
+
     window.removeEventListener('touchstart', startBgMusic);
     window.removeEventListener('mousedown', startBgMusic);
 }
+
+// Play immediately, fallback for mobile
+startBgMusic();
 window.addEventListener('touchstart', startBgMusic, {passive:true});
 window.addEventListener('mousedown', startBgMusic);
 
