@@ -8,8 +8,8 @@
 <style>
 @font-face {
   font-family: "RuneScape UF";
-  src: url("../fonts/RuneScape-UF.woff2") format("woff2"),
-       url("../fonts/RuneScape-UF.woff") format("woff");
+  src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
+       url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
 html, body {
@@ -17,28 +17,21 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: white;
-  font-family: "RuneScape UF", Arial, sans-serif;
+  background: #fff;
   overflow: hidden;
+  font-family: "RuneScape UF", Arial, sans-serif;
+
+  cursor: url("../../images/cursor/cursor.png"), auto;
   -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
   user-select: none;
-  cursor: url("../images/cursor/cursor.png"), auto;
 }
 
-/* SCORE DISPLAY */
-#score {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 32px;
-  color: #2d93ea;
-  z-index: 10;
+canvas {
+  display: block;
+  background: #fff;
 }
 
-/* BACK BUTTON */
+/* Back button */
 .back-button {
   position: fixed;
   top: 8px;
@@ -48,159 +41,155 @@ html, body {
   border: none;
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
   z-index: 10;
 }
-
-/* GAME CANVAS */
-canvas {
-  display: block;
-  background: white;
-}
 </style>
 </head>
-<body>
 
+<body>
 <button class="back-button" onclick="goBack()">← back</button>
-<div id="score">0</div>
 <canvas id="gameCanvas"></canvas>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
 let width = canvas.width = window.innerWidth;
 let height = canvas.height = window.innerHeight;
 
-// PLAYER
+// Game variables
+const gravity = 0.6;
+const lift = -12;
+const hoopSpeed = 3;
+const hoopSpacing = 300;
+let hoops = [];
+let frame = 0;
+let score = 0;
+let streak = 0;
+
+// Player
 const player = {
-  x: 80,
+  x: width / 4,
   y: height / 2,
   radius: 20,
-  velocity: 0,
-  gravity: 0.6,
-  jumpForce: -12,
-  img: new Image()
+  vel: 0
 };
-player.img.src = "player.png"; // Placeholder player image in /go folder
 
-// HOOPS
-const hoopWidth = 60;
-const hoopHeight = 120;
-const hoopSpacing = 300;
-const hoopSpeed = 2;
-let hoops = [];
+// Load placeholder assets (replace later)
+const playerImg = new Image();
+playerImg.src = ""; // e.g., "player.png"
 const hoopImg = new Image();
-hoopImg.src = "hoop.png"; // Placeholder hoop image in /go folder
+hoopImg.src = ""; // e.g., "hoop.png"
 
-// SCORE
-let score = 0;
-let streak = 1;
-
-// Create initial hoops
-for (let i = 0; i < 3; i++) createHoop(width + i * hoopSpacing);
-
-function createHoop(xPos) {
-  const hoopY = Math.random() * (height - hoopHeight - 100) + 50;
-  hoops.push({ x: xPos, y: hoopY, passed: false });
+// Handle input
+function jump() {
+  player.vel = lift;
 }
+window.addEventListener('mousedown', jump);
+window.addEventListener('touchstart', jump);
 
-// INPUT
-let holding = false;
-document.addEventListener("mousedown", () => holding = true);
-document.addEventListener("mouseup", () => holding = false);
-document.addEventListener("touchstart", () => holding = true, { passive: true });
-document.addEventListener("touchend", () => holding = false, { passive: true });
-
-// BACK BUTTON
-function goBack() {
-  window.location.href = "index.html";
-}
-
-// GAME LOOP
-function animate() {
-  ctx.clearRect(0, 0, width, height);
-
-  // Player physics
-  if (holding) player.velocity = player.jumpForce;
-  player.velocity += player.gravity;
-  player.y += player.velocity;
-
-  // Boundaries
-  if (player.y + player.radius > height) player.y = height - player.radius, player.velocity = 0;
-  if (player.y - player.radius < 0) player.y = player.radius, player.velocity = 0;
-
-  // Draw player image
-  if (player.img.complete) {
-    ctx.drawImage(
-      player.img,
-      player.x - player.radius,
-      player.y - player.radius,
-      player.radius * 2,
-      player.radius * 2
-    );
-  } else {
-    // fallback circle if image not loaded
-    ctx.fillStyle = "#2d93ea";
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Hoops
-  hoops.forEach(hoop => {
-    hoop.x -= hoopSpeed;
-
-    // Draw hoop image if loaded, otherwise rectangle fallback
-    if (hoopImg.complete) {
-      ctx.drawImage(hoopImg, hoop.x, hoop.y, hoopWidth, hoopHeight);
-    } else {
-      ctx.strokeStyle = "#2d93ea";
-      ctx.lineWidth = 6;
-      ctx.strokeRect(hoop.x, hoop.y, hoopWidth, hoopHeight);
-    }
-
-    // Check collision for scoring
-    if (!hoop.passed && player.x + player.radius > hoop.x && player.x - player.radius < hoop.x + hoopWidth) {
-      if (player.y > hoop.y && player.y < hoop.y + hoopHeight) {
-        const centerZoneTop = hoop.y + hoopHeight / 3;
-        const centerZoneBottom = hoop.y + 2 * hoopHeight / 3;
-        if (player.y > centerZoneTop && player.y < centerZoneBottom) {
-          score += streak;
-          streak++;
-        } else {
-          score += 1;
-          streak = 1;
-        }
-        hoop.passed = true;
-      }
-    }
-
-    // Reset hoop
-    if (hoop.x + hoopWidth < 0) {
-      hoop.x = width + hoopSpacing;
-      hoop.y = Math.random() * (height - hoopHeight - 100) + 50;
-      hoop.passed = false;
-    }
-  });
-
-  // Update score display
-  document.getElementById("score").textContent = score;
-
-  requestAnimationFrame(animate);
-}
-
-// Resize canvas
-window.addEventListener("resize", () => {
+// Resize
+window.addEventListener('resize', () => {
   width = canvas.width = window.innerWidth;
   height = canvas.height = window.innerHeight;
-  player.y = height / 2;
 });
 
-animate();
-</script>
+// Generate hoops
+function createHoop() {
+  const gapY = Math.random() * (height - 200) + 100; // leave margin
+  hoops.push({x: width, y: gapY, passed: false});
+}
 
+// Check collision / scoring
+function checkHoops() {
+  hoops.forEach(h => {
+    if (!h.passed && player.x > h.x && player.x < h.x + 60) { // hoop width 60
+      h.passed = true;
+      const centerDist = Math.abs(player.y - h.y);
+      if (centerDist < 15) {
+        streak++;
+        score += 1 + streak;
+      } else {
+        streak = 0;
+        score += 1;
+      }
+    }
+  });
+}
+
+// Draw everything
+function draw() {
+  ctx.clearRect(0,0,width,height);
+
+  // Player
+  ctx.fillStyle = "#2d93ea";
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+  ctx.fill();
+  // Optional image
+  // ctx.drawImage(playerImg, player.x - player.radius, player.y - player.radius, player.radius*2, player.radius*2);
+
+  // Hoops
+  hoops.forEach(h => {
+    ctx.strokeStyle = "#2d93ea";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(h.x + 30, h.y, 30, 0, Math.PI*2);
+    ctx.stroke();
+    // Optional image
+    // ctx.drawImage(hoopImg, h.x, h.y-30, 60, 60);
+  });
+
+  // Score
+  ctx.fillStyle = "#2d93ea";
+  ctx.font = "36px 'RuneScape UF'";
+  ctx.fillText("Score: " + score, 20, 50);
+  ctx.fillText("Streak: " + streak, 20, 90);
+}
+
+// Update game logic
+function update() {
+  player.vel += gravity;
+  player.y += player.vel;
+
+  // Floor & ceiling
+  if (player.y + player.radius > height) {
+    player.y = height - player.radius;
+    player.vel = 0;
+  }
+  if (player.y - player.radius < 0) {
+    player.y = player.radius;
+    player.vel = 0;
+  }
+
+  // Move hoops
+  hoops.forEach(h => h.x -= hoopSpeed);
+
+  // Remove offscreen hoops
+  hoops = hoops.filter(h => h.x + 60 > 0);
+
+  // Generate hoops every hoopSpacing pixels
+  frame++;
+  if (frame % hoopSpacing === 0) createHoop();
+
+  checkHoops();
+}
+
+// Main loop
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+
+function goBack() {
+  window.location.href = "../index.html";
+}
+</script>
 </body>
 </html>
