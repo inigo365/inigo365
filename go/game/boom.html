@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Boom! Flappy Basketball</title>
+<title>put the bag in the bag</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -113,31 +113,51 @@ canvas.height = window.innerHeight;
 // Physics
 const GRAVITY = 0.5;
 const LIFT = -10;
-const BALL_SCALE = 1.4;
-const BALL_RADIUS = 20 * BALL_SCALE;
-const HOOP_WIDTH = 200;
-const HOOP_HEIGHT = 80;
-const HOOP_GAP = 180;
-const HOOP_SPEED = 5;
+const SPEED = 4;
+const SPRITE_SIZE = 100;
 
-// Ball
-let ball = { x: 150, y: canvas.height/2, vy: 0, rotation: 0 };
+// Game state
+let ball = {
+  x: 150,
+  y: canvas.height / 2,
+  vy: 0,
+  spriteIndex: 0,
+  scaleX: 1,
+  scaleY: 1
+};
+
 let hoops = [];
 let score = 0;
-let streak = 0;
 let gameOver = false;
 let gameStarted = false;
+let assetsLoaded = false;
 
-// Sprites
-let ballImg = new Image();
-ballImg.src = "ball.png";
+// Load sprites (RELATIVE PATH FIXED)
+const sprites = [];
+let loadedCount = 0;
 
-let hoopImg = new Image();
-hoopImg.src = "hoop.png";
+for (let i = 1; i <= 8; i++) {
+  const img = new Image();
+  img.onload = () => {
+    loadedCount++;
+    if (loadedCount === 8) assetsLoaded = true;
+  };
+  img.src = `sprites/${String(i).padStart(2, '0')}.png`;
+  sprites.push(img);
+}
 
-// Point popup
+// Utility
+function getRandomSpriteIndex(exclude) {
+  let idx;
+  do {
+    idx = Math.floor(Math.random() * sprites.length);
+  } while (idx === exclude);
+  return idx;
+}
+
+// Popup
 const pointPopup = document.getElementById('pointPopup');
-function showPopup(text, x, y){
+function showPopup(text, x, y) {
   pointPopup.textContent = text;
   pointPopup.style.left = x + 'px';
   pointPopup.style.top = y + 'px';
@@ -146,164 +166,144 @@ function showPopup(text, x, y){
   setTimeout(() => {
     pointPopup.style.opacity = 0;
     pointPopup.style.transform = "translateY(-50px)";
-  }, 500);
+  }, 400);
 }
 
 // Add hoop
-function addHoop(){
-  const minY = HOOP_HEIGHT + 50;
-  const maxY = canvas.height - HOOP_HEIGHT - HOOP_GAP - 50;
-  const y = Math.random() * (maxY - minY) + minY;
-  hoops.push({ x: canvas.width, y: y, passed: false });
+function addHoop() {
+  const y = Math.random() * (canvas.height - 240) + 120;
+  hoops.push({
+    x: canvas.width + 50,
+    y,
+    spriteIndex: getRandomSpriteIndex(ball.spriteIndex)
+  });
 }
 
-// Click/tap to start
-function startGame(){
-  if(!gameStarted){
-    gameStarted = true;
-    document.getElementById('startText').style.display='none';
-    hoops = [];
-    score = 0;
-    streak = 0;
-    gameOver = false;
-    ball.y = canvas.height/2;
-    ball.vy = 0;
-    document.getElementById('score').textContent = score;
-    addHoop();
-    loop();
-  }
+// Start game
+function startGame() {
+  if (gameStarted || !assetsLoaded) return;
+
+  gameStarted = true;
+  document.getElementById('startText').style.display = 'none';
+
+  hoops = [];
+  score = 0;
+  gameOver = false;
+
+  ball.y = canvas.height / 2;
+  ball.vy = 0;
+  ball.spriteIndex = getRandomSpriteIndex(-1);
+
+  document.getElementById('score').textContent = score;
+
+  addHoop();
+  loop();
 }
+
 window.addEventListener('mousedown', startGame);
 window.addEventListener('touchstart', startGame, { passive: true });
 
 // Jump
-function jump(){
-  if(gameStarted && !gameOver) ball.vy = LIFT;
+function jump() {
+  if (gameStarted && !gameOver) {
+    ball.vy = LIFT;
+  }
 }
 window.addEventListener('mousedown', jump);
 window.addEventListener('touchstart', jump, { passive: true });
 
 // Loop
-function loop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Gravity
+  // Physics
   ball.vy += GRAVITY;
   ball.y += ball.vy;
 
-  // Ball rotation
-  ball.rotation = Math.max(Math.min(ball.vy*5,50),-50);
+  if (ball.y < 0 || ball.y > canvas.height) return endGame();
 
-  // Ball boundaries (top/bottom)
-  if(ball.y - BALL_RADIUS < 0 || ball.y + BALL_RADIUS > canvas.height){
-    endGame();
-  }
+  // Ease squash/stretch
+  ball.scaleX += (1 - ball.scaleX) * 0.15;
+  ball.scaleY += (1 - ball.scaleY) * 0.15;
 
-  // Draw ball
+  // Draw player
   ctx.save();
   ctx.translate(ball.x, ball.y);
-  ctx.rotate(ball.rotation*Math.PI/180);
-  ctx.drawImage(ballImg, -BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
+  ctx.scale(ball.scaleX, ball.scaleY);
+  ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
   ctx.restore();
 
-  // Move hoops
-  for(let i=hoops.length-1;i>=0;i--){
-    hoops[i].x -= HOOP_SPEED;
+  // Hoops
+  for (let i = hoops.length - 1; i >= 0; i--) {
+    const h = hoops[i];
+    h.x -= SPEED;
 
-    // Draw hoop once
-    ctx.drawImage(hoopImg, hoops[i].x, hoops[i].y, HOOP_WIDTH, HOOP_HEIGHT);
+    ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
 
-    // Scoring rectangle
-    const hoopLeft = hoops[i].x + 11;
-    const hoopRight = hoops[i].x + HOOP_WIDTH - 11;
-    const hoopTop = hoops[i].y;
-    const hoopBottom = hoops[i].y + HOOP_HEIGHT - 16;
+    // Collision
+    const hit =
+      ball.x + SPRITE_SIZE / 2 > h.x &&
+      ball.x - SPRITE_SIZE / 2 < h.x + SPRITE_SIZE &&
+      ball.y + SPRITE_SIZE / 2 > h.y &&
+      ball.y - SPRITE_SIZE / 2 < h.y + SPRITE_SIZE;
 
-    // Scoring
-    if(!hoops[i].passed &&
-       ball.x > hoopLeft && ball.x < hoopRight &&
-       ball.y - BALL_RADIUS < hoopBottom && ball.y + BALL_RADIUS > hoopTop){
-
-      const ballCenter = ball.y;
-      const hoopCenter = hoopTop + (HOOP_HEIGHT-16)/2;
-      const distance = Math.abs(ballCenter - hoopCenter);
-      let points = 1;
-      if(distance < (HOOP_HEIGHT-16)/4){
-        streak++;
-        points += streak;
-        showPopup('+'+points, ball.x, ball.y-50);
-      } else {
-        streak = 0;
-        showPopup('+1', ball.x, ball.y-50);
-      }
-
-      score += points;
-      hoops[i].passed = true;
+    if (hit) {
+      score++;
       document.getElementById('score').textContent = score;
+      showPopup('+1', ball.x, ball.y - 40);
+
+      ball.spriteIndex = h.spriteIndex;
+      ball.scaleX = 1.25;
+      ball.scaleY = 0.75;
+
+      hoops.splice(i, 1);
+      continue;
     }
 
-    // Missed hoop ends game
-    if(!hoops[i].passed && hoops[i].x + HOOP_WIDTH < ball.x - BALL_RADIUS){
-      endGame();
+    // Miss
+    if (h.x + SPRITE_SIZE < ball.x - 20) {
+      return endGame();
     }
-
-    // Remove hoops off screen
-    if(hoops[i].x + HOOP_WIDTH < 0) hoops.splice(i,1);
   }
 
-  // Add new hoop at regular interval
-  if(hoops.length===0 || hoops[hoops.length-1].x < canvas.width - 500){
+  // Spawn spacing
+  if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) {
     addHoop();
   }
 
-  if(!gameOver) requestAnimationFrame(loop);
+  if (!gameOver) requestAnimationFrame(loop);
 }
 
-// End game
-function endGame(){
+// End
+function endGame() {
+  if (gameOver) return;
   gameOver = true;
-  let groundY = canvas.height - BALL_RADIUS;
-  function fall(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    if(ball.y < groundY){
-      ball.vy += GRAVITY;
-      ball.y += ball.vy;
-    } else ball.y = groundY;
-    ctx.drawImage(ballImg, ball.x - BALL_RADIUS, ball.y - BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
-    if(ball.y < groundY) requestAnimationFrame(fall);
-    else showGameOver();
-  }
-  fall();
+  showGameOver();
 }
 
-function showGameOver(){
-  document.getElementById('finalScore').textContent = "Score: "+score;
-  let highScore = localStorage.getItem('flappyBasketHighscore') || 0;
-  if(score > highScore){
-    highScore = score;
-    localStorage.setItem('flappyBasketHighscore', highScore);
-  }
-  document.getElementById('highScoreDisplay').textContent = "Highscore: "+highScore;
-  document.getElementById('gameOver').style.display='block';
+function showGameOver() {
+  document.getElementById('finalScore').textContent = "Score: " + score;
+  let hs = localStorage.getItem('flappyBasketHighscore') || 0;
+  if (score > hs) localStorage.setItem('flappyBasketHighscore', score);
+  document.getElementById('highScoreDisplay').textContent = "Highscore: " + Math.max(score, hs);
+  document.getElementById('gameOver').style.display = 'block';
 }
 
 // Restart
-document.getElementById('restartBtn').addEventListener('click',()=>{
-  gameOver = false;
+document.getElementById('restartBtn').addEventListener('click', () => {
   gameStarted = false;
+  gameOver = false;
   hoops = [];
-  ball = { x:150, y:canvas.height/2, vy:0, rotation:0 };
-  document.getElementById('gameOver').style.display='none';
-  document.getElementById('score').textContent=0;
-  document.getElementById('startText').style.display='block';
+  document.getElementById('gameOver').style.display = 'none';
+  document.getElementById('score').textContent = 0;
+  document.getElementById('startText').style.display = 'block';
 });
 
 // Resize
-window.addEventListener('resize',()=>{
+window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 });
-
 </script>
 
 </body>
