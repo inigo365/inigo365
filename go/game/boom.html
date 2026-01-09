@@ -115,7 +115,7 @@ const GRAVITY = 0.5;
 const LIFT = -10;
 const SPEED = 4;
 const SPRITE_SIZE = 100;
-const NUM_SPRITES = 25; // Updated for 25 sprites
+const NUM_SPRITES = 25; // Normal sprites 01-25
 
 // Game state
 let ball = {
@@ -136,28 +136,37 @@ let assetsLoaded = false;
 // Load sprites
 const sprites = [];
 let loadedCount = 0;
-
 for (let i = 1; i <= NUM_SPRITES; i++) {
   const img = new Image();
   img.onload = () => {
     loadedCount++;
-    if (loadedCount === NUM_SPRITES) assetsLoaded = true;
+    if (loadedCount === NUM_SPRITES + 1) assetsLoaded = true; // +1 for mythic
   };
   img.src = `sprites/${String(i).padStart(2, '0')}.png`;
   sprites.push(img);
+}
+
+// Load mythic sprite
+const mythicImg = new Image();
+mythicImg.src = 'sprites/mythic1.png';
+mythicImg.onload = () => {
+  loadedCount++;
+  if (loadedCount === NUM_SPRITES + 1) assetsLoaded = true;
 }
 
 // ---------------------------
 // RARITY LOGIC
 // ---------------------------
 function getRarityRange(score) {
-  if (score >= 120) {
-    return { min: 19, max: 24 }; // sprites 20–25
+  if (score >= 250) {
+    return { min: NUM_SPRITES, max: NUM_SPRITES }; // mythic only (index after normal sprites)
   }
+  if (score >= 120) return { min: 19, max: 24 }; // sprites 20–25
   const tier = Math.floor(score / 30);
   return { min: 0, max: Math.min((tier + 1) * 5 - 1, NUM_SPRITES - 1) };
 }
 
+// Weighted random for natural feeling
 function weightedRandom(indices) {
   const weighted = [];
   indices.forEach(i => {
@@ -167,19 +176,27 @@ function weightedRandom(indices) {
   return weighted[Math.floor(Math.random() * weighted.length)];
 }
 
-function getUniqueSpriteIndex() {
+// Unique sprite picker, rarity-aware
+function getUniqueSpriteIndex(firstSprite=false) {
   const used = new Set();
   used.add(ball.spriteIndex);
   hoops.forEach(h => used.add(h.spriteIndex));
 
-  const { min, max } = getRarityRange(score);
+  let { min, max } = getRarityRange(score);
+
+  // Force first sprite to 01-05
+  if (firstSprite) {
+    min = 0;
+    max = 4;
+  }
+
   const candidates = [];
   for (let i = min; i <= max; i++) {
     if (!used.has(i)) candidates.push(i);
   }
 
-  if (candidates.length === 0) return Math.floor(Math.random() * NUM_SPRITES);
-  if (score >= 120) return candidates[Math.floor(Math.random() * candidates.length)];
+  if (candidates.length === 0) return Math.floor(Math.random() * (max - min + 1)) + min;
+  if (score >= 250) return NUM_SPRITES; // mythic only
 
   return weightedRandom(candidates);
 }
@@ -205,11 +222,8 @@ function showPopup(text, x, y) {
 // ---------------------------
 function addHoop() {
   const y = Math.random() * (canvas.height - 240) + 120;
-  hoops.push({
-    x: canvas.width + 50,
-    y,
-    spriteIndex: getUniqueSpriteIndex()
-  });
+  const spriteIndex = getUniqueSpriteIndex();
+  hoops.push({ x: canvas.width + 50, y, spriteIndex });
 }
 
 // ---------------------------
@@ -223,9 +237,11 @@ function startGame() {
   hoops = [];
   score = 0;
   gameOver = false;
+
   ball.y = canvas.height / 2;
   ball.vy = 0;
-  ball.spriteIndex = Math.floor(Math.random() * NUM_SPRITES);
+  ball.spriteIndex = getUniqueSpriteIndex(true); // first sprite forced to 01-05
+
   document.getElementById('score').textContent = score;
   addHoop();
   loop();
@@ -252,22 +268,36 @@ function loop() {
   ball.scaleX += (1 - ball.scaleX) * 0.15;
   ball.scaleY += (1 - ball.scaleY) * 0.15;
 
+  // Draw player
   ctx.save();
   ctx.translate(ball.x, ball.y);
   ctx.scale(ball.scaleX, ball.scaleY);
-  ctx.drawImage(
-    sprites[ball.spriteIndex],
-    -SPRITE_SIZE / 2,
-    -SPRITE_SIZE / 2,
-    SPRITE_SIZE,
-    SPRITE_SIZE
-  );
+
+  // Mythic glow if mythic
+  if (ball.spriteIndex === NUM_SPRITES) {
+    ctx.shadowColor = 'yellow';
+    ctx.shadowBlur = 20;
+    ctx.drawImage(mythicImg, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+    ctx.shadowBlur = 0;
+  } else {
+    ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+  }
+
   ctx.restore();
 
+  // Hoops
   for (let i = hoops.length - 1; i >= 0; i--) {
     const h = hoops[i];
     h.x -= SPEED;
-    ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+
+    if (h.spriteIndex === NUM_SPRITES) {
+      ctx.shadowColor = 'yellow';
+      ctx.shadowBlur = 20;
+      ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+    }
 
     const hit =
       ball.x + SPRITE_SIZE / 2 > h.x &&
@@ -279,9 +309,11 @@ function loop() {
       score++;
       document.getElementById('score').textContent = score;
       showPopup('+1', ball.x, ball.y - 40);
+
       ball.spriteIndex = h.spriteIndex;
       ball.scaleX = 1.25;
       ball.scaleY = 0.75;
+
       hoops.splice(i, 1);
       continue;
     }
