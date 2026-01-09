@@ -84,7 +84,7 @@ html, body {
   position: relative;
 }
 
-/* VIDEO + BACK BUTTON CONTAINER */
+/* VIDEO */
 .video-wrapper {
   position: relative;
   width: 100%;
@@ -109,6 +109,7 @@ video {
   }
 }
 
+/* PLAY BUTTON */
 .play-button {
   position: absolute;
   top: 50%;
@@ -132,23 +133,26 @@ video {
   pointer-events: auto;
 }
 
+/* BACK BUTTON */
 .back-button {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 8px;
+  left: 8px;
   font-size: 28px;
   color: #2d93ea;
   background: transparent;
   border: none;
   cursor: url("../images/cursor/cursor-hover.png"), pointer;
-  z-index: 20;
+  font-family: "RuneScape UF", Arial, sans-serif;
   opacity: 0;
   transition: opacity 0.4s ease;
-  font-family: "RuneScape UF", Arial, sans-serif;
+  z-index: 30;
+  text-transform: lowercase;
 }
 
-.back-button.show { opacity: 1; }
-
+.back-button.show {
+  opacity: 1;
+}
 </style>
 </head>
 
@@ -164,10 +168,13 @@ video {
 
 <div class="content-page" id="contentPage">
   <div class="content-wrapper">
+
+    <button class="back-button" id="backButton">← back</button>
+
     <div class="video-wrapper" id="videoWrapper">
-      <!-- Single video element reused for all passcodes -->
       <video id="videoElement" playsinline disablePictureInPicture controlsList="nodownload nofullscreen noremoteplayback"></video>
     </div>
+
     <button class="play-button" id="playButton">play</button>
   </div>
 </div>
@@ -179,14 +186,15 @@ const contentPage = document.getElementById("contentPage");
 const playButton = document.getElementById("playButton");
 const videoWrapper = document.getElementById("videoWrapper");
 const video = document.getElementById("videoElement");
+const backButton = document.getElementById("backButton");
 
 let currentAction = null;
 let endedListener = null;
 
 const actions = {
-  "donovan": { src: "video.mp4", hideVideoUntilPlay: true, redirectAfter: true },
-  "gambosi": { src: "skud.mp4", hideVideoUntilPlay: true, redirectAfter: true },
-  "wasted": { src: "litty.mp4", hideVideoUntilPlay: true, redirectAfter: true },
+  "donovan": { src: "video.mp4" },
+  "gambosi": { src: "skud.mp4" },
+  "wasted": { src: "litty.mp4" },
   "home": { redirect: "https://inigo365.com/", sameTab: true },
   "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
   "tinny": { redirect: "scale.html", sameTab: true }
@@ -198,14 +206,14 @@ function resetToPassword() {
   video.removeAttribute("src");
   video.load();
 
-  endedListener = null;
+  backButton.classList.remove("show");
 
   contentPage.style.display = "none";
   passwordScreen.style.display = "flex";
   passwordScreen.style.opacity = 1;
 
-  videoWrapper.style.opacity = 0;
   videoWrapper.style.display = "none";
+  videoWrapper.style.opacity = 0;
 
   playButton.classList.remove("show");
   playButton.onclick = null;
@@ -213,11 +221,9 @@ function resetToPassword() {
   passwordInput.disabled = false;
   passwordInput.value = "";
   passwordInput.focus();
-
-  history.replaceState(null, "", "/go");
-
-  location.reload();
 }
+
+backButton.onclick = resetToPassword;
 
 passwordInput.addEventListener("keydown", e => {
   if (e.key !== "Enter") return;
@@ -233,46 +239,38 @@ passwordInput.addEventListener("keydown", e => {
 
   if (action.redirect) {
     if (action.sameTab) window.location.href = action.redirect;
-    else {
-      window.open(action.redirect, "_blank");
-      passwordInput.disabled = false;
-      passwordInput.value = "";
-    }
+    else window.open(action.redirect, "_blank");
     return;
   }
 
   currentAction = action;
-  history.pushState({ page: "content" }, "", "#content");
 
   passwordScreen.style.opacity = 0;
   setTimeout(() => passwordScreen.style.display = "none", 400);
 
   contentPage.style.display = "block";
-  videoWrapper.style.display = action.hideVideoUntilPlay ? "none" : "block";
   playButton.classList.add("show");
 
   playButton.onclick = () => {
     playButton.classList.remove("show");
 
-    // reuse single video element
     videoWrapper.style.display = "block";
     videoWrapper.style.opacity = 0;
+    backButton.classList.add("show");
+
     video.src = currentAction.src + "?v=" + Date.now();
     video.currentTime = 0;
-    video.muted = false;
-    video.volume = 1;
 
     requestAnimationFrame(() => {
       videoWrapper.style.opacity = 1;
       video.play().catch(() => {});
     });
 
-    endedListener = () => resetToPassword();
+    endedListener = resetToPassword;
     video.addEventListener("ended", endedListener, { once: true });
   };
 });
 
-window.addEventListener("popstate", () => resetToPassword());
 document.addEventListener("contextmenu", e => e.preventDefault());
 </script>
 
