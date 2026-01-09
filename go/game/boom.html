@@ -111,6 +111,7 @@ canvas {
   background: #2d93ea;
   color: white;
   cursor: pointer;
+  margin-top: 12px;
 }
 
 .name-modal button:hover {
@@ -277,6 +278,7 @@ canvas {
   <div class="final-score" id="finalScore">score: 0</div>
   <input type="text" id="playerName" placeholder="enter name" maxlength="12" autocomplete="off">
   <button onclick="submitScore()">submit</button>
+  <button onclick="playAgain()">play again</button>
 </div>
 
 <!-- Leaderboard -->
@@ -299,10 +301,10 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 // Flappy Bird physics
-const GRAVITY = 0.25;
-const LIFT = -6.5;
-let SPEED = 2.4;
-const MAX_SPEED = 5;
+const GRAVITY = 0.32;
+const LIFT = -6.9;
+let SPEED = 3;
+const MAX_SPEED = 5.2;
 const SPEED_INCREMENT = 0.002;
 let SPRITE_SIZE = Math.round(canvas.height*0.12);
 
@@ -391,6 +393,17 @@ function startGame(){
 
 playOverlay.addEventListener('click',startGame);
 playOverlay.addEventListener('touchstart',startGame,{passive:true});
+
+function playAgain() {
+  const nameModal = document.getElementById('nameModal');
+  nameModal.classList.remove('show');
+
+  // reset state so startGame() is allowed to run
+  gameStarted = false;
+  gameOver = false;
+
+  startGame();
+}
 
 let touchActive = false;
 function jump(){if(gameStarted&&!gameOver) ball.vy = LIFT;}
@@ -568,12 +581,13 @@ function goBack(){window.location.href="../index.html";}
     }
   };
 
-  window.showNameModal = function(finalScore) {
-    finalScoreEl.textContent = 'score: ' + finalScore;
-    playerNameInput.value = localStorage.getItem('playerName') || '';
-    nameModal.classList.add('show');
-    setTimeout(() => playerNameInput.focus(), 100);
-  };
+ window.showNameModal = function(finalScore) {
+  finalScoreEl.textContent = 'score: ' + finalScore;
+  playerNameInput.value = localStorage.getItem('playerName') || '';
+  nameModal.classList.add('show');
+  backButton.style.opacity = 1; // 👈 ensure visible
+  setTimeout(() => playerNameInput.focus(), 100);
+};
 
   window.submitScore = async function() {
     const name = playerNameInput.value.trim() || 'anonymous';
