@@ -135,7 +135,7 @@ canvas {
 <div class="point-popup" id="pointPopup">+1</div>
 
 <script>
-// ======= YOUR ORIGINAL GAME CODE REMAINS EXACTLY AS-IS =======
+// ======= GAME CODE REMAINS EXACTLY AS-IS =======
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -301,12 +301,11 @@ window.addEventListener('resize',()=>{
   SPRITE_SIZE=Math.round(canvas.height*0.12);
 });
 
-// ------------------- MUSIC FIX -------------------
+// ------------------- MUSIC FIX FOR ALL DEVICES -------------------
 const bgMusic = document.getElementById('bgMusic');
 bgMusic.volume = 0.5;
 bgMusic.loop = true;
 
-// Create AudioContext to unlock autoplay on all devices
 function startBgMusic() {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -320,7 +319,7 @@ function startBgMusic() {
     window.removeEventListener('mousedown', startBgMusic);
 }
 
-// Play immediately, fallback for mobile
+// Fallback: attempt to play immediately and also on user gesture
 startBgMusic();
 window.addEventListener('touchstart', startBgMusic, {passive:true});
 window.addEventListener('mousedown', startBgMusic);
