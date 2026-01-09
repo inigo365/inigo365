@@ -23,6 +23,10 @@ html, body {
   background: #fff;
 }
 
+body.leaderboard-open > *:not(.leaderboard):not(script) {
+  pointer-events: none;
+}
+
 /* Back Button */
 .back-button {
   position: fixed;
@@ -73,6 +77,11 @@ canvas {
   justify-content: center;
   z-index: 200;
   flex-direction: column;
+  pointer-events: none;
+}
+
+.name-modal > * {
+  pointer-events: auto;
 }
 
 .name-modal.show {
@@ -132,6 +141,7 @@ canvas {
   min-width: 280px;
   max-height: 80vh;
   overflow-y: auto;
+  z-index: 10000;
 }
 
 .leaderboard.show {
@@ -297,6 +307,7 @@ canvas {
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const backButton = document.querySelector('.back-button');
+const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
@@ -391,6 +402,7 @@ function startGame(){
     loop();
     backButton.style.opacity = 0;
     leaderboardBtn.style.display = 'none'; 
+    leaderboardBtn.style.zIndex = 100; // reset
 }
 
 playOverlay.addEventListener('click',startGame);
@@ -578,22 +590,29 @@ function goBack(){window.location.href="../index.html";}
   }
 
   // Global functions
-  window.toggleLeaderboard = async function() {
-    if (leaderboardEl.classList.contains('show')) {
-      leaderboardEl.classList.remove('show');
-    } else {
-      leaderboardEntriesEl.innerHTML = 'loading...';
-      leaderboardEl.classList.add('show');
-      const entries = await fetchLeaderboard();
-      renderLeaderboard(entries);
-    }
-  };
+window.toggleLeaderboard = async function() {
+  const isOpen = leaderboardEl.classList.contains('show');
+
+  if (isOpen) {
+    leaderboardEl.classList.remove('show');
+    document.body.classList.remove('leaderboard-open');
+  } else {
+    leaderboardEntriesEl.innerHTML = 'loading...';
+    leaderboardEl.classList.add('show');
+    document.body.classList.add('leaderboard-open');
+
+    const entries = await fetchLeaderboard();
+    renderLeaderboard(entries);
+  }
+};
 
  window.showNameModal = function(finalScore) {
   finalScoreEl.textContent = 'score: ' + finalScore;
   playerNameInput.value = localStorage.getItem('playerName') || '';
   nameModal.classList.add('show');
   backButton.style.opacity = 1; // 👈 ensure visible
+  leaderboardBtn.style.display = 'block';
+  leaderboardBtn.style.zIndex = 300;
   setTimeout(() => playerNameInput.focus(), 100);
 };
 
