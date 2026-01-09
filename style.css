@@ -377,3 +377,22 @@ body, html {
   margin-top: 0; /* remove extra space above footer */
   padding-top: 0;
 }
+
+/* FORCE CUSTOM CURSOR EVERYWHERE (Safari / iOS SAFE) */
+*,
+*::before,
+*::after {
+  cursor: url("../images/cursor/cursor.png"), auto;
+}
+
+/* INTERACTIVE / HOVER STATE */
+button,
+button:hover,
+video,
+video:hover,
+.media,
+.media *,
+.scale-wrapper,
+.scale-wrapper * {
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+}

@@ -5,8 +5,6 @@
 <title>scale</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="icon" type="image/png" href="../images/icon.png">
-
 <style>
 @font-face {
   font-family: "RuneScape UF";
@@ -20,114 +18,156 @@ html, body {
   width: 100%;
   height: 100%;
   background: white;
-  overflow: hidden;
   font-family: "RuneScape UF", Arial, sans-serif;
+  user-select: none;
   cursor: url("../images/cursor/cursor.png"), auto;
 }
 
+.back-button {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 28px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 0;
+}
+
+/* SCALE */
 .scale-wrapper {
-  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #2d93ea;
-  text-align: center;
-  user-select: none;
-  position: relative;
 }
 
-.grams {
+.weight {
   font-size: 72px;
-  margin-bottom: 24px;
-}
-
-.blurb {
-  font-size: 20px;
-  margin-bottom: 6px;
-}
-
-.sub-blurb {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-.back-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 28px;
   color: #2d93ea;
-  background: transparent;
-  border: none;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
-  font-family: "RuneScape UF", Arial, sans-serif;
-  z-index: 10;
+  margin-bottom: 20px;
+}
+
+.instruction {
+  font-size: 22px;
+  color: #2d93ea;
+}
+
+/* MEDIA (hidden until triggered) */
+.media {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  z-index: 5;
+}
+
+.media video {
+  max-width: 90%;
+  max-height: 90%;
 }
 </style>
 </head>
 
 <body>
 
+<button class="back-button" onclick="goBack()">back</button>
+
 <div class="scale-wrapper">
-  <button class="back-button" id="backButton">&lt; back</button>
-  <div class="grams" id="grams">0.0g</div>
-  <div class="blurb">click on trackpad to weigh</div>
-  <div class="sub-blurb">only works on macbook</div>
+  <div class="weight" id="weight">0.0g</div>
+  <div class="instruction">click &amp; hold to weigh</div>
+</div>
+
+<!-- MEDIA PLACEHOLDER -->
+<div class="media" id="media">
+  <video id="mediaVideo" playsinline muted>
+    <!-- ADD YOUR FILE HERE LATER -->
+    <!-- <source src="example.mp4" type="video/mp4"> -->
+    <!-- <  <img src="your-gif.gif" alt="">> -->
+  </video>
 </div>
 
 <script>
-const gramsEl = document.getElementById("grams");
-const backButton = document.getElementById("backButton");
+let currentWeight = 0;
+let targetWeight = 0;
+let holding = false;
+let mediaPlayed = false;
 
-backButton.onclick = () => {
-  window.location.href = "/go"; // go back to password page
-};
+const weightEl = document.getElementById("weight");
+const media = document.getElementById("media");
+const mediaVideo = document.getElementById("mediaVideo");
 
-let value = 0;
-let isTouching = false;
-
-const TARGET = 1.0;       // max grams
-const CLIMB_SPEED = 0.003; // slower climb
-const DECAY_SPEED = 0.05;  // fast decay
-const JITTER = 0.02;       // max +/- jitter
-
-function updateTouch(evt) {
-  isTouching = (evt.touches && evt.touches.length > 0) || (evt.buttons && evt.buttons > 0);
+function updateDisplay() {
+  weightEl.textContent = currentWeight.toFixed(1) + "g";
 }
 
-document.addEventListener("touchstart", updateTouch, { passive: true });
-document.addEventListener("touchmove", updateTouch, { passive: true });
-document.addEventListener("touchend", updateTouch, { passive: true });
-document.addEventListener("mousedown", updateTouch);
-document.addEventListener("mousemove", evt => {
-  if (evt.buttons > 0) updateTouch(evt);
-});
-document.addEventListener("mouseup", updateTouch);
-
 function animate() {
-  if (isTouching) {
-    if (value < TARGET) {
-      value += CLIMB_SPEED;
-      if (value > TARGET) value = TARGET;
-    }
-    // apply tiny random jitter while frozen at TARGET
-    if (value >= TARGET) {
-      value += (Math.random() * JITTER*2 - JITTER);
-      if (value > TARGET) value = TARGET;
-      if (value < 0) value = 0;
-    }
+  if (holding) {
+    targetWeight = 1.0;
+    currentWeight += (targetWeight - currentWeight) * 0.02;
   } else {
-    if (value > 0) {
-      value -= DECAY_SPEED;
-      if (value < 0) value = 0;
-    }
+    targetWeight = 0;
+    currentWeight += (targetWeight - currentWeight) * 0.15;
   }
-  gramsEl.textContent = value.toFixed(1) + "g";
+
+  // Clamp
+  if (currentWeight > 1) currentWeight = 1;
+  if (currentWeight < 0.01 && !holding) currentWeight = 0;
+
+  // Trigger media ONCE at 1g
+  if (currentWeight >= 0.99 && !mediaPlayed) {
+    mediaPlayed = true;
+    showMedia();
+  }
+
+  // Reset when fully released
+  if (currentWeight === 0 && mediaPlayed) {
+    resetMedia();
+  }
+
+  updateDisplay();
   requestAnimationFrame(animate);
 }
 
+function showMedia() {
+  media.style.display = "flex";
+
+  const video = media.querySelector("video");
+  if (video) {
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  }
+}
+
+function resetMedia() {
+  mediaPlayed = false;
+  media.style.display = "none";
+
+  const video = media.querySelector("video");
+  if (video) {
+    video.pause();
+    video.currentTime = 0;
+  }
+}
+
+// Input
+document.addEventListener("mousedown", () => holding = true);
+document.addEventListener("mouseup", () => holding = false);
+document.addEventListener("touchstart", () => holding = true, { passive: true });
+document.addEventListener("touchend", () => holding = false, { passive: true });
+
+// Back button
+function goBack() {
+  window.location.href = "index.html";
+}
+
+// Start
 animate();
 </script>
 
