@@ -35,6 +35,7 @@ html, body {
   color: #2d93ea;
   text-align: center;
   user-select: none;
+  position: relative;
 }
 
 .grams {
@@ -51,87 +52,83 @@ html, body {
   font-size: 14px;
   opacity: 0.9;
 }
+
+.back-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 28px;
+  color: #2d93ea;
+  background: transparent;
+  border: none;
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  z-index: 10;
+}
 </style>
 </head>
 
 <body>
 
 <div class="scale-wrapper">
+  <button class="back-button" id="backButton">&lt; back</button>
   <div class="grams" id="grams">0.0g</div>
-  <div class="blurb">place on trackpad to weigh</div>
-  <div class="sub-blurb">this only works on macbook</div>
+  <div class="blurb">click on trackpad to weigh</div>
+  <div class="sub-blurb">only works on macbook</div>
 </div>
 
 <script>
 const gramsEl = document.getElementById("grams");
+const backButton = document.getElementById("backButton");
+
+backButton.onclick = () => {
+  window.location.href = "/go"; // go back to password page
+};
 
 let value = 0;
-let pressure = 0;
-let pressing = false;
-let lastInteraction = performance.now();
-let lastFrame = performance.now();
+let isTouching = false;
 
-/* === TUNING (REALISTIC) === */
-const MOVE_SENSITIVITY = 0.001;
-const PRESS_GAIN = 0.012;
-const PRESSURE_DECAY = 0.92;
-const VALUE_DECAY = 0.992;     // slow snap-back
-const MAX_GRAMS = 3.5;
-const FREEZE_TIME = 500;      // ms
+const TARGET = 1.0;       // max grams
+const CLIMB_SPEED = 0.003; // slower climb
+const DECAY_SPEED = 0.05;  // fast decay
+const JITTER = 0.02;       // max +/- jitter
 
-/* Movement = micro force */
-document.addEventListener("mousemove", e => {
-  const movement = Math.abs(e.movementX) + Math.abs(e.movementY);
-  if (movement > 0) {
-    pressure += movement * MOVE_SENSITIVITY;
-    lastInteraction = performance.now();
-  }
-});
-
-/* Press & hold proxy */
-document.addEventListener("mousedown", () => {
-  pressing = true;
-  lastInteraction = performance.now();
-});
-
-document.addEventListener("mouseup", () => {
-  pressing = false;
-  lastInteraction = performance.now();
-});
-
-/* Touch (trackpad taps) */
-document.addEventListener("touchstart", () => {
-  pressure += 0.04;
-  lastInteraction = performance.now();
-}, { passive: true });
-
-function update() {
-  const now = performance.now();
-  const dt = (now - lastFrame) / 16;
-  lastFrame = now;
-
-  const inactive = now - lastInteraction > FREEZE_TIME;
-
-  if (!inactive) {
-    if (pressing) {
-      pressure += PRESS_GAIN * dt;
-    }
-
-    value += pressure;
-  }
-
-  pressure *= PRESSURE_DECAY;
-  value *= VALUE_DECAY;
-
-  if (value < 0.02) value = 0;
-  if (value > MAX_GRAMS) value = MAX_GRAMS;
-
-  gramsEl.textContent = value.toFixed(1) + "g";
-
-  requestAnimationFrame(update);
+function updateTouch(evt) {
+  isTouching = (evt.touches && evt.touches.length > 0) || (evt.buttons && evt.buttons > 0);
 }
 
-update();
+document.addEventListener("touchstart", updateTouch, { passive: true });
+document.addEventListener("touchmove", updateTouch, { passive: true });
+document.addEventListener("touchend", updateTouch, { passive: true });
+document.addEventListener("mousedown", updateTouch);
+document.addEventListener("mousemove", evt => {
+  if (evt.buttons > 0) updateTouch(evt);
+});
+document.addEventListener("mouseup", updateTouch);
+
+function animate() {
+  if (isTouching) {
+    if (value < TARGET) {
+      value += CLIMB_SPEED;
+      if (value > TARGET) value = TARGET;
+    }
+    // apply tiny random jitter while frozen at TARGET
+    if (value >= TARGET) {
+      value += (Math.random() * JITTER*2 - JITTER);
+      if (value > TARGET) value = TARGET;
+      if (value < 0) value = 0;
+    }
+  } else {
+    if (value > 0) {
+      value -= DECAY_SPEED;
+      if (value < 0) value = 0;
+    }
+  }
+  gramsEl.textContent = value.toFixed(1) + "g";
+  requestAnimationFrame(animate);
+}
+
+animate();
 </script>
 
 </body>
