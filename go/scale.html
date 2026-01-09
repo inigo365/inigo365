@@ -20,7 +20,6 @@ html, body {
   background: white;
   font-family: "RuneScape UF", Arial, sans-serif;
 
-  /* Disable text selection everywhere (iOS-safe) */
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
@@ -29,8 +28,9 @@ html, body {
   cursor: url("../images/cursor/cursor.png"), auto;
 }
 
+/* BACK BUTTON */
 .back-button {
-  position: absolute;
+  position: fixed;
   top: 8px;
   left: 8px;
   font-size: 28px;
@@ -41,10 +41,13 @@ html, body {
   cursor: url("../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
+  z-index: 10;
 }
 
 /* SCALE */
 .scale-wrapper {
+  position: relative; /* keep it fixed in the center */
+  z-index: 5;         /* above GIF */
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -61,22 +64,23 @@ html, body {
 .instruction {
   font-size: 22px;
   color: #2d93ea;
+  margin-bottom: 12px;
 }
 
-/* MEDIA (hidden until triggered) */
-.media {
+/* GIF (absolutely positioned under the scale-wrapper) */
+.gif-container {
   position: absolute;
-  inset: 0;
+  top: 60%;       /* adjust vertical placement as needed */
+  left: 50%;
+  transform: translateX(-50%);
   display: none;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  z-index: 5;
+  z-index: 1;     /* behind the scale-wrapper */
 }
 
-.media video {
-  max-width: 90%;
-  max-height: 90%;
+.gif-container img {
+  display: block;
+  max-width: 150px;
+  height: auto;
 }
 </style>
 </head>
@@ -90,76 +94,91 @@ html, body {
   <div class="instruction">click &amp; hold to weigh</div>
 </div>
 
-<!-- MEDIA PLACEHOLDER -->
-<div class="media" id="media">
-  <video id="mediaVideo" playsinline muted>
-    <!-- ADD YOUR FILE HERE LATER -->
-    <!-- <source src="example.mp4" type="video/mp4"> -->
-    <!-- <img src="your-gif.gif" alt=""> -->
-  </video>
+<div class="gif-container" id="gifContainer">
+  <img src="scale.gif" alt="scale gif">
+  <!-- Optional video fallback (uncomment to use MP4 instead of GIF) -->
+  <!-- <video src="scale.mp4" autoplay loop muted playsinline></video> -->
 </div>
+
+<!-- MP3 audio -->
+<audio id="scaleSound" src="scale.mp3"></audio>
 
 <script>
 let currentWeight = 0;
-let targetWeight = 0;
 let holding = false;
-let mediaPlayed = false;
+let settleTimer = 0;
 
 const weightEl = document.getElementById("weight");
-const media = document.getElementById("media");
-const mediaVideo = document.getElementById("mediaVideo");
+const gifContainer = document.getElementById("gifContainer");
+const scaleSound = document.getElementById("scaleSound");
 
-function updateDisplay() {
+let justHitOneGram = false;
+
+/* UPDATE DISPLAY WITH JITTER */
+function updateDisplay(jiggleX = 0, jiggleY = 0) {
   weightEl.textContent = currentWeight.toFixed(1) + "g";
+  weightEl.style.transform = `translate(${jiggleX}px, ${jiggleY}px)`;
 }
 
+/* ANIMATION LOOP */
 function animate() {
+  let jiggleX = 0;
+  let jiggleY = 0;
+
   if (holding) {
-    targetWeight = 1.0;
-    currentWeight += (targetWeight - currentWeight) * 0.02;
+    // Faster climb to 1g
+    currentWeight += (1 - currentWeight) * 0.06; 
+    settleTimer++;
+
+    if (currentWeight >= 0.99) {
+      // Jiggle effect around 1g
+      if (Math.random() < 0.16) {
+        currentWeight = 1 + (Math.random() - 0.5) * 0.06;
+        jiggleX = (Math.random() - 0.5) * 4;
+        jiggleY = (Math.random() - 0.5) * 2;
+      } else {
+        currentWeight += (1 - currentWeight) * 0.03;
+      }
+
+      // GIF appears immediately when hitting 1g
+      if (gifContainer.style.display === "none") {
+        gifContainer.style.display = "block";
+      }
+
+      // Play MP3 once per press
+      if (!justHitOneGram) {
+        scaleSound.currentTime = 0;
+        scaleSound.play().catch(() => {});
+        justHitOneGram = true;
+      }
+    }
   } else {
-    targetWeight = 0;
-    currentWeight += (targetWeight - currentWeight) * 0.15;
+    // Released: drop quickly to zero
+    currentWeight += (0 - currentWeight) * 0.15;
+    settleTimer = 0;
+    justHitOneGram = false;
+    gifContainer.style.display = "none"; // GIF disappears on release
   }
 
-  if (currentWeight > 1) currentWeight = 1;
-  if (currentWeight < 0.01 && !holding) currentWeight = 0;
+  if (currentWeight > 1.1) currentWeight = 1.1;
+  if (!holding && currentWeight < 0.01) currentWeight = 0;
 
-  if (currentWeight >= 0.99 && !mediaPlayed) {
-    mediaPlayed = true;
-    showMedia();
-  }
-
-  if (currentWeight === 0 && mediaPlayed) {
-    resetMedia();
-  }
-
-  updateDisplay();
+  updateDisplay(jiggleX, jiggleY);
   requestAnimationFrame(animate);
 }
 
-function showMedia() {
-  media.style.display = "flex";
-  mediaVideo.currentTime = 0;
-  mediaVideo.play().catch(() => {});
-}
-
-function resetMedia() {
-  mediaPlayed = false;
-  media.style.display = "none";
-  mediaVideo.pause();
-  mediaVideo.currentTime = 0;
-}
-
+/* INPUT HANDLERS */
 document.addEventListener("mousedown", () => holding = true);
 document.addEventListener("mouseup", () => holding = false);
 document.addEventListener("touchstart", () => holding = true, { passive: true });
 document.addEventListener("touchend", () => holding = false, { passive: true });
 
+/* NAVIGATION */
 function goBack() {
   window.location.href = "index.html";
 }
 
+/* START ANIMATION */
 animate();
 </script>
 
