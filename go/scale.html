@@ -19,7 +19,13 @@ html, body {
   height: 100%;
   background: white;
   font-family: "RuneScape UF", Arial, sans-serif;
+
+  /* Disable text selection everywhere (iOS-safe) */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
   user-select: none;
+
   cursor: url("../images/cursor/cursor.png"), auto;
 }
 
