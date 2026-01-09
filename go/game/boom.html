@@ -360,6 +360,7 @@ function showOverlay(showLastScore=false){
     else{overlayLastScore.style.opacity=0;}
     gameStarted=false;
     backButton.style.opacity = 1;
+    leaderboardBtn.style.display = 'block';
 }
 
 function hideOverlay(){
@@ -378,7 +379,7 @@ function startGame(){
     if(gameStarted||!assetsLoaded)return;
     hideOverlay();
     gameStarted=true;
-    SPEED=2.4;
+    SPEED=3;
     hoops=[];
     score=0;
     gameOver=false;
@@ -389,6 +390,7 @@ function startGame(){
     addHoop();
     loop();
     backButton.style.opacity = 0;
+    leaderboardBtn.style.display = 'none'; 
 }
 
 playOverlay.addEventListener('click',startGame);
@@ -396,11 +398,16 @@ playOverlay.addEventListener('touchstart',startGame,{passive:true});
 
 function playAgain() {
   const nameModal = document.getElementById('nameModal');
-  nameModal.classList.remove('show');
+  const leaderboardEl = document.getElementById('leaderboard');
 
-  // reset state so startGame() is allowed to run
+  nameModal.classList.remove('show');
+  leaderboardEl.classList.remove('show'); // 👈 auto-close leaderboard
+
   gameStarted = false;
   gameOver = false;
+
+  overlayHighscore.style.opacity = 0;
+  overlayLastScore.style.opacity = 0;
 
   startGame();
 }
@@ -460,6 +467,7 @@ function endGame(){
   const hs=localStorage.getItem('flappyBasketHighscore')||0;
   if(score>hs)localStorage.setItem('flappyBasketHighscore',score);
   backButton.style.opacity = 1;
+  leaderboardBtn.style.display = 'block';
   // Show name input modal instead of overlay
   if(typeof showNameModal === 'function') {
     showNameModal(score);
