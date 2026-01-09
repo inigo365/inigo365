@@ -307,6 +307,11 @@ const overlayLastScore=document.getElementById('overlayLastScore');
 const topCurrentScore=document.getElementById('topCurrentScore');
 const topHighscore=document.getElementById('topHighscore');
 
+// ← ADD THIS:
+playOverlay.addEventListener('click', () => {
+    startGame();
+});
+
 function updateTopScores(){
 topCurrentScore.textContent="current score: "+score;
 const hs=localStorage.getItem('flappyBasketHighscore')||0;
@@ -358,40 +363,6 @@ leaderboardBtn.style.display = 'none';
 leaderboardBtn.style.zIndex = 100; 
 }
 
-// ======== AUTO-START ON FIRST TOUCH/CLICK ========
-// ======== MOBILE FIX: AUTO-START + PREVENT ZOOM/SCROLL ========
-function autoStartGameOnce(e) {
-    startGame();             // start the game
-    e.preventDefault();      // prevent default browser behavior
-    startGame(); // start the game
-    playOverlay.style.opacity = 0; // hide overlay immediately
-    playOverlay.style.transform = "translate(-50%, -50%) scale(0.8)";
-
-    e.preventDefault(); // prevent default touch/mouse behavior
-
-window.removeEventListener('touchstart', autoStartGameOnce);
-window.removeEventListener('mousedown', autoStartGameOnce);
-}
-
-// Auto-start on first touch/click
-window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
-window.addEventListener('mousedown', autoStartGameOnce);
-
-// Prevent page zoom
-document.addEventListener('gesturestart', e => e.preventDefault());
-document.addEventListener('touchmove', e => {
-    if (e.scale !== 1) e.preventDefault(); // pinch zoom
-}, { passive: false });
-
-// Prevent scrolling
-document.body.style.overflow = 'hidden';
-
-window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
-window.addEventListener('mousedown', autoStartGameOnce);
-
-playOverlay.addEventListener('click',startGame);
-playOverlay.addEventListener('touchstart',startGame,{passive:true});
-
 function playAgain() {
 const nameModal = document.getElementById('nameModal');
 const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
@@ -413,6 +384,13 @@ function jump(){if(gameStarted&&!gameOver) ball.vy = LIFT;}
 window.addEventListener('touchstart', (e)=>{e.preventDefault();touchActive=true;jump();},{passive:false});
 window.addEventListener('touchend', ()=>{touchActive=false;});
 window.addEventListener('mousedown', (e)=>{if(!touchActive) jump();});
+
+// ======== MOBILE + DESKTOP START & JUMP ========
+canvas.addEventListener('pointerdown', (e) => {
+    if (!gameStarted) startGame(); // start game on first tap/click
+    if (!gameOver) jump();         // jump if game in progress
+    e.preventDefault();             // only prevent default on the canvas
+}, {passive:false});
 
 function updateTopScoreSize() {
 const vw = window.innerWidth;
