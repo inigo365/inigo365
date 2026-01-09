@@ -115,6 +115,7 @@ const GRAVITY = 0.5;
 const LIFT = -10;
 const SPEED = 4;
 const SPRITE_SIZE = 100;
+const NUM_SPRITES = 20;
 
 // Game state
 let ball = {
@@ -132,27 +133,45 @@ let gameOver = false;
 let gameStarted = false;
 let assetsLoaded = false;
 
-// Load sprites (RELATIVE PATH FIXED)
+// Load sprites
 const sprites = [];
 let loadedCount = 0;
 
-for (let i = 1; i <= 8; i++) {
+for (let i = 1; i <= NUM_SPRITES; i++) {
   const img = new Image();
   img.onload = () => {
     loadedCount++;
-    if (loadedCount === 8) assetsLoaded = true;
+    if (loadedCount === NUM_SPRITES) assetsLoaded = true;
   };
   img.src = `sprites/${String(i).padStart(2, '0')}.png`;
   sprites.push(img);
 }
 
-// Utility
-function getRandomSpriteIndex(exclude) {
-  let idx;
-  do {
-    idx = Math.floor(Math.random() * sprites.length);
-  } while (idx === exclude);
-  return idx;
+// 🔒 UNIQUE sprite picker (player + hoops)
+function getUniqueSpriteIndex() {
+  const used = new Set();
+
+  // Player sprite
+  used.add(ball.spriteIndex);
+
+  // Hoop sprites
+  for (const h of hoops) {
+    used.add(h.spriteIndex);
+  }
+
+  // Available sprites
+  const available = [];
+  for (let i = 0; i < sprites.length; i++) {
+    if (!used.has(i)) available.push(i);
+  }
+
+  // Safety (should never happen with 20 sprites)
+  if (available.length === 0) {
+    console.warn("No unique sprites available");
+    return Math.floor(Math.random() * sprites.length);
+  }
+
+  return available[Math.floor(Math.random() * available.length)];
 }
 
 // Popup
@@ -169,17 +188,17 @@ function showPopup(text, x, y) {
   }, 400);
 }
 
-// Add hoop
+// Add hoop — GUARANTEED UNIQUE
 function addHoop() {
   const y = Math.random() * (canvas.height - 240) + 120;
   hoops.push({
     x: canvas.width + 50,
     y,
-    spriteIndex: getRandomSpriteIndex(ball.spriteIndex)
+    spriteIndex: getUniqueSpriteIndex()
   });
 }
 
-// Start game
+// Start
 function startGame() {
   if (gameStarted || !assetsLoaded) return;
 
@@ -192,10 +211,9 @@ function startGame() {
 
   ball.y = canvas.height / 2;
   ball.vy = 0;
-  ball.spriteIndex = getRandomSpriteIndex(-1);
+  ball.spriteIndex = Math.floor(Math.random() * NUM_SPRITES);
 
   document.getElementById('score').textContent = score;
-
   addHoop();
   loop();
 }
@@ -205,9 +223,7 @@ window.addEventListener('touchstart', startGame, { passive: true });
 
 // Jump
 function jump() {
-  if (gameStarted && !gameOver) {
-    ball.vy = LIFT;
-  }
+  if (gameStarted && !gameOver) ball.vy = LIFT;
 }
 window.addEventListener('mousedown', jump);
 window.addEventListener('touchstart', jump, { passive: true });
@@ -226,11 +242,17 @@ function loop() {
   ball.scaleX += (1 - ball.scaleX) * 0.15;
   ball.scaleY += (1 - ball.scaleY) * 0.15;
 
-  // Draw player
+  // Player
   ctx.save();
   ctx.translate(ball.x, ball.y);
   ctx.scale(ball.scaleX, ball.scaleY);
-  ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+  ctx.drawImage(
+    sprites[ball.spriteIndex],
+    -SPRITE_SIZE / 2,
+    -SPRITE_SIZE / 2,
+    SPRITE_SIZE,
+    SPRITE_SIZE
+  );
   ctx.restore();
 
   // Hoops
@@ -240,7 +262,6 @@ function loop() {
 
     ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
 
-    // Collision
     const hit =
       ball.x + SPRITE_SIZE / 2 > h.x &&
       ball.x - SPRITE_SIZE / 2 < h.x + SPRITE_SIZE &&
@@ -260,13 +281,10 @@ function loop() {
       continue;
     }
 
-    // Miss
-    if (h.x + SPRITE_SIZE < ball.x - 20) {
-      return endGame();
-    }
+    if (h.x + SPRITE_SIZE < ball.x - 20) return endGame();
   }
 
-  // Spawn spacing
+  // Spacing
   if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) {
     addHoop();
   }
@@ -285,7 +303,8 @@ function showGameOver() {
   document.getElementById('finalScore').textContent = "Score: " + score;
   let hs = localStorage.getItem('flappyBasketHighscore') || 0;
   if (score > hs) localStorage.setItem('flappyBasketHighscore', score);
-  document.getElementById('highScoreDisplay').textContent = "Highscore: " + Math.max(score, hs);
+  document.getElementById('highScoreDisplay').textContent =
+    "Highscore: " + Math.max(score, hs);
   document.getElementById('gameOver').style.display = 'block';
 }
 
