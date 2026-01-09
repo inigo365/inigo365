@@ -358,13 +358,30 @@ function startGame(){
     leaderboardBtn.style.zIndex = 100; 
 }
 
-// ======== AUTO-START ON FIRST TOUCH/CLICK ========
+// ======== MOBILE FIX: AUTO-START + PREVENT ZOOM/SCROLL ========
 function autoStartGameOnce(e) {
-    startGame();             // start the game
-    e.preventDefault();      // prevent default browser behavior
+    startGame(); // start the game
+    playOverlay.style.opacity = 0; // hide overlay immediately
+    playOverlay.style.transform = "translate(-50%, -50%) scale(0.8)";
+
+    e.preventDefault(); // prevent default touch/mouse behavior
+
     window.removeEventListener('touchstart', autoStartGameOnce);
     window.removeEventListener('mousedown', autoStartGameOnce);
 }
+
+// Auto-start on first touch/click
+window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
+window.addEventListener('mousedown', autoStartGameOnce);
+
+// Prevent page zoom
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('touchmove', e => {
+    if (e.scale !== 1) e.preventDefault(); // pinch zoom
+}, { passive: false });
+
+// Prevent scrolling
+document.body.style.overflow = 'hidden';
 
 window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
 window.addEventListener('mousedown', autoStartGameOnce);
