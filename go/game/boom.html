@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Boom! Flappy Basketball</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+@font-face {
+  font-family: "RuneScape UF";
+  src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
+       url("../../fonts/RuneScape-UF.woff") format("woff");
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor.png"), auto;
+  background: #fff;
+}
+
+canvas {
+  display: block;
+  margin: 0 auto;
+  background: #ffffff;
+}
+
+/* UI */
+.score {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 36px;
+  color: #2d93ea;
+  z-index: 5;
+}
+
+.game-over {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  display: none;
+  z-index: 10;
+}
+
+.game-over h1 {
+  font-size: 48px;
+  color: #2d93ea;
+  margin-bottom: 20px;
+}
+
+.game-over button {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 28px;
+  padding: 8px 16px;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  background: #fff;
+  border: 2px solid #2d93ea;
+  color: #2d93ea;
+}
+</style>
+</head>
+
+<body>
+
+<div class="score" id="score">0</div>
+
+<div class="game-over" id="gameOver">
+  <h1>Game Over</h1>
+  <p id="finalScore"></p>
+  <button id="restartBtn">Restart</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const GRAVITY = 0.5;
+const LIFT = -10;
+const BALL_RADIUS = 20;
+const HOOP_WIDTH = 100;
+const HOOP_HEIGHT = 15;
+const HOOP_GAP = 180; // vertical gap to pass through
+const HOOP_SPEED = 4;
+
+let ball = { x: 150, y: canvas.height/2, vy: 0 };
+let hoops = [];
+let score = 0;
+let streak = 0;
+let gameOver = false;
+
+// Sprites (customizable later)
+let ballImg = new Image();
+ballImg.src = "ball.png"; // replace with your png
+
+let hoopImg = new Image();
+hoopImg.src = "hoop.png"; // replace with your png
+
+// Initialize hoops
+function addHoop() {
+  const y = Math.random() * (canvas.height - HOOP_GAP - 100) + 50;
+  hoops.push({ x: canvas.width, y: y });
+}
+
+// Handle tap/click
+function jump() {
+  if (!gameOver) ball.vy = LIFT;
+}
+
+// Listen for desktop + mobile
+window.addEventListener('mousedown', jump);
+window.addEventListener('touchstart', jump, { passive: true });
+
+// Game loop
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Gravity
+  ball.vy += GRAVITY;
+  ball.y += ball.vy;
+
+  // Ball collision with top/bottom
+  if(ball.y + BALL_RADIUS > canvas.height || ball.y - BALL_RADIUS < 0) {
+    endGame();
+  }
+
+  // Draw ball
+  ctx.drawImage(ballImg, ball.x - BALL_RADIUS, ball.y - BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
+
+  // Move hoops
+  for (let i = hoops.length-1; i >= 0; i--) {
+    hoops[i].x -= HOOP_SPEED;
+
+    // Draw hoop (top)
+    ctx.drawImage(hoopImg, hoops[i].x, hoops[i].y, HOOP_WIDTH, HOOP_HEIGHT);
+    // Draw hoop (bottom)
+    ctx.drawImage(hoopImg, hoops[i].x, hoops[i].y + HOOP_GAP, HOOP_WIDTH, HOOP_HEIGHT);
+
+    // Check score
+    if (!hoops[i].passed && ball.x > hoops[i].x + HOOP_WIDTH/2) {
+      hoops[i].passed = true;
+      let ballCenter = ball.y;
+      let hoopCenter = hoops[i].y + HOOP_GAP/2;
+      let distance = Math.abs(ballCenter - hoopCenter);
+
+      if(distance < HOOP_GAP/4) {
+        streak++;
+        score += 1 + streak; // bonus for perfect
+      } else {
+        streak = 0;
+        score += 1;
+      }
+
+      document.getElementById('score').textContent = score;
+    }
+
+    // Remove hoops off screen
+    if (hoops[i].x + HOOP_WIDTH < 0) hoops.splice(i, 1);
+  }
+
+  // Add new hoop
+  if(hoops.length === 0 || hoops[hoops.length-1].x < canvas.width - 400) addHoop();
+
+  if(!gameOver) requestAnimationFrame(loop);
+}
+
+// End game
+function endGame() {
+  gameOver = true;
+  document.getElementById('finalScore').textContent = "Score: " + score;
+  document.getElementById('gameOver').style.display = 'block';
+}
+
+// Restart
+document.getElementById('restartBtn').addEventListener('click', () => {
+  ball = { x: 150, y: canvas.height/2, vy: 0 };
+  hoops = [];
+  score = 0;
+  streak = 0;
+  gameOver = false;
+  document.getElementById('gameOver').style.display = 'none';
+  document.getElementById('score').textContent = score;
+  loop();
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+loop();
+</script>
+
+</body>
+</html>
