@@ -115,7 +115,7 @@ const GRAVITY = 0.5;
 const LIFT = -10;
 const SPEED = 4;
 const SPRITE_SIZE = 100;
-const NUM_SPRITES = 20;
+const NUM_SPRITES = 25; // Updated for 25 sprites
 
 // Game state
 let ball = {
@@ -147,34 +147,46 @@ for (let i = 1; i <= NUM_SPRITES; i++) {
   sprites.push(img);
 }
 
-// 🔒 UNIQUE sprite picker (player + hoops)
-function getUniqueSpriteIndex() {
-  const used = new Set();
-
-  // Player sprite
-  used.add(ball.spriteIndex);
-
-  // Hoop sprites
-  for (const h of hoops) {
-    used.add(h.spriteIndex);
+// ---------------------------
+// RARITY LOGIC
+// ---------------------------
+function getRarityRange(score) {
+  if (score >= 120) {
+    return { min: 19, max: 24 }; // sprites 20–25
   }
-
-  // Available sprites
-  const available = [];
-  for (let i = 0; i < sprites.length; i++) {
-    if (!used.has(i)) available.push(i);
-  }
-
-  // Safety (should never happen with 20 sprites)
-  if (available.length === 0) {
-    console.warn("No unique sprites available");
-    return Math.floor(Math.random() * sprites.length);
-  }
-
-  return available[Math.floor(Math.random() * available.length)];
+  const tier = Math.floor(score / 30);
+  return { min: 0, max: Math.min((tier + 1) * 5 - 1, NUM_SPRITES - 1) };
 }
 
-// Popup
+function weightedRandom(indices) {
+  const weighted = [];
+  indices.forEach(i => {
+    const weight = NUM_SPRITES - i;
+    for (let w = 0; w < weight; w++) weighted.push(i);
+  });
+  return weighted[Math.floor(Math.random() * weighted.length)];
+}
+
+function getUniqueSpriteIndex() {
+  const used = new Set();
+  used.add(ball.spriteIndex);
+  hoops.forEach(h => used.add(h.spriteIndex));
+
+  const { min, max } = getRarityRange(score);
+  const candidates = [];
+  for (let i = min; i <= max; i++) {
+    if (!used.has(i)) candidates.push(i);
+  }
+
+  if (candidates.length === 0) return Math.floor(Math.random() * NUM_SPRITES);
+  if (score >= 120) return candidates[Math.floor(Math.random() * candidates.length)];
+
+  return weightedRandom(candidates);
+}
+
+// ---------------------------
+// POPUP
+// ---------------------------
 const pointPopup = document.getElementById('pointPopup');
 function showPopup(text, x, y) {
   pointPopup.textContent = text;
@@ -188,7 +200,9 @@ function showPopup(text, x, y) {
   }, 400);
 }
 
-// Add hoop — GUARANTEED UNIQUE
+// ---------------------------
+// HOOPS
+// ---------------------------
 function addHoop() {
   const y = Math.random() * (canvas.height - 240) + 120;
   hoops.push({
@@ -198,51 +212,46 @@ function addHoop() {
   });
 }
 
-// Start
+// ---------------------------
+// START / JUMP
+// ---------------------------
 function startGame() {
   if (gameStarted || !assetsLoaded) return;
 
   gameStarted = true;
   document.getElementById('startText').style.display = 'none';
-
   hoops = [];
   score = 0;
   gameOver = false;
-
   ball.y = canvas.height / 2;
   ball.vy = 0;
   ball.spriteIndex = Math.floor(Math.random() * NUM_SPRITES);
-
   document.getElementById('score').textContent = score;
   addHoop();
   loop();
 }
-
 window.addEventListener('mousedown', startGame);
 window.addEventListener('touchstart', startGame, { passive: true });
 
-// Jump
 function jump() {
   if (gameStarted && !gameOver) ball.vy = LIFT;
 }
 window.addEventListener('mousedown', jump);
 window.addEventListener('touchstart', jump, { passive: true });
 
-// Loop
+// ---------------------------
+// GAME LOOP
+// ---------------------------
 function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Physics
   ball.vy += GRAVITY;
   ball.y += ball.vy;
-
   if (ball.y < 0 || ball.y > canvas.height) return endGame();
 
-  // Ease squash/stretch
   ball.scaleX += (1 - ball.scaleX) * 0.15;
   ball.scaleY += (1 - ball.scaleY) * 0.15;
 
-  // Player
   ctx.save();
   ctx.translate(ball.x, ball.y);
   ctx.scale(ball.scaleX, ball.scaleY);
@@ -255,11 +264,9 @@ function loop() {
   );
   ctx.restore();
 
-  // Hoops
   for (let i = hoops.length - 1; i >= 0; i--) {
     const h = hoops[i];
     h.x -= SPEED;
-
     ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
 
     const hit =
@@ -272,11 +279,9 @@ function loop() {
       score++;
       document.getElementById('score').textContent = score;
       showPopup('+1', ball.x, ball.y - 40);
-
       ball.spriteIndex = h.spriteIndex;
       ball.scaleX = 1.25;
       ball.scaleY = 0.75;
-
       hoops.splice(i, 1);
       continue;
     }
@@ -284,15 +289,14 @@ function loop() {
     if (h.x + SPRITE_SIZE < ball.x - 20) return endGame();
   }
 
-  // Spacing
-  if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) {
-    addHoop();
-  }
+  if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) addHoop();
 
   if (!gameOver) requestAnimationFrame(loop);
 }
 
-// End
+// ---------------------------
+// END GAME
+// ---------------------------
 function endGame() {
   if (gameOver) return;
   gameOver = true;
@@ -308,7 +312,9 @@ function showGameOver() {
   document.getElementById('gameOver').style.display = 'block';
 }
 
-// Restart
+// ---------------------------
+// RESTART
+// ---------------------------
 document.getElementById('restartBtn').addEventListener('click', () => {
   gameStarted = false;
   gameOver = false;
@@ -318,7 +324,9 @@ document.getElementById('restartBtn').addEventListener('click', () => {
   document.getElementById('startText').style.display = 'block';
 });
 
-// Resize
+// ---------------------------
+// RESIZE
+// ---------------------------
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
