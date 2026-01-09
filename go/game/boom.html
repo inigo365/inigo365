@@ -29,25 +29,6 @@ canvas {
   background: #ffffff;
 }
 
-#startScreen {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  z-index: 10;
-}
-
-#startScreen p {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 36px;
-  color: #2d93ea;
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-}
-
 .score {
   position: absolute;
   top: 12px;
@@ -58,6 +39,17 @@ canvas {
   z-index: 5;
 }
 
+.start-text {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 36px;
+  color: #2d93ea;
+  text-align: center;
+  z-index: 10;
+}
+
 .game-over {
   position: absolute;
   top: 40%;
@@ -66,20 +58,12 @@ canvas {
   text-align: center;
   display: none;
   z-index: 10;
-  opacity: 0;
-  transition: opacity 1s ease;
 }
 
 .game-over h1 {
   font-size: 48px;
   color: #2d93ea;
   margin-bottom: 20px;
-}
-
-.game-over p {
-  font-size: 28px;
-  color: #2d93ea;
-  margin-bottom: 16px;
 }
 
 .game-over button {
@@ -91,21 +75,34 @@ canvas {
   border: 2px solid #2d93ea;
   color: #2d93ea;
 }
+
+.point-popup {
+  position: absolute;
+  font-size: 28px;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 6;
+}
 </style>
 </head>
+
 <body>
 
-<div id="startScreen"><p>Click or tap to start!</p></div>
 <div class="score" id="score">0</div>
+<div class="start-text" id="startText">Click or Tap to Start</div>
 
 <div class="game-over" id="gameOver">
   <h1>Game Over</h1>
   <p id="finalScore"></p>
-  <p id="highScore"></p>
+  <p id="highScoreDisplay"></p>
   <button id="restartBtn">Restart</button>
 </div>
 
 <canvas id="gameCanvas"></canvas>
+<div class="point-popup" id="pointPopup">+1</div>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
@@ -114,187 +111,200 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 // Physics
-const GRAVITY = 0.4;
-const LIFT = -9;
-const BALL_RADIUS = 30; // 1.5x
-const HOOP_WIDTH = 100;
-const HOOP_HEIGHT = 15;
+const GRAVITY = 0.5;
+const LIFT = -10;
+const BALL_SCALE = 1.4;
+const BALL_RADIUS = 20 * BALL_SCALE;
+const HOOP_WIDTH = 200;
+const HOOP_HEIGHT = 80;
 const HOOP_GAP = 180;
-const HOOP_SPEED = 2.0; // slower, smooth swing
-const MAX_ROT = Math.PI / 3.6; // ~50 degrees
+const HOOP_SPEED = 5;
 
-let ball = { x: 150, y: canvas.height/2, vy: 0, angle: 0, falling:false };
+// Ball
+let ball = { x: 150, y: canvas.height/2, vy: 0, rotation: 0 };
 let hoops = [];
 let score = 0;
 let streak = 0;
 let gameOver = false;
 let gameStarted = false;
 
-// Highscore
-let highScore = localStorage.getItem('highScore') || 0;
-
 // Sprites
 let ballImg = new Image();
 ballImg.src = "ball.png";
+
 let hoopImg = new Image();
 hoopImg.src = "hoop.png";
 
-// Particles
-let particles = [];
+// Point popup
+const pointPopup = document.getElementById('pointPopup');
+function showPopup(text, x, y){
+  pointPopup.textContent = text;
+  pointPopup.style.left = x + 'px';
+  pointPopup.style.top = y + 'px';
+  pointPopup.style.opacity = 1;
+  pointPopup.style.transform = "translateY(-30px)";
+  setTimeout(() => {
+    pointPopup.style.opacity = 0;
+    pointPopup.style.transform = "translateY(-50px)";
+  }, 500);
+}
 
-function addHoop() {
-  const y = Math.random() * (canvas.height - HOOP_GAP - 150) + 75;
+// Add hoop
+function addHoop(){
+  const minY = HOOP_HEIGHT + 50;
+  const maxY = canvas.height - HOOP_HEIGHT - HOOP_GAP - 50;
+  const y = Math.random() * (maxY - minY) + minY;
   hoops.push({ x: canvas.width, y: y, passed: false });
 }
 
-function addParticles(x, y) {
-  for(let i=0;i<15;i++){
-    particles.push({x:x, y:y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*-4, alpha:1});
-  }
-}
-
-function drawParticles() {
-  for(let i=particles.length-1;i>=0;i--){
-    const p = particles[i];
-    ctx.fillStyle = `rgba(45,147,234,${p.alpha})`;
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,3,0,2*Math.PI);
-    ctx.fill();
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.2;
-    p.alpha -= 0.03;
-    if(p.alpha <=0) particles.splice(i,1);
-  }
-}
-
-// Click/tap input
-function handleInput() {
+// Click/tap to start
+function startGame(){
   if(!gameStarted){
     gameStarted = true;
-    document.getElementById('startScreen').style.display='none';
+    document.getElementById('startText').style.display='none';
+    hoops = [];
+    score = 0;
+    streak = 0;
+    gameOver = false;
+    ball.y = canvas.height/2;
+    ball.vy = 0;
+    document.getElementById('score').textContent = score;
+    addHoop();
     loop();
   }
-  if(!gameOver && !ball.falling) ball.vy = LIFT;
 }
+window.addEventListener('mousedown', startGame);
+window.addEventListener('touchstart', startGame, { passive: true });
 
-window.addEventListener('mousedown', handleInput);
-window.addEventListener('touchstart', handleInput, {passive:true});
+// Jump
+function jump(){
+  if(gameStarted && !gameOver) ball.vy = LIFT;
+}
+window.addEventListener('mousedown', jump);
+window.addEventListener('touchstart', jump, { passive: true });
 
-// Main loop
+// Loop
 function loop(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(gameStarted){
-    // Gravity
-    if(!ball.falling) ball.vy += GRAVITY;
-    ball.y += ball.vy;
+  // Gravity
+  ball.vy += GRAVITY;
+  ball.y += ball.vy;
 
-    // Limit rotation
-    ball.angle = Math.max(Math.min(ball.vy * 0.05, MAX_ROT), -MAX_ROT);
+  // Ball rotation
+  ball.rotation = Math.max(Math.min(ball.vy*5,50),-50);
 
-    // Ball hits floor if falling
-    if(ball.falling && ball.y + BALL_RADIUS >= canvas.height){
-      ball.y = canvas.height - BALL_RADIUS;
-      ball.vy = 0;
-      showGameOver();
-    }
+  // Ball boundaries (top/bottom)
+  if(ball.y - BALL_RADIUS < 0 || ball.y + BALL_RADIUS > canvas.height){
+    endGame();
+  }
 
-    // Draw ball rotated
-    ctx.save();
-    ctx.translate(ball.x, ball.y);
-    ctx.rotate(ball.angle);
-    ctx.drawImage(ballImg, -BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
-    ctx.restore();
+  // Draw ball
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.rotate(ball.rotation*Math.PI/180);
+  ctx.drawImage(ballImg, -BALL_RADIUS, -BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
+  ctx.restore();
 
-    // Hoops
-    for(let i=hoops.length-1;i>=0;i--){
-      let h = hoops[i];
-      h.x -= HOOP_SPEED;
+  // Move hoops
+  for(let i=hoops.length-1;i>=0;i--){
+    hoops[i].x -= HOOP_SPEED;
 
-      ctx.drawImage(hoopImg, h.x, h.y, HOOP_WIDTH, HOOP_HEIGHT);
+    // Draw hoop once
+    ctx.drawImage(hoopImg, hoops[i].x, hoops[i].y, HOOP_WIDTH, HOOP_HEIGHT);
 
-      // Collision detection
-      if(!h.passed && ball.x + BALL_RADIUS > h.x && ball.x - BALL_RADIUS < h.x + HOOP_WIDTH){
-        const top = h.y;
-        const bottom = h.y + HOOP_GAP;
+    // Scoring rectangle
+    const hoopLeft = hoops[i].x + 11;
+    const hoopRight = hoops[i].x + HOOP_WIDTH - 11;
+    const hoopTop = hoops[i].y;
+    const hoopBottom = hoops[i].y + HOOP_HEIGHT - 16;
 
-        if(ball.y - BALL_RADIUS < top){ 
-          // hit top rim
-          ball.vy = 0.5; 
-          ball.y = top - BALL_RADIUS;
-        } else if(ball.y + BALL_RADIUS > bottom){
-          // hit bottom rim
-          ball.vy = 0.5;
-          ball.y = bottom + BALL_RADIUS;
-        } else {
-          // Successful pass
-          const hoopCenter = top + HOOP_GAP/2;
-          const distance = Math.abs(ball.y - hoopCenter);
-          if(distance < HOOP_GAP/4){
-            streak++;
-            score += 1 + streak;
-            addParticles(ball.x, ball.y);
-          } else {
-            streak = 0;
-            score += 1;
-          }
-          document.getElementById('score').textContent = score;
-          h.passed = true;
-        }
-      }
+    // Scoring
+    if(!hoops[i].passed &&
+       ball.x > hoopLeft && ball.x < hoopRight &&
+       ball.y - BALL_RADIUS < hoopBottom && ball.y + BALL_RADIUS > hoopTop){
 
-      // End game if hoop passed without entering
-      if(!h.passed && ball.x - BALL_RADIUS > h.x + HOOP_WIDTH){
-        ball.falling = true;
+      const ballCenter = ball.y;
+      const hoopCenter = hoopTop + (HOOP_HEIGHT-16)/2;
+      const distance = Math.abs(ballCenter - hoopCenter);
+      let points = 1;
+      if(distance < (HOOP_HEIGHT-16)/4){
+        streak++;
+        points += streak;
+        showPopup('+'+points, ball.x, ball.y-50);
+      } else {
         streak = 0;
+        showPopup('+1', ball.x, ball.y-50);
       }
 
-      // Remove offscreen hoops
-      if(h.x + HOOP_WIDTH < 0) hoops.splice(i,1);
+      score += points;
+      hoops[i].passed = true;
+      document.getElementById('score').textContent = score;
     }
 
-    // Add new hoops
-    if(hoops.length === 0 || hoops[hoops.length-1].x < canvas.width - 400) addHoop();
+    // Missed hoop ends game
+    if(!hoops[i].passed && hoops[i].x + HOOP_WIDTH < ball.x - BALL_RADIUS){
+      endGame();
+    }
 
-    // Draw particles
-    drawParticles();
+    // Remove hoops off screen
+    if(hoops[i].x + HOOP_WIDTH < 0) hoops.splice(i,1);
+  }
+
+  // Add new hoop at regular interval
+  if(hoops.length===0 || hoops[hoops.length-1].x < canvas.width - 500){
+    addHoop();
   }
 
   if(!gameOver) requestAnimationFrame(loop);
 }
 
-function showGameOver(){
+// End game
+function endGame(){
   gameOver = true;
+  let groundY = canvas.height - BALL_RADIUS;
+  function fall(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(ball.y < groundY){
+      ball.vy += GRAVITY;
+      ball.y += ball.vy;
+    } else ball.y = groundY;
+    ctx.drawImage(ballImg, ball.x - BALL_RADIUS, ball.y - BALL_RADIUS, BALL_RADIUS*2, BALL_RADIUS*2);
+    if(ball.y < groundY) requestAnimationFrame(fall);
+    else showGameOver();
+  }
+  fall();
+}
+
+function showGameOver(){
+  document.getElementById('finalScore').textContent = "Score: "+score;
+  let highScore = localStorage.getItem('flappyBasketHighscore') || 0;
   if(score > highScore){
     highScore = score;
-    localStorage.setItem('highScore', highScore);
+    localStorage.setItem('flappyBasketHighscore', highScore);
   }
-  const goEl = document.getElementById('gameOver');
-  document.getElementById('finalScore').textContent = "Score: "+score;
-  document.getElementById('highScore').textContent = "Highscore: "+highScore;
-  goEl.style.display = 'block';
-  goEl.style.opacity = 1;
+  document.getElementById('highScoreDisplay').textContent = "Highscore: "+highScore;
+  document.getElementById('gameOver').style.display='block';
 }
 
 // Restart
 document.getElementById('restartBtn').addEventListener('click',()=>{
-  ball = { x:150, y:canvas.height/2, vy:0, angle:0, falling:false };
-  hoops = [];
-  score = 0;
-  streak = 0;
   gameOver = false;
   gameStarted = false;
+  hoops = [];
+  ball = { x:150, y:canvas.height/2, vy:0, rotation:0 };
   document.getElementById('gameOver').style.display='none';
-  document.getElementById('score').textContent=score;
-  document.getElementById('startScreen').style.display='flex';
+  document.getElementById('score').textContent=0;
+  document.getElementById('startText').style.display='block';
 });
 
 // Resize
-window.addEventListener('resize', ()=>{
+window.addEventListener('resize',()=>{
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 });
+
 </script>
+
 </body>
 </html>
