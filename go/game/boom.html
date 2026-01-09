@@ -23,6 +23,7 @@ html, body {
   background: #fff;
 }
 
+/* Back Button */
 .back-button {
   position: fixed;
   top: 8px;
@@ -35,17 +36,19 @@ html, body {
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
-  z-index: 100; /* make sure it's above everything */
-  opacity: 1; /* start visible */
+  z-index: 100;
+  opacity: 1;
   transition: opacity 0.5s ease;
 }
 
+/* Canvas */
 canvas {
   display: block;
   margin: 0 auto;
   background: #ffffff;
 }
 
+/* Point Popup */
 .point-popup {
   position: absolute;
   font-size: 28px;
@@ -62,7 +65,9 @@ canvas {
 <body>
 
 <button class="back-button" onclick="goBack()">← back</button>
-<audio id="bgMusic" src="soundtrack.mp3" loop></audio>
+
+<!-- Audio -->
+<audio id="bgMusic" src="/go/game/soundtrack.mp3" loop muted></audio>
 
 <img id="playOverlay" src="play.png" style="
     position: absolute;
@@ -114,7 +119,6 @@ canvas {
     top: 16px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 2vw;
     font-family: 'RuneScape UF', Arial, sans-serif;
     color: #2d93ea;
     z-index: 50;
@@ -141,9 +145,8 @@ canvas.height = window.innerHeight;
 const GRAVITY = 0.25;
 const LIFT = -6.5;
 let SPEED = 2; 
-const MAX_SPEED = 5; // cap for mythic
+const MAX_SPEED = 5;
 const SPEED_INCREMENT = 0.002; 
-
 let SPRITE_SIZE = Math.round(canvas.height*0.12);
 
 let ball = { x: Math.round(canvas.width*0.4), y: canvas.height/2, vy:0, spriteIndex:0, scaleX:1, scaleY:1 };
@@ -197,6 +200,7 @@ function showOverlay(showLastScore=false){
     if(showLastScore){overlayLastScore.textContent="last score: "+score; overlayLastScore.style.opacity=1;}
     else{overlayLastScore.style.opacity=0;}
     gameStarted=false;
+    backButton.style.opacity = 1;
 }
 
 function hideOverlay(){
@@ -231,36 +235,22 @@ function startGame(){
 playOverlay.addEventListener('click',startGame);
 playOverlay.addEventListener('touchstart',startGame,{passive:true});
 
-function jump(){
-  if(gameStarted && !gameOver) ball.vy = LIFT;
-}
 let touchActive = false;
-
-window.addEventListener('touchstart', (e)=>{
-    e.preventDefault(); // prevent triggering mouse events
-    touchActive = true;
-    jump();
-}, { passive:false });
-
-window.addEventListener('touchend', ()=>{
-    touchActive = false;
-});
-
-window.addEventListener('mousedown', (e)=>{
-    if(!touchActive) jump();
-});
+function jump(){if(gameStarted&&!gameOver) ball.vy = LIFT;}
+window.addEventListener('touchstart', (e)=>{e.preventDefault();touchActive=true;jump();},{passive:false});
+window.addEventListener('touchend', ()=>{touchActive=false;});
+window.addEventListener('mousedown', (e)=>{if(!touchActive) jump();});
 
 function updateTopScoreSize() {
     const vw = window.innerWidth;
-    if(vw <= 768){ // mobile
+    if(vw <= 768){
         topCurrentScore.style.fontSize = '5.5vw';
         topHighscore.style.fontSize = '5.5vw';
-    } else { // desktop
+    } else {
         topCurrentScore.style.fontSize = '2vw';
         topHighscore.style.fontSize = '2vw';
     }
 }
-
 window.addEventListener('resize', updateTopScoreSize);
 window.addEventListener('load', updateTopScoreSize);
 
@@ -309,22 +299,23 @@ window.addEventListener('resize',()=>{
   SPRITE_SIZE=Math.round(canvas.height*0.12);
 });
 
-window.addEventListener('load', () => {
-    const bgMusic = document.getElementById('bgMusic');
-    bgMusic.volume = 0.5; // optional, set volume
-    bgMusic.play().catch(() => {
-        console.log("Autoplay blocked, will play on first tap");
-    });
-});
+// ------------------- MUSIC FIX -------------------
+const bgMusic = document.getElementById('bgMusic');
+bgMusic.volume = 0.5;
+bgMusic.loop = true;
 
-// Optional fallback for mobile browsers that block autoplay
-function startMusicOnFirstTap() {
-    const bgMusic = document.getElementById('bgMusic');
-    if (bgMusic.paused) bgMusic.play().catch(() => {});
-    window.removeEventListener('touchstart', startMusicOnFirstTap);
+function startBgMusic() {
+    if(bgMusic.paused) {
+        bgMusic.muted = false;
+        bgMusic.play().catch(()=>{});
+    }
+    window.removeEventListener('touchstart', startBgMusic);
+    window.removeEventListener('mousedown', startBgMusic);
 }
-window.addEventListener('touchstart', startMusicOnFirstTap, { passive: true });
+window.addEventListener('touchstart', startBgMusic, {passive:true});
+window.addEventListener('mousedown', startBgMusic);
 
+// ------------------- NAVIGATION -------------------
 function goBack(){window.location.href="../index.html";}
 </script>
 </body>
