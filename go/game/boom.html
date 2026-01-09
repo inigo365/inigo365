@@ -62,6 +62,7 @@ canvas {
 <body>
 
 <button class="back-button" onclick="goBack()">← back</button>
+<audio id="bgMusic" src="soundtrack.mp3" loop></audio>
 
 <img id="playOverlay" src="play.png" style="
     position: absolute;
@@ -307,6 +308,22 @@ window.addEventListener('resize',()=>{
   canvas.height=window.innerHeight;
   SPRITE_SIZE=Math.round(canvas.height*0.12);
 });
+
+window.addEventListener('load', () => {
+    const bgMusic = document.getElementById('bgMusic');
+    bgMusic.volume = 0.5; // optional, set volume
+    bgMusic.play().catch(() => {
+        console.log("Autoplay blocked, will play on first tap");
+    });
+});
+
+// Optional fallback for mobile browsers that block autoplay
+function startMusicOnFirstTap() {
+    const bgMusic = document.getElementById('bgMusic');
+    if (bgMusic.paused) bgMusic.play().catch(() => {});
+    window.removeEventListener('touchstart', startMusicOnFirstTap);
+}
+window.addEventListener('touchstart', startMusicOnFirstTap, { passive: true });
 
 function goBack(){window.location.href="../index.html";}
 </script>
