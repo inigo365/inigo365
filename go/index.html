@@ -20,9 +20,14 @@ html, body {
   width: 100%;
   height: 100%;
   background: white;
-  overflow: hidden;
   font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("../images/cursor/cursor.png"), auto;
+
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+
+  cursor: url("../../images/cursor/cursor.png"), auto;
 }
 
 /* PASSWORD SCREEN */
@@ -133,21 +138,19 @@ video {
   pointer-events: auto;
 }
 
-/* BACK BUTTON */
 .back-button {
-  position: absolute;
+  position: fixed;
   top: 8px;
   left: 8px;
   font-size: 28px;
-  color: #2d93ea;
   background: transparent;
   border: none;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  z-index: 30;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
+  padding: 0;
+  z-index: 10;
 }
 
 .back-button.show {
@@ -192,12 +195,13 @@ let currentAction = null;
 let endedListener = null;
 
 const actions = {
-  "donovan": { src: "video.mp4" },
-  "gambosi": { src: "skud.mp4" },
-  "wasted": { src: "litty.mp4" },
+  "donovan": { src: "videos/video.mp4" },
+  "gambosi": { src: "videos/skud.mp4" },
+  "wasted": { src: "videos/litty.mp4" },
+  "tinny": { redirect: "scale/scale.html", sameTab: true },
+  "5bigbooms": { redirect: "game/boom.html", sameTab: true },
   "home": { redirect: "https://inigo365.com/", sameTab: true },
-  "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-  "tinny": { redirect: "scale.html", sameTab: true }
+  "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" }
 };
 
 function resetToPassword() {

@@ -25,7 +25,7 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 
-  cursor: url("../images/cursor/cursor.png"), auto;
+  cursor: url("cursor/cursor.png"), auto; /* updated cursor path */
 }
 
 /* BACK BUTTON */
@@ -38,7 +38,7 @@ html, body {
   border: none;
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  cursor: url("cursor/cursor-hover.png"), pointer; /* updated cursor path */
   text-transform: lowercase;
   padding: 0;
   z-index: 10;
@@ -125,16 +125,16 @@ function animate() {
 
   if (holding) {
     // Smooth realistic climb to 1g
-    const climbSpeed = 0.06; // faster, realistic
+    const climbSpeed = 0.06; 
     currentWeight += (1 - currentWeight) * climbSpeed;
     settleTimer++;
 
     if (currentWeight >= 0.99) {
       // Realistic micro-jiggle around 1g
       if (Math.random() < 0.16) {
-        currentWeight = 1 + (Math.random() - 0.5) * 0.06; // ±0.03g
-        jiggleX = (Math.random() - 0.5) * 3; // ±1.5px
-        jiggleY = (Math.random() - 0.5) * 1.5; // ±0.75px
+        currentWeight = 1 + (Math.random() - 0.5) * 0.06;
+        jiggleX = (Math.random() - 0.5) * 3;
+        jiggleY = (Math.random() - 0.5) * 1.5;
       } else {
         currentWeight += (1 - currentWeight) * 0.04;
       }
@@ -176,7 +176,7 @@ document.addEventListener("touchend", () => holding = false, { passive: true });
 
 /* NAVIGATION */
 function goBack() {
-  window.location.href = "index.html";
+  window.location.href = "../index.html";
 }
 
 /* START ANIMATION */
