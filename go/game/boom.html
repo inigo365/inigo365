@@ -307,6 +307,42 @@ const overlayLastScore=document.getElementById('overlayLastScore');
 const topCurrentScore=document.getElementById('topCurrentScore');
 const topHighscore=document.getElementById('topHighscore');
 
+function handleStart(e) {
+    e.preventDefault(); // prevents scrolling/touch issues
+    startGame();        // start the game
+    jump();             // optional: first tap also makes the ball jump
+}
+
+// Attach to overlay and canvas
+playOverlay.addEventListener('click', handleStart);
+playOverlay.addEventListener('touchstart', handleStart, {passive:false});
+canvas.addEventListener('pointerdown', handleStart, {passive:false});
+canvas.addEventListener('touchstart', handleStart, {passive:false});
+
+function startBgMusicOnFirstGesture() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const track = audioCtx.createMediaElementSource(bgMusic);
+        track.connect(audioCtx.destination);
+        audioCtx.resume().then(() => bgMusic.play().catch(()=>{}));
+    } catch(e) {
+        bgMusic.play().catch(()=>{});
+    }
+
+    // Remove these listeners after the first gesture
+    playOverlay.removeEventListener('click', startBgMusicOnFirstGesture);
+    playOverlay.removeEventListener('touchstart', startBgMusicOnFirstGesture);
+    canvas.removeEventListener('pointerdown', startBgMusicOnFirstGesture);
+    canvas.removeEventListener('touchstart', startBgMusicOnFirstGesture);
+}
+
+// Attach to the same gestures
+playOverlay.addEventListener('click', startBgMusicOnFirstGesture);
+playOverlay.addEventListener('touchstart', startBgMusicOnFirstGesture, {passive:false});
+canvas.addEventListener('pointerdown', startBgMusicOnFirstGesture, {passive:false});
+canvas.addEventListener('touchstart', startBgMusicOnFirstGesture, {passive:false});
+
 // ← ADD THIS:
 playOverlay.addEventListener('click', () => {
     startGame();
