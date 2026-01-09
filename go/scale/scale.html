@@ -2,32 +2,29 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>scale</title>
+<title>bag</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-/* FONT */
 @font-face {
   font-family: "RuneScape UF";
   src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
        url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
-/* RESET */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  background: white;
+  overflow: hidden;
   font-family: "RuneScape UF", Arial, sans-serif;
-
+  cursor: url("../../images/cursor/cursor.png"), auto;
+  background: #fff;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-
-  cursor: url("../../images/cursor/cursor.png"), auto;
 }
 
 /* BACK BUTTON */
@@ -43,47 +40,25 @@ html, body {
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
-  z-index: 10;
+  z-index: 9999; /* always on top */
 }
 
-/* SCALE WRAPPER */
-.scale-wrapper {
-  position: relative;
-  z-index: 5;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.weight {
-  font-size: 72px;
-  color: #2d93ea;
-  margin-bottom: 20px;
-}
-
-.instruction {
-  font-size: 22px;
-  color: #2d93ea;
-  margin-bottom: 12px;
-}
-
-/* GIF */
-.gif-container {
-  position: absolute;
-  top: 60%;
-  left: 50%;
-  transform: translateX(-50%);
-  display: none;
-  z-index: 1;
-}
-
-.gif-container img {
+/* Canvas & overlays */
+canvas {
   display: block;
-  max-width: 150px;
-  height: auto;
+  margin: 0 auto;
+  background: #ffffff;
+}
+
+.point-popup {
+  position: absolute;
+  font-size: 28px;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 6;
 }
 </style>
 </head>
@@ -92,98 +67,251 @@ html, body {
 
 <button class="back-button" onclick="goBack()">← back</button>
 
-<div class="scale-wrapper">
-  <div class="weight" id="weight">0.0g</div>
-  <div class="instruction">hold to weigh</div>
+<!-- play.png overlay -->
+<img id="playOverlay" src="play.png" style="
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    max-width: 80%;
+    max-height: 80%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+    transition: opacity 0.5s, transform 0.5s;
+    z-index: 50;
+    cursor: pointer;
+">
+
+<!-- bottom overlays for after death -->
+<div id="overlayHighscore" style="
+    position: absolute;
+    top: 80%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 28px;
+    color: #2d93ea;
+    z-index: 50;
+    font-family: 'RuneScape UF', Arial, sans-serif;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s;
+"></div>
+
+<div id="overlayLastScore" style="
+    position: absolute;
+    top: 86%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 28px;
+    color: #2d93ea;
+    z-index: 50;
+    font-family: 'RuneScape UF', Arial, sans-serif;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s;
+"></div>
+
+<!-- top scores -->
+<div id="topScores" style="
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 28px;
+    font-family: 'RuneScape UF', Arial, sans-serif;
+    color: #2d93ea;
+    z-index: 50;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+">
+    <div id="topCurrentScore">current score: 0</div>
+    <div id="topHighscore">highscore: 0</div>
 </div>
 
-<div class="gif-container" id="gifContainer">
-  <img src="scale.gif" alt="scale gif">
-  <!-- Optional video fallback -->
-  <!-- <video src="scale.mp4" autoplay loop muted playsinline></video> -->
-</div>
-
-<audio id="scaleSound" src="scale.mp3"></audio>
+<canvas id="gameCanvas"></canvas>
+<div class="point-popup" id="pointPopup">+1</div>
 
 <script>
-let currentWeight = 0;
-let holding = false;
-let settleTimer = 0;
-let justHitOneGram = false;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-const weightEl = document.getElementById("weight");
-const gifContainer = document.getElementById("gifContainer");
-const scaleSound = document.getElementById("scaleSound");
+// Physics
+const GRAVITY = 0.35; // slightly lighter gravity for smoother arc
+const LIFT = -9.5;    // slightly less intense jump
+let SPEED = 3.5;       // slower start
+const MAX_SPEED = 6;
+const SPEED_INCREMENT = 0.02;
+const SPRITE_SIZE = 100;
+const NUM_SPRITES = 25;
 
-/* UPDATE DISPLAY WITH MICRO-JIGGLE */
-function updateDisplay(jiggleX = 0, jiggleY = 0) {
-  weightEl.textContent = currentWeight.toFixed(1) + "g";
-  weightEl.style.transform = `translate(${jiggleX}px, ${jiggleY}px)`;
+// Game state
+let ball = { x: 150, y: canvas.height/2, vy:0, spriteIndex:0, scaleX:1, scaleY:1 };
+let hoops = [];
+let score = 0;
+let gameOver = false;
+let gameStarted = false;
+let assetsLoaded = false;
+let glowPulse = 0;
+
+// Sprites
+const sprites = [];
+let loadedCount = 0;
+for(let i=1;i<=NUM_SPRITES;i++){
+  const img = new Image();
+  img.onload = ()=>{ loadedCount++; if(loadedCount===NUM_SPRITES+1) assetsLoaded=true; };
+  img.src = `sprites/${String(i).padStart(2,'0')}.png`;
+  sprites.push(img);
+}
+const mythicImg = new Image();
+mythicImg.src = 'sprites/mythic1.png';
+mythicImg.onload = ()=>{ loadedCount++; if(loadedCount===NUM_SPRITES+1) assetsLoaded=true; };
+
+// Rarity logic
+function getRarityRange(score){ if(score>=250) return {min:NUM_SPRITES,max:NUM_SPRITES}; let maxSprite=Math.min(4+Math.floor(score/5),NUM_SPRITES-1); return {min:0,max:maxSprite}; }
+function getWeightedSpriteIndex(first=false){
+  const used=new Set(); used.add(ball.spriteIndex); hoops.forEach(h=>used.add(h.spriteIndex));
+  let {min,max}=getRarityRange(score); if(first){min=0; max=4;}
+  const candidates=[]; for(let i=min;i<=max;i++) if(!used.has(i)) candidates.push(i);
+  if(candidates.length===0) return Math.floor(Math.random()*(max-min+1))+min;
+  if(score>=250) return NUM_SPRITES;
+  const newestBag=max; const weighted=[]; candidates.forEach(i=>{ if(i===newestBag){for(let w=0;w<5;w++) weighted.push(i);} else{for(let w=0;w<2;w++) weighted.push(i);} });
+  return weighted[Math.floor(Math.random()*weighted.length)];
 }
 
-/* MAIN ANIMATION LOOP */
-function animate() {
-  let jiggleX = 0;
-  let jiggleY = 0;
+// Popup
+const pointPopup = document.getElementById('pointPopup');
+function showPopup(text,x,y){ pointPopup.textContent=text; pointPopup.style.left=x+'px'; pointPopup.style.top=y+'px'; pointPopup.style.opacity=1; pointPopup.style.transform="translateY(-30px)"; setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400); }
 
-  if (holding) {
-    // Smooth realistic climb to 1g
-    const climbSpeed = 0.06;
-    currentWeight += (1 - currentWeight) * climbSpeed;
-    settleTimer++;
+// Hoops
+function addHoop(){ const y=Math.random()*(canvas.height-240)+120; const spriteIndex=getWeightedSpriteIndex(); hoops.push({x:canvas.width+50,y,spriteIndex}); }
 
-    if (currentWeight >= 0.99) {
-      // Micro-jiggle around 1g
-      if (Math.random() < 0.16) {
-        currentWeight = 1 + (Math.random() - 0.5) * 0.06;
-        jiggleX = (Math.random() - 0.5) * 3;
-        jiggleY = (Math.random() - 0.5) * 1.5;
-      } else {
-        currentWeight += (1 - currentWeight) * 0.04;
-      }
+// Overlay
+const playOverlay = document.getElementById('playOverlay');
+const overlayHighscore = document.getElementById('overlayHighscore');
+const overlayLastScore = document.getElementById('overlayLastScore');
+const topCurrentScore = document.getElementById('topCurrentScore');
+const topHighscore = document.getElementById('topHighscore');
 
-      // GIF appears under text
-      if (gifContainer.style.display === "none") {
-        gifContainer.style.display = "block";
-      }
+function updateTopScores() {
+    topCurrentScore.textContent = "current score: " + score;
+    const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+    topHighscore.textContent = "highscore: " + hs;
+}
 
-      // MP3 plays once per press
-      if (!justHitOneGram) {
-        scaleSound.currentTime = 0;
-        scaleSound.play().catch(()=>{});
-        justHitOneGram = true;
-      }
+function updateOverlayHighscore(){
+    const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+    overlayHighscore.textContent = "highscore: " + hs;
+}
+
+function showOverlay(showLastScore=false){
+    playOverlay.style.opacity = 1;
+    playOverlay.style.transform = "translate(-50%, -50%) scale(1)";
+    updateOverlayHighscore();
+    overlayHighscore.style.opacity = 1;
+
+    if(showLastScore){
+        overlayLastScore.textContent = "last score: " + score;
+        overlayLastScore.style.opacity = 1;
+    } else {
+        overlayLastScore.style.opacity = 0;
     }
 
-  } else {
-    // Drop quickly on release
-    currentWeight += (0 - currentWeight) * 0.15;
-    settleTimer = 0;
-    justHitOneGram = false;
-    gifContainer.style.display = "none";
+    gameStarted = false;
+}
+
+function hideOverlay(){
+    playOverlay.style.opacity = 0;
+    playOverlay.style.transform = "translate(-50%, -50%) scale(0.8)";
+    overlayHighscore.style.opacity = 0;
+    overlayLastScore.style.opacity = 0;
+}
+
+// continuously update top scores
+setInterval(updateTopScores, 100);
+
+// Fade in overlay on load
+window.addEventListener('load', ()=>{ showOverlay(false); });
+
+// Start / jump
+function startGame(e){
+    if(gameStarted || !assetsLoaded) return;
+    if(e) e.stopPropagation();
+    hideOverlay();
+    gameStarted = true;
+    SPEED = 3.5;
+    hoops = [];
+    score = 0;
+    gameOver = false;
+    ball.y = canvas.height/2;
+    ball.vy = 0;
+    ball.spriteIndex = getWeightedSpriteIndex(true);
+    addHoop();
+    loop();
+}
+
+playOverlay.addEventListener('click', startGame);
+playOverlay.addEventListener('touchstart', startGame, {passive:false});
+
+// smoother jump logic
+let jumpQueued = false;
+function jump(e){
+    if(!gameStarted || gameOver) return;
+    if(e) e.preventDefault();
+    ball.vy = LIFT;
+}
+window.addEventListener('mousedown', jump);
+window.addEventListener('touchstart', jump, {passive:false});
+
+// Game loop
+function loop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ball.vy+=GRAVITY;
+  ball.y+=ball.vy;
+  if(ball.y<0||ball.y>canvas.height) return endGame();
+  if(score<250 && SPEED<MAX_SPEED) SPEED+=SPEED_INCREMENT;
+  ball.scaleX+=(1-ball.scaleX)*0.15;
+  ball.scaleY+=(1-ball.scaleY)*0.15;
+  glowPulse+=0.05;
+
+  ctx.save(); ctx.translate(ball.x,ball.y); ctx.scale(ball.scaleX,ball.scaleY);
+  if(ball.spriteIndex===NUM_SPRITES){ ctx.shadowColor='yellow'; ctx.shadowBlur=20+Math.sin(glowPulse)*10; ctx.drawImage(mythicImg,-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE); ctx.shadowBlur=0; }
+  else if(ball.spriteIndex>=15){ const intensity=(ball.spriteIndex-14)*3+Math.sin(glowPulse)*4; ctx.shadowColor='rgba(255,215,0,0.8)'; ctx.shadowBlur=intensity; ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE); ctx.shadowBlur=0; }
+  else{ ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE); }
+  ctx.restore();
+
+  for(let i=hoops.length-1;i>=0;i--){
+    const h=hoops[i]; h.x-=SPEED;
+    if(h.spriteIndex===NUM_SPRITES){ ctx.shadowColor='yellow'; ctx.shadowBlur=20+Math.sin(glowPulse)*10; ctx.drawImage(mythicImg,h.x,h.y,SPRITE_SIZE,SPRITE_SIZE); ctx.shadowBlur=0; }
+    else if(h.spriteIndex>=15){ const intensity=(h.spriteIndex-14)*3+Math.sin(glowPulse)*4; ctx.shadowColor='rgba(255,215,0,0.8)'; ctx.shadowBlur=intensity; ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE); ctx.shadowBlur=0; }
+    else{ ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE); }
+
+    const hit=ball.x+SPRITE_SIZE/2>h.x && ball.x-SPRITE_SIZE/2<h.x+SPRITE_SIZE && ball.y+SPRITE_SIZE/2>h.y && ball.y-SPRITE_SIZE/2<h.y+SPRITE_SIZE;
+    if(hit){ score++; showPopup('+1',ball.x,ball.y-40); ball.spriteIndex=h.spriteIndex; ball.scaleX=1.25; ball.scaleY=0.75; hoops.splice(i,1); continue; }
+    if(h.x+SPRITE_SIZE<ball.x-20) return endGame();
   }
 
-  // Clamp weight
-  if (currentWeight > 1.1) currentWeight = 1.1;
-  if (!holding && currentWeight < 0.01) currentWeight = 0;
-
-  updateDisplay(jiggleX, jiggleY);
-  requestAnimationFrame(animate);
+  if(hoops.length===0 || hoops[hoops.length-1].x<canvas.width-420) addHoop();
+  if(!gameOver) requestAnimationFrame(loop);
 }
 
-/* INPUT HANDLERS */
-document.addEventListener("mousedown", () => holding = true);
-document.addEventListener("mouseup", () => holding = false);
-document.addEventListener("touchstart", () => holding = true, { passive: true });
-document.addEventListener("touchend", () => holding = false, { passive: true });
-
-/* NAVIGATION */
-function goBack() {
-  window.location.href = "../index.html";
+// End game
+function endGame(){
+  if(gameOver) return;
+  gameOver=true;
+  const hs=localStorage.getItem('flappyBasketHighscore')||0;
+  if(score>hs) localStorage.setItem('flappyBasketHighscore',score);
+  showOverlay(true);
 }
 
-/* START ANIMATION */
-animate();
+// Back button
+function goBack(){ window.location.href = "../index.html"; }
+
+// Resize
+window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
 </script>
 
 </body>
