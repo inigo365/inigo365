@@ -25,7 +25,7 @@
   <!-- Viewport for mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Hidden SEO Heading -->
+  <!-- Hidden SEO Heading & Back Button CSS -->
   <style>
     .seo-h1 {
       position: absolute;
@@ -36,41 +36,48 @@
       overflow: hidden;
     }
 
-/* Back button top-right, responsive */
-.back {
-  position: fixed;
-  top: 1.2rem;           /* small gap from top */
-  right: 1.2rem;         /* small gap from right */
-  color: #2d93ea;
-  font-size: 2.25rem;    /* ~36px on standard screens, scales with root font */
-  font-family: "RuneScape UF", Arial, sans-serif;
-  text-decoration: none;
-  z-index: 1000;
-  cursor: url("./images/cursor/cursor.png"), auto !important;
-  transition: color 0.3s ease;
-  background: none;
-  padding: 0;
-  display: inline-flex;
-  flex-direction: column;  /* stack text and arrow vertically */
-  align-items: flex-end;   /* align to right edge */
-  line-height: 1;          /* ensure tight vertical spacing */
-}
+    /* Back button top-right, responsive */
+    .back {
+      position: fixed;
+      top: 1.5vw;           /* scales with viewport width */
+      right: 1.5vw;         /* scales with viewport width */
+      color: #2d93ea;
+      font-size: 3vw;       /* responsive scaling */
+      font-family: "RuneScape UF", Arial, sans-serif;
+      text-decoration: none;
+      z-index: 1000;
+      cursor: url("./images/cursor/cursor.png"), auto !important;
+      transition: color 0.3s ease;
+      background: none;
+      padding: 0;
+      display: inline-flex;
+      flex-direction: column;  
+      align-items: flex-end;  
+      line-height: 1;          
+    }
 
-.back:hover {
-  color: #1a6bb8;
-  cursor: url("./images/cursor/cursor-hover.png"), pointer !important;
-}
+    @media (min-width: 768px) {
+      .back {
+        font-size: 2rem;     /* desktop fixed size */
+        top: 1.2rem;
+        right: 1.2rem;
+      }
+    }
 
-.back-arrow {
-  font-size: 1em;          /* same size as "Back" text */
-  line-height: 1;          /* tight vertical spacing */
-  display: block;
-  width: 100%;             /* match the width of parent "Back" */
-  text-align: right;       /* align arrow under "Back" */
-  transform: scaleX(1);    /* can adjust slightly if needed */
-  margin-top: 0.05em;      /* very small vertical space */
-}
+    .back:hover {
+      color: #1a6bb8;
+      cursor: url("./images/cursor/cursor-hover.png"), pointer !important;
+    }
 
+    .back-arrow {
+      font-size: 1em;          
+      line-height: 1;          
+      display: block;
+      width: 100%;             
+      text-align: right;       
+      transform: scaleX(1);    
+      margin-top: 0.05em;      
+    }
   </style>
 </head>
 
@@ -80,11 +87,10 @@
 <h1 class="seo-h1">Inigo Macdonald – Creative Portfolio</h1>
 
 <!-- Back button top-right -->
-<a class="back" href="go/index.html">
+<a class="back" href="index.html">
   Back
   <span class="back-arrow">→</span>
 </a>
-
 
 <!-- =====================
      LANDING
@@ -138,13 +144,6 @@
        rel="noopener noreferrer"
        aria-label="Email">
       <span>Email</span>
-    </a>
-    
-    <!-- GO PAGE LINK -->
-    <a href="go/index.html"
-       class="landing-link go-link"
-       aria-label="Go Page">
-      <span>Go Page</span>
     </a>
 
   </div>
