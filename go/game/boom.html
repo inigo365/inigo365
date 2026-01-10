@@ -568,10 +568,15 @@ window.addEventListener('mousedown', startBgMusic);
 
 const musicToggle = document.getElementById('musicToggle');
 
+musicToggle.style.opacity = 1;
+musicToggle.textContent = "music: off"; // default state
+
 // Start music on first user gesture (overlay click/touch)
 function handleFirstUserGesture() {
     if(bgMusic.paused){
-        bgMusic.play().catch(()=>{});
+        bgMusic.play().then(() => {
+            musicToggle.textContent = "music: on"; // update once music actually plays
+        }).catch(()=>{});
     }
     window.removeEventListener('touchstart', handleFirstUserGesture);
     window.removeEventListener('mousedown', handleFirstUserGesture);
