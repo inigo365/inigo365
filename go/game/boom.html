@@ -296,6 +296,7 @@ let hoops = [];
 let score = 0;
 let gameOver = false;
 let gameStarted = false;
+let scoreSubmitted = false;
 let assetsLoaded = false;
 let glowPulse = 0;
 
@@ -371,11 +372,12 @@ window.addEventListener('load',()=>{showOverlay(false);});
 function startGame(){
     if(!assetsLoaded) return;
     if(gameStarted) return;
+    scoreSubmitted = false;
 
     gameStarted = true;
     gameOver = false;
 
-    SPEED = 4.1;
+    SPEED = 3.6;
     score = 0;
     hoops = [];
 
@@ -541,6 +543,7 @@ function loop(){
 function endGame(){
   if(gameOver)return;
   gameOver=true;
+
   const hs=localStorage.getItem('flappyBasketHighscore')||0;
   if(score>hs)localStorage.setItem('flappyBasketHighscore',score);
   backButton.style.opacity = 1;
@@ -641,6 +644,12 @@ function goBack(){window.location.href="../index.html";}
   };
 
   window.submitScore = async function(){
+      // 🚫 already submitted for this death
+    if(scoreSubmitted) return;
+
+    scoreSubmitted = true; // 🔒 LOCK IT
+    document.querySelector('#nameModal button[onclick="submitScore()"]').disabled = true;
+
     const name =
         document.getElementById('playerName').value.trim() || 'anonymous';
 

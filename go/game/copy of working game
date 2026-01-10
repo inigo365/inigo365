@@ -24,10 +24,10 @@ html, body {
 }
 
 #topScores {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s;
-    display: flex;
+    opacity: 0;              /* start fully invisible */
+    pointer-events: none;     /* prevent clicks while hidden */
+    transition: opacity 0.5s; /* smooth fade-in later */
+    display: flex;            /* keeps layout intact even when hidden */
     justify-content: center;
     gap: 4vw;
 }
@@ -55,6 +55,7 @@ canvas {
   display: block;
   margin: 0 auto;
   background: #ffffff;
+  touch-action: none;
 }
 
 /* Point Popup */
@@ -115,6 +116,12 @@ canvas {
   text-align: center;
   width: 200px;
   margin-bottom: 16px;
+}
+
+.name-modal,
+#leaderboardBackdrop {
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .name-modal button {
@@ -275,6 +282,7 @@ const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+let animationId = null;
 
 const GRAVITY = 0.32;
 const LIFT = -6.9;
@@ -325,26 +333,32 @@ function updateTopScores(){
 }
 
 function showOverlay(showLastScore=false){
-    playOverlay.style.opacity=1;
-    playOverlay.style.transform="translate(-50%,-50%) scale(1)";
-    overlayHighscore.style.opacity=1;
-    overlayHighscore.textContent="highscore: "+(localStorage.getItem('flappyBasketHighscore')||0);
-    topCurrentScore.style.display="none";
-    topHighscore.style.display="none";
-    if(showLastScore){overlayLastScore.textContent="last score: "+score; overlayLastScore.style.opacity=1;}
-    else{overlayLastScore.style.opacity=0;}
-    gameStarted=false;
-    backButton.style.opacity = 1;
-    leaderboardBtn.style.display = 'block';
+    playOverlay.style.opacity = 1;
+    playOverlay.style.pointerEvents = 'auto'; // 👈 allow clicks
+    playOverlay.style.transform = "translate(-50%,-50%) scale(1)";
+
+    overlayHighscore.style.opacity = 1;
+    overlayHighscore.textContent =
+        "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
+
+    overlayLastScore.style.opacity = showLastScore ? 1 : 0;
+    if(showLastScore){
+        overlayLastScore.textContent = "last score: " + score;
+    }
+
+    document.getElementById('topScores').style.opacity = 0;
+    document.getElementById('topScores').style.pointerEvents = 'none';
+
+    gameStarted = false;
 }
 
 function hideOverlay(){
-    playOverlay.style.opacity=0;
-    playOverlay.style.transform="translate(-50%,-50%) scale(0.8)";
-    overlayHighscore.style.opacity=0;
-    overlayLastScore.style.opacity=0;
-    topCurrentScore.style.display="flex";
-    topHighscore.style.display="flex";
+    playOverlay.style.opacity = 0;
+    playOverlay.style.pointerEvents = 'none'; // 🚨 THIS FIXES iOS
+    playOverlay.style.transform = "translate(-50%,-50%) scale(0.8)";
+
+    overlayHighscore.style.opacity = 0;
+    overlayLastScore.style.opacity = 0;
 
     const topScores = document.getElementById('topScores');
     topScores.style.opacity = 1;
@@ -355,53 +369,87 @@ setInterval(updateTopScores,100);
 window.addEventListener('load',()=>{showOverlay(false);});
 
 function startGame(){
-    if(gameStarted||!assetsLoaded)return;
+    if(!assetsLoaded) return;
+    if(gameStarted) return;
+
+    gameStarted = true;
+    gameOver = false;
+
+    SPEED = 4.1;
+    score = 0;
+    hoops = [];
+
+    ball.x = Math.round(canvas.width * 0.4);
+    ball.y = canvas.height / 2;
+    ball.vy = 0;
+    ball.spriteIndex = getWeightedSpriteIndex(true);
+
     hideOverlay();
-    gameStarted=true;
-    SPEED=4.1;
-    hoops=[];
-    score=0;
-    gameOver=false;
-    ball.x=Math.round(canvas.width*0.4);
-    ball.y=canvas.height/2;
-    ball.vy=0;
-    ball.spriteIndex=getWeightedSpriteIndex(true);
     addHoop();
-    loop();
+
     backButton.style.opacity = 0;
-    leaderboardBtn.style.display = 'none'; 
-    leaderboardBtn.style.zIndex = 100; 
+    leaderboardBtn.style.display = 'none';
+
+    // start music ON USER CLICK (allowed)
+    bgMusic.play().catch(()=>{});
+    musicToggle.style.display = 'block';
+
+    if(animationId) cancelAnimationFrame(animationId);
+    loop();
 }
 
-if(score < 250 && SPEED < MAX_SPEED) SPEED += SPEED_INCREMENT * 0.5;
+// Prevent page zoom
+document.addEventListener('touchmove', e => {
+    if (!gameOver && e.scale !== 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
 
-function playAgain() {
-  const nameModal = document.getElementById('nameModal');
-  const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
+// Prevent scrolling
+document.body.style.overflow = 'hidden';
 
-  nameModal.classList.remove('show');
-  leaderboardBackdrop.style.display = 'none';
+playOverlay.addEventListener('click',startGame);
+playOverlay.addEventListener('touchstart', (e)=>{
+    e.preventDefault();
+    startGame();
+}, {passive:false});
 
-  gameStarted = false;
-  gameOver = false;
-  overlayHighscore.style.opacity = 0;
-  overlayLastScore.style.opacity = 0;
+function playAgain(){
+    document.getElementById('nameModal').classList.remove('show');
+    document.getElementById('leaderboardBackdrop').style.display = 'none';
 
-  hoops = [];
-  score = 0;
-  ball.vy = 0;
-  ball.x = Math.round(canvas.width*0.4);
-  ball.y = canvas.height/2;
-  ball.spriteIndex = getWeightedSpriteIndex(true);
+    hideOverlay(); // 🚨 force overlay OFF
 
-  startGame();
+    gameOver = false;
+    gameStarted = false;
+    score = 0;
+    hoops = [];
+
+    ball.vy = 0;
+    ball.x = Math.round(canvas.width * 0.4);
+    ball.y = canvas.height / 2;
+    ball.spriteIndex = getWeightedSpriteIndex(true);
+
+    startGame();
 }
 
-let touchActive = false;
-function jump(){if(gameStarted&&!gameOver) ball.vy = LIFT;}
-window.addEventListener('touchstart', (e)=>{e.preventDefault();touchActive=true;jump();},{passive:false});
-window.addEventListener('touchend', ()=>{touchActive=false;});
-window.addEventListener('mousedown', (e)=>{if(!touchActive) jump();});
+function jump(){
+    if(gameStarted && !gameOver){
+        ball.vy = LIFT;
+    }
+}
+
+// gameplay input ONLY on canvas
+canvas.addEventListener('touchstart', (e)=>{
+    if(!gameStarted || gameOver) return;
+    e.preventDefault();
+    jump();
+}, { passive:false });
+
+canvas.addEventListener('mousedown', ()=>{
+    if(!gameStarted || gameOver) return;
+    jump();
+});
 
 function updateTopScoreSize() {
     const vw = window.innerWidth;
@@ -417,32 +465,77 @@ window.addEventListener('resize', updateTopScoreSize);
 window.addEventListener('load', updateTopScoreSize);
 
 function loop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ball.vy+=GRAVITY;
-  ball.y+=ball.vy;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(ball.y<0||ball.y>canvas.height)return endGame();
-  if(score<250 && SPEED<MAX_SPEED) SPEED+=SPEED_INCREMENT;
+    ball.vy += GRAVITY;
+    ball.y += ball.vy;
 
-  glowPulse+=0.05;
+    if(ball.y < 0 || ball.y > canvas.height){
+        endGame();
+        return;
+    }
 
-  ctx.save();
-  ctx.translate(ball.x,ball.y);
-  ctx.scale(ball.scaleX,ball.scaleY);
-  if(ball.spriteIndex===NUM_SPRITES){ctx.shadowColor='yellow';ctx.shadowBlur=20+Math.sin(glowPulse)*10;ctx.drawImage(mythicImg,-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
-  else if(ball.spriteIndex>=15){const intensity=(ball.spriteIndex-14)*3+Math.sin(glowPulse)*4;ctx.shadowColor='rgba(255,215,0,0.8)';ctx.shadowBlur=intensity;ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
-  else{ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);}
-  ctx.restore();
+    // speed ramp (ONCE per frame)
+    if(score < 250 && SPEED < MAX_SPEED){
+        SPEED += SPEED_INCREMENT;
+    }
 
-  for(let i=hoops.length-1;i>=0;i--){
-    const h=hoops[i];h.x-=SPEED;ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE);
-    const hit = ball.x+SPRITE_SIZE/2>h.x && ball.x-SPRITE_SIZE/2<h.x+SPRITE_SIZE && ball.y+SPRITE_SIZE/2>h.y && ball.y-SPRITE_SIZE/2<h.y+SPRITE_SIZE;
-    if(hit){score++;showPopup('+1',ball.x,ball.y-40);ball.spriteIndex=h.spriteIndex;hoops.splice(i,1);continue;}
-    if(h.x+SPRITE_SIZE<ball.x-20) return endGame();
-  }
+    glowPulse += 0.05;
 
-  if(hoops.length===0 || hoops[hoops.length-1].x<canvas.width-420) addHoop();
-  if(!gameOver) requestAnimationFrame(loop);
+    // draw ball
+    ctx.save();
+    ctx.translate(ball.x, ball.y);
+    ctx.scale(ball.scaleX, ball.scaleY);
+
+    if(ball.spriteIndex === NUM_SPRITES){
+        ctx.shadowColor = 'yellow';
+        ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+        ctx.drawImage(mythicImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+        ctx.shadowBlur = 0;
+    } else if(ball.spriteIndex >= 15){
+        const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+        ctx.shadowColor = 'rgba(255,215,0,0.8)';
+        ctx.shadowBlur = intensity;
+        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+        ctx.shadowBlur = 0;
+    } else {
+        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+    }
+    ctx.restore();
+
+    // hoops
+    for(let i = hoops.length - 1; i >= 0; i--){
+        const h = hoops[i];
+        h.x -= SPEED;
+        ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+
+        const hit =
+            ball.x + SPRITE_SIZE/2 > h.x &&
+            ball.x - SPRITE_SIZE/2 < h.x + SPRITE_SIZE &&
+            ball.y + SPRITE_SIZE/2 > h.y &&
+            ball.y - SPRITE_SIZE/2 < h.y + SPRITE_SIZE;
+
+        if(hit){
+            score++;
+            showPopup('+1', ball.x, ball.y - 40);
+            ball.spriteIndex = h.spriteIndex;
+            hoops.splice(i, 1);
+            continue;
+        }
+
+        if(h.x + SPRITE_SIZE < ball.x - 20){
+            endGame();
+            return;
+        }
+    }
+
+    if(hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420){
+        addHoop();
+    }
+
+    if(!gameOver){
+        animationId = requestAnimationFrame(loop);
+    }
 }
 
 function endGame(){
@@ -451,54 +544,36 @@ function endGame(){
   const hs=localStorage.getItem('flappyBasketHighscore')||0;
   if(score>hs)localStorage.setItem('flappyBasketHighscore',score);
   backButton.style.opacity = 1;
-  leaderboard
-
-    leaderboardBtn.style.display = 'block';
+  leaderboardBtn.style.display = 'block';
   showNameModal(score);
+  cancelAnimationFrame(animationId);
+  animationId = null;
 }
 
-// =================== MUSIC HANDLING ===================
+window.addEventListener('resize',()=>{
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+  SPRITE_SIZE=Math.round(canvas.height*0.12);
+});
+
 const bgMusic = document.getElementById('bgMusic');
 bgMusic.volume = 0.5;
-bgMusic.loop = true;
+bgMusic.loop = true; // loops automatically
 
 const musicToggle = document.getElementById('musicToggle');
 musicToggle.style.display = 'none';
-let musicStarted = false;
 
-function startMusic() {
-    if (!musicStarted) {
-        bgMusic.play().catch(err => console.log("Music blocked until user interacts.", err));
-        musicStarted = true;
-        musicToggle.style.display = 'block';
-    }
-}
+// ------------------- NAVIGATION -------------------
+function goBack(){window.location.href="../index.html";}
 
-musicToggle.addEventListener('click', () => {
-    if (bgMusic.paused) bgMusic.play();
-    else bgMusic.pause();
-});
-
-// Auto-start music on first interaction
-function handleFirstInteraction(e) {
-    startMusic();
-    window.removeEventListener('click', handleFirstInteraction);
-    window.removeEventListener('touchstart', handleFirstInteraction);
-}
-
-window.addEventListener('click', handleFirstInteraction, {passive: false});
-window.addEventListener('touchstart', handleFirstInteraction, {passive: false});
-
-// =================== NAVIGATION ===================
-function goBack(){ window.location.href="../index.html"; }
-
-// =================== LEADERBOARD & NAME MODAL ===================
+// ================== LEADERBOARD ==================
 (function initLeaderboard() {
   const nameModal = document.getElementById('nameModal');
   const finalScoreEl = document.getElementById('finalScore');
   const playerNameInput = document.getElementById('playerName');
-  const leaderboardEntriesEl = document.getElementById('leaderboardEntries');
+  const leaderboardEl = document.getElementById('leaderboard');
   const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
+  const leaderboardEntriesEl = document.getElementById('leaderboardEntries');
 
   const SUPABASE_URL = 'https://rlxtggsefecwcpgkjern.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_4mNOVz4GqFxtlJWOtzfXIQ_OaI1hLGT';
@@ -506,7 +581,9 @@ function goBack(){ window.location.href="../index.html"; }
 
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-  script.onload = () => { if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); };
+  script.onload = function() {
+    if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  };
   document.head.appendChild(script);
 
   async function fetchLeaderboard() {
@@ -543,8 +620,9 @@ function goBack(){ window.location.href="../index.html"; }
 
   window.toggleLeaderboard = async function() {
     const isOpen = leaderboardBackdrop.style.display === 'flex';
-    if (isOpen) leaderboardBackdrop.style.display = 'none';
-    else {
+    if (isOpen) {
+      leaderboardBackdrop.style.display = 'none';
+    } else {
       leaderboardEntriesEl.innerHTML = 'loading...';
       leaderboardBackdrop.style.display = 'flex';
       const entries = await fetchLeaderboard();
@@ -562,13 +640,15 @@ function goBack(){ window.location.href="../index.html"; }
     setTimeout(()=>playerNameInput.focus(), 100);
   };
 
-  window.submitScore = async function() {
-    const name = playerNameInput.value.trim() || 'anonymous';
+  window.submitScore = async function(){
+    const name =
+        document.getElementById('playerName').value.trim() || 'anonymous';
+
     localStorage.setItem('playerName', name);
     await saveScoreToDb(name, score);
-    nameModal.classList.remove('show');
-    showOverlay(true);
-  };
+
+    playAgain(); // 🚨 no overlay, no modal
+};
 
   playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
 })();
