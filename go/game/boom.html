@@ -24,12 +24,20 @@ html, body {
 }
 
 #topScores {
-    opacity: 0;              /* start fully invisible */
-    pointer-events: none;     /* prevent clicks while hidden */
-    transition: opacity 0.5s; /* smooth fade-in later */
-    display: flex;            /* keeps layout intact even when hidden */
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'RuneScape UF', Arial, sans-serif;
+    color: #2d93ea;
+    z-index: 50;
+    display: flex;          /* keep layout intact */
     justify-content: center;
     gap: 4vw;
+    white-space: nowrap;
+    opacity: 0;             /* hidden initially */
+    pointer-events: none;   /* prevent interaction while hidden */
+    transition: opacity 0.5s;
 }
 
 /* Back Button */
@@ -48,6 +56,26 @@ html, body {
   z-index: 100;
   opacity: 1;
   transition: opacity 0.5s ease;
+  touch-action: none;
+}
+
+/* Music Button (like back button, bottom-left, hidden initially) */
+.music-button {
+  position: fixed;
+  bottom: 8px;
+  left: 8px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 0;
+  z-index: 400;
+  opacity: 0;           /* hidden initially */
+  transition: opacity 0.5s ease;
+  touch-action: none;
 }
 
 /* Canvas */
@@ -55,7 +83,6 @@ canvas {
   display: block;
   margin: 0 auto;
   background: #ffffff;
-  touch-action: none;
 }
 
 /* Point Popup */
@@ -116,12 +143,6 @@ canvas {
   text-align: center;
   width: 200px;
   margin-bottom: 16px;
-}
-
-.name-modal,
-#leaderboardBackdrop {
-  pointer-events: auto;
-  touch-action: manipulation;
 }
 
 .name-modal button {
@@ -227,10 +248,9 @@ canvas {
 <body>
 
 <button class="back-button" onclick="goBack()">← back</button>
+<button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 
-<audio id="bgMusic" src="/go/game/soundtrack.mp3" preload="auto"></audio>
-
-<button class="back-button" id="musicToggle" style="bottom:8px; left:8px; top:auto;">🔊</button>
+<audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
 
 <img id="playOverlay" src="play.png" style="
     position: absolute;
@@ -282,12 +302,11 @@ const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
-let animationId = null;
 
 const GRAVITY = 0.32;
 const LIFT = -6.9;
-let SPEED = 3.3;
-const MAX_SPEED = 5.8;
+let SPEED = 3;
+const MAX_SPEED = 5.2;
 const SPEED_INCREMENT = 0.002;
 let SPRITE_SIZE = Math.round(canvas.height*0.12);
 
@@ -296,7 +315,6 @@ let hoops = [];
 let score = 0;
 let gameOver = false;
 let gameStarted = false;
-let scoreSubmitted = false;
 let assetsLoaded = false;
 let glowPulse = 0;
 
@@ -327,6 +345,31 @@ const overlayLastScore=document.getElementById('overlayLastScore');
 const topCurrentScore=document.getElementById('topCurrentScore');
 const topHighscore=document.getElementById('topHighscore');
 
+function showTopScores() {
+    const topScores = document.getElementById('topScores');
+    topScores.style.opacity = 1;
+    topScores.style.pointerEvents = 'auto';
+}
+
+function hideTopScores() {
+    const topScores = document.getElementById('topScores');
+    topScores.style.opacity = 0;
+    topScores.style.pointerEvents = 'none';
+}
+
+function showMusicButton() {
+    musicToggle.style.opacity = 1;
+    if (bgMusic.readyState > 2 && !bgMusic.paused) {
+        musicToggle.textContent = "music: on";
+    } else {
+        musicToggle.textContent = "music: off";
+    }
+}
+
+function hideMusicButton() {
+    musicToggle.style.opacity = 0;
+}
+
 function updateTopScores(){
     topCurrentScore.textContent="current score: "+score;
     const hs=localStorage.getItem('flappyBasketHighscore')||0;
@@ -334,124 +377,111 @@ function updateTopScores(){
 }
 
 function showOverlay(showLastScore=false){
-    playOverlay.style.opacity = 1;
-    playOverlay.style.pointerEvents = 'auto'; // 👈 allow clicks
-    playOverlay.style.transform = "translate(-50%,-50%) scale(1)";
-
-    overlayHighscore.style.opacity = 1;
-    overlayHighscore.textContent =
-        "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
-
-    overlayLastScore.style.opacity = showLastScore ? 1 : 0;
-    if(showLastScore){
-        overlayLastScore.textContent = "last score: " + score;
-    }
-
-    document.getElementById('topScores').style.opacity = 0;
-    document.getElementById('topScores').style.pointerEvents = 'none';
-
-    gameStarted = false;
+    playOverlay.style.opacity=1;
+    playOverlay.style.transform="translate(-50%,-50%) scale(1)";
+    overlayHighscore.style.opacity=1;
+    overlayHighscore.textContent="highscore: "+(localStorage.getItem('flappyBasketHighscore')||0);
+    topCurrentScore.style.display="none";
+    topHighscore.style.display="none";
+    if(showLastScore){overlayLastScore.textContent="last score: "+score; overlayLastScore.style.opacity=1;}
+    else{overlayLastScore.style.opacity=0;}
+    gameStarted=false;
+    backButton.style.opacity = 1;
+    leaderboardBtn.style.display = 'block';
 }
 
 function hideOverlay(){
-    playOverlay.style.opacity = 0;
-    playOverlay.style.pointerEvents = 'none'; // 🚨 THIS FIXES iOS
-    playOverlay.style.transform = "translate(-50%,-50%) scale(0.8)";
-
-    overlayHighscore.style.opacity = 0;
-    overlayLastScore.style.opacity = 0;
-
-    const topScores = document.getElementById('topScores');
-    topScores.style.opacity = 1;
-    topScores.style.pointerEvents = 'auto';
+    playOverlay.style.opacity=0;
+    playOverlay.style.transform="translate(-50%,-50%) scale(0.8)";
+    overlayHighscore.style.opacity=0;
+    overlayLastScore.style.opacity=0;
+    topCurrentScore.style.display="flex";
+    topHighscore.style.display="flex";
 }
 
 setInterval(updateTopScores,100);
 window.addEventListener('load',()=>{showOverlay(false);});
 
 function startGame(){
-    if(!assetsLoaded) return;
-    if(gameStarted) return;
-    
-
-    gameStarted = true;
-    gameOver = false;
-
-    SPEED = 3.6;
-    score = 0;
-    hoops = [];
-
-    ball.x = Math.round(canvas.width * 0.4);
-    ball.y = canvas.height / 2;
-    ball.vy = 0;
-    ball.spriteIndex = getWeightedSpriteIndex(true);
-
+    if(gameStarted||!assetsLoaded)return;
     hideOverlay();
+    gameStarted=true;
+    SPEED=3;
+    hoops=[];
+    score=0;
+    gameOver=false;
+    ball.x=Math.round(canvas.width*0.4);
+    ball.y=canvas.height/2;
+    ball.vy=0;
+    ball.spriteIndex=getWeightedSpriteIndex(true);
     addHoop();
-
-    backButton.style.opacity = 0;
-    leaderboardBtn.style.display = 'none';
-
-    // start music ON USER CLICK (allowed)
-    bgMusic.play().catch(()=>{});
-    musicToggle.style.display = 'block';
-
-    if(animationId) cancelAnimationFrame(animationId);
     loop();
+    backButton.style.opacity = 0;
+    leaderboardBtn.style.display = 'none'; 
+    leaderboardBtn.style.zIndex = 100; 
+    showTopScores(); 
+    hideMusicButton();
 }
 
+// ======== MOBILE FIX: AUTO-START + PREVENT ZOOM/SCROLL ========
+function autoStartGameOnce(e) {
+    startGame(); // start the game
+    playOverlay.style.opacity = 0; // hide overlay immediately
+    playOverlay.style.transform = "translate(-50%, -50%) scale(0.8)";
+
+    e.preventDefault(); // prevent default touch/mouse behavior
+
+    window.removeEventListener('touchstart', autoStartGameOnce);
+    window.removeEventListener('mousedown', autoStartGameOnce);
+}
+
+// Auto-start on first touch/click
+window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
+window.addEventListener('mousedown', autoStartGameOnce);
+
 // Prevent page zoom
+document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('touchmove', e => {
-    if (!gameOver && e.scale !== 1) {
-        e.preventDefault();
-    }
+    if (e.scale !== 1) e.preventDefault(); // pinch zoom
 }, { passive: false });
 
 // Prevent scrolling
 document.body.style.overflow = 'hidden';
 
-playOverlay.addEventListener('click',startGame);
-playOverlay.addEventListener('touchstart', (e)=>{
-    e.preventDefault();
+window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
+window.addEventListener('mousedown', autoStartGameOnce);
+
+playOverlay.addEventListener('click', () => {
+    bgMusic.play().catch(()=>{}); // unlock desktop autoplay
     startGame();
-}, {passive:false});
-
-function playAgain(){
-    document.getElementById('nameModal').classList.remove('show');
-    document.getElementById('leaderboardBackdrop').style.display = 'none';
-
-    hideOverlay(); // 🚨 force overlay OFF
-
-    gameOver = false;
-    gameStarted = false;
-    score = 0;
-    hoops = [];
-
-    ball.vy = 0;
-    ball.x = Math.round(canvas.width * 0.4);
-    ball.y = canvas.height / 2;
-    ball.spriteIndex = getWeightedSpriteIndex(true);
-
-    startGame();
-}
-
-function jump(){
-    if(gameStarted && !gameOver){
-        ball.vy = LIFT;
-    }
-}
-
-// gameplay input ONLY on canvas
-canvas.addEventListener('touchstart', (e)=>{
-    if(!gameStarted || gameOver) return;
-    e.preventDefault();
-    jump();
-}, { passive:false });
-
-canvas.addEventListener('mousedown', ()=>{
-    if(!gameStarted || gameOver) return;
-    jump();
 });
+playOverlay.addEventListener('touchstart', () => {
+    bgMusic.play().catch(()=>{}); 
+    startGame();
+});
+
+function playAgain() {
+  const nameModal = document.getElementById('nameModal');
+  const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
+  showTopScores(); 
+
+  nameModal.classList.remove('show');
+  leaderboardBackdrop.style.display = 'none';
+
+  gameStarted = false;
+  gameOver = false;
+
+  overlayHighscore.style.opacity = 0;
+  overlayLastScore.style.opacity = 0;
+
+  startGame();
+}
+
+let touchActive = false;
+function jump(){if(gameStarted&&!gameOver) ball.vy = LIFT;}
+window.addEventListener('touchstart', (e)=>{e.preventDefault();touchActive=true;jump();},{passive:false});
+window.addEventListener('touchend', ()=>{touchActive=false;});
+window.addEventListener('mousedown', (e)=>{if(!touchActive) jump();});
 
 function updateTopScoreSize() {
     const vw = window.innerWidth;
@@ -467,90 +497,44 @@ window.addEventListener('resize', updateTopScoreSize);
 window.addEventListener('load', updateTopScoreSize);
 
 function loop(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ball.vy+=GRAVITY;
+  ball.y+=ball.vy;
 
-    ball.vy += GRAVITY;
-    ball.y += ball.vy;
+  if(ball.y<0||ball.y>canvas.height)return endGame();
 
-    if(ball.y < 0 || ball.y > canvas.height){
-        endGame();
-        return;
-    }
+  if(score<250 && SPEED<MAX_SPEED) SPEED+=SPEED_INCREMENT;
 
-    // speed ramp (ONCE per frame)
-    if(score < 250 && SPEED < MAX_SPEED){
-        SPEED += SPEED_INCREMENT;
-    }
+  glowPulse+=0.05;
 
-    glowPulse += 0.05;
+  ctx.save();
+  ctx.translate(ball.x,ball.y);
+  ctx.scale(ball.scaleX,ball.scaleY);
+  if(ball.spriteIndex===NUM_SPRITES){ctx.shadowColor='yellow';ctx.shadowBlur=20+Math.sin(glowPulse)*10;ctx.drawImage(mythicImg,-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
+  else if(ball.spriteIndex>=15){const intensity=(ball.spriteIndex-14)*3+Math.sin(glowPulse)*4;ctx.shadowColor='rgba(255,215,0,0.8)';ctx.shadowBlur=intensity;ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
+  else{ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);}
+  ctx.restore();
 
-    // draw ball
-    ctx.save();
-    ctx.translate(ball.x, ball.y);
-    ctx.scale(ball.scaleX, ball.scaleY);
+  for(let i=hoops.length-1;i>=0;i--){
+    const h=hoops[i];h.x-=SPEED;ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE);
+    const hit = ball.x+SPRITE_SIZE/2>h.x && ball.x-SPRITE_SIZE/2<h.x+SPRITE_SIZE && ball.y+SPRITE_SIZE/2>h.y && ball.y-SPRITE_SIZE/2<h.y+SPRITE_SIZE;
+    if(hit){score++;showPopup('+1',ball.x,ball.y-40);ball.spriteIndex=h.spriteIndex;hoops.splice(i,1);continue;}
+    if(h.x+SPRITE_SIZE<ball.x-20) return endGame();
+  }
 
-    if(ball.spriteIndex === NUM_SPRITES){
-        ctx.shadowColor = 'yellow';
-        ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
-        ctx.drawImage(mythicImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-        ctx.shadowBlur = 0;
-    } else if(ball.spriteIndex >= 15){
-        const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
-        ctx.shadowColor = 'rgba(255,215,0,0.8)';
-        ctx.shadowBlur = intensity;
-        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-        ctx.shadowBlur = 0;
-    } else {
-        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-    }
-    ctx.restore();
-
-    // hoops
-    for(let i = hoops.length - 1; i >= 0; i--){
-        const h = hoops[i];
-        h.x -= SPEED;
-        ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-
-        const hit =
-            ball.x + SPRITE_SIZE/2 > h.x &&
-            ball.x - SPRITE_SIZE/2 < h.x + SPRITE_SIZE &&
-            ball.y + SPRITE_SIZE/2 > h.y &&
-            ball.y - SPRITE_SIZE/2 < h.y + SPRITE_SIZE;
-
-        if(hit){
-            score++;
-            showPopup('+1', ball.x, ball.y - 40);
-            ball.spriteIndex = h.spriteIndex;
-            hoops.splice(i, 1);
-            continue;
-        }
-
-        if(h.x + SPRITE_SIZE < ball.x - 20){
-            endGame();
-            return;
-        }
-    }
-
-    if(hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420){
-        addHoop();
-    }
-
-    if(!gameOver){
-        animationId = requestAnimationFrame(loop);
-    }
+  if(hoops.length===0 || hoops[hoops.length-1].x<canvas.width-420) addHoop();
+  if(!gameOver) requestAnimationFrame(loop);
 }
 
 function endGame(){
   if(gameOver)return;
   gameOver=true;
-
+  hideTopScores();
   const hs=localStorage.getItem('flappyBasketHighscore')||0;
   if(score>hs)localStorage.setItem('flappyBasketHighscore',score);
   backButton.style.opacity = 1;
   leaderboardBtn.style.display = 'block';
   showNameModal(score);
-  cancelAnimationFrame(animationId);
-  animationId = null;
 }
 
 window.addEventListener('resize',()=>{
@@ -559,12 +543,55 @@ window.addEventListener('resize',()=>{
   SPRITE_SIZE=Math.round(canvas.height*0.12);
 });
 
+// ------------------- MUSIC -------------------
 const bgMusic = document.getElementById('bgMusic');
 bgMusic.volume = 0.5;
-bgMusic.loop = true; // loops automatically
+bgMusic.loop = true;
+
+/*function startBgMusic() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        const track = audioCtx.createMediaElementSource(bgMusic);
+        track.connect(audioCtx.destination);
+        audioCtx.resume().then(() => bgMusic.play().catch(()=>{}));
+    } catch(e){ bgMusic.play().catch(()=>{}); }
+
+    window.removeEventListener('touchstart', startBgMusic);
+    window.removeEventListener('mousedown', startBgMusic);
+}
+
+startBgMusic();
+window.addEventListener('touchstart', startBgMusic, {passive:true});
+window.addEventListener('mousedown', startBgMusic);
+*/
 
 const musicToggle = document.getElementById('musicToggle');
-musicToggle.style.display = 'none';
+
+// Start music on first user gesture (overlay click/touch)
+function handleFirstUserGesture() {
+    if(bgMusic.paused){
+        bgMusic.play().catch(()=>{});
+    }
+    window.removeEventListener('touchstart', handleFirstUserGesture);
+    window.removeEventListener('mousedown', handleFirstUserGesture);
+}
+
+// Listen for first click/touch anywhere to unlock autoplay
+window.addEventListener('touchstart', handleFirstUserGesture);
+window.addEventListener('mousedown', handleFirstUserGesture);
+
+// MUSIC TOGGLE
+musicToggle.addEventListener('click', () => {
+    if (bgMusic.paused) {
+        bgMusic.play().catch(() => {});
+        musicToggle.textContent = "music: on";
+    } else {
+        bgMusic.pause();
+        musicToggle.textContent = "music: off";
+    }
+});
+musicToggle.style.display = "block"; // ensure visible
 
 // ------------------- NAVIGATION -------------------
 function goBack(){window.location.href="../index.html";}
@@ -633,40 +660,24 @@ function goBack(){window.location.href="../index.html";}
     }
   };
 
- window.showNameModal = function(finalScore) {
+  window.showNameModal = function(finalScore) {
     finalScoreEl.textContent = 'score: ' + finalScore;
     playerNameInput.value = localStorage.getItem('playerName') || '';
-
-    // reset submission lock for this death
-    scoreSubmitted = false;
-
-    // re-enable the submit button
-    const submitBtn = document.querySelector('#nameModal button[onclick="submitScore()"]');
-    submitBtn.disabled = false;
-
     nameModal.classList.add('show');
     backButton.style.opacity = 1;
     leaderboardBtn.style.display = 'block';
     leaderboardBtn.style.zIndex = 300;
+    setTimeout(()=>playerNameInput.focus(), 100);
+    showMusicButton();
+  };
 
-    setTimeout(() => playerNameInput.focus(), 100);
-};
-
-  window.submitScore = async function(){
-      // 🚫 already submitted for this death
-    if(scoreSubmitted) return;
-
-    scoreSubmitted = true; // 🔒 LOCK IT
-    document.querySelector('#nameModal button[onclick="submitScore()"]').disabled = true;
-
-    const name =
-        document.getElementById('playerName').value.trim() || 'anonymous';
-
+  window.submitScore = async function() {
+    const name = playerNameInput.value.trim() || 'anonymous';
     localStorage.setItem('playerName', name);
     await saveScoreToDb(name, score);
-
-    playAgain(); // 🚨 no overlay, no modal
-};
+    nameModal.classList.remove('show');
+    showOverlay(true);
+  };
 
   playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
 })();
