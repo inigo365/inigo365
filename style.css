@@ -105,9 +105,6 @@ section {
   padding: 0;
 }
 
-/* =========================
-   PORTFOLIO GRID
-========================= */
 .portfolio {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -116,13 +113,15 @@ section {
   padding: 0;
 }
 
+/* Tablets + phones → 2 columns */
 @media (max-width: 1024px) {
   .portfolio {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 480px) {
+/* Very small phones only → 1 column */
+@media (max-width: 360px) {
   .portfolio {
     grid-template-columns: 1fr;
   }
