@@ -55,6 +55,7 @@ canvas {
   display: block;
   margin: 0 auto;
   background: #ffffff;
+  touch-action: none;
 }
 
 /* Point Popup */
@@ -115,6 +116,12 @@ canvas {
   text-align: center;
   width: 200px;
   margin-bottom: 16px;
+}
+
+.name-modal,
+#leaderboardBackdrop {
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .name-modal button {
@@ -394,7 +401,9 @@ function startGame(){
 // Prevent page zoom
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('touchmove', e => {
-    if (e.scale !== 1) e.preventDefault(); // pinch zoom
+    if (!gameOver && e.scale !== 1) {
+        e.preventDefault();
+    }
 }, { passive: false });
 
 // Prevent scrolling
@@ -427,7 +436,19 @@ function playAgain(){
 
 let touchActive = false;
 function jump(){if(gameStarted&&!gameOver) ball.vy = LIFT;}
-window.addEventListener('touchstart', (e)=>{e.preventDefault();touchActive=true;jump();},{passive:false});
+window.addEventListener('touchstart', (e) => {
+
+    // 🚨 If game is over or modal is open → allow normal UI interaction
+    if (gameOver || document.getElementById('nameModal').classList.contains('show')) {
+        return;
+    }
+
+    // Otherwise, this is a gameplay tap
+    e.preventDefault();
+    touchActive = true;
+    jump();
+
+}, { passive: false });
 window.addEventListener('touchend', ()=>{touchActive=false;});
 window.addEventListener('mousedown', (e)=>{if(!touchActive) jump();});
 
