@@ -326,42 +326,44 @@ function updateTopScores(){
 }
 
 function showOverlay(showLastScore=false){
-    playOverlay.style.opacity=1;
-    playOverlay.style.transform="translate(-50%,-50%) scale(1)";
-    overlayHighscore.style.opacity=1;
-    overlayHighscore.textContent="highscore: "+(localStorage.getItem('flappyBasketHighscore')||0);
-    topCurrentScore.style.display="none";
-    topHighscore.style.display="none";
-    if(showLastScore){overlayLastScore.textContent="last score: "+score; overlayLastScore.style.opacity=1;}
-    else{overlayLastScore.style.opacity=0;}
-    gameStarted=false;
-    backButton.style.opacity = 1;
-    leaderboardBtn.style.display = 'block';
+    playOverlay.style.opacity = 1;
+    playOverlay.style.pointerEvents = 'auto'; // 👈 allow clicks
+    playOverlay.style.transform = "translate(-50%,-50%) scale(1)";
+
+    overlayHighscore.style.opacity = 1;
+    overlayHighscore.textContent =
+        "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
+
+    overlayLastScore.style.opacity = showLastScore ? 1 : 0;
+    if(showLastScore){
+        overlayLastScore.textContent = "last score: " + score;
+    }
+
+    document.getElementById('topScores').style.opacity = 0;
+    document.getElementById('topScores').style.pointerEvents = 'none';
+
+    gameStarted = false;
 }
 
 function hideOverlay(){
-    playOverlay.style.opacity=0;
-    playOverlay.style.transform="translate(-50%,-50%) scale(0.8)";
-    overlayHighscore.style.opacity=0;
-    overlayLastScore.style.opacity=0;
-    topCurrentScore.style.display="flex";
-    topHighscore.style.display="flex";
+    playOverlay.style.opacity = 0;
+    playOverlay.style.pointerEvents = 'none'; // 🚨 THIS FIXES iOS
+    playOverlay.style.transform = "translate(-50%,-50%) scale(0.8)";
+
+    overlayHighscore.style.opacity = 0;
+    overlayLastScore.style.opacity = 0;
 
     const topScores = document.getElementById('topScores');
-
-// Show scores smoothly
-topScores.style.opacity = 1;
-topScores.style.pointerEvents = 'auto'; // re-enable interactions if needed
-
+    topScores.style.opacity = 1;
+    topScores.style.pointerEvents = 'auto';
 }
-
 
 setInterval(updateTopScores,100);
 window.addEventListener('load',()=>{showOverlay(false);});
 
 function startGame(){
     if(!assetsLoaded) return;
-    if(gameStarted) return; // 🚨 prevents multiple loops
+    if(gameStarted) return;
 
     gameStarted = true;
     gameOver = false;
@@ -381,26 +383,13 @@ function startGame(){
     backButton.style.opacity = 0;
     leaderboardBtn.style.display = 'none';
 
-    // kill any previous loop just in case
+    // start music ON USER CLICK (allowed)
+    bgMusic.play().catch(()=>{});
+    musicToggle.style.display = 'block';
+
     if(animationId) cancelAnimationFrame(animationId);
     loop();
 }
-
-// ======== MOBILE FIX: AUTO-START + PREVENT ZOOM/SCROLL ========
-function autoStartGameOnce(e) {
-    startGame(); // start the game
-    playOverlay.style.opacity = 0; // hide overlay immediately
-    playOverlay.style.transform = "translate(-50%, -50%) scale(0.8)";
-
-    e.preventDefault(); // prevent default touch/mouse behavior
-
-    window.removeEventListener('touchstart', autoStartGameOnce);
-    window.removeEventListener('mousedown', autoStartGameOnce);
-}
-
-// Auto-start on first touch/click
-window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
-window.addEventListener('mousedown', autoStartGameOnce);
 
 // Prevent page zoom
 document.addEventListener('gesturestart', e => e.preventDefault());
@@ -411,38 +400,29 @@ document.addEventListener('touchmove', e => {
 // Prevent scrolling
 document.body.style.overflow = 'hidden';
 
-window.addEventListener('touchstart', autoStartGameOnce, {passive:false});
-window.addEventListener('mousedown', autoStartGameOnce);
-
 playOverlay.addEventListener('click',startGame);
 playOverlay.addEventListener('touchstart', (e)=>{
     e.preventDefault();
     startGame();
 }, {passive:false});
 
-function playAgain() {
-    const nameModal = document.getElementById('nameModal');
-    const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
+function playAgain(){
+    document.getElementById('nameModal').classList.remove('show');
+    document.getElementById('leaderboardBackdrop').style.display = 'none';
 
-    nameModal.classList.remove('show');
-    leaderboardBackdrop.style.display = 'none';
+    hideOverlay(); // 🚨 force overlay OFF
 
-    // Reset game variables
     gameOver = false;
     gameStarted = false;
     score = 0;
     hoops = [];
+
     ball.vy = 0;
     ball.x = Math.round(canvas.width * 0.4);
     ball.y = canvas.height / 2;
     ball.spriteIndex = getWeightedSpriteIndex(true);
 
-    // Hide overlays
-    overlayHighscore.style.opacity = 0;
-    overlayLastScore.style.opacity = 0;
-    playOverlay.style.opacity = 0;
-
-    startGame(); // start fresh
+    startGame();
 }
 
 let touchActive = false;
@@ -563,31 +543,6 @@ bgMusic.loop = true; // loops automatically
 const musicToggle = document.getElementById('musicToggle');
 musicToggle.style.display = 'none';
 
-let musicStarted = false;
-
-function startGameAndMusic() {
-    if (!assetsLoaded) return; // wait for assets
-    if (!gameStarted) startGame();
-
-    if (!musicStarted) {
-        bgMusic.play().catch(err => console.log("Music blocked until user interacts.", err));
-        musicStarted = true;
-    }
-
-    musicToggle.style.display = 'block';
-}
-
-// Only run once on first tap/click
-function handleFirstInteraction(e) {
-    startGameAndMusic();
-    window.removeEventListener('click', handleFirstInteraction);
-    window.removeEventListener('touchstart', handleFirstInteraction);
-}
-
-// Listen for first user interaction
-window.addEventListener('click', handleFirstInteraction, {passive: false});
-window.addEventListener('touchstart', handleFirstInteraction, {passive: false});
-
 // ------------------- NAVIGATION -------------------
 function goBack(){window.location.href="../index.html";}
 
@@ -665,14 +620,15 @@ function goBack(){window.location.href="../index.html";}
     setTimeout(()=>playerNameInput.focus(), 100);
   };
 
-  window.submitScore = async function() {
-    const name = playerNameInput.value.trim() || 'anonymous';
+  window.submitScore = async function(){
+    const name =
+        document.getElementById('playerName').value.trim() || 'anonymous';
+
     localStorage.setItem('playerName', name);
     await saveScoreToDb(name, score);
-    nameModal.classList.remove('show');
-    showOverlay(true);
-    playAgain();
-  };
+
+    playAgain(); // 🚨 no overlay, no modal
+};
 
   playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
 })();
