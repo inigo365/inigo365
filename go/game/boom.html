@@ -827,6 +827,7 @@ function goBack(){window.location.href="../index.html";}
     finalScoreEl.textContent = 'score: ' + finalScore;
     playerNameInput.value = localStorage.getItem('playerName') || '';
     nameModal.classList.add('show');
+    backButton.style.zIndex = 400;
     backButton.style.opacity = 1;
     leaderboardBtn.style.display = 'block';
     leaderboardBtn.style.zIndex = 300;
