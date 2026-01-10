@@ -633,16 +633,24 @@ function goBack(){window.location.href="../index.html";}
     }
   };
 
-  window.showNameModal = function(finalScore) {
+ window.showNameModal = function(finalScore) {
     finalScoreEl.textContent = 'score: ' + finalScore;
     playerNameInput.value = localStorage.getItem('playerName') || '';
+
+    // reset submission lock for this death
     scoreSubmitted = false;
+
+    // re-enable the submit button
+    const submitBtn = document.querySelector('#nameModal button[onclick="submitScore()"]');
+    submitBtn.disabled = false;
+
     nameModal.classList.add('show');
     backButton.style.opacity = 1;
     leaderboardBtn.style.display = 'block';
     leaderboardBtn.style.zIndex = 300;
-    setTimeout(()=>playerNameInput.focus(), 100);
-  };
+
+    setTimeout(() => playerNameInput.focus(), 100);
+};
 
   window.submitScore = async function(){
       // 🚫 already submitted for this death
