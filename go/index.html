@@ -26,8 +26,6 @@ html, body {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-
-  cursor: url("../images/cursor/cursor.png"), auto;
 }
 
 /* PASSWORD SCREEN */
@@ -65,11 +63,6 @@ html, body {
   background: white;
   outline: none;
   text-align: center;
-}
-
-.password-box input:hover,
-.password-box input:focus {
-  cursor: url("../images/cursor/cursor-hover.png"), auto;
 }
 
 /* CONTENT PAGE */
@@ -125,7 +118,6 @@ video {
   background: transparent;
   border: none;
   text-transform: lowercase;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
   opacity: 0;
   transition: opacity 0.4s ease;
   z-index: 10;
@@ -148,7 +140,6 @@ video {
   border: none;
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
   z-index: 10;
@@ -157,6 +148,12 @@ video {
 .back-button.show {
   opacity: 1;
 }
+
+/* Disable custom cursor on this page */
+* {
+  cursor: auto !important;
+}
+
 </style>
 </head>
 
