@@ -348,6 +348,10 @@ const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// ===== SoundCloud link (change only this) =====
+const SOUNDCLOUD_URL =
+  "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=ced42764564b4b1dbbaf8a6d1486e958&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing";
+
 const GRAVITY = 0.32;
 const LIFT = -6.9;
 let SPEED = 3;
@@ -511,8 +515,7 @@ window.addEventListener('load', () => {
 });
 
 function openSoundCloud() {
-    // Replace this URL with your private SoundCloud track URL
-    window.open('https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=0c8836c86f5b4079be5222114bae3767&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing, '_blank');
+    window.open(SOUNDCLOUD_URL, '_blank', 'noopener,noreferrer');
 }
 
 function startGame(){
