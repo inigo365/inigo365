@@ -315,30 +315,82 @@ let hoops = [];
 let score = 0;
 let gameOver = false;
 let gameStarted = false;
-let assetsLoaded = false;
 let glowPulse = 0;
 
-const NUM_SPRITES = 25;
+// ===================== SPRITE LOADING =====================
+const NUM_SPRITES = 25; // regular sprites
 const sprites = [];
-let loadedCount = 0;
-for(let i=1;i<=NUM_SPRITES;i++){
-  const img=new Image();
-  img.onload=()=>{loadedCount++;if(loadedCount===NUM_SPRITES+1)assetsLoaded=true;};
-  img.src=`sprites/${String(i).padStart(2,'0')}.png`;
-  sprites.push(img);
-}
-const mythicImg=new Image();
-mythicImg.src='sprites/mythic1.png';
-mythicImg.onload=()=>{loadedCount++;if(loadedCount===NUM_SPRITES+1)assetsLoaded=true;};
+let assetsLoaded = false;
 
-function getRarityRange(score){if(score>=250)return {min:NUM_SPRITES,max:NUM_SPRITES}; let maxSprite=Math.min(4+Math.floor(score/5),NUM_SPRITES-1); return {min:0,max:maxSprite};}
-function getWeightedSpriteIndex(first=false){const used=new Set();used.add(ball.spriteIndex);hoops.forEach(h=>used.add(h.spriteIndex));let {min,max}=getRarityRange(score);if(first){min=0; max=4;}const candidates=[];for(let i=min;i<=max;i++)if(!used.has(i))candidates.push(i);if(candidates.length===0)return Math.floor(Math.random()*(max-min+1))+min;if(score>=250)return NUM_SPRITES;const newestBag=max;const weighted=[];candidates.forEach(i=>{if(i===newestBag){for(let w=0;w<5;w++)weighted.push(i);}else{for(let w=0;w<2;w++)weighted.push(i);}});return weighted[Math.floor(Math.random()*weighted.length)];}
+// Combine regular + mythic into one array
+const allSpritePaths = [];
+for (let i = 1; i <= NUM_SPRITES; i++) {
+    allSpritePaths.push(`sprites/${String(i).padStart(2,'0')}.png`);
+}
+allSpritePaths.push('sprites/mythic1.png'); // mythic bag
+
+// Load all sprites
+let loadedCount = 0;
+allSpritePaths.forEach((path, index) => {
+    const img = new Image();
+    img.onload = () => {
+        loadedCount++;
+        if (loadedCount === allSpritePaths.length) {
+            assetsLoaded = true; // all loaded!
+            console.log('All assets loaded!');
+        }
+    };
+    img.src = path;
+    // put in sprites array for regular sprites
+    if (index < NUM_SPRITES) sprites.push(img);
+    else window.mythicImg = img; // global mythic image
+});
+
+function getRarityRange(score) {
+    if (score >= 250) return { min: NUM_SPRITES, max: NUM_SPRITES }; // only mythic
+    if (score >= 200) return { min: 20, max: NUM_SPRITES };          // mostly high rares + mythic
+    if (score >= 100) return { min: 13, max: 22 };                   // mid-tier rares
+    if (score >= 50)  return { min: 8, max: 16 };                   // phase out commons
+    return { min: 0, max: 9 };                                       // early game, commons
+}
+
+function getWeightedSpriteIndex(first=false) {
+    const used = new Set();
+    used.add(ball.spriteIndex);
+    hoops.forEach(h => used.add(h.spriteIndex));
+
+    let { min, max } = getRarityRange(score);
+
+    if (first) { min = 0; max = 4; } // first ball is always a safe sprite
+
+    // Cap max at NUM_SPRITES-1 so we never index out of sprites[]
+    max = Math.min(max, NUM_SPRITES - 1);
+
+    // Collect candidates not used yet
+    const candidates = [];
+    for (let i = min; i <= max; i++) {
+        if (!used.has(i)) candidates.push(i);
+    }
+
+    // fallback if all candidates are used
+    if (candidates.length === 0) return Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // Weighted pick: newest bag more likely
+    const newestBag = max;
+    const weighted = [];
+    candidates.forEach(i => {
+        let weight = (i === newestBag) ? 5 : 2;
+        for (let w = 0; w < weight; w++) weighted.push(i);
+    });
+
+    return weighted[Math.floor(Math.random() * weighted.length)];
+}
 
 const pointPopup=document.getElementById('pointPopup');
 function showPopup(text,x,y){pointPopup.textContent=text;pointPopup.style.left=x+'px';pointPopup.style.top=y+'px';pointPopup.style.opacity=1;pointPopup.style.transform="translateY(-30px)";setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400);}
 
 function addHoop(){
-    const verticalMargin = canvas.height * 0.15; // 15% from top & bottom
+    const verticalMargin = canvas.height * 0.25; // 15% from top & bottom
     const y = Math.random() * (canvas.height - 2 * verticalMargin) + verticalMargin;
     const spriteIndex = getWeightedSpriteIndex();
     hoops.push({x: canvas.width + 50, y, spriteIndex});
@@ -350,7 +402,12 @@ const overlayLastScore=document.getElementById('overlayLastScore');
 const topCurrentScore=document.getElementById('topCurrentScore');
 const topHighscore=document.getElementById('topHighscore');
 
-function showTopScores(){document.getElementById('topScores').style.opacity=1;document.getElementById('topScores').style.pointerEvents='auto';}
+function showTopScores() {
+    const topScoresEl = document.getElementById('topScores');
+    topScoresEl.style.opacity = 1;
+    topScoresEl.style.pointerEvents = 'auto';
+    updateTopScoreSize(); // << add this
+}
 function hideTopScores(){document.getElementById('topScores').style.opacity=0;document.getElementById('topScores').style.pointerEvents='none';}
 
 function showMusicButton() {
@@ -441,13 +498,13 @@ function handleInput(e) {
     e.preventDefault();
     if (!gameStarted) {
         startGame();
-        jump(); // start the game, DO NOT jump yet
+        requestAnimationFrame(() => jump());
     } else {
         jump();      // only jump if game already started
     }
 }
 
-
+canvas.addEventListener('pointerdown', handleInput);
 canvas.addEventListener('touchstart', handleInput, { passive: false });
 canvas.addEventListener('mousedown', handleInput);
 
@@ -496,34 +553,90 @@ window.addEventListener('resize',()=>{
 });
 window.addEventListener('load', updateTopScoreSize);
 
-function loop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ball.vy+=GRAVITY;
-  ball.y+=ball.vy;
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if(ball.y<0||ball.y>canvas.height)return endGame();
+    // Update ball physics
+    ball.vy += GRAVITY;
+    ball.y += ball.vy;
 
-  if(score<250 && SPEED<MAX_SPEED) SPEED+=SPEED_INCREMENT;
+    // Check for hitting top/bottom
+    if (ball.y < 0 || ball.y > canvas.height) return endGame();
 
-  glowPulse+=0.05;
+    // Speed scaling
+    if (score < 250 && SPEED < MAX_SPEED) SPEED += SPEED_INCREMENT;
 
-  ctx.save();
-  ctx.translate(ball.x,ball.y);
-  ctx.scale(ball.scaleX,ball.scaleY);
-  if(ball.spriteIndex===NUM_SPRITES){ctx.shadowColor='yellow';ctx.shadowBlur=20+Math.sin(glowPulse)*10;ctx.drawImage(mythicImg,-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
-  else if(ball.spriteIndex>=15){const intensity=(ball.spriteIndex-14)*3+Math.sin(glowPulse)*4;ctx.shadowColor='rgba(255,215,0,0.8)';ctx.shadowBlur=intensity;ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
-  else{ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);}
-  ctx.restore();
+    glowPulse += 0.05;
 
-  for(let i=hoops.length-1;i>=0;i--){
-    const h=hoops[i];h.x-=SPEED;ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE);
-    const hit = ball.x+SPRITE_SIZE/2>h.x && ball.x-SPRITE_SIZE/2<h.x+SPRITE_SIZE && ball.y+SPRITE_SIZE/2>h.y && ball.y-SPRITE_SIZE/2<h.y+SPRITE_SIZE;
-    if(hit){score++;showPopup('+1',ball.x,ball.y-40);ball.spriteIndex=h.spriteIndex;hoops.splice(i,1);continue;}
-    if(h.x+SPRITE_SIZE<ball.x-20) return endGame();
-  }
+    // Draw ball
+    ctx.save();
+    ctx.translate(ball.x, ball.y);
+    ctx.scale(ball.scaleX, ball.scaleY);
 
-  if(hoops.length===0 || hoops[hoops.length-1].x<canvas.width-420) addHoop();
-  if(!gameOver) requestAnimationFrame(loop);
+    if (ball.spriteIndex === NUM_SPRITES) {
+        // Mythic bag
+        ctx.shadowColor = 'yellow';
+        ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+        ctx.drawImage(mythicImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+        ctx.shadowBlur = 0;
+    } else if (ball.spriteIndex >= 15) {
+        // Rare bags
+        const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+        ctx.shadowColor = 'rgba(255,215,0,0.8)';
+        ctx.shadowBlur = intensity;
+        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+        ctx.shadowBlur = 0;
+    } else {
+        // Common bags
+        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+    }
+
+    ctx.restore();
+
+    // Draw hoops
+    for (let i = hoops.length - 1; i >= 0; i--) {
+        const h = hoops[i];
+        h.x -= SPEED;
+
+        if (h.spriteIndex === NUM_SPRITES) {
+            // Mythic hoop
+            ctx.shadowColor = 'yellow';
+            ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+            ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+            ctx.shadowBlur = 0;
+        } else if (h.spriteIndex >= 15) {
+            const intensity = (h.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+            ctx.shadowColor = 'rgba(255,215,0,0.8)';
+            ctx.shadowBlur = intensity;
+            ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+            ctx.shadowBlur = 0;
+        } else {
+            ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+        }
+
+        // Collision detection
+        const hit =
+            ball.x + SPRITE_SIZE/2 > h.x &&
+            ball.x - SPRITE_SIZE/2 < h.x + SPRITE_SIZE &&
+            ball.y + SPRITE_SIZE/2 > h.y &&
+            ball.y - SPRITE_SIZE/2 < h.y + SPRITE_SIZE;
+
+        if (hit) {
+            score++;
+            showPopup('+1', ball.x, ball.y - 40);
+            ball.spriteIndex = h.spriteIndex;
+            hoops.splice(i, 1);
+            continue;
+        }
+
+        // Missed hoop ends game
+        if (h.x + SPRITE_SIZE < ball.x - 20) return endGame();
+    }
+
+    // Spawn new hoops
+    if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) addHoop();
+
+    if (!gameOver) requestAnimationFrame(loop);
 }
 
 function endGame(){
@@ -597,6 +710,21 @@ musicToggle.addEventListener('click', () => {
     }
 });
 musicToggle.style.display = "block"; // ensure visible
+
+// ------------------- PAUSE ON HIDE / CLOSE -------------------
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        bgMusic.pause();
+        musicToggle.textContent = "music: off";
+    } else if (!bgMusic.paused) {
+        bgMusic.play().catch(()=>{});
+        musicToggle.textContent = "music: on";
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    bgMusic.pause();
+});
 
 // ------------------- NAVIGATION -------------------
 function goBack(){window.location.href="../index.html";}

@@ -402,7 +402,12 @@ const overlayLastScore=document.getElementById('overlayLastScore');
 const topCurrentScore=document.getElementById('topCurrentScore');
 const topHighscore=document.getElementById('topHighscore');
 
-function showTopScores(){document.getElementById('topScores').style.opacity=1;document.getElementById('topScores').style.pointerEvents='auto';}
+function showTopScores() {
+    const topScoresEl = document.getElementById('topScores');
+    topScoresEl.style.opacity = 1;
+    topScoresEl.style.pointerEvents = 'auto';
+    updateTopScoreSize(); // << add this
+}
 function hideTopScores(){document.getElementById('topScores').style.opacity=0;document.getElementById('topScores').style.pointerEvents='none';}
 
 function showMusicButton() {
@@ -455,7 +460,10 @@ function hideOverlay(){
 }
 
 setInterval(updateTopScores,100);
-window.addEventListener('load',()=>{showOverlay(false);});
+window.addEventListener('load', () => {
+    showOverlay(false);
+    updateTopScoreSize(); // ensure mobile font sizing applied
+});
 
 function startGame(){
     if(gameStarted||!assetsLoaded)return;
@@ -545,6 +553,7 @@ window.addEventListener('resize',()=>{
   canvas.width=window.innerWidth;
   canvas.height=window.innerHeight;
   SPRITE_SIZE=Math.round(canvas.height*0.12);
+  updateTopScoreSize();
 });
 window.addEventListener('load', updateTopScoreSize);
 
