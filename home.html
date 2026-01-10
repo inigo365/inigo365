@@ -9,24 +9,11 @@
   <!-- SEO Meta Tags -->
   <meta name="description" content="inigo365, a portfolio website showcasing creative projects across film, photography, music, and other media.">
 
-  <!-- Open Graph / Social Sharing -->
-  <meta property="og:title" content="inigo365 – Creative Portfolio">
-  <meta property="og:description" content="Portfolio of creative projects across film, photography, music & other media.">
-  <meta property="og:image" content="https://inigo365.com/images/landing.jpg">
-  <meta property="og:url" content="https://inigo365.com/">
-  <meta property="og:type" content="website">
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="inigo365 – Creative Portfolio">
-  <meta name="twitter:description" content="Portfolio of creative projects across film, photography, music & other media.">
-  <meta name="twitter:image" content="https://inigo365.com/images/landing.jpg">
-
-  <!-- Viewport for mobile -->
+  <!-- Viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Hidden SEO Heading & Back Button CSS -->
   <style>
+    /* Hidden SEO H1 */
     .seo-h1 {
       position: absolute;
       left: -9999px;
@@ -36,52 +23,42 @@
       overflow: hidden;
     }
 
-    /* Back button top-right, responsive and only clickable on text */
+    /* Back button relative to viewport using 90% left */
     .back {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      color: #2d93ea;
+      position: fixed;           /* relative to viewport */
+      top: 1.2rem;
+      left: 98%;
+      transform: translateX(-100%);
+      display: inline-block;
       font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 2.3vw;
+      color: #2d93ea;
       text-decoration: none;
-      z-index: 1000;
-      cursor: url("./images/cursor/cursor.png"), auto !important;
-      transition: color 0.3s ease;
-      background: none;
-      padding: 0;
-      display: inline-flex;       /* text-sized clickable area */
-      flex-direction: column;     
-      align-items: flex-end;      
       line-height: 1;
-      font-size: clamp(1.8rem, 5vw, 2.5rem); /* scales nicely on mobile + desktop */
-    }
-
-    .back:hover {
-      color: #1a6bb8;
-      cursor: url("./images/cursor/cursor-hover.png"), pointer !important;
+      white-space: nowrap;
+      cursor: url("./images/cursor/cursor.png"), auto !important;
+      z-index: 1000;
     }
 
     .back-arrow {
-      font-size: 1em;          
-      line-height: 1;          
-      display: block;
-      width: 100%;             
-      text-align: right;       
-      transform: scaleX(1);    
-      margin-top: 0.05em;      
+      margin-left: 0.5em;
+    }
+
+    @media (max-width: 768px) {
+      .back {
+        font-size: 5vw;
+      }
     }
   </style>
 </head>
 
 <body class="fade-in-page">
 
-<!-- Hidden H1 for SEO -->
 <h1 class="seo-h1">Inigo Macdonald – Creative Portfolio</h1>
 
-<!-- Back button top-right -->
+<!-- Back button top-right relative to page -->
 <a class="back" href="go/index.html">
-  Back
-  <span class="back-arrow">→</span>
+  Back <span class="back-arrow">→</span>
 </a>
 
 <!-- =====================
@@ -91,50 +68,30 @@
   <div class="landing-wrapper">
 
     <!-- Landing Image -->
-    <img src="images/landing.jpg"
-         class="landing-image"
-         alt="Landing">
+    <img src="images/landing.jpg" class="landing-image" alt="Landing" style="width: 100%; display: block;">
 
-    <!-- ABOUT ME (internal page) -->
-    <a href="about.html"
-       class="landing-link about-link"
-       aria-label="About Me">
+    <!-- ABOUT ME -->
+    <a href="about.html" class="landing-link about-link" aria-label="About Me">
       <span>About Me</span>
     </a>
 
     <!-- INSTAGRAM -->
-    <a href="https://www.instagram.com/iggysmalllls/"
-       class="landing-link instagram-link external-link"
-       target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Instagram">
+    <a href="https://www.instagram.com/iggysmalllls/" class="landing-link instagram-link external-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
       <span>Instagram</span>
     </a>
 
     <!-- IMDB -->
-    <a href="https://www.imdb.com/name/nm17192091/"
-       class="landing-link imdb-link external-link"
-       target="_blank"
-       rel="noopener noreferrer"
-       aria-label="IMDB">
+    <a href="https://www.imdb.com/name/nm17192091/" class="landing-link imdb-link external-link" target="_blank" rel="noopener noreferrer" aria-label="IMDB">
       <span>IMDB</span>
     </a>
 
     <!-- WHATSAPP -->
-    <a href="https://wa.me/447432435885"
-       class="landing-link whatsapp-link external-link"
-       target="_blank"
-       rel="noopener noreferrer"
-       aria-label="WhatsApp">
+    <a href="https://wa.me/447432435885" class="landing-link whatsapp-link external-link" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
       <span>WhatsApp</span>
     </a>
 
     <!-- EMAIL -->
-    <a href="mailto:macdonald.iggy@gmail.com"
-       class="landing-link email-link external-link"
-       target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Email">
+    <a href="mailto:macdonald.iggy@gmail.com" class="landing-link email-link external-link" target="_blank" rel="noopener noreferrer" aria-label="Email">
       <span>Email</span>
     </a>
 
@@ -194,62 +151,34 @@
   </div>
 </footer>
 
-<!-- =====================
-     SCRIPTS
-===================== -->
 <script>
 document.querySelectorAll('.landing-link').forEach(link => {
   link.addEventListener('click', function(e) {
     const href = this.href;
     const target = this.target;
 
-    // If external link, open in new tab immediately
     if (target === "_blank") {
       e.preventDefault();
       window.open(href, "_blank");
       return;
     }
 
-    // Internal link — apply fade-out
     e.preventDefault();
     document.body.classList.add('fade-out');
-
     setTimeout(() => {
       window.location.href = href;
     }, 1000);
   });
 });
-</script>
 
-<script>
-// Store last clicked tile
-document.querySelectorAll('.tile').forEach(tile => {
-  tile.addEventListener('click', function(e) {
-    sessionStorage.setItem('lastTile', this.id);
-  });
-});
-
-// Scroll to last clicked tile on back
-window.addEventListener('pageshow', () => {
-  const lastTileId = sessionStorage.getItem('lastTile');
-  if (lastTileId) {
-    const tile = document.getElementById(lastTileId);
-    if (tile) tile.scrollIntoView({ block: 'center' });
-    sessionStorage.removeItem('lastTile');
-  }
-});
-</script>
-
-<script>
 // Fade-out for back button
 const backButton = document.querySelector('.back');
 if (backButton) {
   backButton.addEventListener('click', function(e) {
     e.preventDefault();
     document.body.classList.add('fade-out');
-    const href = this.href;
     setTimeout(() => {
-      window.location = href;
+      window.location = this.href;
     }, 1000);
   });
 }
