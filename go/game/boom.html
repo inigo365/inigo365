@@ -275,6 +275,7 @@ const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+let animationId = null;
 
 const GRAVITY = 0.32;
 const LIFT = -6.9;
@@ -360,24 +361,30 @@ window.addEventListener('load',()=>{showOverlay(false);});
 
 function startGame(){
     if(!assetsLoaded) return;
+    if(gameStarted) return; // 🚨 prevents multiple loops
 
-    hideOverlay();
     gameStarted = true;
-    SPEED = 4.1;
-    hoops = [];
-    score = 0;
     gameOver = false;
+
+    SPEED = 4.1;
+    score = 0;
+    hoops = [];
+
     ball.x = Math.round(canvas.width * 0.4);
     ball.y = canvas.height / 2;
     ball.vy = 0;
     ball.spriteIndex = getWeightedSpriteIndex(true);
+
+    hideOverlay();
     addHoop();
+
     backButton.style.opacity = 0;
     leaderboardBtn.style.display = 'none';
+
+    // kill any previous loop just in case
+    if(animationId) cancelAnimationFrame(animationId);
     loop();
 }
-
-if(score < 250 && SPEED < MAX_SPEED) SPEED += SPEED_INCREMENT * 0.5; // slower ramp, stays fun
 
 // ======== MOBILE FIX: AUTO-START + PREVENT ZOOM/SCROLL ========
 function autoStartGameOnce(e) {
@@ -458,33 +465,77 @@ window.addEventListener('resize', updateTopScoreSize);
 window.addEventListener('load', updateTopScoreSize);
 
 function loop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ball.vy+=GRAVITY;
-  ball.y+=ball.vy;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  if(ball.y<0||ball.y>canvas.height)return endGame();
+    ball.vy += GRAVITY;
+    ball.y += ball.vy;
 
-  if(score<250 && SPEED<MAX_SPEED) SPEED+=SPEED_INCREMENT;
+    if(ball.y < 0 || ball.y > canvas.height){
+        endGame();
+        return;
+    }
 
-  glowPulse+=0.05;
+    // speed ramp (ONCE per frame)
+    if(score < 250 && SPEED < MAX_SPEED){
+        SPEED += SPEED_INCREMENT;
+    }
 
-  ctx.save();
-  ctx.translate(ball.x,ball.y);
-  ctx.scale(ball.scaleX,ball.scaleY);
-  if(ball.spriteIndex===NUM_SPRITES){ctx.shadowColor='yellow';ctx.shadowBlur=20+Math.sin(glowPulse)*10;ctx.drawImage(mythicImg,-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
-  else if(ball.spriteIndex>=15){const intensity=(ball.spriteIndex-14)*3+Math.sin(glowPulse)*4;ctx.shadowColor='rgba(255,215,0,0.8)';ctx.shadowBlur=intensity;ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);ctx.shadowBlur=0;}
-  else{ctx.drawImage(sprites[ball.spriteIndex],-SPRITE_SIZE/2,-SPRITE_SIZE/2,SPRITE_SIZE,SPRITE_SIZE);}
-  ctx.restore();
+    glowPulse += 0.05;
 
-  for(let i=hoops.length-1;i>=0;i--){
-    const h=hoops[i];h.x-=SPEED;ctx.drawImage(sprites[h.spriteIndex],h.x,h.y,SPRITE_SIZE,SPRITE_SIZE);
-    const hit = ball.x+SPRITE_SIZE/2>h.x && ball.x-SPRITE_SIZE/2<h.x+SPRITE_SIZE && ball.y+SPRITE_SIZE/2>h.y && ball.y-SPRITE_SIZE/2<h.y+SPRITE_SIZE;
-    if(hit){score++;showPopup('+1',ball.x,ball.y-40);ball.spriteIndex=h.spriteIndex;hoops.splice(i,1);continue;}
-    if(h.x+SPRITE_SIZE<ball.x-20) return endGame();
-  }
+    // draw ball
+    ctx.save();
+    ctx.translate(ball.x, ball.y);
+    ctx.scale(ball.scaleX, ball.scaleY);
 
-  if(hoops.length===0 || hoops[hoops.length-1].x<canvas.width-420) addHoop();
-  if(!gameOver) requestAnimationFrame(loop);
+    if(ball.spriteIndex === NUM_SPRITES){
+        ctx.shadowColor = 'yellow';
+        ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+        ctx.drawImage(mythicImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+        ctx.shadowBlur = 0;
+    } else if(ball.spriteIndex >= 15){
+        const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+        ctx.shadowColor = 'rgba(255,215,0,0.8)';
+        ctx.shadowBlur = intensity;
+        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+        ctx.shadowBlur = 0;
+    } else {
+        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+    }
+    ctx.restore();
+
+    // hoops
+    for(let i = hoops.length - 1; i >= 0; i--){
+        const h = hoops[i];
+        h.x -= SPEED;
+        ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+
+        const hit =
+            ball.x + SPRITE_SIZE/2 > h.x &&
+            ball.x - SPRITE_SIZE/2 < h.x + SPRITE_SIZE &&
+            ball.y + SPRITE_SIZE/2 > h.y &&
+            ball.y - SPRITE_SIZE/2 < h.y + SPRITE_SIZE;
+
+        if(hit){
+            score++;
+            showPopup('+1', ball.x, ball.y - 40);
+            ball.spriteIndex = h.spriteIndex;
+            hoops.splice(i, 1);
+            continue;
+        }
+
+        if(h.x + SPRITE_SIZE < ball.x - 20){
+            endGame();
+            return;
+        }
+    }
+
+    if(hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420){
+        addHoop();
+    }
+
+    if(!gameOver){
+        animationId = requestAnimationFrame(loop);
+    }
 }
 
 function endGame(){
@@ -495,6 +546,8 @@ function endGame(){
   backButton.style.opacity = 1;
   leaderboardBtn.style.display = 'block';
   showNameModal(score);
+  cancelAnimationFrame(animationId);
+  animationId = null;
 }
 
 window.addEventListener('resize',()=>{
