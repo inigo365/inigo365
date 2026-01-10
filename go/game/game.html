@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>bag</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>put the bag in the bag</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
 @font-face {
@@ -430,14 +430,18 @@ function startGame(){
 let touchActive = false;
 
 function jump() {
-    if (gameStarted && !gameOver) ball.vy = LIFT;
+    if (gameStarted && !gameOver) {
+        ball.vy = 0;   // reset vertical velocity
+        ball.vy += LIFT; // apply lift
+    }
 }
 
 // Handles taps/clicks on canvas
 function handleInput(e) {
     e.preventDefault();
     if (!gameStarted) {
-        startGame(); // start the game, DO NOT jump yet
+        startGame();
+        jump(); // start the game, DO NOT jump yet
     } else {
         jump();      // only jump if game already started
     }

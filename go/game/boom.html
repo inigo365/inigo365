@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>bag</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>put the bag in the bag</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
 @font-face {
@@ -337,7 +337,12 @@ function getWeightedSpriteIndex(first=false){const used=new Set();used.add(ball.
 const pointPopup=document.getElementById('pointPopup');
 function showPopup(text,x,y){pointPopup.textContent=text;pointPopup.style.left=x+'px';pointPopup.style.top=y+'px';pointPopup.style.opacity=1;pointPopup.style.transform="translateY(-30px)";setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400);}
 
-function addHoop(){const y=Math.random()*(canvas.height-240)+120;const spriteIndex=getWeightedSpriteIndex();hoops.push({x:canvas.width+50,y,spriteIndex});}
+function addHoop(){
+    const verticalMargin = canvas.height * 0.15; // 15% from top & bottom
+    const y = Math.random() * (canvas.height - 2 * verticalMargin) + verticalMargin;
+    const spriteIndex = getWeightedSpriteIndex();
+    hoops.push({x: canvas.width + 50, y, spriteIndex});
+}
 
 const playOverlay=document.getElementById('playOverlay');
 const overlayHighscore=document.getElementById('overlayHighscore');
@@ -425,14 +430,18 @@ function startGame(){
 let touchActive = false;
 
 function jump() {
-    if (gameStarted && !gameOver) ball.vy = LIFT;
+    if (gameStarted && !gameOver) {
+        ball.vy = 0;   // reset vertical velocity
+        ball.vy += LIFT; // apply lift
+    }
 }
 
 // Handles taps/clicks on canvas
 function handleInput(e) {
     e.preventDefault();
     if (!gameStarted) {
-        startGame(); // start the game, DO NOT jump yet
+        startGame();
+        jump(); // start the game, DO NOT jump yet
     } else {
         jump();      // only jump if game already started
     }
