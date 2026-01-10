@@ -372,7 +372,7 @@ window.addEventListener('load',()=>{showOverlay(false);});
 function startGame(){
     if(!assetsLoaded) return;
     if(gameStarted) return;
-    scoreSubmitted = false;
+    
 
     gameStarted = true;
     gameOver = false;
@@ -636,6 +636,7 @@ function goBack(){window.location.href="../index.html";}
   window.showNameModal = function(finalScore) {
     finalScoreEl.textContent = 'score: ' + finalScore;
     playerNameInput.value = localStorage.getItem('playerName') || '';
+    scoreSubmitted = false;
     nameModal.classList.add('show');
     backButton.style.opacity = 1;
     leaderboardBtn.style.display = 'block';
