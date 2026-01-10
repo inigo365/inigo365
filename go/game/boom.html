@@ -362,37 +362,35 @@ function getWeightedSpriteIndex(first=false) {
 
     let { min, max } = getRarityRange(score);
 
-    if (first) { min = 0; max = 4; } // first ball always safe
+    if (first) { min = 0; max = 4; } // first ball is always a safe sprite
 
+    // Collect candidates not used yet
     const candidates = [];
-    for (let i = min; i < NUM_SPRITES; i++) { // only regular sprites
-        if (!used.has(i)) candidates.push(i);
-    }
+    for (let i = min; i <= max; i++) if (!used.has(i)) candidates.push(i);
 
-    // Decide if we should spawn a mythic bag
-    let spawnMythic = false;
-    if (score >= 200 && Math.random() < 0.05) spawnMythic = true; // 5% chance
-    if (score >= 250) spawnMythic = true; // guaranteed after 250
-
-    if (spawnMythic) return NUM_SPRITES; // special code for mythic
-
+    // fallback in case all candidates are used
     if (candidates.length === 0) return Math.floor(Math.random() * (max - min + 1)) + min;
 
-    const newestBag = max < NUM_SPRITES ? max : NUM_SPRITES-1;
+    // Add weighting: newest bag more likely
+    const newestBag = max;
     const weighted = [];
     candidates.forEach(i => {
         let weight = (i === newestBag) ? 5 : 2;
         for (let w = 0; w < weight; w++) weighted.push(i);
     });
 
+    // Randomly pick from weighted list
     return weighted[Math.floor(Math.random() * weighted.length)];
 }
 
-function addHoop() {
-    const verticalMargin = canvas.height * 0.25;
+const pointPopup=document.getElementById('pointPopup');
+function showPopup(text,x,y){pointPopup.textContent=text;pointPopup.style.left=x+'px';pointPopup.style.top=y+'px';pointPopup.style.opacity=1;pointPopup.style.transform="translateY(-30px)";setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400);}
+
+function addHoop(){
+    const verticalMargin = canvas.height * 0.25; // 15% from top & bottom
     const y = Math.random() * (canvas.height - 2 * verticalMargin) + verticalMargin;
     const spriteIndex = getWeightedSpriteIndex();
-    hoops.push({ x: canvas.width + 50, y, spriteIndex });
+    hoops.push({x: canvas.width + 50, y, spriteIndex});
 }
 
 const playOverlay=document.getElementById('playOverlay');
