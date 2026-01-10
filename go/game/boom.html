@@ -441,13 +441,13 @@ function handleInput(e) {
     e.preventDefault();
     if (!gameStarted) {
         startGame();
-        jump(); // start the game, DO NOT jump yet
+        requestAnimationFrame(() => jump());
     } else {
         jump();      // only jump if game already started
     }
 }
 
-
+canvas.addEventListener('pointerdown', handleInput);
 canvas.addEventListener('touchstart', handleInput, { passive: false });
 canvas.addEventListener('mousedown', handleInput);
 
