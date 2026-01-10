@@ -347,24 +347,41 @@ allSpritePaths.forEach((path, index) => {
 });
 
 function getRarityRange(score) {
-    const MYTHIC_SCORE = 200;   // when mythic appears
-    const COMMON_END = 60;      // score after which bags 01-10 are gone
+    if (score >= 250) return { min: NUM_SPRITES, max: NUM_SPRITES }; // only mythic
 
-    if (score >= MYTHIC_SCORE) return { min: NUM_SPRITES, max: NUM_SPRITES }; // mythic only
-
-    // Calculate max sprite index linearly
-    const maxSprite = Math.min(
-        4 + Math.floor((score / MYTHIC_SCORE) * (NUM_SPRITES - 5)), // spread from 5 to NUM_SPRITES
-        NUM_SPRITES - 1
-    );
-
-    // Calculate min sprite index to drop common bags gradually
-    const minSprite = score < COMMON_END ? 0 : Math.floor((score - COMMON_END) / (MYTHIC_SCORE - COMMON_END) * 10);
-
-    return { min: minSprite, max: maxSprite };
+    if (score >= 200) return { min: 20, max: NUM_SPRITES }; // mostly 20-25, occasional mythic
+    if (score >= 100) return { min: 15, max: 25 }; // mostly 15-25
+    if (score >= 50)  return { min: 11, max: 20 }; // phase out commons
+    return { min: 0, max: 10 }; // early game
 }
 
-function getWeightedSpriteIndex(first=false){const used=new Set();used.add(ball.spriteIndex);hoops.forEach(h=>used.add(h.spriteIndex));let {min,max}=getRarityRange(score);if(first){min=0; max=4;}const candidates=[];for(let i=min;i<=max;i++)if(!used.has(i))candidates.push(i);if(candidates.length===0)return Math.floor(Math.random()*(max-min+1))+min;if(score>=250)return NUM_SPRITES;const newestBag=max;const weighted=[];candidates.forEach(i=>{if(i===newestBag){for(let w=0;w<5;w++)weighted.push(i);}else{for(let w=0;w<2;w++)weighted.push(i);}});return weighted[Math.floor(Math.random()*weighted.length)];}
+function getWeightedSpriteIndex(first=false) {
+    const used = new Set();
+    used.add(ball.spriteIndex);
+    hoops.forEach(h => used.add(h.spriteIndex));
+
+    let { min, max } = getRarityRange(score);
+
+    if (first) { min = 0; max = 4; } // first ball is always a safe sprite
+
+    // Collect candidates not used yet
+    const candidates = [];
+    for (let i = min; i <= max; i++) if (!used.has(i)) candidates.push(i);
+
+    // fallback in case all candidates are used
+    if (candidates.length === 0) return Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // Add weighting: newest bag more likely
+    const newestBag = max;
+    const weighted = [];
+    candidates.forEach(i => {
+        let weight = (i === newestBag) ? 5 : 2;
+        for (let w = 0; w < weight; w++) weighted.push(i);
+    });
+
+    // Randomly pick from weighted list
+    return weighted[Math.floor(Math.random() * weighted.length)];
+}
 
 const pointPopup=document.getElementById('pointPopup');
 function showPopup(text,x,y){pointPopup.textContent=text;pointPopup.style.left=x+'px';pointPopup.style.top=y+'px';pointPopup.style.opacity=1;pointPopup.style.transform="translateY(-30px)";setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400);}
