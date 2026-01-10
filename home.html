@@ -36,13 +36,12 @@
       overflow: hidden;
     }
 
-    /* Back button top-right, responsive */
+    /* Back button top-right, responsive and only clickable on text */
     .back {
       position: fixed;
-      top: 1.5vw;           /* scales with viewport width */
-      right: 1.5vw;         /* scales with viewport width */
+      top: 1rem;
+      right: 1rem;
       color: #2d93ea;
-      font-size: 3vw;       /* responsive scaling */
       font-family: "RuneScape UF", Arial, sans-serif;
       text-decoration: none;
       z-index: 1000;
@@ -50,18 +49,11 @@
       transition: color 0.3s ease;
       background: none;
       padding: 0;
-      display: inline-flex;
-      flex-direction: column;  
-      align-items: flex-end;  
-      line-height: 1;          
-    }
-
-    @media (min-width: 768px) {
-      .back {
-        font-size: 2rem;     /* desktop fixed size */
-        top: 1.2rem;
-        right: 1.2rem;
-      }
+      display: inline-flex;       /* text-sized clickable area */
+      flex-direction: column;     
+      align-items: flex-end;      
+      line-height: 1;
+      font-size: clamp(1.8rem, 5vw, 2.5rem); /* scales nicely on mobile + desktop */
     }
 
     .back:hover {
@@ -87,7 +79,7 @@
 <h1 class="seo-h1">Inigo Macdonald – Creative Portfolio</h1>
 
 <!-- Back button top-right -->
-<a class="back" href="index.html">
+<a class="back" href="go/index.html">
   Back
   <span class="back-arrow">→</span>
 </a>
