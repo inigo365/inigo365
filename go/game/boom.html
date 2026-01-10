@@ -569,8 +569,18 @@ function getPlayableHeight() {
 
 function addHoop(){
     const playableHeight = getPlayableHeight();
-    const verticalMargin = playableHeight * 0.25; // 25% from top & bottom
-    const y = Math.random() * (playableHeight - 2 * verticalMargin) + verticalMargin;
+
+    // Get topScores height to prevent hoops overlapping
+    const topScoresEl = document.getElementById('topScores');
+    const topScoresHeight = topScoresEl.offsetHeight || 0;
+
+    // verticalMargin: minimum distance from topScores and bottom of playable area
+    const bottomMargin = playableHeight * 0.3; // 15% from bottom
+    const topMargin = topScoresHeight + 25;     // 10px below topScores
+
+    // y-coordinate for hoop spawn
+    const y = Math.random() * (playableHeight - topMargin - bottomMargin) + topMargin;
+
     const spriteIndex = getWeightedSpriteIndex();
     hoops.push({x: canvas.width + 50, y, spriteIndex});
 }
@@ -656,7 +666,7 @@ function startGame(){
     hoops=[];
     score=0;
     gameOver=false;
-    ball.x=Math.round(canvas.width*0.4);
+    ball.x=Math.round(canvas.width*0.2);
     ball.y=canvas.height/2;
     ball.vy=0;
     ball.spriteIndex=getWeightedSpriteIndex(true);
