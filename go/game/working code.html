@@ -23,6 +23,7 @@ html, body {
   background: #fff;
 }
 
+
 #topScores {
     position: absolute;
     top: 16px;
@@ -38,6 +39,29 @@ html, body {
     opacity: 0;             /* hidden initially */
     pointer-events: none;   /* prevent interaction while hidden */
     transition: opacity 0.5s;
+}
+
+#rotateNotice {
+    display: none;               /* hidden by default */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    color: #2d93ea;
+    font-family: 'RuneScape UF', Arial, sans-serif;
+    font-size: 5vw;
+    text-align: center;
+    line-height: 100vh;
+    z-index: 9999;              /* above all game elements */
+    opacity: 0;                 /* hidden initially */
+    pointer-events: none;       /* ignore clicks when hidden */
+    transition: opacity 0.5s ease; /* smooth fade in/out */
+}
+
+#rotateNotice.active {
+    opacity: 1;                 /* visible */
+    pointer-events: auto;       /* block interactions while visible */
 }
 
 /* Back Button */
@@ -243,10 +267,31 @@ canvas {
   font-family: "RuneScape UF", Arial, sans-serif;
   cursor: pointer;
 }
+/* SoundCloud Button */
+.soundcloud-btn {
+  position: fixed;
+  bottom: 8px;
+  right: 8px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 0;
+  z-index: 400;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  touch-action: none;
+}
+
 </style>
 </head>
 <body>
 
+<div id="rotateNotice">Please rotate your phone to portrait</div>
+<button class="soundcloud-btn" id="soundcloudBtn" onclick="openSoundCloud()" style="display:none;">soundtrack</button>
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 
@@ -291,6 +336,25 @@ canvas {
   </div>
 </div>
 
+<div id="mythicUnlockPopup" style="
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  text-align: center;
+  font-family: 'RuneScape UF', Arial, sans-serif;
+  color: #2d93ea;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  z-index: 5000;
+">
+  <div style="font-size: 32px;">*mythic found*</div>
+  <div style="font-size: 28px; margin-top: 14px;">
+    soundtrack unlocked!
+  </div>
+</div>
+
 <canvas id="gameCanvas"></canvas>
 <div class="point-popup" id="pointPopup">+1</div>
 
@@ -302,6 +366,19 @@ const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+const hasUnlockedSoundtrack =
+  localStorage.getItem('soundtrackUnlocked') === 'true';
+
+// -------------------- FORCE RESET SOUNDTRACK --------------------
+// Ensure everyone starts locked until first mythic bag
+localStorage.removeItem('soundtrackUnlocked'); // clear old unlock
+const soundcloudBtn = document.getElementById('soundcloudBtn');
+if (soundcloudBtn) soundcloudBtn.style.display = 'none'; // hide button
+
+// ===== SoundCloud link (change only this) =====
+const SOUNDCLOUD_URL =
+  "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=ced42764564b4b1dbbaf8a6d1486e958&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing";
 
 const GRAVITY = 0.32;
 const LIFT = -6.9;
@@ -354,32 +431,44 @@ function getRarityRange(score) {
     return { min: 0, max: 9 };                                       // early game, commons
 }
 
-function getWeightedSpriteIndex(first=false) {
+function getWeightedSpriteIndex(first = false) {
     const used = new Set();
     used.add(ball.spriteIndex);
     hoops.forEach(h => used.add(h.spriteIndex));
 
+    // ===== MYTHIC LOGIC =====
+    if (!first) {
+        // 100+ → small chance
+        if (score >= 100 && score < 250 && Math.random() < 0.03) {
+            return NUM_SPRITES; // mythic
+        }
+
+        // 250+ → guaranteed
+        if (score >= 250) {
+            return NUM_SPRITES;
+        }
+    }
+
+    // ===== NORMAL SPRITES =====
     let { min, max } = getRarityRange(score);
 
-    if (first) { min = 0; max = 4; } // first ball is always a safe sprite
+    if (first) { min = 0; max = 4; }
 
-    // Cap max at NUM_SPRITES-1 so we never index out of sprites[]
     max = Math.min(max, NUM_SPRITES - 1);
 
-    // Collect candidates not used yet
     const candidates = [];
     for (let i = min; i <= max; i++) {
         if (!used.has(i)) candidates.push(i);
     }
 
-    // fallback if all candidates are used
-    if (candidates.length === 0) return Math.floor(Math.random() * (max - min + 1)) + min;
+    if (candidates.length === 0) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
 
-    // Weighted pick: newest bag more likely
     const newestBag = max;
     const weighted = [];
     candidates.forEach(i => {
-        let weight = (i === newestBag) ? 5 : 2;
+        const weight = (i === newestBag) ? 5 : 2;
         for (let w = 0; w < weight; w++) weighted.push(i);
     });
 
@@ -387,11 +476,111 @@ function getWeightedSpriteIndex(first=false) {
 }
 
 const pointPopup=document.getElementById('pointPopup');
-function showPopup(text,x,y){pointPopup.textContent=text;pointPopup.style.left=x+'px';pointPopup.style.top=y+'px';pointPopup.style.opacity=1;pointPopup.style.transform="translateY(-30px)";setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400);}
+function showPopup(text, x, y, color = '#2d93ea', size = '28px'){
+    pointPopup.textContent = text;
+    pointPopup.style.left = x + 'px';
+    pointPopup.style.top = y + 'px';
+    pointPopup.style.color = color;
+    pointPopup.style.fontSize = size;
+    pointPopup.style.opacity = 1;
+    pointPopup.style.transform = "translateY(-30px)";
+
+    setTimeout(() => {
+        pointPopup.style.opacity = 0;
+        pointPopup.style.transform = "translateY(-50px)";
+        pointPopup.style.color = '#2d93ea'; // reset color
+        pointPopup.style.fontSize = '28px';  // reset size
+    }, 400);
+}
+// Mythic hit text (uses SAME style, different color)
+function showMythicPopup(text, x, y) {
+    pointPopup.textContent = text;
+    pointPopup.style.left = x + 'px';
+    pointPopup.style.top = y + 'px';
+    pointPopup.style.color = 'gold';
+    pointPopup.style.opacity = 1;
+    pointPopup.style.transform = "translateY(-30px)";
+
+    setTimeout(() => {
+        pointPopup.style.opacity = 0;
+        pointPopup.style.transform = "translateY(-50px)";
+        pointPopup.style.color = '#2d93ea'; // reset back to normal
+    }, 600);
+}
+
+// +2 score popup (slightly delayed, same style)
+function showMythicPlusTwo(x, y) {
+    setTimeout(() => {
+        pointPopup.textContent = '+2';
+        pointPopup.style.left = (x + 20) + 'px'; // slight offset
+        pointPopup.style.top = y + 'px';
+        pointPopup.style.color = 'gold';
+        pointPopup.style.opacity = 1;
+        pointPopup.style.transform = "translateY(-30px)";
+
+        setTimeout(() => {
+            pointPopup.style.opacity = 0;
+            pointPopup.style.transform = "translateY(-50px)";
+            pointPopup.style.color = '#2d93ea'; // reset
+        }, 400);
+    }, 120);
+}
+// ===================== MYTHIC UNLOCK SYSTEM =====================
+
+// Show center-screen "soundtrack unlocked" popup
+function showMythicUnlockPopup() {
+    const popup = document.getElementById('mythicUnlockPopup');
+
+    popup.style.opacity = 1;
+    popup.style.transform = 'translate(-50%, -50%) scale(1)';
+
+    setTimeout(() => {
+        popup.style.opacity = 0;
+        popup.style.transform = 'translate(-50%, -50%) scale(0.9)';
+    }, 2500);
+}
+
+// Permanently unlock soundtrack
+function unlockSoundtrackIfNeeded() {
+    if (localStorage.getItem('soundtrackUnlocked')) return;
+
+    localStorage.setItem('soundtrackUnlocked', 'true');
+
+    showMythicUnlockPopup();
+
+    const soundcloudBtn = document.getElementById('soundcloudBtn');
+    soundcloudBtn.style.display = 'block';
+}
+
+// Ensure soundtrack button stays unlocked on reload
+window.addEventListener('load', () => {
+    if (localStorage.getItem('soundtrackUnlocked')) {
+        const soundcloudBtn = document.getElementById('soundcloudBtn');
+        soundcloudBtn.style.display = 'block';
+    }
+});
+
+function getPlayableHeight() {
+    if (window.innerWidth <= 768) {
+        return canvas.height * 0.95; // cut off bottom 20%
+    }
+    return canvas.height;
+}
 
 function addHoop(){
-    const verticalMargin = canvas.height * 0.25; // 15% from top & bottom
-    const y = Math.random() * (canvas.height - 2 * verticalMargin) + verticalMargin;
+    const playableHeight = getPlayableHeight();
+
+    // Get topScores height to prevent hoops overlapping
+    const topScoresEl = document.getElementById('topScores');
+    const topScoresHeight = topScoresEl.offsetHeight || 0;
+
+    // verticalMargin: minimum distance from topScores and bottom of playable area
+    const bottomMargin = playableHeight * 0.3; // 15% from bottom
+    const topMargin = topScoresHeight + 100;     // 10px below topScores
+
+    // y-coordinate for hoop spawn
+    const y = Math.random() * (playableHeight - topMargin - bottomMargin) + topMargin;
+
     const spriteIndex = getWeightedSpriteIndex();
     hoops.push({x: canvas.width + 50, y, spriteIndex});
 }
@@ -460,7 +649,14 @@ function hideOverlay(){
 }
 
 setInterval(updateTopScores,100);
-window.addEventListener('load',()=>{showOverlay(false);});
+window.addEventListener('load', () => {
+    showOverlay(false);
+    updateTopScoreSize(); // ensure mobile font sizing applied
+});
+
+function openSoundCloud() {
+    window.open(SOUNDCLOUD_URL, '_blank', 'noopener,noreferrer');
+}
 
 function startGame(){
     if(gameStarted||!assetsLoaded)return;
@@ -470,7 +666,7 @@ function startGame(){
     hoops=[];
     score=0;
     gameOver=false;
-    ball.x=Math.round(canvas.width*0.4);
+    ball.x=Math.round(canvas.width*0.2);
     ball.y=canvas.height/2;
     ball.vy=0;
     ball.spriteIndex=getWeightedSpriteIndex(true);
@@ -533,6 +729,8 @@ function playAgain() {
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
 
+  soundcloudBtn.style.display = 'none';
+
   startGame();
 }
 
@@ -550,6 +748,7 @@ window.addEventListener('resize',()=>{
   canvas.width=window.innerWidth;
   canvas.height=window.innerHeight;
   SPRITE_SIZE=Math.round(canvas.height*0.12);
+  updateTopScoreSize();
 });
 window.addEventListener('load', updateTopScoreSize);
 
@@ -560,8 +759,8 @@ function loop() {
     ball.vy += GRAVITY;
     ball.y += ball.vy;
 
-    // Check for hitting top/bottom
-    if (ball.y < 0 || ball.y > canvas.height) return endGame();
+    const playableHeight = getPlayableHeight();
+    if (ball.y < 0 || ball.y > playableHeight) return endGame();
 
     // Speed scaling
     if (score < 250 && SPEED < MAX_SPEED) SPEED += SPEED_INCREMENT;
@@ -621,13 +820,38 @@ function loop() {
             ball.y + SPRITE_SIZE/2 > h.y &&
             ball.y - SPRITE_SIZE/2 < h.y + SPRITE_SIZE;
 
-        if (hit) {
-            score++;
-            showPopup('+1', ball.x, ball.y - 40);
-            ball.spriteIndex = h.spriteIndex;
-            hoops.splice(i, 1);
-            continue;
-        }
+  if (hit) {
+
+    // ===== MYTHIC BAG =====
+    if (h.spriteIndex === NUM_SPRITES) {
+        score += 2;
+
+        showMythicPopup('mythic bag', ball.x, ball.y - 80);
+        showMythicPlusTwo(ball.x, ball.y - 40);
+
+        // Unlock soundtrack on first mythic ever
+        unlockSoundtrackIfNeeded();
+
+   // ===== NORMAL BAG =====
+} else {
+    score += 1;
+
+    // Determine popup color & size based on glow
+    let popupColor = '#2d93ea';
+    let popupSize = '28px';
+    if (h.spriteIndex >= 15) {       // rare or glowing bag
+        popupColor = 'gold';
+        popupSize = '34px';           // slightly bigger for emphasis
+    }
+
+    showPopup('+1', ball.x, ball.y - 40, popupColor, popupSize);
+}
+
+
+    ball.spriteIndex = h.spriteIndex;
+    hoops.splice(i, 1);
+    continue;
+}
 
         // Missed hoop ends game
         if (h.x + SPRITE_SIZE < ball.x - 20) return endGame();
@@ -793,16 +1017,22 @@ function goBack(){window.location.href="../index.html";}
     }
   };
 
-  window.showNameModal = function(finalScore) {
-    finalScoreEl.textContent = 'score: ' + finalScore;
-    playerNameInput.value = localStorage.getItem('playerName') || '';
-    nameModal.classList.add('show');
-    backButton.style.opacity = 1;
-    leaderboardBtn.style.display = 'block';
-    leaderboardBtn.style.zIndex = 300;
-    setTimeout(()=>playerNameInput.focus(), 100);
-    showMusicButton();
-  };
+window.showNameModal = function(finalScore) {
+  finalScoreEl.textContent = 'score: ' + finalScore;
+  playerNameInput.value = localStorage.getItem('playerName') || '';
+  nameModal.classList.add('show');
+  backButton.style.zIndex = 400;
+  backButton.style.opacity = 1;
+  leaderboardBtn.style.display = 'block';
+  leaderboardBtn.style.zIndex = 300;
+  setTimeout(()=>playerNameInput.focus(), 100);
+  showMusicButton();
+
+  // ✅ Only show soundtrack button if actually unlocked
+  if (localStorage.getItem('soundtrackUnlocked') === 'true') {
+      document.getElementById('soundcloudBtn').style.display = 'block';
+  }
+};
 
   window.submitScore = async function() {
     const name = playerNameInput.value.trim() || 'anonymous';
@@ -812,7 +1042,62 @@ function goBack(){window.location.href="../index.html";}
     showOverlay(true);
   };
 
-  playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
+
+// Try to lock the screen (optional, may fail)
+function lockOrientation() {
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch(err => {
+            console.warn('Orientation lock failed (normal for mobile browsers):', err);
+        });
+    }
+}
+
+window.addEventListener('load', lockOrientation);
+window.addEventListener('orientationchange', lockOrientation);
+
+// Show rotate overlay in landscape (works everywhere)
+function checkOrientation() {
+    const rotateNotice = document.getElementById('rotateNotice');
+    if (window.innerHeight < window.innerWidth) {
+        rotateNotice.classList.add('active');
+        gameStarted = false; // pause game if desired
+    } else {
+        rotateNotice.classList.remove('active');
+    }
+}
+
+window.addEventListener('load', checkOrientation);
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', checkOrientation);
+
+// ===== TOP SCORES LAYOUT FIX FOR MOBILE =====
+const topScoresEl = document.getElementById('topScores');
+const topCurrentScore = document.getElementById('topCurrentScore');
+const topHighscore = document.getElementById('topHighscore');
+
+// Ensure inline layout and prevent font-loading jump
+function fixTopScoresLayout() {
+    topScoresEl.style.display = 'flex';
+    topScoresEl.style.flexWrap = 'nowrap';
+    topScoresEl.style.justifyContent = 'center';
+    topScoresEl.style.gap = window.innerWidth <= 480 ? '3vw' : '4vw';
+    topScoresEl.style.whiteSpace = 'nowrap';
+
+    // Prevent jump by setting temporary min-width
+    topCurrentScore.style.minWidth = 'max-content';
+    topHighscore.style.minWidth = 'max-content';
+
+    // Responsive font sizing
+    updateTopScoreSize();
+}
+
+// Run once font is ready
+document.fonts.ready.then(fixTopScoresLayout);
+
+// Also run on window resize
+window.addEventListener('resize', fixTopScoresLayout);
+
+playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
 })();
 </script>
 </body>

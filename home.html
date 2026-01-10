@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>inigo365</title>
+  <link rel="icon" type="image/png" href="./images/icon.png">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="inigo365, a portfolio website showcasing creative projects across film, photography, music, and other media.">
+
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:title" content="inigo365 – Creative Portfolio">
+  <meta property="og:description" content="Portfolio of creative projects across film, photography, music & other media.">
+  <meta property="og:image" content="https://inigo365.com/images/landing.jpg">
+  <meta property="og:url" content="https://inigo365.com/">
+  <meta property="og:type" content="website">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="inigo365 – Creative Portfolio">
+  <meta name="twitter:description" content="Portfolio of creative projects across film, photography, music & other media.">
+  <meta name="twitter:image" content="https://inigo365.com/images/landing.jpg">
+
+  <!-- Viewport for mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Hidden SEO Heading -->
+  <style>
+    .seo-h1 {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body class="fade-in-page">
+
+<!-- Hidden H1 for SEO -->
+<h1 class="seo-h1">Inigo Macdonald – Creative Portfolio</h1>
+
+<!-- =====================
+     LANDING
+===================== -->
+<section class="landing">
+  <div class="landing-wrapper">
+
+    <!-- Landing Image -->
+    <img src="images/landing.jpg"
+         class="landing-image"
+         alt="Landing">
+
+    <!-- ABOUT ME (internal page) -->
+    <a href="about.html"
+       class="landing-link about-link"
+       aria-label="About Me">
+      <span>About Me</span>
+    </a>
+
+    <!-- INSTAGRAM -->
+    <a href="https://www.instagram.com/iggysmalllls/"
+       class="landing-link instagram-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Instagram">
+      <span>Instagram</span>
+    </a>
+
+    <!-- IMDB -->
+    <a href="https://www.imdb.com/name/nm17192091/"
+       class="landing-link imdb-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="IMDB">
+      <span>IMDB</span>
+    </a>
+
+    <!-- WHATSAPP -->
+    <a href="https://wa.me/447432435885"
+       class="landing-link whatsapp-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="WhatsApp">
+      <span>WhatsApp</span>
+    </a>
+
+    <!-- EMAIL -->
+    <a href="mailto:macdonald.iggy@gmail.com"
+       class="landing-link email-link external-link"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Email">
+      <span>Email</span>
+    </a>
+    
+    <!-- GO PAGE LINK -->
+    <a href="go/index.html"
+       class="landing-link go-link"
+       aria-label="Go Page">
+      <span>Go Page</span>
+    </a>
+
+  </div>
+</section>
+
+<!-- =====================
+     PORTFOLIO
+===================== -->
+<section id="projects" class="portfolio">
+
+  <a href="projects/martino.html" class="tile" id="tile-martino">
+  <img src="images/tiles/martino.jpg" alt="Martino Gamper OBE 'Before, After & Beyond'">
+  <div class="overlay">Martino Gamper OBE 'Before, After & Beyond'</div>
+</a>
+
+<a href="projects/minecraft.html" class="tile" id="tile-minecraft">
+  <img src="images/tiles/minecraft.jpg" alt="Minecraft Movie (Released 2025)">
+  <div class="overlay">Minecraft Movie (Released 2025)</div>
+</a>
+
+<a href="projects/ash.html" class="tile" id="tile-ash">
+  <img src="images/tiles/ash.jpg" alt="Ash Feature Length (Released 2025)">
+  <div class="overlay">Ash Feature Length (Released 2025)</div>
+</a>
+
+<a href="projects/ols.html" class="tile" id="tile-ols">
+  <img src="images/tiles/ols.jpg" alt="One Last Shot (Releasing 2026)">
+  <div class="overlay">One Last Shot (Releasing 2026)</div>
+</a>
+
+<a href="projects/chopova.html" class="tile" id="tile-chopova">
+  <img src="images/tiles/chopova.jpg" alt="Chopova Lowena Spring/Summer 26">
+  <div class="overlay">Chopova Lowena Spring/Summer 26</div>
+</a>
+
+<a href="projects/canyon.html" class="tile" id="tile-canyon">
+  <img src="images/tiles/canyon.jpg" alt="Canyon Feature Length (Unreleased)">
+  <div class="overlay">Canyon Feature Length (Unreleased)</div>
+</a>
+
+<a href="projects/remz.html" class="tile" id="tile-remz">
+  <img src="images/tiles/remz.jpg" alt="SR MPOFU & STOLEN REMZ - SCOOPGARDEN">
+  <div class="overlay">SR MPOFU & STOLEN REMZ - SCOOPGARDEN</div>
+</a>
+
+<a href="projects/nanushka.html" class="tile" id="tile-nanushka">
+  <img src="images/tiles/nanushka.jpg" alt="Nanushka Spring/Summer 26">
+  <div class="overlay">Nanushka Spring/Summer 26</div>
+</a>
+
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <img src="images/footer.jpg" alt="Footer image">
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.landing-link').forEach(link => {
+  link.addEventListener('click', function(e) {
+    const href = this.href;
+    const target = this.target;
+
+    // If external link, open in new tab immediately
+    if (target === "_blank") {
+      e.preventDefault(); // stop default
+      window.open(href, "_blank");
+      return; // exit
+    }
+
+    // Otherwise, internal link — apply fade-out
+    e.preventDefault();
+    document.body.classList.add('fade-out');
+
+    setTimeout(() => {
+      window.location.href = href;
+    }, 1000); // matches CSS fade
+  });
+});
+</script>
+
+<script>
+// 1. Store last clicked tile when navigating away
+document.querySelectorAll('.tile').forEach(tile => {
+  tile.addEventListener('click', function(e) {
+    sessionStorage.setItem('lastTile', this.id);
+    // Let the normal navigation happen
+  });
+});
+
+// 2. When returning to index.html, scroll to last clicked tile
+window.addEventListener('pageshow', () => {
+  // pageshow is triggered even on back/forward navigation
+  const lastTileId = sessionStorage.getItem('lastTile');
+  if (lastTileId) {
+    const tile = document.getElementById(lastTileId);
+    if (tile) {
+      // scroll instantly without animation for back-button
+      tile.scrollIntoView({ block: 'center' });
+    }
+    sessionStorage.removeItem('lastTile');
+  }
+});
+</script>
+
+<script>
+// Disable right-click context menu
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+});
+</script>
+
+</body>
+</html>
