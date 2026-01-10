@@ -148,12 +148,18 @@ function animate() {
         gifContainer.style.display = "block";
       }
 
-      // MP3 plays once per press
-      if (!justHitOneGram) {
-        scaleSound.currentTime = 0;
-        scaleSound.play().catch(()=>{});
-        justHitOneGram = true;
-      }
+     // MP3 plays every time weight crosses ~1g upward
+if (currentWeight >= 1 && !justHitOneGram) {
+  scaleSound.currentTime = 0;
+  scaleSound.play().catch(()=>{});
+  justHitOneGram = true;
+} 
+
+// Reset once weight falls below ~0.95g
+if (currentWeight < 0.95) {
+  justHitOneGram = false;
+}
+
     }
 
   } else {
