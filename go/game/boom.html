@@ -23,6 +23,7 @@ html, body {
   background: #fff;
 }
 
+
 #topScores {
     position: absolute;
     top: 16px;
@@ -38,6 +39,29 @@ html, body {
     opacity: 0;             /* hidden initially */
     pointer-events: none;   /* prevent interaction while hidden */
     transition: opacity 0.5s;
+}
+
+#rotateNotice {
+    display: none;               /* hidden by default */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    color: #2d93ea;
+    font-family: 'RuneScape UF', Arial, sans-serif;
+    font-size: 5vw;
+    text-align: center;
+    line-height: 100vh;
+    z-index: 9999;              /* above all game elements */
+    opacity: 0;                 /* hidden initially */
+    pointer-events: none;       /* ignore clicks when hidden */
+    transition: opacity 0.5s ease; /* smooth fade in/out */
+}
+
+#rotateNotice.active {
+    opacity: 1;                 /* visible */
+    pointer-events: auto;       /* block interactions while visible */
 }
 
 /* Back Button */
@@ -246,6 +270,8 @@ canvas {
 </style>
 </head>
 <body>
+
+<div id="rotateNotice">Please rotate your phone to portrait</div>
 
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
@@ -816,7 +842,35 @@ function goBack(){window.location.href="../index.html";}
     showOverlay(true);
   };
 
-  playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
+
+// Try to lock the screen (optional, may fail)
+function lockOrientation() {
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch(err => {
+            console.warn('Orientation lock failed (normal for mobile browsers):', err);
+        });
+    }
+}
+
+window.addEventListener('load', lockOrientation);
+window.addEventListener('orientationchange', lockOrientation);
+
+// Show rotate overlay in landscape (works everywhere)
+function checkOrientation() {
+    const rotateNotice = document.getElementById('rotateNotice');
+    if (window.innerHeight < window.innerWidth) {
+        rotateNotice.classList.add('active');
+        gameStarted = false; // pause game if desired
+    } else {
+        rotateNotice.classList.remove('active');
+    }
+}
+
+window.addEventListener('load', checkOrientation);
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', checkOrientation);
+
+playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
 })();
 </script>
 </body>
