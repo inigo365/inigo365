@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>scale</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/png" href="./images/icon.png">
+<link rel="icon" href="/images/icon.png">
 
 <style>
 /* FONT */
@@ -104,7 +104,7 @@ html, body {
   <!-- <video src="scale.mp4" autoplay loop muted playsinline></video> -->
 </div>
 
-<audio id="scaleSound" src="scale.mp3"></audio>
+<audio id="scaleSound" src="scale.mp3" preload="auto" playsinline></audio>
 
 <script>
 let currentWeight = 0;
@@ -115,6 +115,28 @@ let justHitOneGram = false;
 const weightEl = document.getElementById("weight");
 const gifContainer = document.getElementById("gifContainer");
 const scaleSound = document.getElementById("scaleSound");
+let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+
+  scaleSound.muted = true;
+  scaleSound.play().then(() => {
+    requestAnimationFrame(() => {
+      scaleSound.pause();
+      scaleSound.currentTime = 0;
+      scaleSound.muted = false;
+      audioUnlocked = true;
+    });
+  }).catch(() => {});
+}
+
+
+function playScaleSound() {
+  scaleSound.pause();
+  scaleSound.currentTime = 0;
+  scaleSound.play().catch(() => {});
+}
 
 /* UPDATE DISPLAY WITH MICRO-JIGGLE */
 function updateDisplay(jiggleX = 0, jiggleY = 0) {
@@ -150,13 +172,12 @@ function animate() {
 
      // MP3 plays every time weight crosses ~1g upward
 if (currentWeight >= 1 && !justHitOneGram) {
-  scaleSound.currentTime = 0;
-  scaleSound.play().catch(()=>{});
-  justHitOneGram = true;
+playScaleSound();
+justHitOneGram = true;
 } 
 
 // Reset once weight falls below ~0.95g
-if (currentWeight < 0.95) {
+if (currentWeight < 0.90) {
   justHitOneGram = false;
 }
 
@@ -178,11 +199,24 @@ if (currentWeight < 0.95) {
   requestAnimationFrame(animate);
 }
 
-/* INPUT HANDLERS */
-document.addEventListener("mousedown", () => holding = true);
-document.addEventListener("mouseup", () => holding = false);
-document.addEventListener("touchstart", () => holding = true, { passive: true });
-document.addEventListener("touchend", () => holding = false, { passive: true });
+document.addEventListener("mousedown", () => {
+  unlockAudio();
+  holding = true;
+});
+
+document.addEventListener("mouseup", () => {
+  holding = false;
+});
+
+document.addEventListener("touchstart", () => {
+  unlockAudio();
+  holding = true;
+}, { passive: true });
+
+document.addEventListener("touchend", () => {
+  holding = false;
+}, { passive: true });
+
 
 /* NAVIGATION */
 function goBack() {
