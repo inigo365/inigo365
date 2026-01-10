@@ -545,9 +545,17 @@ window.addEventListener('load', () => {
     }
 });
 
+function getPlayableHeight() {
+    if (window.innerWidth <= 768) {
+        return canvas.height * 0.95; // cut off bottom 20%
+    }
+    return canvas.height;
+}
+
 function addHoop(){
-    const verticalMargin = canvas.height * 0.25; // 15% from top & bottom
-    const y = Math.random() * (canvas.height - 2 * verticalMargin) + verticalMargin;
+    const playableHeight = getPlayableHeight();
+    const verticalMargin = playableHeight * 0.25; // 25% from top & bottom
+    const y = Math.random() * (playableHeight - 2 * verticalMargin) + verticalMargin;
     const spriteIndex = getWeightedSpriteIndex();
     hoops.push({x: canvas.width + 50, y, spriteIndex});
 }
@@ -726,8 +734,8 @@ function loop() {
     ball.vy += GRAVITY;
     ball.y += ball.vy;
 
-    // Check for hitting top/bottom
-    if (ball.y < 0 || ball.y > canvas.height) return endGame();
+    const playableHeight = getPlayableHeight();
+    if (ball.y < 0 || ball.y > playableHeight) return endGame();
 
     // Speed scaling
     if (score < 250 && SPEED < MAX_SPEED) SPEED += SPEED_INCREMENT;
@@ -797,7 +805,7 @@ function loop() {
         showMythicPlusTwo(ball.x, ball.y - 40);
 
         // Unlock soundtrack on first mythic ever
-        unlockSoundtrackIfNeeded();
+        unlockSoundtrack();
 
     // ===== NORMAL BAG =====
     } else {
