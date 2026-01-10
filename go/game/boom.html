@@ -476,7 +476,22 @@ function getWeightedSpriteIndex(first = false) {
 }
 
 const pointPopup=document.getElementById('pointPopup');
-function showPopup(text,x,y){pointPopup.textContent=text;pointPopup.style.left=x+'px';pointPopup.style.top=y+'px';pointPopup.style.opacity=1;pointPopup.style.transform="translateY(-30px)";setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400);}
+function showPopup(text, x, y, color = '#2d93ea', size = '28px'){
+    pointPopup.textContent = text;
+    pointPopup.style.left = x + 'px';
+    pointPopup.style.top = y + 'px';
+    pointPopup.style.color = color;
+    pointPopup.style.fontSize = size;
+    pointPopup.style.opacity = 1;
+    pointPopup.style.transform = "translateY(-30px)";
+
+    setTimeout(() => {
+        pointPopup.style.opacity = 0;
+        pointPopup.style.transform = "translateY(-50px)";
+        pointPopup.style.color = '#2d93ea'; // reset color
+        pointPopup.style.fontSize = '28px';  // reset size
+    }, 400);
+}
 // Mythic hit text (uses SAME style, different color)
 function showMythicPopup(text, x, y) {
     pointPopup.textContent = text;
@@ -807,11 +822,21 @@ function loop() {
         // Unlock soundtrack on first mythic ever
         unlockSoundtrack();
 
-    // ===== NORMAL BAG =====
-    } else {
-        score += 1;
-        showPopup('+1', ball.x, ball.y - 40);
+   // ===== NORMAL BAG =====
+} else {
+    score += 1;
+
+    // Determine popup color & size based on glow
+    let popupColor = '#2d93ea';
+    let popupSize = '28px';
+    if (h.spriteIndex >= 15) {       // rare or glowing bag
+        popupColor = 'gold';
+        popupSize = '34px';           // slightly bigger for emphasis
     }
+
+    showPopup('+1', ball.x, ball.y - 40, popupColor, popupSize);
+}
+
 
     ball.spriteIndex = h.spriteIndex;
     hoops.splice(i, 1);
