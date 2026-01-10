@@ -338,7 +338,7 @@ const pointPopup=document.getElementById('pointPopup');
 function showPopup(text,x,y){pointPopup.textContent=text;pointPopup.style.left=x+'px';pointPopup.style.top=y+'px';pointPopup.style.opacity=1;pointPopup.style.transform="translateY(-30px)";setTimeout(()=>{pointPopup.style.opacity=0;pointPopup.style.transform="translateY(-50px)";},400);}
 
 function addHoop(){
-    const verticalMargin = canvas.height * 0.15; // 15% from top & bottom
+    const verticalMargin = canvas.height * 0.20; // 15% from top & bottom
     const y = Math.random() * (canvas.height - 2 * verticalMargin) + verticalMargin;
     const spriteIndex = getWeightedSpriteIndex();
     hoops.push({x: canvas.width + 50, y, spriteIndex});
