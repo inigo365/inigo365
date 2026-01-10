@@ -348,11 +348,10 @@ allSpritePaths.forEach((path, index) => {
 
 function getRarityRange(score) {
     if (score >= 250) return { min: NUM_SPRITES, max: NUM_SPRITES }; // only mythic
-
-    if (score >= 200) return { min: 20, max: NUM_SPRITES }; // mostly 20-25, occasional mythic
-    if (score >= 100) return { min: 15, max: 25 }; // mostly 15-25
-    if (score >= 50)  return { min: 11, max: 20 }; // phase out commons
-    return { min: 0, max: 10 }; // early game
+    if (score >= 200) return { min: 20, max: NUM_SPRITES };          // mostly high rares + mythic
+    if (score >= 100) return { min: 13, max: 22 };                   // mid-tier rares
+    if (score >= 50)  return { min: 8, max: 16 };                   // phase out commons
+    return { min: 0, max: 9 };                                       // early game, commons
 }
 
 function getWeightedSpriteIndex(first=false) {
@@ -364,14 +363,19 @@ function getWeightedSpriteIndex(first=false) {
 
     if (first) { min = 0; max = 4; } // first ball is always a safe sprite
 
+    // Cap max at NUM_SPRITES-1 so we never index out of sprites[]
+    max = Math.min(max, NUM_SPRITES - 1);
+
     // Collect candidates not used yet
     const candidates = [];
-    for (let i = min; i <= max; i++) if (!used.has(i)) candidates.push(i);
+    for (let i = min; i <= max; i++) {
+        if (!used.has(i)) candidates.push(i);
+    }
 
-    // fallback in case all candidates are used
+    // fallback if all candidates are used
     if (candidates.length === 0) return Math.floor(Math.random() * (max - min + 1)) + min;
 
-    // Add weighting: newest bag more likely
+    // Weighted pick: newest bag more likely
     const newestBag = max;
     const weighted = [];
     candidates.forEach(i => {
@@ -379,7 +383,6 @@ function getWeightedSpriteIndex(first=false) {
         for (let w = 0; w < weight; w++) weighted.push(i);
     });
 
-    // Randomly pick from weighted list
     return weighted[Math.floor(Math.random() * weighted.length)];
 }
 
