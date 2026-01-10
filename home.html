@@ -23,30 +23,20 @@
       overflow: hidden;
     }
 
-    /* Back button relative to viewport using 90% left */
+    /* Right-hand back button overrides */
     .back {
-      position: fixed;           /* relative to viewport */
-      top: 1.2rem;
-      left: 98%;
-      transform: translateX(-100%);
-      display: inline-block;
-      font-family: "RuneScape UF", Arial, sans-serif;
-      font-size: 2.3vw;
-      color: #2d93ea;
-      text-decoration: none;
-      line-height: 1;
-      white-space: nowrap;
-      cursor: url("./images/cursor/cursor.png"), auto !important;
-      z-index: 1000;
+      left: auto;          /* remove left positioning */
+      right: 20px;         /* desktop inset */
+      top: 20px;           /* desktop top */
+      transform: none;     /* no translate */
     }
 
-    .back-arrow {
-      margin-left: 0.5em;
-    }
-
+    /* Mobile adjustments for back button */
     @media (max-width: 768px) {
       .back {
-        font-size: 5vw;
+        font-size: calc(32px * 0.7); /* 0.7 of desktop size */
+        right: 12px;
+        top: 12px;
       }
     }
   </style>
@@ -56,7 +46,7 @@
 
 <h1 class="seo-h1">Inigo Macdonald – Creative Portfolio</h1>
 
-<!-- Back button top-right relative to page -->
+<!-- Back button top-right -->
 <a class="back" href="go/index.html">
   Back <span class="back-arrow">→</span>
 </a>
@@ -68,29 +58,25 @@
   <div class="landing-wrapper">
 
     <!-- Landing Image -->
-    <img src="images/landing.jpg" class="landing-image" alt="Landing" style="width: 100%; display: block;">
+    <img src="images/landing.jpg" class="landing-image" alt="Landing">
 
-    <!-- ABOUT ME -->
+    <!-- Landing Links -->
     <a href="about.html" class="landing-link about-link" aria-label="About Me">
       <span>About Me</span>
     </a>
 
-    <!-- INSTAGRAM -->
     <a href="https://www.instagram.com/iggysmalllls/" class="landing-link instagram-link external-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
       <span>Instagram</span>
     </a>
 
-    <!-- IMDB -->
     <a href="https://www.imdb.com/name/nm17192091/" class="landing-link imdb-link external-link" target="_blank" rel="noopener noreferrer" aria-label="IMDB">
       <span>IMDB</span>
     </a>
 
-    <!-- WHATSAPP -->
     <a href="https://wa.me/447432435885" class="landing-link whatsapp-link external-link" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
       <span>WhatsApp</span>
     </a>
 
-    <!-- EMAIL -->
     <a href="mailto:macdonald.iggy@gmail.com" class="landing-link email-link external-link" target="_blank" rel="noopener noreferrer" aria-label="Email">
       <span>Email</span>
     </a>
@@ -152,41 +138,42 @@
 </footer>
 
 <script>
-document.querySelectorAll('.landing-link').forEach(link => {
-  link.addEventListener('click', function(e) {
-    const href = this.href;
-    const target = this.target;
+  // Landing link fade-out behavior
+  document.querySelectorAll('.landing-link').forEach(link => {
+    link.addEventListener('click', function(e) {
+      const href = this.href;
+      const target = this.target;
 
-    if (target === "_blank") {
+      if (target === "_blank") {
+        e.preventDefault();
+        window.open(href, "_blank");
+        return;
+      }
+
       e.preventDefault();
-      window.open(href, "_blank");
-      return;
-    }
-
-    e.preventDefault();
-    document.body.classList.add('fade-out');
-    setTimeout(() => {
-      window.location.href = href;
-    }, 1000);
+      document.body.classList.add('fade-out');
+      setTimeout(() => {
+        window.location.href = href;
+      }, 1000);
+    });
   });
-});
 
-// Fade-out for back button
-const backButton = document.querySelector('.back');
-if (backButton) {
-  backButton.addEventListener('click', function(e) {
+  // Fade-out for back button
+  const backButton = document.querySelector('.back');
+  if (backButton) {
+    backButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.body.classList.add('fade-out');
+      setTimeout(() => {
+        window.location = this.href;
+      }, 1000);
+    });
+  }
+
+  // Disable right-click
+  document.addEventListener('contextmenu', function(e) {
     e.preventDefault();
-    document.body.classList.add('fade-out');
-    setTimeout(() => {
-      window.location = this.href;
-    }, 1000);
   });
-}
-
-// Disable right-click
-document.addEventListener('contextmenu', function(e) {
-  e.preventDefault();
-});
 </script>
 
 </body>

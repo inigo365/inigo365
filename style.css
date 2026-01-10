@@ -108,35 +108,23 @@ section {
 /* =========================
    PORTFOLIO GRID
 ========================= */
-/* DESKTOP */
 .portfolio {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem; /* optional spacing */
+  gap: 0;
   margin: 0;
   padding: 0;
 }
 
-/* TABLET */
 @media (max-width: 1024px) {
   .portfolio {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
   }
 }
 
-/* MOBILE (all phones below 768px) */
-@media (max-width: 768px) {
+@media (max-width: 480px) {
   .portfolio {
-    grid-template-columns: repeat(2, 1fr); /* 2 across on most phones */
-    gap: 0.75rem;
-  }
-}
-
-/* VERY SMALL PHONES (optional) */
-@media (max-width: 400px) {
-  .portfolio {
-    grid-template-columns: 1fr; /* only 1 column for tiny screens */
+    grid-template-columns: 1fr;
   }
 }
 
@@ -224,12 +212,6 @@ section {
   font-size: 32px;
   text-decoration: none;
   z-index: 10;
-}
-
-@media (max-width: 768px) {
-  .back {
-    font-size: calc(32px * 0.7); /* 22.4px */
-  }
 }
 
 /* =========================
