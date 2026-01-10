@@ -399,7 +399,6 @@ function startGame(){
 }
 
 // Prevent page zoom
-document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('touchmove', e => {
     if (!gameOver && e.scale !== 1) {
         e.preventDefault();
@@ -434,23 +433,23 @@ function playAgain(){
     startGame();
 }
 
-let touchActive = false;
-function jump(){if(gameStarted&&!gameOver) ball.vy = LIFT;}
-window.addEventListener('touchstart', (e) => {
-
-    // 🚨 If game is over or modal is open → allow normal UI interaction
-    if (gameOver || document.getElementById('nameModal').classList.contains('show')) {
-        return;
+function jump(){
+    if(gameStarted && !gameOver){
+        ball.vy = LIFT;
     }
+}
 
-    // Otherwise, this is a gameplay tap
+// gameplay input ONLY on canvas
+canvas.addEventListener('touchstart', (e)=>{
+    if(!gameStarted || gameOver) return;
     e.preventDefault();
-    touchActive = true;
     jump();
+}, { passive:false });
 
-}, { passive: false });
-window.addEventListener('touchend', ()=>{touchActive=false;});
-window.addEventListener('mousedown', (e)=>{if(!touchActive) jump();});
+canvas.addEventListener('mousedown', ()=>{
+    if(!gameStarted || gameOver) return;
+    jump();
+});
 
 function updateTopScoreSize() {
     const vw = window.innerWidth;
