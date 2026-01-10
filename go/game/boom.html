@@ -267,12 +267,31 @@ canvas {
   font-family: "RuneScape UF", Arial, sans-serif;
   cursor: pointer;
 }
+/* SoundCloud Button */
+.soundcloud-btn {
+  position: fixed;
+  bottom: 8px;
+  right: 8px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 0;
+  z-index: 400;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  touch-action: none;
+}
+
 </style>
 </head>
 <body>
 
 <div id="rotateNotice">Please rotate your phone to portrait</div>
-
+<button class="soundcloud-btn" id="soundcloudBtn" onclick="openSoundCloud()" style="display:none;">soundtrack</button>
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 
@@ -491,6 +510,11 @@ window.addEventListener('load', () => {
     updateTopScoreSize(); // ensure mobile font sizing applied
 });
 
+function openSoundCloud() {
+    // Replace this URL with your private SoundCloud track URL
+    window.open('https://soundcloud.com/your-username/your-private-track', '_blank');
+}
+
 function startGame(){
     if(gameStarted||!assetsLoaded)return;
     hideOverlay();
@@ -561,6 +585,8 @@ function playAgain() {
 
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
+
+  soundcloudBtn.style.display = 'none';
 
   startGame();
 }
@@ -833,6 +859,8 @@ function goBack(){window.location.href="../index.html";}
     leaderboardBtn.style.zIndex = 300;
     setTimeout(()=>playerNameInput.focus(), 100);
     showMusicButton();
+    const soundcloudBtn = document.getElementById('soundcloudBtn');
+    soundcloudBtn.style.display = 'block'; // show button when game over
   };
 
   window.submitScore = async function() {
