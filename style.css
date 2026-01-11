@@ -199,14 +199,14 @@ section {
 .project li,
 .project span,
 .project .blurb {
-  font-size: 24px;
+  font-size: 32px;
   line-height: 1.6;
 }
 
 .project h1,
 .project h2,
 .project h3 {
-  font-size: 32px;
+  font-size: 38px;
   line-height: 1.3;
   margin-bottom: 16px;
 }
@@ -372,11 +372,5 @@ body, html {
   .video-link,
   .back {
     cursor: url("./images/cursor/cursor-hover.png") 16 16, pointer;
-  }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  * {
-    cursor: disabled !important;
   }
 }
