@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>put the bag in the bag</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="icon" type="image/png" href="./images/icon.png">
 <style>
 @font-face {
@@ -21,6 +21,8 @@ html, body {
   font-family: "RuneScape UF", Arial, sans-serif;
   cursor: url("../../images/cursor/cursor.png"), auto;
   background: #fff;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 
@@ -544,6 +546,7 @@ function maybeShowFunText(x, y, color) {
     }
 }
 
+
 function unlockReward(tier) {
     const key = REWARD_KEYS[tier];
     if(!key || localStorage.getItem(key) === 'true') return; // already unlocked
@@ -582,6 +585,15 @@ let score = 0;
 let gameOver = false;
 let gameStarted = false;
 let glowPulse = 0;
+
+let lastTouchTime = 0;
+document.addEventListener('touchstart', function(e) {
+    const now = new Date().getTime();
+    if (now - lastTouchTime <= 300) {
+        e.preventDefault(); // stop double-tap zoom
+    }
+    lastTouchTime = now;
+}, { passive: false });
 
 // ===================== SPRITE LOADING =====================
 const NUM_SPRITES = 25; // regular sprites
