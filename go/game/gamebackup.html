@@ -375,7 +375,15 @@ const COMMON_FUN_TEXTS = [
   "bagtimus prime",
   "put the fries in the bag!",
   "bagonomotry",
-  "bagzilla"
+  "bagzilla",
+  "in the beginning there was bag...",
+  "dusty bag",
+  "phat bag",
+  "middle class bag",
+  "trapaholic",
+  "luggage as bro",
+  "probably not bag",
+  "punching bag"
 ];
 
 const TIER_COLORS = {
@@ -411,7 +419,7 @@ const GRAVITY = 0.32;
 const LIFT = -6.9;
 let SPEED = 3;
 const START_SPEED = 3;      // speed when the game starts
-const MAX_SPEED = 7;        // speed when score reaches MAX_SPEED_SCORE
+const MAX_SPEED = 8;        // speed when score reaches MAX_SPEED_SCORE
 const MAX_SPEED_SCORE = 500;
 let SPRITE_SIZE = Math.round(canvas.height*0.12);
 
@@ -511,7 +519,7 @@ if (!first && maybeSpawnMythic(score)) {
 }
 
 const pointPopup=document.getElementById('pointPopup');
-function showPopup(text, x, y, color = '#2d93ea', size = '28px'){
+function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
     pointPopup.textContent = text;
     pointPopup.style.left = x + 'px';
     pointPopup.style.top = y + 'px';
@@ -520,11 +528,23 @@ function showPopup(text, x, y, color = '#2d93ea', size = '28px'){
     pointPopup.style.opacity = 1;
     pointPopup.style.transform = "translateY(-30px)";
 
+    // Apply glow effect if requested
+    if (glow) {
+        pointPopup.style.textShadow = `
+            0 0 6px ${color},
+            0 0 12px ${color},
+            0 0 18px ${color}
+        `;
+    } else {
+        pointPopup.style.textShadow = '';
+    }
+
     setTimeout(() => {
         pointPopup.style.opacity = 0;
         pointPopup.style.transform = "translateY(-50px)";
-        pointPopup.style.color = '#2d93ea'; // reset color
-        pointPopup.style.fontSize = '28px';  // reset size
+        // reset textShadow for next popup
+        pointPopup.style.textShadow = '';
+        pointPopup.style.fontSize = '28px';
     }, 400);
 }
 const funTextPopup = document.getElementById('funTextPopup');
@@ -865,7 +885,7 @@ if (hit) {
             const color = TIER_COLORS.mythic;
 
             showTextPopup('*mythic bag*', ball.x, ball.y - 80, color);
-            showPopup('+5', ball.x, ball.y - 40, color, '36px');
+            showPopup('+5', ball.x, ball.y - 40, TIER_COLORS.mythic, '28px', true);
 
             unlockSoundtrackIfNeeded();
     }
@@ -876,17 +896,17 @@ if (hit) {
             const color = TIER_COLORS.goated;
 
             showTextPopup('goated bag', ball.x, ball.y - 80, color);
-            showPopup('+3', ball.x, ball.y - 40, color, '34px');
+            showPopup('+3', ball.x, ball.y - 40, TIER_COLORS.goated, '28px', true);
             maybeShowFunText(ball.x, ball.y, color);
 }
 
-    // ===== MYTHIC BAGS (11–19 → indices 10–18) =====
+    // ===== rare BAGS (11–19 → indices 10–18) =====
     else if (h.spriteIndex >= 10) {
             score += 2;
             const color = TIER_COLORS.rare;
 
             showTextPopup('rare bag', ball.x, ball.y - 80, color);
-            showPopup('+2', ball.x, ball.y - 40, color, '34px');
+            showPopup('+2', ball.x, ball.y - 40, TIER_COLORS.rare, '28px', true);
             maybeShowFunText(ball.x, ball.y, color);
 }
 
@@ -895,7 +915,7 @@ if (hit) {
             score += 1;
             const color = TIER_COLORS.common;
 
-            showPopup('+1', ball.x, ball.y - 40, color);
+            showPopup('+1', ball.x, ball.y - 40, TIER_COLORS.common, '28px', false);
             maybeShowFunText(ball.x, ball.y, color);
         }
 
