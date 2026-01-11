@@ -619,17 +619,14 @@ function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
     pointPopup.style.left = x + 'px';
     pointPopup.style.top = y + 'px';
     pointPopup.style.color = color;
-    pointPopup.style.fontSize = size;
+    const isMobile = window.innerWidth <= 768;
+    pointPopup.style.fontSize = isMobile ? '22px' : size;
     pointPopup.style.opacity = 1;
     pointPopup.style.transform = "translateY(-30px)";
 
     // Apply glow effect if requested
     if (glow) {
-        pointPopup.style.textShadow = `
-            0 0 6px ${color},
-            0 0 12px ${color},
-            0 0 18px ${color}
-        `;
+        pointPopup.style.textShadow = `0 0 6px ${color}`;
     } else {
         pointPopup.style.textShadow = '';
     }
@@ -644,19 +641,25 @@ function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
 }
 const funTextPopup = document.getElementById('funTextPopup');
 function showTextPopup(text, x, y, color = '#2d93ea', duration = 600) {
-    const OFFSET_X = -35;   // ← move left
-    const OFFSET_Y = -10;   // ↑ move up
+    const isMobile = window.innerWidth <= 768;
+
+    const OFFSET_X = -35;
+    const OFFSET_Y = -10;
 
     funTextPopup.textContent = text;
     funTextPopup.style.left = (x + OFFSET_X) + 'px';
     funTextPopup.style.top = (y + OFFSET_Y) + 'px';
     funTextPopup.style.color = color;
+
+    // 🔽 smaller on mobile
+    funTextPopup.style.fontSize = isMobile ? '18px' : '24px';
+
     funTextPopup.style.opacity = 1;
-    funTextPopup.style.transform = "translateY(-30px)";
+    funTextPopup.style.transform = "translateY(-20px)";
 
     setTimeout(() => {
         funTextPopup.style.opacity = 0;
-        funTextPopup.style.transform = "translateY(-50px)";
+        funTextPopup.style.transform = "translateY(-40px)";
     }, duration);
 }
 
@@ -791,17 +794,25 @@ function openSoundCloud() {
 }
 
 function startGame(){
-    if(gameStarted||!assetsLoaded)return;
+    if(gameStarted||!assetsLoaded) return;
     hideOverlay();
-    gameStarted=true;
-    SPEED=3;
-    hoops=[];
-    score=0;
-    gameOver=false;
-    ball.x=Math.round(canvas.width*0.2);
-    ball.y=canvas.height/2;
-    ball.vy=0;
-    ball.spriteIndex=getWeightedSpriteIndex(true);
+    gameStarted = true;
+    SPEED = 3;
+    hoops = [];
+    score = 0;
+    gameOver = false;
+    ball.spriteIndex = getWeightedSpriteIndex(true);
+    if (goodybagBtn) goodybagBtn.style.display = 'none';
+
+    // ----- START POSITION: MOBILE vs DESKTOP -----
+    if(window.innerWidth <= 768){ // mobile
+        ball.x = Math.round(canvas.width * 0.25); // 40% from left
+    } else { // desktop
+        ball.x = Math.round(canvas.width * 0.5); // 25% from left, move further right
+    }
+    ball.y = canvas.height / 2;
+    ball.vy = 0;
+
     addHoop();
     loop();
     backButton.style.opacity = 0;
@@ -810,6 +821,7 @@ function startGame(){
     showTopScores(); 
     hideMusicButton();
 }
+
 
 // ------------------- GAME INPUT & AUTO-START -------------------
 let touchActive = false;
@@ -854,6 +866,7 @@ function playAgain() {
 
   nameModal.classList.remove('show');
   leaderboardBackdrop.style.display = 'none';
+  if(goodybagBtn) goodybagBtn.style.display = 'none';
 
   gameStarted = false;
   gameOver = false;
@@ -1139,10 +1152,10 @@ window.showNameModal = function(finalScore) {
   setTimeout(()=>playerNameInput.focus(), 100);
   showMusicButton();
 
-  // ✅ Only show soundtrack button if actually unlocked
-  if (localStorage.getItem('soundtrackUnlocked') === 'true') {
-      document.getElementById('soundcloudBtn').style.display = 'block';
-  }
+  // ✅ Show goodybag button only if unlocked
+    if(localStorage.getItem(REWARD_KEYS.rare) === 'true' && goodybagBtn){
+        goodybagBtn.style.display = 'block';
+    }
 };
 
   window.submitScore = async function() {
@@ -1291,7 +1304,9 @@ soundtrackBtn.addEventListener('click', () => {
         const linkBtn = document.createElement('button');
         linkBtn.textContent = 'link';
         linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
-        linkBtn.style.fontSize = '16px';
+        linkBtn.style.fontSize = '20px';
+        linkBtn.style.marginLeft = '-60px';     // shift left
+        linkBtn.style.padding = '4px 8px';
         linkBtn.style.background = 'transparent';
         linkBtn.style.border = 'none';
         linkBtn.style.color = '#2d93ea';
@@ -1319,10 +1334,10 @@ soundtrackBtn.addEventListener('click', () => {
 // ----- PASSWORD BUTTON -----
 passwordBtn.addEventListener('click', () => {
     if(localStorage.getItem(REWARD_KEYS.mythic)!=='true'){
-        goodybagContent.innerHTML='<div>No passwords unlocked yet...</div>';
+        goodybagContent.innerHTML='<div>no passwords unlocked yet...</div>';
         return;
     }
-    goodybagContent.innerHTML='<div>Your unlocked passwords: <strong>tinny</strong></div>';
+    goodybagContent.innerHTML='<div>unlocked passwords: <strong>tinny</strong></div>';
 });
 
 // ----- SHOW GOODYBAG BUTTON AFTER RELOAD -----
