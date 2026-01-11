@@ -291,7 +291,7 @@ canvas {
 <body>
 
 <div id="rotateNotice">Please rotate your phone to portrait</div>
-<button class="soundcloud-btn" id="soundcloudBtn" onclick="openSoundCloud()" style="display:none;">goodybag</button>
+<button id="goodybagBtn" style="display:none; position:fixed; bottom:8px; right:50px; font-size:24px; z-index:400;">goodybag</button>
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 
@@ -425,24 +425,35 @@ const TIER_COLORS = {
     mythic: '#a855f7'     // glowing purple base
 };
 
-function unlockReward(tier) {
+unlockReward = function(tier) {
     const key = REWARD_KEYS[tier];
     if (!key || localStorage.getItem(key) === 'true') return; // already unlocked
 
     localStorage.setItem(key, 'true'); // mark unlocked
 
-    // Visual feedback in the goody bag button
-    const btn = document.getElementById('soundcloudBtn');
-    if (btn) {
-        btn.style.display = 'block';
-        btn.textContent = `goodybag: new ${tier} reward!`;
-        btn.style.fontWeight = 'bold';
-        setTimeout(() => btn.textContent = 'goodybag', 3000);
+    // ---- GET GOODYBAG BUTTON ----
+    const goodybagBtn = document.getElementById('goodybagBtn');
+    if (goodybagBtn) goodybagBtn.style.display = 'block'; // always show once unlocked
+
+    // ---- VISUAL FEEDBACK ----
+    showTextPopup(`First ${tier} bag! Reward unlocked!`, canvas.width/2, canvas.height/2, TIER_COLORS[tier]);
+
+    // ---- PER-TIER POPUPS ----
+    switch(tier) {
+        case 'rare':
+            showTextPopup('*first rare bag!* goodybag unlocked!', canvas.width/2, canvas.height/2, TIER_COLORS.rare);
+            break;
+        case 'goated':
+            showTextPopup('*first goated bag!* soundtracks unlocked inside goodybag', canvas.width/2, canvas.height/2, TIER_COLORS.goated);
+            break;
+        case 'mythic':
+            showTextPopup('*first mythic bag!* passwords unlocked inside goodybag', canvas.width/2, canvas.height/2, TIER_COLORS.mythic);
+            break;
     }
 
-    // Optional: play sound or show popup
-    showTextPopup(`First ${tier} bag! Reward unlocked!`, canvas.width/2, canvas.height/2, TIER_COLORS[tier]);
-}
+    // ---- OPTIONAL: original logic (if any) ----
+    if (typeof originalUnlockReward === 'function') originalUnlockReward(tier);
+};
 
 function maybeShowFunText(x, y, color) {
     if (Math.random() < 0.4) { // 40% chance
