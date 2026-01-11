@@ -355,6 +355,26 @@ canvas {
   </div>
 </div>
 
+<div id="goodybagBackdrop" style="
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(255,255,255,0.95);
+  display: none;
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  font-family: 'RuneScape UF', Arial, sans-serif;
+  color: #2d93ea;
+  text-align: center;
+">
+  <button id="soundtrackBtn" style="font-size:24px; margin:10px;" disabled>soundtracks</button>
+  <button id="passwordBtn" style="font-size:24px; margin:10px;" disabled>passwords</button>
+  <div id="goodybagContent" style="margin-top:20px; max-height:50vh; overflow-y:auto; font-size:18px;"></div>
+  <button onclick="closeGoodybag()" style="margin-top:20px; font-size:20px;">close</button>
+</div>
+
 <canvas id="gameCanvas"></canvas>
 <div class="point-popup" id="pointPopup">+1</div>
 <div class="point-popup" id="funTextPopup"></div>
@@ -386,12 +406,43 @@ const COMMON_FUN_TEXTS = [
   "punching bag"
 ];
 
+// ------------------- REWARD TRACKING -------------------
+const REWARD_KEYS = {
+    rare: 'rewardRareUnlocked',
+    goated: 'rewardGoatedUnlocked',
+    mythic: 'rewardMythicUnlocked'
+};
+
+// Ensure first-time unlock flags exist
+Object.values(REWARD_KEYS).forEach(key => {
+    if (localStorage.getItem(key) === null) localStorage.setItem(key, 'false');
+});
+
 const TIER_COLORS = {
     common: '#2d93ea',
     rare: '#1ccfcf',      // teal blue
     goated: 'gold',
     mythic: '#a855f7'     // glowing purple base
 };
+
+function unlockReward(tier) {
+    const key = REWARD_KEYS[tier];
+    if (!key || localStorage.getItem(key) === 'true') return; // already unlocked
+
+    localStorage.setItem(key, 'true'); // mark unlocked
+
+    // Visual feedback in the goody bag button
+    const btn = document.getElementById('soundcloudBtn');
+    if (btn) {
+        btn.style.display = 'block';
+        btn.textContent = `goodybag: new ${tier} reward!`;
+        btn.style.fontWeight = 'bold';
+        setTimeout(() => btn.textContent = 'goodybag', 3000);
+    }
+
+    // Optional: play sound or show popup
+    showTextPopup(`First ${tier} bag! Reward unlocked!`, canvas.width/2, canvas.height/2, TIER_COLORS[tier]);
+}
 
 function maybeShowFunText(x, y, color) {
     if (Math.random() < 0.4) { // 40% chance
@@ -959,23 +1010,6 @@ const bgMusic = document.getElementById('bgMusic');
 bgMusic.volume = 0.5;
 bgMusic.loop = true;
 
-/*function startBgMusic() {
-    try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-        const track = audioCtx.createMediaElementSource(bgMusic);
-        track.connect(audioCtx.destination);
-        audioCtx.resume().then(() => bgMusic.play().catch(()=>{}));
-    } catch(e){ bgMusic.play().catch(()=>{}); }
-
-    window.removeEventListener('touchstart', startBgMusic);
-    window.removeEventListener('mousedown', startBgMusic);
-}
-
-startBgMusic();
-window.addEventListener('touchstart', startBgMusic, {passive:true});
-window.addEventListener('mousedown', startBgMusic);
-*/
 
 const musicToggle = document.getElementById('musicToggle');
 
@@ -1173,6 +1207,106 @@ window.addEventListener('resize', fixTopScoresLayout);
 
 playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
 })();
+
+// ===== GOODYBAG SYSTEM =====
+const goodybagBackdrop = document.getElementById('goodybagBackdrop');
+const soundtrackBtn = document.getElementById('soundtrackBtn');
+const passwordBtn = document.getElementById('passwordBtn');
+const goodybagContent = document.getElementById('goodybagContent');
+const goodybagBtn = document.getElementById('soundcloudBtn');
+
+const SOUNDTRACKS = {
+    "soundtrack01": [
+        "vivz portal - rezzett",
+        "tell her nothing - young thug",
+        "bag - mexikodro",
+        "not many (soul version) - scribe & xylatu",
+        "stick x need2 lc3 remix - jim legxacy",
+        "bazooka - p.slxwly",
+        "home - mazii7400prod glitzclub",
+        "shalimar - inigo365 & skud gambosi"
+    ]
+};
+
+// Open / Close functions
+function openGoodybag() {
+    goodybagBackdrop.style.display = 'flex';
+
+    // Unlock buttons based on what bags player has found
+    soundtrackBtn.disabled = localStorage.getItem(REWARD_KEYS.goated) !== 'true';
+    passwordBtn.disabled = localStorage.getItem(REWARD_KEYS.mythic) !== 'true';
+
+    // Default message if nothing unlocked
+    if(!localStorage.getItem(REWARD_KEYS.goated) && !localStorage.getItem(REWARD_KEYS.mythic)) {
+        goodybagContent.innerHTML = "<div>no goodies found yet...</div>";
+    } else {
+        goodybagContent.innerHTML = "";
+    }
+}
+function closeGoodybag() { goodybagBackdrop.style.display = 'none'; }
+goodybagBtn.addEventListener('click', openGoodybag);
+
+// Soundtrack button
+soundtrackBtn.addEventListener('click', () => {
+    goodybagContent.innerHTML = '';
+    if(localStorage.getItem(REWARD_KEYS.goated) !== 'true') {
+        goodybagContent.innerHTML = '<div>No soundtracks unlocked yet...</div>';
+        return;
+    }
+    for(const [name, tracks] of Object.entries(SOUNDTRACKS)) {
+        const div = document.createElement('div');
+        div.style.marginBottom = '15px';
+        const header = document.createElement('div');
+        header.style.fontWeight = 'bold';
+        header.textContent = name;
+        div.appendChild(header);
+        const ul = document.createElement('ul');
+        tracks.forEach(track => {
+            const li = document.createElement('li');
+            li.textContent = track;
+            ul.appendChild(li);
+        });
+        div.appendChild(ul);
+        goodybagContent.appendChild(div);
+    }
+});
+
+// Password button
+passwordBtn.addEventListener('click', () => {
+    if(localStorage.getItem(REWARD_KEYS.mythic) !== 'true') {
+        goodybagContent.innerHTML = '<div>No passwords unlocked yet...</div>';
+        return;
+    }
+    goodybagContent.innerHTML = `<div>Your unlocked password: <strong>wasted</strong></div>`;
+});
+
+// ===== INTEGRATE WITH YOUR EXISTING REWARD SYSTEM =====
+const originalUnlockReward = unlockReward;
+unlockReward = function(tier) {
+    originalUnlockReward(tier); // call existing functionality
+
+    // Special goodybag logic
+   // Special goodybag logic
+if (tier === 'rare') {
+    // Only unlock goodybag on the first rare bag
+    if (localStorage.getItem(REWARD_KEYS.rare) !== 'true') {
+        localStorage.setItem(REWARD_KEYS.rare, 'true'); // mark as unlocked
+        goodybagBtn.style.display = 'block';
+        showTextPopup('*first rare bag!* goodybag unlocked!', canvas.width / 2, canvas.height / 2, TIER_COLORS.rare);
+    }
+} else if (tier === 'goated') {
+    // Only show this message on first goated bag
+    if (localStorage.getItem(REWARD_KEYS.goated) !== 'true') {
+        showTextPopup('*first goated bag!* soundtracks unlocked inside goodybag', canvas.width / 2, canvas.height / 2, TIER_COLORS.goated);
+    }
+} else if (tier === 'mythic') {
+    // Only show this message on first mythic bag
+    if (localStorage.getItem(REWARD_KEYS.mythic) !== 'true') {
+        showTextPopup('*first mythic bag!* passwords unlocked inside goodybag', canvas.width / 2, canvas.height / 2, TIER_COLORS.mythic);
+    }
+}
+
+};
 </script>
 </body>
 </html>
