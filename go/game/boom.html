@@ -26,6 +26,16 @@ html, body {
 }
 
 
+/* Custom hover cursor for all interactive elements */
+button,
+a,
+input,
+.leaderboard-btn,
+.leaderboard-close {
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+
+
 #topScores {
     position: absolute;
     top: 16px;
@@ -187,12 +197,12 @@ canvas {
   border: 2px solid #2d93ea;
   background: #2d93ea;
   color: white;
-  cursor: pointer;
   margin-top: 12px;
 }
 
 .name-modal button:hover {
   background: #1a7bd4;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
 
 /* Leaderboard */
@@ -263,7 +273,6 @@ canvas {
   border: none;
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: pointer;
   z-index: 100;
 }
 
@@ -276,7 +285,6 @@ canvas {
   border: none;
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: pointer;
 }
 /* Reuse old SoundCloud style for Goodybag button */
 .soundcloud-btn {
@@ -371,7 +379,6 @@ canvas {
     background: transparent;
     border: 2px solid #2d93ea;
     color: #2d93ea;
-    cursor: pointer;
     padding: 8px 0;
     text-transform: lowercase;
 }
@@ -394,8 +401,9 @@ canvas {
     background: transparent;
     border: none;
     color: #2d93ea;
-    cursor: pointer;
     text-transform: lowercase;
+    cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+
 }
 
 </style>
@@ -418,7 +426,6 @@ canvas {
     opacity: 0;
     transition: opacity 0.5s, transform 0.5s;
     z-index: 50;
-    cursor: pointer;
 ">
 
 <div id="overlayHighscore" style="position: absolute; top: 84%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
@@ -1435,7 +1442,6 @@ soundtrackBtn.addEventListener('click', () => {
         linkBtn.style.background = 'transparent';
         linkBtn.style.border = 'none';
         linkBtn.style.color = '#2d93ea';
-        linkBtn.style.cursor = 'pointer';
         linkBtn.style.textTransform = 'lowercase';
         linkBtn.onclick = () => window.open(data.link, '_blank');
 
