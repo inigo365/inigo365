@@ -114,8 +114,6 @@ html, body {
 /* Canvas */
 canvas {
   display: block;
-  touch-action: none;
-  user-select: none;
   margin: 0 auto;
   background: #ffffff;
 }
@@ -897,7 +895,8 @@ let touchActive = false;
 
 function jump() {
     if (gameStarted && !gameOver) {
-        ball.vy += LIFT; // add lift to current velocity
+        ball.vy = 0;   // reset vertical velocity
+        ball.vy += LIFT; // apply lift
     }
 }
 
