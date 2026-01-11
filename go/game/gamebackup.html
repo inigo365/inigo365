@@ -321,6 +321,55 @@ canvas {
     margin: 10px;
 }
 
+#goodybagBackdrop .leaderboard button {
+    margin: 8px 0;               /* vertical spacing between buttons */
+    text-align: center;
+}
+
+#goodybagContent {
+    text-align: center;          /* center text inside simple divs */
+    display: flex;               /* make container flex */
+    flex-direction: column;      /* stack child elements vertically */
+    align-items: center;         /* center horizontally */
+    justify-content: flex-start; /* top-aligned */
+    gap: 12px;                   /* spacing between items */
+}
+#goodybagContent ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;          /* center track names */
+}
+#goodybagContent li {
+    margin: 4px 0;
+}
+
+#goodybagButtons {
+    display: flex;
+    justify-content: space-between; /* one left, one right */
+    width: 100%;                    /* fill the modal width */
+    max-width: 360px;               /* optional, keeps it from being too wide */
+    margin-top: 20px;
+}
+
+#goodybagButtons button {
+    flex: 1;                        /* buttons take equal width */
+    margin: 0 8px;                  /* small gap between buttons */
+    text-align: center;
+    font-size: 24px;
+    background: transparent;
+    border: 2px solid #2d93ea;
+    color: #2d93ea;
+    cursor: pointer;
+    padding: 8px 0;
+    text-transform: lowercase;
+}
+
+#goodybagButtons button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
 .goody-row {
     display: flex;
     justify-content: space-between;
@@ -417,10 +466,10 @@ canvas {
       <!-- filled dynamically -->
     </div>
 
-    <div style="margin-top:20px;">
-      <button id="soundtrackBtn" disabled>soundtracks</button>
-      <button id="passwordBtn" disabled>passwords</button>
-    </div>
+    <div id="goodybagButtons">
+    <button id="soundtrackBtn" disabled>soundtracks</button>
+    <button id="passwordBtn" disabled>passwords</button>
+  </div>
 
   </div>
 </div>
@@ -1280,17 +1329,22 @@ goodybagBtn.addEventListener('click', openGoodybag);
 
 // ----- SOUNDTRACK BUTTON -----
 soundtrackBtn.addEventListener('click', () => {
-    goodybagContent.innerHTML = '';
+    goodybagContent.innerHTML = ''; // clear previous content
 
+    // If player hasn't unlocked soundtracks
     if (localStorage.getItem(REWARD_KEYS.goated) !== 'true') {
         goodybagContent.innerHTML = '<div>No soundtracks unlocked yet...</div>';
         return;
     }
 
+    // Loop through SOUNDTRACKS
     for (const [name, data] of Object.entries(SOUNDTRACKS)) {
+        // Outer wrapper block - this will be centered in modal
         const wrapper = document.createElement('div');
+        wrapper.classList.add('goodybag-block');
         wrapper.style.marginBottom = '18px';
 
+        // Header row (name + link)
         const headerRow = document.createElement('div');
         headerRow.style.display = 'flex';
         headerRow.style.justifyContent = 'space-between';
@@ -1305,23 +1359,27 @@ soundtrackBtn.addEventListener('click', () => {
         linkBtn.textContent = 'link';
         linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
         linkBtn.style.fontSize = '20px';
-        linkBtn.style.marginLeft = '-60px';     // shift left
         linkBtn.style.padding = '4px 8px';
         linkBtn.style.background = 'transparent';
         linkBtn.style.border = 'none';
         linkBtn.style.color = '#2d93ea';
         linkBtn.style.cursor = 'pointer';
         linkBtn.style.textTransform = 'lowercase';
-
         linkBtn.onclick = () => window.open(data.link, '_blank');
 
         headerRow.appendChild(header);
         headerRow.appendChild(linkBtn);
 
+        // Track list
         const ul = document.createElement('ul');
+        ul.style.listStyle = 'none';
+        ul.style.padding = '0';
+        ul.style.margin = '0';
+
         data.tracks.forEach(track => {
             const li = document.createElement('li');
             li.textContent = track;
+            li.style.margin = '4px 0';
             ul.appendChild(li);
         });
 
