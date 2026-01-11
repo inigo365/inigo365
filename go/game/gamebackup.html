@@ -32,14 +32,23 @@ html, body {
     font-family: 'RuneScape UF', Arial, sans-serif;
     color: #2d93ea;
     z-index: 50;
-    display: flex;          /* keep layout intact */
+    display: flex;
     justify-content: center;
     gap: 4vw;
     white-space: nowrap;
-    opacity: 0;             /* hidden initially */
-    pointer-events: none;   /* prevent interaction while hidden */
+
+    /* Reserve space to prevent jump */
+    line-height: 1.2em;
+    height: 3.5em;
+    min-width: max-content;
+
+    /* Start hidden */
+    opacity: 0;
+    pointer-events: none;
     transition: opacity 0.5s;
 }
+
+
 
 #rotateNotice {
     display: none;               /* hidden by default */
@@ -1258,12 +1267,21 @@ window.addEventListener('load', checkOrientation);
 window.addEventListener('resize', checkOrientation);
 window.addEventListener('orientationchange', checkOrientation);
 
-// ===== TOP SCORES LAYOUT FIX FOR MOBILE =====
 const topScoresEl = document.getElementById('topScores');
 const topCurrentScore = document.getElementById('topCurrentScore');
 const topHighscore = document.getElementById('topHighscore');
 
-// Ensure inline layout and prevent font-loading jump
+function updateTopScoreFontSize() {
+    const vw = window.innerWidth;
+    if (vw <= 768) {
+        topCurrentScore.style.fontSize = '5.5vw';
+        topHighscore.style.fontSize = '5.5vw';
+    } else {
+        topCurrentScore.style.fontSize = '2vw';
+        topHighscore.style.fontSize = '2vw';
+    }
+}
+
 function fixTopScoresLayout() {
     topScoresEl.style.display = 'flex';
     topScoresEl.style.flexWrap = 'nowrap';
@@ -1271,13 +1289,32 @@ function fixTopScoresLayout() {
     topScoresEl.style.gap = window.innerWidth <= 480 ? '3vw' : '4vw';
     topScoresEl.style.whiteSpace = 'nowrap';
 
-    // Prevent jump by setting temporary min-width
+    // Prevent jump by reserving space
     topCurrentScore.style.minWidth = 'max-content';
     topHighscore.style.minWidth = 'max-content';
 
-    // Responsive font sizing
-    updateTopScoreSize();
+    updateTopScoreFontSize();
 }
+
+// Run layout fix once fonts are ready
+document.fonts.ready.then(fixTopScoresLayout);
+
+// Also run on resize
+window.addEventListener('resize', fixTopScoresLayout);
+
+// ✅ Show topScores when game starts
+function showTopScores() {
+    topScoresEl.style.opacity = 1;
+    topScoresEl.style.pointerEvents = 'auto';
+    updateTopScoreFontSize();
+}
+
+// ✅ Hide topScores when game ends/overlay
+function hideTopScores() {
+    topScoresEl.style.opacity = 0;
+    topScoresEl.style.pointerEvents = 'none';
+}
+
 
 // Run once font is ready
 document.fonts.ready.then(fixTopScoresLayout);
