@@ -693,7 +693,7 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600) {
     const isMobile = window.innerWidth <= 768;
 
     const OFFSET_X = -35;
-    const OFFSET_Y = -10;
+    const OFFSET_Y = -20;
 
     funTextPopup.textContent = text;
     funTextPopup.style.left = (x + OFFSET_X) + 'px';
@@ -915,7 +915,10 @@ function playAgain() {
     // Hide modals
     nameModal.classList.remove('show');
     leaderboardBackdrop.style.display = 'none';
-    if (goodybagBtn) goodybagBtn.style.display = 'none';
+   // Only hide goodybag if rare reward not unlocked
+    if (localStorage.getItem(REWARD_KEYS.rare) !== 'true' && goodybagBtn) {
+        goodybagBtn.style.display = 'none';
+    }
 
     // Reset game state
     gameStarted = false;
