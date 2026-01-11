@@ -895,8 +895,7 @@ let touchActive = false;
 
 function jump() {
     if (gameStarted && !gameOver) {
-        ball.vy = 0;   // reset vertical velocity
-        ball.vy += LIFT; // apply lift
+        ball.vy += LIFT; // add lift to current velocity
     }
 }
 
@@ -911,7 +910,6 @@ function handleInput(e) {
     }
 }
 
-canvas.addEventListener('pointerdown', handleInput);
 canvas.addEventListener('touchstart', handleInput, { passive: false });
 canvas.addEventListener('mousedown', handleInput);
 
