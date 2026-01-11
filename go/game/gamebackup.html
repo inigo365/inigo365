@@ -1213,7 +1213,7 @@ const goodybagBackdrop = document.getElementById('goodybagBackdrop');
 const soundtrackBtn = document.getElementById('soundtrackBtn');
 const passwordBtn = document.getElementById('passwordBtn');
 const goodybagContent = document.getElementById('goodybagContent');
-const goodybagBtn = document.getElementById('soundcloudBtn');
+const goodybagBtn = document.getElementById('goodybagBtn');
 
 const SOUNDTRACKS = {
     "soundtrack01": [
@@ -1280,33 +1280,39 @@ passwordBtn.addEventListener('click', () => {
     goodybagContent.innerHTML = `<div>Your unlocked password: <strong>wasted</strong></div>`;
 });
 
-// ===== INTEGRATE WITH YOUR EXISTING REWARD SYSTEM =====
-const originalUnlockReward = unlockReward;
 unlockReward = function(tier) {
-    originalUnlockReward(tier); // call existing functionality
+    const btn = goodybagBtn;
 
-    // Special goodybag logic
-   // Special goodybag logic
-if (tier === 'rare') {
-    // Only unlock goodybag on the first rare bag
-    if (localStorage.getItem(REWARD_KEYS.rare) !== 'true') {
-        localStorage.setItem(REWARD_KEYS.rare, 'true'); // mark as unlocked
-        goodybagBtn.style.display = 'block';
-        showTextPopup('*first rare bag!* goodybag unlocked!', canvas.width / 2, canvas.height / 2, TIER_COLORS.rare);
+    // ---- FIRST RARE BAG ----
+    if (tier === 'rare' && localStorage.getItem(REWARD_KEYS.rare) !== 'true') {
+        localStorage.setItem(REWARD_KEYS.rare, 'true');  // mark as unlocked
+        if (btn) btn.style.display = 'block';           // show button permanently
+        showTextPopup('*first rare bag!* goodybag unlocked!', canvas.width/2, canvas.height/2, TIER_COLORS.rare);
     }
-} else if (tier === 'goated') {
-    // Only show this message on first goated bag
-    if (localStorage.getItem(REWARD_KEYS.goated) !== 'true') {
-        showTextPopup('*first goated bag!* soundtracks unlocked inside goodybag', canvas.width / 2, canvas.height / 2, TIER_COLORS.goated);
-    }
-} else if (tier === 'mythic') {
-    // Only show this message on first mythic bag
-    if (localStorage.getItem(REWARD_KEYS.mythic) !== 'true') {
-        showTextPopup('*first mythic bag!* passwords unlocked inside goodybag', canvas.width / 2, canvas.height / 2, TIER_COLORS.mythic);
-    }
-}
 
+    // ---- FIRST GOATED BAG ----
+    if (tier === 'goated' && localStorage.getItem(REWARD_KEYS.goated) !== 'true') {
+        localStorage.setItem(REWARD_KEYS.goated, 'true'); // mark as unlocked
+        showTextPopup('*first goated bag!* soundtracks unlocked inside goodybag', canvas.width/2, canvas.height/2, TIER_COLORS.goated);
+    }
+
+    // ---- FIRST MYTHIC BAG ----
+    if (tier === 'mythic' && localStorage.getItem(REWARD_KEYS.mythic) !== 'true') {
+        localStorage.setItem(REWARD_KEYS.mythic, 'true'); // mark as unlocked
+        showTextPopup('*first mythic bag!* passwords unlocked inside goodybag', canvas.width/2, canvas.height/2, TIER_COLORS.mythic);
+    }
+
+    // ---- ORIGINAL REWARD LOGIC (optional) ----
+    if (typeof originalUnlockReward === 'function') originalUnlockReward(tier);
 };
+
+// ---- ENSURE GOODYBAG BUTTON STAYS VISIBLE AFTER RELOAD ----
+window.addEventListener('load', () => {
+    if (localStorage.getItem(REWARD_KEYS.rare) === 'true' && goodybagBtn) {
+        goodybagBtn.style.display = 'block';
+    }
+});
+
 </script>
 </body>
 </html>
