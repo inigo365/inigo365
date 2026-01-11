@@ -612,14 +612,6 @@ allSpritePaths.forEach((path, index) => {
     else window.mythicImg = img; // global mythic image
 });
 
-function getRarityRange(score) {
-    if (score >= 1000) return { min: NUM_SPRITES, max: NUM_SPRITES }; // only mythic
-    if (score >= 150) return { min: 19, max: NUM_SPRITES - 1 };       // goated + others
-    if (score >= 100) return { min: 13, max: 18 };                    // rares
-    if (score >= 50)  return { min: 8, max: 12 };                     // uncommon
-    return { min: 0, max: 7 };                                        // commons
-}
-
 function maybeSpawnMythic(score) {
     if (score < 250) return false;   // no mythic before 250
     if (score >= 1000) return true;  // guaranteed mythic at 1000+
@@ -640,17 +632,32 @@ function getWeightedSpriteIndex(first = false) {
     used.add(ball.spriteIndex);
     hoops.forEach(h => used.add(h.spriteIndex));
 
-// ===== PROGRESSIVE MYTHIC LOGIC =====
-if (!first && maybeSpawnMythic(score)) {
-    return NUM_SPRITES; // mythic bag
-}
+    // ===== PROGRESSIVE BAG LOGIC =====
+    if (!first) {
+        const roll = Math.random() * 1000; // scaled 0-1000 for easier mapping
 
-    // ===== NORMAL SPRITES =====
-    let { min, max } = getRarityRange(score);
+        // Mythic: guaranteed at 1000, start chance 150+
+        if (score >= 150) {
+            const mythicChance = Math.min((score - 150) / (1000 - 150), 1); // 0→1
+            if (roll/1000 < mythicChance) return NUM_SPRITES; // mythic bag
+        }
 
-    if (first) { min = 0; max = 4; }
+        // Goated: start 90+, chance ramps up to ~rare max
+        if (score >= 90) {
+            const goatedChance = Math.min((score - 90) / (150 - 90), 1); // 0→1
+            if (roll/1000 < goatedChance) return 19 + Math.floor(Math.random() * (NUM_SPRITES - 19)); // goated range
+        }
 
-    max = Math.min(max, NUM_SPRITES - 1);
+        // Rare: start 35+, chance ramps up
+        if (score >= 35) {
+            const rareChance = Math.min((score - 35) / (90 - 35), 1); // 0→1
+            if (roll/1000 < rareChance) return 13 + Math.floor(Math.random() * 6); // rare range
+        }
+    }
+
+    // ===== NORMAL COMMON SPRITES =====
+    const min = first ? 0 : 0;
+    const max = first ? 4 : 12;
 
     const candidates = [];
     for (let i = min; i <= max; i++) {
@@ -661,6 +668,7 @@ if (!first && maybeSpawnMythic(score)) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    // Simple weighting for newest bag
     const newestBag = max;
     const weighted = [];
     candidates.forEach(i => {
@@ -670,6 +678,7 @@ if (!first && maybeSpawnMythic(score)) {
 
     return weighted[Math.floor(Math.random() * weighted.length)];
 }
+
 
 const pointPopup=document.getElementById('pointPopup');
 function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
