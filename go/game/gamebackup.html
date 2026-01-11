@@ -701,7 +701,7 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600) {
     funTextPopup.style.color = color;
 
     // 🔽 smaller on mobile
-    funTextPopup.style.fontSize = isMobile ? '18px' : '24px';
+    funTextPopup.style.fontSize = isMobile ? '24px' : '24px';
 
     funTextPopup.style.opacity = 1;
     funTextPopup.style.transform = "translateY(-20px)";
@@ -909,23 +909,25 @@ document.addEventListener('touchmove', (e) => { if (e.scale !== 1) e.preventDefa
 document.body.style.overflow = 'hidden';
 
 function playAgain() {
-  const nameModal = document.getElementById('nameModal');
-  const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
-  showTopScores(); 
+    const nameModal = document.getElementById('nameModal');
+    const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
 
-  nameModal.classList.remove('show');
-  leaderboardBackdrop.style.display = 'none';
-  if(goodybagBtn) goodybagBtn.style.display = 'none';
+    // Hide modals
+    nameModal.classList.remove('show');
+    leaderboardBackdrop.style.display = 'none';
+    if (goodybagBtn) goodybagBtn.style.display = 'none';
 
-  gameStarted = false;
-  gameOver = false;
+    // Reset game state
+    gameStarted = false;
+    gameOver = false;
+    score = 0;
+    hoops = [];
 
-  overlayHighscore.style.opacity = 0;
-  overlayLastScore.style.opacity = 0;
+    overlayHighscore.style.opacity = 0;
+    overlayLastScore.style.opacity = 0;
 
-  soundcloudBtn.style.display = 'none';
-
-  startGame();
+    // Show play overlay (like submitScore)
+    showOverlay(false);
 }
 
 function updateTopScoreSize() {
@@ -1032,11 +1034,21 @@ if (hit) {
         showPopup('+2', ball.x, ball.y - 40, TIER_COLORS.rare, '28px', true);
         maybeShowFunText(ball.x, ball.y, TIER_COLORS.rare);
         unlockReward('rare');
-    } else {                                     // common
-        score += 1;
-        showPopup('+1', ball.x, ball.y - 40, TIER_COLORS.common);
-        maybeShowFunText(ball.x, ball.y, TIER_COLORS.common);
+    } else { // common
+    score += 1;
+
+    // Decide whether to show fun text instead of the default "standard issue bag"
+    if (Math.random() < 0.4) { // 40% chance, same as maybeShowFunText
+        const text = COMMON_FUN_TEXTS[
+            Math.floor(Math.random() * COMMON_FUN_TEXTS.length)
+        ];
+        showTextPopup(text, ball.x, ball.y - 80, TIER_COLORS.common);
+    } else {
+        showTextPopup('standard issue bag', ball.x, ball.y - 80, TIER_COLORS.common);
     }
+
+    showPopup('+1', ball.x, ball.y - 40, TIER_COLORS.common);
+}
 
     ball.spriteIndex = h.spriteIndex;
     hoops.splice(i, 1);
