@@ -37,15 +37,17 @@ html, body {
     gap: 4vw;
     white-space: nowrap;
 
-    /* Prevent iOS jump */
-    line-height: 1.2em;         /* consistent line height */
-    height: 3.5em;              /* reserve vertical space */
-    min-width: max-content;      /* prevents shrinking before font loads */
-    
-    opacity: 0;                  /* hidden initially */
-    pointer-events: none;        /* prevent interaction while hidden */
-    transition: opacity 0.5s;    /* smooth fade in */
+    /* Reserve space to prevent jump */
+    line-height: 1.2em;
+    height: 3.5em;
+    min-width: max-content;
+
+    /* Start hidden */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
 }
+
 
 
 #rotateNotice {
@@ -1271,7 +1273,7 @@ const topHighscore = document.getElementById('topHighscore');
 
 function updateTopScoreFontSize() {
     const vw = window.innerWidth;
-    if(vw <= 768){
+    if (vw <= 768) {
         topCurrentScore.style.fontSize = '5.5vw';
         topHighscore.style.fontSize = '5.5vw';
     } else {
@@ -1287,30 +1289,31 @@ function fixTopScoresLayout() {
     topScoresEl.style.gap = window.innerWidth <= 480 ? '3vw' : '4vw';
     topScoresEl.style.whiteSpace = 'nowrap';
 
-    // Prevent jump
+    // Prevent jump by reserving space
     topCurrentScore.style.minWidth = 'max-content';
     topHighscore.style.minWidth = 'max-content';
 
-    // Responsive font sizing
     updateTopScoreFontSize();
 }
 
-// Run once fonts are ready
-document.fonts.ready.then(() => {
-    fixTopScoresLayout();
-
-    // Force reflow (iOS fix)
-    topScoresEl.offsetHeight;
-
-    // Fade in smoothly
-    topScoresEl.style.opacity = 1;
-    topScoresEl.style.pointerEvents = 'auto';
-});
+// Run layout fix once fonts are ready
+document.fonts.ready.then(fixTopScoresLayout);
 
 // Also run on resize
-window.addEventListener('resize', () => {
-    fixTopScoresLayout();
-});
+window.addEventListener('resize', fixTopScoresLayout);
+
+// ✅ Show topScores when game starts
+function showTopScores() {
+    topScoresEl.style.opacity = 1;
+    topScoresEl.style.pointerEvents = 'auto';
+    updateTopScoreFontSize();
+}
+
+// ✅ Hide topScores when game ends/overlay
+function hideTopScores() {
+    topScoresEl.style.opacity = 0;
+    topScoresEl.style.pointerEvents = 'none';
+}
 
 
 // Run once font is ready
