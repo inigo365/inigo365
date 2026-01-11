@@ -905,11 +905,12 @@ function jump() {
 function handleInput(e) {
     e.preventDefault();
     if (!gameStarted) {
-        startGame();
-        requestAnimationFrame(() => jump());
-    } else {
-        jump();      // only jump if game already started
-    }
+    startGame();
+    jump(); // immediate
+} else {
+    jump();
+}
+
 }
 
 canvas.addEventListener('touchstart', handleInput, { passive: false });
