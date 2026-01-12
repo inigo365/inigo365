@@ -49,9 +49,21 @@ html, body {
   height: 100%;
   display: flex;
   justify-content: center;
-  align-items: flex-end; /* bottom-align video */
+  align-items: flex-end; /* bottom align */
   background: white;
   overflow: hidden;
+}
+
+/* POSTER IMAGE */
+#poster {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+  z-index: 1;
 }
 
 /* VIDEO */
@@ -60,14 +72,20 @@ video {
   height: 100%;
   object-fit: contain;
   display: block;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
 }
 
 /* MOBILE: fill screen but maintain aspect */
 @media (max-width: 768px) {
-  video {
+  #poster, video {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
   }
 }
 
@@ -80,7 +98,7 @@ video {
   text-align: center;
   pointer-events: none;
   max-width: 90%;
-  z-index: 5;
+  z-index: 3;
 }
 
 .overlay-text {
@@ -96,7 +114,6 @@ video {
 
 #overlay .title { font-size: 1.5rem; margin-bottom: 8px; line-height: 1.35; }
 #overlay .progress { font-size: 1rem; opacity: 0; line-height: 1.4; }
-
 </style>
 </head>
 
@@ -105,6 +122,11 @@ video {
 <button class="back-button" onclick="goBack()">← back</button>
 
 <div id="video-container">
+
+  <!-- Poster image of first frame -->
+  <img id="poster" src="stoneinfocus-poster.jpg" alt="First frame">
+
+  <!-- Video element -->
   <video
     id="video"
     preload="auto"
@@ -114,6 +136,7 @@ video {
     controlslist="nodownload noplaybackrate nofullscreen"
   ></video>
 
+  <!-- Overlay -->
   <div id="overlay">
     <div class="title overlay-text" id="overlayTitle">click/tap & hold to start mining</div>
     <div class="progress overlay-text" id="progressText">0% COMPLETE</div>
@@ -123,17 +146,18 @@ video {
 
 <script>
 const video = document.getElementById("video");
+const poster = document.getElementById("poster");
 const overlayTitle = document.getElementById("overlayTitle");
 const progressText = document.getElementById("progressText");
-const backButton = document.querySelector(".back-button");
 
 let holding = false;
 let finished = false;
 
-// Make first frame visible immediately
+// Always show first frame
 video.addEventListener('loadedmetadata', () => {
   video.pause();
   video.currentTime = 0;
+  poster.style.display = 'block';
 });
 
 // TAP/HOLD START
@@ -141,6 +165,7 @@ function startMining() {
   if (holding) return;
   holding = true;
   finished = false;
+  poster.style.display = 'none';
 
   overlayTitle.style.opacity = '0';
   setTimeout(() => {
@@ -150,7 +175,6 @@ function startMining() {
 
   progressText.style.opacity = '1';
 
-  // iOS playback workaround
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   if (isIOS) {
     video.muted = true;
@@ -169,6 +193,7 @@ function stopMining() {
   video.pause();
   video.currentTime = 0;
 
+  poster.style.display = 'block';
   overlayTitle.textContent = 'click/tap & hold to start mining';
   progressText.textContent = '0% COMPLETE';
   overlayTitle.style.opacity = '1';
@@ -190,6 +215,7 @@ function animate() {
       overlayTitle.textContent = 'you have generated:\n0.0000000000000013 bitcoin';
       progressText.textContent = 'tap/click & hold again to keep mining';
       progressText.style.opacity = '1';
+      poster.style.display = 'none';
     }
   }
   requestAnimationFrame(animate);
@@ -200,8 +226,6 @@ document.addEventListener('mousedown', startMining);
 document.addEventListener('mouseup', stopMining);
 document.addEventListener('touchstart', startMining, { passive: true });
 document.addEventListener('touchend', stopMining, { passive: true });
-video.addEventListener('touchstart', startMining, { passive: true });
-video.addEventListener('touchend', stopMining, { passive: true });
 
 function goBack() {
   window.location.href = "../index.html";
@@ -209,5 +233,6 @@ function goBack() {
 
 animate();
 </script>
+
 </body>
 </html>
