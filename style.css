@@ -185,8 +185,13 @@ section {
   transition: opacity 0.3s ease;
   text-align: center;
   padding: 10px;
-  font-size: clamp(24px, 2vw, 16px); /* smaller & responsive */
-  white-space: nowrap;         /* never wrap */
+  
+  /* Responsive font sizing */
+  font-size: clamp(16px, 2vw, 24px); /* desktop max 24px, mobile min 16px */
+
+  /* Smart wrapping for mobile */
+  white-space: normal;         /* allow wrapping if needed */
+  word-wrap: break-word;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
@@ -204,6 +209,7 @@ section {
     opacity: 1;
   }
 }
+
 
 
 /* =========================
