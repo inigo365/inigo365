@@ -36,31 +36,38 @@ input,
 }
 
 
-#topScores {
-    position: absolute;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-family: 'RuneScape UF', Arial, sans-serif;
-    color: #2d93ea;
-    z-index: 50;
-    display: flex;
-    justify-content: center;
-    gap: 4vw;
-    white-space: nowrap;
+#topScores{
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
 
-    /* Reserve space to prevent jump */
-    line-height: 1.2em;
-    height: 3.5em;
-    min-width: max-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 4vw, 40px);
 
-    /* Start hidden */
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s;
+  /* ✅ never resize / never jump */
+  height: 44px;                 /* constant every play */
+  padding: 0 12px;
+  white-space: nowrap;
+
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: clamp(18px, 2.2vw, 26px);  /* responsive without JS */
+  line-height: 1;
+
+  color: #2d93ea;
+
+  /* Start hidden */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
 }
 
-
+#topScores > div{
+  flex: 0 0 auto;               /* prevents shrink */
+}
 
 #rotateNotice {
     display: none;               /* hidden by default */
@@ -509,7 +516,7 @@ canvas {
 <div id="overlayHighscore"></div>
 <div id="overlayLastScore" style="position: absolute; top: 90%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
 
-<div id="topScores" style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); font-family: 'RuneScape UF', Arial, sans-serif; color: #2d93ea; z-index: 50; display: flex; justify-content: center; gap: 4vw; white-space: nowrap;">
+<div id="topScores">
   <div id="topCurrentScore">current score: 0</div>
   <div id="topHighscore">highscore: 0</div>
 </div>
@@ -594,7 +601,7 @@ const COMMON_FUN_TEXTS = [
   "bagonomotry",
   "bagzilla",
   "in the beginning there was bag...",
-  "dusty bag",
+  "dusty ahhh bag",
   "phat bag",
   "middle class bag",
   "trapaholic",
@@ -609,7 +616,9 @@ const COMMON_FUN_TEXTS = [
   "manbag",
   "incredible bag",
   "wow! what a bag!",
-  "three five o'clock",
+  "three five",
+  "baghetti",
+  "bag o'clock"
 ];
 
 // ------------------- REWARD TRACKING -------------------
@@ -915,7 +924,6 @@ function showTopScores() {
     const topScoresEl = document.getElementById('topScores');
     topScoresEl.style.opacity = 1;
     topScoresEl.style.pointerEvents = 'auto';
-    updateTopScoreSize(); // << add this
 }
 function hideTopScores(){document.getElementById('topScores').style.opacity=0;document.getElementById('topScores').style.pointerEvents='none';}
 
@@ -976,7 +984,6 @@ function hideOverlay(){
 setInterval(updateTopScores,100);
 window.addEventListener('load', () => {
     showOverlay(false);
-    updateTopScoreSize(); // ensure mobile font sizing applied
 });
 
 function openSoundCloud() {
@@ -1071,24 +1078,6 @@ function playAgain() {
     // Show play overlay (like submitScore)
     showOverlay(false);
 }
-
-function updateTopScoreSize() {
-    const vw = window.innerWidth;
-    if(vw <= 768){
-        topCurrentScore.style.fontSize = '5.5vw';
-        topHighscore.style.fontSize = '5.5vw';
-    } else {
-        topCurrentScore.style.fontSize = '2vw';
-        topHighscore.style.fontSize = '2vw';
-    }
-}
-window.addEventListener('resize',()=>{
-  canvas.width=window.innerWidth;
-  canvas.height=window.innerHeight;
-  SPRITE_SIZE=Math.round(canvas.height*0.12);
-  updateTopScoreSize();
-});
-window.addEventListener('load', updateTopScoreSize);
 
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1412,46 +1401,6 @@ function updateTopScoreFontSize() {
     }
 }
 
-function fixTopScoresLayout() {
-    topScoresEl.style.display = 'flex';
-    topScoresEl.style.flexWrap = 'nowrap';
-    topScoresEl.style.justifyContent = 'center';
-    topScoresEl.style.gap = window.innerWidth <= 480 ? '3vw' : '4vw';
-    topScoresEl.style.whiteSpace = 'nowrap';
-
-    // Prevent jump by reserving space
-    topCurrentScore.style.minWidth = 'max-content';
-    topHighscore.style.minWidth = 'max-content';
-
-    updateTopScoreFontSize();
-}
-
-// Run layout fix once fonts are ready
-document.fonts.ready.then(fixTopScoresLayout);
-
-// Also run on resize
-window.addEventListener('resize', fixTopScoresLayout);
-
-// ✅ Show topScores when game starts
-function showTopScores() {
-    topScoresEl.style.opacity = 1;
-    topScoresEl.style.pointerEvents = 'auto';
-    updateTopScoreFontSize();
-}
-
-// ✅ Hide topScores when game ends/overlay
-function hideTopScores() {
-    topScoresEl.style.opacity = 0;
-    topScoresEl.style.pointerEvents = 'none';
-}
-
-
-// Run once font is ready
-document.fonts.ready.then(fixTopScoresLayout);
-
-// Also run on window resize
-window.addEventListener('resize', fixTopScoresLayout);
-
 playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
 })();
 
@@ -1491,9 +1440,6 @@ function openGoodybag() {
         goodybagContent.innerHTML = `
           <div style="opacity:0.6; font-size:20px;">
             no goodies found yet...
-          </div>
-          <div style="margin-top:12px; font-size:16px;">
-            hit rare bags to unlock the goodybag
           </div>
         `;
     } else {
