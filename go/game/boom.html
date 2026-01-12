@@ -812,8 +812,30 @@ function getWeightedSpriteIndex(first = false) {
 function clamp(n, min, max) {
   return Math.max(min, Math.min(n, max));
 }
-
+const funTextPopup = document.getElementById('funTextPopup');
 const pointPopup=document.getElementById('pointPopup');
+function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
+  pointPopup.textContent = text;
+  pointPopup.style.left = x + 'px';
+  pointPopup.style.top  = y + 'px';
+  pointPopup.style.color = color;
+
+  const isMobile = window.innerWidth <= 768;
+  pointPopup.style.fontSize = isMobile ? '22px' : size;
+
+  pointPopup.style.opacity = 1;
+  pointPopup.style.transform = "translate(-50%, 0) translateY(10px)";
+
+  // optional glow
+  pointPopup.style.textShadow = glow ? `0 0 6px ${color}` : '';
+
+  setTimeout(() => {
+    pointPopup.style.opacity = 0;
+    pointPopup.style.transform = "translate(-50%, 0) translateY(24px)";
+    pointPopup.style.textShadow = '';
+  }, 400);
+}
+
 function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'center') {
   const isMobile = window.innerWidth <= 768;
 
