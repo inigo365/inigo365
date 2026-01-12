@@ -406,29 +406,59 @@ canvas {
 
 }
 
+/* One stable overlay “unit” */
+#playWrap{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  transition: opacity 0.5s, transform 0.5s;
+  z-index: 50;
+  pointer-events: none; /* enabled when shown via JS */
+
+  /* keep paint cheap */
+  will-change: transform, opacity;
+}
+
+/* play.png sizing */
+#playWrap #playOverlay{
+  display: block;
+  max-width: 80vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+}
+
+/* yellow splash locked to play.png */
 #playSplashText{
   position: absolute;
-  z-index: 52;               /* above play.png and above highscores */
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
 
-  /* your yellow */
+  /* ✅ THIS is the “same place forever” part */
+  left: 71.4%;
+  top: 61.1%;
+
+  transform: translate(-50%, -50%) rotate(-18deg);
+  pointer-events: none;
+  white-space: nowrap;
+  line-height: 1;
+
   color: #ffd400;
   font-family: "RuneScape UF", Arial, sans-serif;
 
-  /* scale nicely across devices */
-  font-size: clamp(18px, 4.2vw, 54px);
-  line-height: 1;
-  white-space: nowrap;
+  /* ✅ bigger on mobile, smaller on desktop */
+  font-size: clamp(18px, 5.2vw, 44px);
 
-  /* punchy “sticker” feel */
-  text-shadow:
-    2px 2px 0 rgba(0,0,0,0.08),
-    0 0 10px rgba(255, 212, 0, 0.35);
+  /* ✅ cheap shadow (avoid blur) */
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.14);
+}
+@keyframes playPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.05); }
+}
 
-  /* we’ll set translate/rotate in JS */
-  transform: translate(-50%, -50%) rotate(-18deg) scale(0.98);
+#playWrap.pulsing{
+  animation: playPulse 1.2s ease-in-out infinite;
 }
 
 </style>
@@ -441,19 +471,10 @@ canvas {
 <button id="goodybagBtn" class="soundcloud-btn" style="display:none;">goodybag</button>
 <audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
 
-<img id="playOverlay" src="play.png" style="
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    max-width: 80%;
-    max-height: 80%;
-    transform: translate(-50%, -50%) scale(0.8);
-    opacity: 0;
-    transition: opacity 0.5s, transform 0.5s;
-    z-index: 50;
-">
-
-<div id="playSplashText"></div>
+<div id="playWrap">
+  <img id="playOverlay" src="play.png" alt="play">
+  <div id="playSplashText"></div>
+</div>
 
 <div id="overlayHighscore" style="position: absolute; top: 84%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
 <div id="overlayLastScore" style="position: absolute; top: 90%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
@@ -845,6 +866,7 @@ function addHoop(){
 const playOverlay=document.getElementById('playOverlay');
 const overlayHighscore=document.getElementById('overlayHighscore');
 const playSplashText = document.getElementById('playSplashText');
+const playWrap = document.getElementById('playWrap');
 
 // These come from your reference image placement
 // (measured as percentages of the play.png bounding box)
@@ -854,36 +876,6 @@ const SPLASH_Y = 0.611; // 61.1% down
 function pickRandomFunText(){
   return COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
 }
-
-function positionPlaySplash(){
-  const rect = playOverlay.getBoundingClientRect();
-  playSplashText.style.left = (rect.left + rect.width  * SPLASH_X) + "px";
-  playSplashText.style.top  = (rect.top  + rect.height * SPLASH_Y) + "px";
-}
-
-function showPlaySplash(){
-  playSplashText.textContent = pickRandomFunText();
-
-  // wait until layout reflects the overlay’s current transform/size
-  requestAnimationFrame(() => {
-    positionPlaySplash();
-    playSplashText.style.opacity = 1;
-    playSplashText.style.transform = "translate(-50%, -50%) rotate(-18deg) scale(1)";
-  });
-}
-
-function hidePlaySplash(){
-  playSplashText.style.opacity = 0;
-  playSplashText.style.transform = "translate(-50%, -50%) rotate(-18deg) scale(0.98)";
-}
-
-// keep it pinned to play.png during resize + overlay animation
-window.addEventListener("resize", () => {
-  if (playOverlay.style.opacity === "1") positionPlaySplash();
-});
-playOverlay.addEventListener("transitionend", () => {
-  if (playOverlay.style.opacity === "1") positionPlaySplash();
-});
 
 const overlayLastScore=document.getElementById('overlayLastScore');
 const topCurrentScore=document.getElementById('topCurrentScore');
@@ -917,18 +909,22 @@ function updateTopScores(){
 }
 
 function showOverlay(showLastScore=false){
-    playOverlay.style.opacity=1;
-    playOverlay.style.transform="translate(-50%,-50%) scale(1)";
-    playOverlay.style.pointerEvents = "auto"; 
-    showPlaySplash(); 
+    playWrap.style.opacity = 1;
+    playWrap.style.transform = "translate(-50%, -50%) scale(1)";
+    playWrap.style.pointerEvents = "auto";
+    playWrap.classList.add('pulsing');
+
+    // random every time
+    playSplashText.textContent = pickRandomFunText();
+
     overlayHighscore.style.opacity=1;
     overlayHighscore.textContent="highscore: "+(localStorage.getItem('flappyBasketHighscore')||0);
-    
+
     overlayLastScore.style.opacity = showLastScore ? 1 : 0;
     if(showLastScore){
         overlayLastScore.textContent = "last score: " + score;
     }
-    
+
     hideTopScores();
     gameStarted = false;
     backButton.style.opacity = 1;
@@ -937,15 +933,14 @@ function showOverlay(showLastScore=false){
 }
 
 function hideOverlay(){
-    hidePlaySplash();
-    playOverlay.style.opacity=0;
-    playOverlay.style.transform="translate(-50%,-50%) scale(0.8)";
-    playOverlay.style.pointerEvents = "none";
+    playWrap.style.opacity = 0;
+    playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
+    playWrap.style.pointerEvents = "none";
+    playWrap.classList.remove('pulsing');
     overlayHighscore.style.opacity=0;
     overlayLastScore.style.opacity=0;
     showTopScores();
     hideMusicButton();
-    setTimeout(()=>{ playOverlay.style.pointerEvents = "none"; }, 500);
 }
 
 setInterval(updateTopScores,100);
@@ -1012,9 +1007,8 @@ function handleInput(e) {
 canvas.addEventListener('touchstart', handleInput, { passive: false });
 canvas.addEventListener('mousedown', handleInput);
 
-// Overlay click/touch to start game
-playOverlay.addEventListener('click', (e) => { e.preventDefault(); startGame(); });
-playOverlay.addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, { passive: false });
+playWrap.addEventListener('click', (e) => { e.preventDefault(); startGame(); });
+playWrap.addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, { passive: false });
 
 // Prevent zooming/pinch scroll on mobile
 document.addEventListener('gesturestart', (e) => e.preventDefault());
