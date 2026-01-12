@@ -97,25 +97,6 @@ video {
 #overlay .title { font-size: 1.5rem; margin-bottom: 8px; line-height: 1.35; }
 #overlay .progress { font-size: 1rem; opacity: 0; line-height: 1.4; }
 
-/* LOADING MESSAGE */
-#loadingMessage {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 1.2rem;
-  color: #fff;
-  text-align: center;
-  pointer-events: none;
-  z-index: 6;
-  filter: blur(0.5px);
-  text-shadow:
-    1px 1px 0 rgba(255,255,255,0.12),
-   -1px -1px 0 rgba(255,255,255,0.06);
-  opacity: 1;
-  transition: opacity 0.3s ease;
-}
 </style>
 </head>
 
@@ -138,14 +119,12 @@ video {
     <div class="progress overlay-text" id="progressText">0% COMPLETE</div>
   </div>
 
-  <div id="loadingMessage">loading video…</div>
 </div>
 
 <script>
 const video = document.getElementById("video");
 const overlayTitle = document.getElementById("overlayTitle");
 const progressText = document.getElementById("progressText");
-const loadingMessage = document.getElementById("loadingMessage");
 const backButton = document.querySelector(".back-button");
 
 let holding = false;
@@ -157,18 +136,11 @@ video.addEventListener('loadedmetadata', () => {
   video.currentTime = 0;
 });
 
-// Hide loading once video is ready
-video.addEventListener('canplay', () => {
-  loadingMessage.style.opacity = '0';
-  setTimeout(() => loadingMessage.style.display = 'none', 300);
-});
-
 // TAP/HOLD START
 function startMining() {
   if (holding) return;
   holding = true;
   finished = false;
-  loadingMessage.style.display = 'none';
 
   overlayTitle.style.opacity = '0';
   setTimeout(() => {
@@ -201,8 +173,6 @@ function stopMining() {
   progressText.textContent = '0% COMPLETE';
   overlayTitle.style.opacity = '1';
   progressText.style.opacity = '0';
-  loadingMessage.style.display = 'block';
-  loadingMessage.style.opacity = '1';
 }
 
 // Animate progress
@@ -220,7 +190,6 @@ function animate() {
       overlayTitle.textContent = 'you have generated:\n0.0000000000000013 bitcoin';
       progressText.textContent = 'tap/click & hold again to keep mining';
       progressText.style.opacity = '1';
-      loadingMessage.style.display = 'none';
     }
   }
   requestAnimationFrame(animate);
