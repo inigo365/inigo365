@@ -7,12 +7,14 @@
 <link rel="icon" href="../../images/icon.png">
 
 <style>
+/* FONT */
 @font-face {
   font-family: "RuneScape UF";
   src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
        url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
+/* RESET */
 html, body {
   margin: 0;
   padding: 0;
@@ -26,6 +28,7 @@ html, body {
   overflow: hidden;
 }
 
+/* BACK BUTTON */
 .back-button {
   position: fixed;
   top: 8px;
@@ -41,6 +44,7 @@ html, body {
   z-index: 10;
 }
 
+/* VIDEO CONTAINER */
 #video-container {
   position: relative;
   width: 100%;
@@ -64,6 +68,7 @@ video {
   video { width: 100%; height: 100%; object-fit: cover; }
 }
 
+/* OVERLAY TEXT */
 #overlay {
   position: absolute;
   top: 50%;
@@ -75,9 +80,8 @@ video {
   max-width: 90%;
 }
 
-/* UNIFIED TEXT STYLE */
 .overlay-text {
-  filter: blur(0.9px);
+  filter: blur(0.5px); /* slightly less blur for readability */
   text-shadow:
     1px 1px 0 rgba(255,255,255,0.12),
    -1px -1px 0 rgba(255,255,255,0.06);
@@ -101,6 +105,17 @@ video {
   transition: opacity 0.2s ease;
   line-height: 1.4;
 }
+
+/* LOADING MESSAGE */
+#loadingMessage {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 1rem;
+}
 </style>
 </head>
 
@@ -113,7 +128,7 @@ video {
     id="video"
     preload="auto"
     playsinline
-    src="https://github.com/inigo365/inigo365/releases/download/v1.0.0/stoneinfocus.mp4"
+    src="stoneinfocus.mp4"
     disablepictureinpicture
     controlslist="nodownload noplaybackrate nofullscreen"
   ></video>
@@ -126,17 +141,23 @@ video {
       0% COMPLETE
     </div>
   </div>
+
+  <div id="loadingMessage">loading...</div>
 </div>
 
 <script>
 const video = document.getElementById("video");
 const overlayTitle = document.getElementById("overlayTitle");
 const progressText = document.getElementById("progressText");
+const loadingMessage = document.getElementById("loadingMessage");
 
 let holding = false;
 let finished = false;
 
-video.load(); // preload immediately
+// Remove loading message when video metadata is loaded
+video.addEventListener("loadedmetadata", () => {
+  loadingMessage.style.display = "none";
+});
 
 function startMining() {
   if (holding) return;
