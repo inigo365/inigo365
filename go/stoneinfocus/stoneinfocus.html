@@ -49,7 +49,7 @@ html, body {
   height: 100%;
   display: flex;
   justify-content: center;
-  align-items: flex-end; /* bottom align */
+  align-items: flex-end; /* bottom aligned */
   background: white;
   overflow: hidden;
 }
@@ -62,7 +62,7 @@ html, body {
   transform: translateX(-50%);
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* mobile: cover whole viewport */
   z-index: 1;
 }
 
@@ -74,16 +74,22 @@ video {
   transform: translateX(-50%);
   width: 100%;
   height: 100%;
-  object-fit: contain; /* desktop: preserve aspect ratio */
+  object-fit: cover; /* mobile: cover entire area */
+  max-height: 100%;
   z-index: 2;
 }
 
-/* MOBILE: fill height, maintain aspect ratio, flush bottom */
-@media (max-width: 768px) {
-  video, #poster {
+/* DESKTOP: preserve aspect ratio */
+@media (min-width: 769px) {
+  video {
+    object-fit: contain;
     width: auto;
     height: 100%;
-    object-fit: cover;
+  }
+  #poster {
+    object-fit: contain;
+    width: auto;
+    height: 100%;
   }
 }
 
@@ -121,8 +127,8 @@ video {
 
 <div id="video-container">
 
-  <!-- Poster image of first frame -->
-  <img id="poster" src="stoneinfocus-poster.jpg" alt="First frame">
+  <!-- Poster image (screenshot of first frame) -->
+<img id="poster" src="stoneinfocus.jpg" alt="First frame">
 
   <!-- Video element -->
   <video
@@ -151,12 +157,10 @@ const progressText = document.getElementById("progressText");
 let holding = false;
 let finished = false;
 
-// Show first frame immediately on all devices
-video.addEventListener('loadedmetadata', () => {
-  video.currentTime = 0;
-  video.pause();
-  poster.style.display = 'block';
-});
+// Ensure poster shows immediately on all devices
+poster.style.display = 'block';
+video.pause();
+video.currentTime = 0;
 
 // TAP/HOLD START
 function startMining() {
