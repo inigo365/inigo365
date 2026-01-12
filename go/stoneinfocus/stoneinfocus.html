@@ -81,7 +81,7 @@ video {
 }
 
 .overlay-text {
-  filter: blur(0.5px); /* slightly less blur for readability */
+  filter: blur(0.5px); /* slightly blurry */
   text-shadow:
     1px 1px 0 rgba(255,255,255,0.12),
    -1px -1px 0 rgba(255,255,255,0.06);
@@ -89,7 +89,6 @@ video {
   white-space: pre-line;
 }
 
-/* TITLE */
 #overlay .title {
   font-size: 1.5rem;
   margin-bottom: 8px;
@@ -98,7 +97,6 @@ video {
   line-height: 1.35;
 }
 
-/* PROGRESS / SUBTEXT */
 #overlay .progress {
   font-size: 1rem;
   opacity: 0;
@@ -106,15 +104,18 @@ video {
   line-height: 1.4;
 }
 
-/* LOADING MESSAGE */
-#loadingMessage {
+/* LOADING / FIRST FRAME MESSAGE */
+#startMessage {
   position: absolute;
-  top: 10%;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  color: #2d93ea;
+  transform: translate(-50%, -50%);
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  color: #2d93ea;
+  text-align: center;
+  z-index: 5;
+  pointer-events: none;
 }
 </style>
 </head>
@@ -134,52 +135,59 @@ video {
   ></video>
 
   <div id="overlay">
-    <div class="title overlay-text" id="overlayTitle">
-      click/tap & hold to start mining
-    </div>
-    <div class="progress overlay-text" id="progressText">
-      0% COMPLETE
-    </div>
+    <div class="title overlay-text" id="overlayTitle">click/tap & hold to start mining</div>
+    <div class="progress overlay-text" id="progressText">0% COMPLETE</div>
   </div>
 
-  <div id="loadingMessage">loading...</div>
+  <div id="startMessage">click/tap & hold to start mining</div>
 </div>
 
 <script>
 const video = document.getElementById("video");
 const overlayTitle = document.getElementById("overlayTitle");
 const progressText = document.getElementById("progressText");
-const loadingMessage = document.getElementById("loadingMessage");
+const startMessage = document.getElementById("startMessage");
+const backButton = document.querySelector(".back-button");
 
 let holding = false;
 let finished = false;
 
-// Remove loading message when video metadata is loaded
-video.addEventListener("loadedmetadata", () => {
-  loadingMessage.style.display = "none";
+// Ensure the first frame is always visible
+video.addEventListener('loadeddata', () => {
+  video.pause();
+  video.currentTime = 0;
+  startMessage.style.display = 'block';
 });
 
+// Start tap/hold
 function startMining() {
   if (holding) return;
 
-  if (finished) {
-    finished = false;
-    progressText.style.opacity = "0";
-  }
-
   holding = true;
-  video.currentTime = 0;
-  video.play().catch(() => {});
+  finished = false;
+  startMessage.style.display = 'none';
 
-  progressText.style.opacity = "1";
-
-  overlayTitle.style.opacity = "0";
+  overlayTitle.style.opacity = '0';
   setTimeout(() => {
-    overlayTitle.textContent = "generating bitcoin...";
-    overlayTitle.style.opacity = "1";
+    overlayTitle.textContent = 'generating bitcoin...';
+    overlayTitle.style.opacity = '1';
   }, 300);
+
+  progressText.style.opacity = '1';
+
+  // iOS workaround: temporarily mute to allow playback
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS) {
+    video.muted = true;
+    video.currentTime = 0;
+    video.play().then(() => { video.muted = false; }).catch(() => {});
+  } else {
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  }
 }
 
+// Stop tap/hold
 function stopMining() {
   if (finished) return;
 
@@ -187,22 +195,18 @@ function stopMining() {
   video.pause();
   video.currentTime = 0;
 
-  progressText.style.opacity = "0";
-
-  setTimeout(() => {
-    progressText.textContent = "0% COMPLETE";
-    overlayTitle.textContent = "click/tap & hold to start mining";
-  }, 200);
+  overlayTitle.textContent = 'click/tap & hold to start mining';
+  progressText.textContent = '0% COMPLETE';
+  overlayTitle.style.opacity = '1';
+  progressText.style.opacity = '0';
+  startMessage.style.display = 'block';
 }
 
+// Animate progress
 function animate() {
   if (holding && !finished) {
-    const percent = Math.min(
-      (video.currentTime / video.duration) * 100,
-      100
-    );
-
-    progressText.textContent = Math.floor(percent) + "% COMPLETE";
+    const percent = Math.min((video.currentTime / video.duration) * 100, 100);
+    progressText.textContent = Math.floor(percent) + '% COMPLETE';
 
     if (video.currentTime >= video.duration - 0.05) {
       finished = true;
@@ -210,23 +214,24 @@ function animate() {
       video.pause();
       video.currentTime = video.duration;
 
-      overlayTitle.textContent =
-        "you have generated:\n0.0000000000000013 bitcoin";
-
-      progressText.textContent =
-        "tap/click & hold again to keep mining";
-
-      progressText.style.opacity = "1";
+      overlayTitle.textContent = 'you have generated:\n0.0000000000000013 bitcoin';
+      progressText.textContent = 'tap/click & hold again to keep mining';
+      progressText.style.opacity = '1';
+      startMessage.style.display = 'none';
     }
   }
-
   requestAnimationFrame(animate);
 }
 
-document.addEventListener("mousedown", startMining);
-document.addEventListener("mouseup", stopMining);
-document.addEventListener("touchstart", startMining, { passive: true });
-document.addEventListener("touchend", stopMining, { passive: true });
+// Events
+document.addEventListener('mousedown', startMining);
+document.addEventListener('mouseup', stopMining);
+document.addEventListener('touchstart', startMining, { passive: true });
+document.addEventListener('touchend', stopMining, { passive: true });
+
+// iOS: also bind touch directly on video for extra reliability
+video.addEventListener('touchstart', startMining, { passive: true });
+video.addEventListener('touchend', stopMining, { passive: true });
 
 function goBack() {
   window.location.href = "../index.html";
