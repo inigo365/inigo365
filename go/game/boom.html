@@ -302,7 +302,7 @@ canvas {
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
   text-align: right;
-  z-index: 101;        /* above playWrap (50) */
+  z-index: 1001;        /* above playWrap (50) */
   opacity: 0;
   transition: opacity 0.5s;
   pointer-events: none;
@@ -1336,6 +1336,8 @@ window.showNameModal = function(finalScore) {
   finalScoreEl.textContent = 'score: ' + finalScore;
   playerNameInput.value = localStorage.getItem('playerName') || '';
   nameModal.classList.add('show');
+  overlayHighscore.style.opacity = 1;
+  overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
   backButton.style.zIndex = 400;
   backButton.style.opacity = 1;
   leaderboardBtn.style.display = 'block';
