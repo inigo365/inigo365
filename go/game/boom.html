@@ -814,84 +814,70 @@ function clamp(n, min, max) {
 }
 
 const pointPopup=document.getElementById('pointPopup');
-function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
-  pointPopup.textContent = text;
-  pointPopup.style.left = x + 'px';
-  pointPopup.style.top  = y + 'px';
-  pointPopup.style.color = color;
-
-  const isMobile = window.innerWidth <= 768;
-  pointPopup.style.fontSize = isMobile ? '22px' : size;
-
-  pointPopup.style.opacity = 1;
-
-  // ✅ centered + animates downward slightly
-  pointPopup.style.transform = "translate(-50%, 0) translateY(10px)";
-
-  setTimeout(() => {
-    pointPopup.style.opacity = 0;
-    pointPopup.style.transform = "translate(-50%, 0) translateY(24px)";
-    pointPopup.style.textShadow = '';
-    pointPopup.style.fontSize = '28px';
-  }, 400);
-}
-
-const funTextPopup = document.getElementById('funTextPopup');
 function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'center') {
   const isMobile = window.innerWidth <= 768;
 
   funTextPopup.textContent = text;
   funTextPopup.style.color = color;
-  funTextPopup.style.fontSize = isMobile ? '24px' : '24px';
 
-  // make sure it’s measurable before we clamp
+  // ✅ IMPORTANT: only break where you put \n (never wrap automatically)
+  funTextPopup.style.whiteSpace = 'pre';
+
+  // start size
+  let fontSize = isMobile ? 24 : 24;
+  funTextPopup.style.fontSize = fontSize + 'px';
+
+  // make sure it’s measurable before clamp
   funTextPopup.style.display = 'block';
   funTextPopup.style.opacity = 0;
 
   // alignment + anchor transform
   if (align === 'right') {
     funTextPopup.style.textAlign = 'right';
-    funTextPopup.style.transform = "translate(-100%, 0) translateY(8px)"; // right edge anchored to x
+    funTextPopup.style.transform = "translate(-100%, 0) translateY(8px)";
   } else {
     funTextPopup.style.textAlign = 'center';
-    funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";  // center anchored to x
+    funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";
   }
 
-  // measure after styles/text are applied
   const padding = 12;
-  const w = funTextPopup.offsetWidth || 0;
-  const h = funTextPopup.offsetHeight || 0;
+  const maxAllowedWidth = window.innerWidth - padding * 2;
 
-  // clamp X based on anchor type
+  // ✅ Auto-shrink font until BOTH lines fit on screen without wrapping
+  // (because whiteSpace: pre will never wrap, so we must make it fit)
+  let w = 0, h = 0;
+  for (let i = 0; i < 20; i++) {
+    w = funTextPopup.offsetWidth || 0;
+    h = funTextPopup.offsetHeight || 0;
+    if (w <= maxAllowedWidth) break;
+    fontSize = Math.max(14, fontSize - 1);
+    funTextPopup.style.fontSize = fontSize + 'px';
+  }
+
+  // clamp X based on anchor type (same logic you had)
   let clampedX = x;
   if (align === 'right') {
-    // x is the RIGHT edge anchor
     clampedX = clamp(x, padding + w, window.innerWidth - padding);
   } else {
-    // x is CENTER anchor
     clampedX = clamp(x, padding + w / 2, window.innerWidth - padding - w / 2);
   }
 
-  // clamp Y (symmetric safety)
+  // clamp Y
   const clampedY = clamp(y, padding, window.innerHeight - padding - h);
 
   funTextPopup.style.left = clampedX + 'px';
   funTextPopup.style.top  = clampedY + 'px';
 
-  // now show it
   requestAnimationFrame(() => {
     funTextPopup.style.opacity = 1;
   });
 
   setTimeout(() => {
     funTextPopup.style.opacity = 0;
-
-    // keep matching transform on fade-out
-    if (align === 'right') {
-      funTextPopup.style.transform = "translate(-100%, 0) translateY(22px)";
-    } else {
-      funTextPopup.style.transform = "translate(-50%, 0) translateY(22px)";
-    }
+    funTextPopup.style.transform =
+      (align === 'right')
+        ? "translate(-100%, 0) translateY(22px)"
+        : "translate(-50%, 0) translateY(22px)";
   }, duration);
 }
 
