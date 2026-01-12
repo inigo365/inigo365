@@ -654,7 +654,7 @@ function unlockReward(tier) {
     if(!key || localStorage.getItem(key) === 'true') return; // already unlocked
     localStorage.setItem(key, 'true');
 const RIGHT_MARGIN = 16;
-const TIER_POPUP_DURATION = 1500; // ✅ twice as long (was 600)
+const TIER_POPUP_DURATION = 5000; // ✅ twice as long (was 600)
 
 switch (tier) {
   case 'rare':
@@ -702,8 +702,8 @@ switch (tier) {
 const GRAVITY = 0.32;
 const LIFT = -6.9;
 let SPEED = 3;
-const START_SPEED = 3.5;      // speed when the game starts
-const MAX_SPEED = 8.5;        // speed when score reaches MAX_SPEED_SCORE
+const START_SPEED = 4;      // speed when the game starts
+const MAX_SPEED = 7.3;        // speed when score reaches MAX_SPEED_SCORE
 const MAX_SPEED_SCORE = 500;
 let SPRITE_SIZE = Math.round(canvas.height*0.12);
 
@@ -818,7 +818,9 @@ function getWeightedSpriteIndex(first = false) {
 
     return weighted[Math.floor(Math.random() * weighted.length)];
 }
-
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(n, max));
+}
 
 const pointPopup=document.getElementById('pointPopup');
 function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
@@ -848,21 +850,47 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'c
   const isMobile = window.innerWidth <= 768;
 
   funTextPopup.textContent = text;
-  funTextPopup.style.left = x + 'px';
-  funTextPopup.style.top  = y + 'px';
   funTextPopup.style.color = color;
   funTextPopup.style.fontSize = isMobile ? '24px' : '24px';
 
-  // ✅ alignment
+  // make sure it’s measurable before we clamp
+  funTextPopup.style.display = 'block';
+  funTextPopup.style.opacity = 0;
+
+  // alignment + anchor transform
   if (align === 'right') {
     funTextPopup.style.textAlign = 'right';
-    funTextPopup.style.transform = "translate(-100%, 0) translateY(8px)"; // anchor the RIGHT edge to x
+    funTextPopup.style.transform = "translate(-100%, 0) translateY(8px)"; // right edge anchored to x
   } else {
     funTextPopup.style.textAlign = 'center';
-    funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";
+    funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";  // center anchored to x
   }
 
-  funTextPopup.style.opacity = 1;
+  // measure after styles/text are applied
+  const padding = 12;
+  const w = funTextPopup.offsetWidth || 0;
+  const h = funTextPopup.offsetHeight || 0;
+
+  // clamp X based on anchor type
+  let clampedX = x;
+  if (align === 'right') {
+    // x is the RIGHT edge anchor
+    clampedX = clamp(x, padding + w, window.innerWidth - padding);
+  } else {
+    // x is CENTER anchor
+    clampedX = clamp(x, padding + w / 2, window.innerWidth - padding - w / 2);
+  }
+
+  // clamp Y (symmetric safety)
+  const clampedY = clamp(y, padding, window.innerHeight - padding - h);
+
+  funTextPopup.style.left = clampedX + 'px';
+  funTextPopup.style.top  = clampedY + 'px';
+
+  // now show it
+  requestAnimationFrame(() => {
+    funTextPopup.style.opacity = 1;
+  });
 
   setTimeout(() => {
     funTextPopup.style.opacity = 0;
