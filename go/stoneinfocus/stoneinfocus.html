@@ -7,14 +7,12 @@
 <link rel="icon" href="../../images/icon.png">
 
 <style>
-/* FONT */
 @font-face {
   font-family: "RuneScape UF";
   src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
        url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
-/* RESET */
 html, body {
   margin: 0;
   padding: 0;
@@ -51,71 +49,72 @@ html, body {
   height: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
-  overflow: hidden;
+  align-items: flex-end; /* bottom-align video */
   background: white;
+  overflow: hidden;
 }
 
+/* VIDEO */
 video {
-  display: block;
-  height: 100%;
   width: auto;
+  height: 100%;
   object-fit: contain;
+  display: block;
 }
 
+/* MOBILE: fill screen but maintain aspect */
 @media (max-width: 768px) {
-  html, body, #video-container { background: black; }
-  video { width: 100%; height: 100%; object-fit: cover; }
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
-/* OVERLAY TEXT */
+/* OVERLAY */
 #overlay {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  color: #ffffff;
   pointer-events: none;
   max-width: 90%;
+  z-index: 5;
 }
 
 .overlay-text {
-  filter: blur(0.5px); /* slightly blurry */
+  filter: blur(0.5px);
   text-shadow:
     1px 1px 0 rgba(255,255,255,0.12),
    -1px -1px 0 rgba(255,255,255,0.06);
   word-wrap: break-word;
   white-space: pre-line;
-}
-
-#overlay .title {
-  font-size: 1.5rem;
-  margin-bottom: 8px;
-  opacity: 1;
   transition: opacity 0.3s ease;
-  line-height: 1.35;
+  color: #fff;
 }
 
-#overlay .progress {
-  font-size: 1rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  line-height: 1.4;
-}
+#overlay .title { font-size: 1.5rem; margin-bottom: 8px; line-height: 1.35; }
+#overlay .progress { font-size: 1rem; opacity: 0; line-height: 1.4; }
 
-/* LOADING / FIRST FRAME MESSAGE */
-#startMessage {
+/* LOADING MESSAGE */
+#loadingMessage {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 1.2rem;
-  color: #2d93ea;
+  color: #fff;
   text-align: center;
-  z-index: 5;
   pointer-events: none;
+  z-index: 6;
+  filter: blur(0.5px);
+  text-shadow:
+    1px 1px 0 rgba(255,255,255,0.12),
+   -1px -1px 0 rgba(255,255,255,0.06);
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 </style>
 </head>
@@ -139,33 +138,37 @@ video {
     <div class="progress overlay-text" id="progressText">0% COMPLETE</div>
   </div>
 
-  <div id="startMessage">click/tap & hold to start mining</div>
+  <div id="loadingMessage">loading video…</div>
 </div>
 
 <script>
 const video = document.getElementById("video");
 const overlayTitle = document.getElementById("overlayTitle");
 const progressText = document.getElementById("progressText");
-const startMessage = document.getElementById("startMessage");
+const loadingMessage = document.getElementById("loadingMessage");
 const backButton = document.querySelector(".back-button");
 
 let holding = false;
 let finished = false;
 
-// Ensure the first frame is always visible
-video.addEventListener('loadeddata', () => {
+// Make first frame visible immediately
+video.addEventListener('loadedmetadata', () => {
   video.pause();
   video.currentTime = 0;
-  startMessage.style.display = 'block';
 });
 
-// Start tap/hold
+// Hide loading once video is ready
+video.addEventListener('canplay', () => {
+  loadingMessage.style.opacity = '0';
+  setTimeout(() => loadingMessage.style.display = 'none', 300);
+});
+
+// TAP/HOLD START
 function startMining() {
   if (holding) return;
-
   holding = true;
   finished = false;
-  startMessage.style.display = 'none';
+  loadingMessage.style.display = 'none';
 
   overlayTitle.style.opacity = '0';
   setTimeout(() => {
@@ -175,7 +178,7 @@ function startMining() {
 
   progressText.style.opacity = '1';
 
-  // iOS workaround: temporarily mute to allow playback
+  // iOS playback workaround
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   if (isIOS) {
     video.muted = true;
@@ -187,10 +190,9 @@ function startMining() {
   }
 }
 
-// Stop tap/hold
+// TAP/HOLD STOP
 function stopMining() {
   if (finished) return;
-
   holding = false;
   video.pause();
   video.currentTime = 0;
@@ -199,7 +201,8 @@ function stopMining() {
   progressText.textContent = '0% COMPLETE';
   overlayTitle.style.opacity = '1';
   progressText.style.opacity = '0';
-  startMessage.style.display = 'block';
+  loadingMessage.style.display = 'block';
+  loadingMessage.style.opacity = '1';
 }
 
 // Animate progress
@@ -217,7 +220,7 @@ function animate() {
       overlayTitle.textContent = 'you have generated:\n0.0000000000000013 bitcoin';
       progressText.textContent = 'tap/click & hold again to keep mining';
       progressText.style.opacity = '1';
-      startMessage.style.display = 'none';
+      loadingMessage.style.display = 'none';
     }
   }
   requestAnimationFrame(animate);
@@ -228,8 +231,6 @@ document.addEventListener('mousedown', startMining);
 document.addEventListener('mouseup', stopMining);
 document.addEventListener('touchstart', startMining, { passive: true });
 document.addEventListener('touchend', stopMining, { passive: true });
-
-// iOS: also bind touch directly on video for extra reliability
 video.addEventListener('touchstart', startMining, { passive: true });
 video.addEventListener('touchend', stopMining, { passive: true });
 
@@ -239,6 +240,5 @@ function goBack() {
 
 animate();
 </script>
-
 </body>
 </html>
