@@ -653,19 +653,45 @@ function unlockReward(tier) {
     const key = REWARD_KEYS[tier];
     if(!key || localStorage.getItem(key) === 'true') return; // already unlocked
     localStorage.setItem(key, 'true');
+const RIGHT_MARGIN = 16;
+const TIER_POPUP_DURATION = 1500; // ✅ twice as long (was 600)
 
-    switch(tier){
-        case 'rare':
-            if(goodybagBtn) goodybagBtn.style.display='block';
-            showTextPopup('*first rare bag!* goodybag unlocked!', canvas.width/2, canvas.height/2, TIER_COLORS.rare);
-            break;
-        case 'goated':
-            showTextPopup('*first goated bag!* soundtracks unlocked inside goodybag', canvas.width/2, canvas.height/2, TIER_COLORS.goated);
-            break;
-        case 'mythic':
-            showTextPopup('*first mythic bag!* passwords unlocked inside goodybag', canvas.width/2, canvas.height/2, TIER_COLORS.mythic);
-            break;
-    }
+switch (tier) {
+  case 'rare':
+    if (goodybagBtn) goodybagBtn.style.display = 'block';
+    showTextPopup(
+      '*first rare bag!* goodybag unlocked!',
+      canvas.width - RIGHT_MARGIN,
+      canvas.height / 2,
+      TIER_COLORS.rare,
+      TIER_POPUP_DURATION,
+      'right'
+    );
+    break;
+
+  case 'goated':
+    showTextPopup(
+      '*first goated bag!* soundtracks unlocked inside goodybag',
+      canvas.width - RIGHT_MARGIN,
+      canvas.height / 2,
+      TIER_COLORS.goated,
+      TIER_POPUP_DURATION,
+      'right'
+    );
+    break;
+
+  case 'mythic':
+    showTextPopup(
+      '*first mythic bag!* passwords unlocked inside goodybag',
+      canvas.width - RIGHT_MARGIN,
+      canvas.height / 2,
+      TIER_COLORS.mythic,
+      TIER_POPUP_DURATION,
+      'right'
+    );
+    break;
+}
+
 
 }
 
@@ -818,7 +844,7 @@ function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
 }
 
 const funTextPopup = document.getElementById('funTextPopup');
-function showTextPopup(text, x, y, color = '#2d93ea', duration = 600) {
+function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'center') {
   const isMobile = window.innerWidth <= 768;
 
   funTextPopup.textContent = text;
@@ -827,14 +853,26 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600) {
   funTextPopup.style.color = color;
   funTextPopup.style.fontSize = isMobile ? '24px' : '24px';
 
-  funTextPopup.style.opacity = 1;
+  // ✅ alignment
+  if (align === 'right') {
+    funTextPopup.style.textAlign = 'right';
+    funTextPopup.style.transform = "translate(-100%, 0) translateY(8px)"; // anchor the RIGHT edge to x
+  } else {
+    funTextPopup.style.textAlign = 'center';
+    funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";
+  }
 
-  // ✅ centered + animates downward slightly
-  funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";
+  funTextPopup.style.opacity = 1;
 
   setTimeout(() => {
     funTextPopup.style.opacity = 0;
-    funTextPopup.style.transform = "translate(-50%, 0) translateY(22px)";
+
+    // keep matching transform on fade-out
+    if (align === 'right') {
+      funTextPopup.style.transform = "translate(-100%, 0) translateY(22px)";
+    } else {
+      funTextPopup.style.transform = "translate(-50%, 0) translateY(22px)";
+    }
   }, duration);
 }
 
