@@ -171,27 +171,40 @@ section {
 }
 
 /* =========================
-   PORTFOLIO TILE TEXT FIX
+   PORTFOLIO TILE TEXT FIX (HOVER ONLY)
 ========================= */
 .tile .overlay {
-  font-size: clamp(12px, 1.2vw, 16px); /* smaller & responsive */
-  white-space: nowrap;       /* force single line */
-  overflow: hidden;          /* hide overflow */
-  text-overflow: ellipsis;   /* ... if too long */
+  position: absolute;         /* keep overlay on top of image */
+  inset: 0;                   /* fill the tile */
+  background: rgba(0,0,0,0.3); /* semi-transparent overlay */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;                 /* hidden by default */
+  transition: opacity 0.3s ease;
+  text-align: center;
+  padding: 10px;
+  font-size: clamp(24px, 2vw, 16px); /* smaller & responsive */
+  white-space: nowrap;         /* never wrap */
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 1.2;
-  padding: 10px;             /* optional: reduce padding for small screens */
 }
 
+/* Hover effect — show overlay on hover */
 .tile:hover .overlay {
   opacity: 1;
 }
 
+/* Mobile / touch devices hover fallback */
 @media (hover: none) {
   .tile:active .overlay,
   .tile:focus .overlay {
     opacity: 1;
   }
 }
+
 
 /* =========================
    PROJECT PAGES
