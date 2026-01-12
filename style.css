@@ -1,4 +1,18 @@
 /* =========================
+   HARD LOCK SCROLL
+========================= */
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior: none; /* stops bounce on mobile */
+}
+
+body {
+  overflow-y: auto;
+}
+
+
+/* =========================
    FONTS
 ========================= */
 @font-face {
@@ -61,14 +75,19 @@ body {
 }
 
 .landing-link {
-  cursor: pointer;
+  pointer-events: none;  /* disables click */
+  cursor: default;       /* non-clickable cursor */
 }
 
 .about-link {
-  top: 34%;
-  left: 5%;
+  pointer-events: auto;
+  cursor: pointer;       /* show pointer */
+  /*outline: 2px solid red; /* DEBUG: visual position */
+  /*background: rgba(255,0,0,0.1); /* DEBUG: optional hitbox */
+  top: 50%;              /* adjust as needed */
+  right: 10%;
+  width: 45%;
   height: 10%;
-  width: 20%;
 }
 
 .instagram-link {
@@ -151,20 +170,16 @@ section {
   border: 0;
 }
 
-/* Overlay text */
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.3);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  text-align: center;
-  padding: 20px;
-  font-size: 26px;
+/* =========================
+   PORTFOLIO TILE TEXT FIX
+========================= */
+.tile .overlay {
+  font-size: clamp(12px, 1.2vw, 16px); /* smaller & responsive */
+  white-space: nowrap;       /* force single line */
+  overflow: hidden;          /* hide overflow */
+  text-overflow: ellipsis;   /* ... if too long */
+  line-height: 1.2;
+  padding: 10px;             /* optional: reduce padding for small screens */
 }
 
 .tile:hover .overlay {
@@ -374,3 +389,5 @@ body, html {
     cursor: url("./images/cursor/cursor-hover.png") 16 16, pointer;
   }
 }
+
+
