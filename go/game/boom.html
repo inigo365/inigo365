@@ -484,19 +484,10 @@ canvas {
   animation: playPulse 1.2s ease-in-out infinite;
 }
 
-/* Slight blur for UI text (buttons + score UI) */
-/*.back-button,
-.music-button,
-.leaderboard-btn,
-.soundcloud-btn,
-#overlayHighscore,
-#playSplashText,
-#overlayLastScore {
-  filter: blur(0.6px);
-  opacity: 0.85;
-  transition: filter 0.2s ease, opacity 0.2s ease;
-}*/
-
+#funTextPopup{
+  white-space: pre-line;  /* ✅ respects \n */
+  line-height: 1.25;      /* optional but nice */
+}
 
 </style>
 </head>
@@ -660,7 +651,7 @@ switch (tier) {
   case 'rare':
     if (goodybagBtn) goodybagBtn.style.display = 'block';
     showTextPopup(
-      '*first rare bag!* goodybag unlocked!',
+      '*first rare bag!*\ngoodybag unlocked!',
       canvas.width - RIGHT_MARGIN,
       canvas.height / 2,
       TIER_COLORS.rare,
@@ -671,7 +662,7 @@ switch (tier) {
 
   case 'goated':
     showTextPopup(
-      '*first goated bag!* soundtracks unlocked inside goodybag',
+      '*first goated bag!*\nsoundtracks unlocked!',
       canvas.width - RIGHT_MARGIN,
       canvas.height / 2,
       TIER_COLORS.goated,
@@ -682,7 +673,7 @@ switch (tier) {
 
   case 'mythic':
     showTextPopup(
-      '*first mythic bag!* passwords unlocked inside goodybag',
+      '*first mythic bag!* \npassword unlocked!',
       canvas.width - RIGHT_MARGIN,
       canvas.height / 2,
       TIER_COLORS.mythic,
