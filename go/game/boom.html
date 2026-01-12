@@ -591,6 +591,8 @@ const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+const POP_TEXT_OFFSET_Y  = 70;  // fun text / "rare bag" line
+const POP_POINT_OFFSET_Y = 38;  // +1/+2/+3 line
 const COMMON_FUN_TEXTS = [
   "professional bagman",
   "bilbo baggin",
@@ -641,14 +643,11 @@ const TIER_COLORS = {
 };
 
 function maybeShowFunText(x, y, color) {
-    if (Math.random() < 0.4) { // 40% chance
-        const text = COMMON_FUN_TEXTS[
-            Math.floor(Math.random() * COMMON_FUN_TEXTS.length)
-        ];
-        showTextPopup(text, x, y - 80, color);
-    }
+  if (Math.random() < 0.4) {
+    const text = COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
+    showTextPopup(text, x, y + POP_TEXT_OFFSET_Y, color);
+  }
 }
-
 
 function unlockReward(tier) {
     const key = REWARD_KEYS[tier];
@@ -797,53 +796,50 @@ function getWeightedSpriteIndex(first = false) {
 
 const pointPopup=document.getElementById('pointPopup');
 function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
-    pointPopup.textContent = text;
-    pointPopup.style.left = x + 'px';
-    pointPopup.style.top = y + 'px';
-    pointPopup.style.color = color;
-    const isMobile = window.innerWidth <= 768;
-    pointPopup.style.fontSize = isMobile ? '22px' : size;
-    pointPopup.style.opacity = 1;
-    pointPopup.style.transform = "translateY(-30px)";
+  pointPopup.textContent = text;
+  pointPopup.style.left = x + 'px';
+  pointPopup.style.top  = y + 'px';
+  pointPopup.style.color = color;
 
-    // Apply glow effect if requested
-    if (glow) {
-        pointPopup.style.textShadow = `0 0 6px ${color}`;
-    } else {
-        pointPopup.style.textShadow = '';
-    }
+  const isMobile = window.innerWidth <= 768;
+  pointPopup.style.fontSize = isMobile ? '22px' : size;
 
-    setTimeout(() => {
-        pointPopup.style.opacity = 0;
-        pointPopup.style.transform = "translateY(-50px)";
-        // reset textShadow for next popup
-        pointPopup.style.textShadow = '';
-        pointPopup.style.fontSize = '28px';
-    }, 400);
+  pointPopup.style.opacity = 1;
+
+  // ✅ centered + animates downward slightly
+  pointPopup.style.transform = "translate(-50%, 0) translateY(10px)";
+
+  pointPopup.style.textShadow = glow ? `0 0 6px ${color}` : '';
+
+  setTimeout(() => {
+    pointPopup.style.opacity = 0;
+    pointPopup.style.transform = "translate(-50%, 0) translateY(24px)";
+    pointPopup.style.textShadow = '';
+    pointPopup.style.fontSize = '28px';
+  }, 400);
 }
+
 const funTextPopup = document.getElementById('funTextPopup');
 function showTextPopup(text, x, y, color = '#2d93ea', duration = 600) {
-    const isMobile = window.innerWidth <= 768;
+  const isMobile = window.innerWidth <= 768;
 
-    const OFFSET_X = -35;
-    const OFFSET_Y = -20;
+  funTextPopup.textContent = text;
+  funTextPopup.style.left = x + 'px';
+  funTextPopup.style.top  = y + 'px';
+  funTextPopup.style.color = color;
+  funTextPopup.style.fontSize = isMobile ? '24px' : '24px';
 
-    funTextPopup.textContent = text;
-    funTextPopup.style.left = (x + OFFSET_X) + 'px';
-    funTextPopup.style.top = (y + OFFSET_Y) + 'px';
-    funTextPopup.style.color = color;
+  funTextPopup.style.opacity = 1;
 
-    // 🔽 smaller on mobile
-    funTextPopup.style.fontSize = isMobile ? '24px' : '24px';
+  // ✅ centered + animates downward slightly
+  funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";
 
-    funTextPopup.style.opacity = 1;
-    funTextPopup.style.transform = "translateY(-20px)";
-
-    setTimeout(() => {
-        funTextPopup.style.opacity = 0;
-        funTextPopup.style.transform = "translateY(-40px)";
-    }, duration);
+  setTimeout(() => {
+    funTextPopup.style.opacity = 0;
+    funTextPopup.style.transform = "translate(-50%, 0) translateY(22px)";
+  }, duration);
 }
+
 
 // +2 score popup (slightly delayed, same style)
 function showMythicPlusTwo(x, y) {
@@ -1148,42 +1144,45 @@ function loop() {
             ball.y - SPRITE_SIZE/2 < h.y + SPRITE_SIZE;
 
 if (hit) {
-    if (h.spriteIndex === NUM_SPRITES) {          // mythic
-        score += 5;
-        showTextPopup('*mythic bag*', ball.x, ball.y - 80, TIER_COLORS.mythic);
-        showPopup('+5', ball.x, ball.y - 40, TIER_COLORS.mythic, '28px', true);
-        unlockReward('mythic');
-    } else if (h.spriteIndex >= 19) {            // goated
-        score += 3;
-        showTextPopup('goated bag', ball.x, ball.y - 80, TIER_COLORS.goated);
-        showPopup('+3', ball.x, ball.y - 40, TIER_COLORS.goated, '28px', true);
-        maybeShowFunText(ball.x, ball.y, TIER_COLORS.goated);
-        unlockReward('goated');
-    } else if (h.spriteIndex >= 10) {            // rare
-        score += 2;
-        showTextPopup('rare bag', ball.x, ball.y - 80, TIER_COLORS.rare);
-        showPopup('+2', ball.x, ball.y - 40, TIER_COLORS.rare, '28px', true);
-        maybeShowFunText(ball.x, ball.y, TIER_COLORS.rare);
-        unlockReward('rare');
-    } else { // common
+  const textY  = ball.y + POP_TEXT_OFFSET_Y;
+  const pointY = ball.y + POP_POINT_OFFSET_Y;
+
+  if (h.spriteIndex === NUM_SPRITES) {          // mythic
+    score += 5;
+    showTextPopup('*mythic bag*', ball.x, textY, TIER_COLORS.mythic);
+    showPopup('+5', ball.x, pointY, TIER_COLORS.mythic, '28px', true);
+    unlockReward('mythic');
+
+  } else if (h.spriteIndex >= 19) {            // goated
+    score += 3;
+    showTextPopup('goated bag', ball.x, textY, TIER_COLORS.goated);
+    showPopup('+3', ball.x, pointY, TIER_COLORS.goated, '28px', true);
+    maybeShowFunText(ball.x, ball.y, TIER_COLORS.goated); // <- update this too (below)
+    unlockReward('goated');
+
+  } else if (h.spriteIndex >= 10) {            // rare
+    score += 2;
+    showTextPopup('rare bag', ball.x, textY, TIER_COLORS.rare);
+    showPopup('+2', ball.x, pointY, TIER_COLORS.rare, '28px', true);
+    maybeShowFunText(ball.x, ball.y, TIER_COLORS.rare);   // <- update this too (below)
+    unlockReward('rare');
+
+  } else {                                     // common
     score += 1;
 
-    // Decide whether to show fun text instead of the default "standard issue bag"
-    if (Math.random() < 0.4) { // 40% chance, same as maybeShowFunText
-        const text = COMMON_FUN_TEXTS[
-            Math.floor(Math.random() * COMMON_FUN_TEXTS.length)
-        ];
-        showTextPopup(text, ball.x, ball.y - 80, TIER_COLORS.common);
+    if (Math.random() < 0.4) {
+      const text = COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
+      showTextPopup(text, ball.x, textY, TIER_COLORS.common);
     } else {
-        showTextPopup('standard issue bag', ball.x, ball.y - 80, TIER_COLORS.common);
+      showTextPopup('standard issue bag', ball.x, textY, TIER_COLORS.common);
     }
 
-    showPopup('+1', ball.x, ball.y - 40, TIER_COLORS.common);
-}
+    showPopup('+1', ball.x, pointY, TIER_COLORS.common);
+  }
 
-    ball.spriteIndex = h.spriteIndex;
-    hoops.splice(i, 1);
-    continue;
+  ball.spriteIndex = h.spriteIndex;
+  hoops.splice(i, 1);
+  continue;
 }
 
         // Missed hoop ends game
