@@ -425,7 +425,7 @@ canvas {
 /* One stable overlay “unit” */
 #playWrap{
   position: absolute;
-  top: 50%;
+  top: 58%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.8);
   opacity: 0;
@@ -476,6 +476,20 @@ canvas {
 #playWrap.pulsing{
   animation: playPulse 1.2s ease-in-out infinite;
 }
+
+/* Slight blur for UI text (buttons + score UI) */
+.back-button,
+.music-button,
+.leaderboard-btn,
+.soundcloud-btn,
+#overlayHighscore,
+#playSplashText,
+#overlayLastScore {
+  filter: blur(0.6px);
+  opacity: 0.85;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
 
 </style>
 </head>
