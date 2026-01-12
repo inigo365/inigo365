@@ -60,32 +60,30 @@ html, body {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: auto;
+  width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   z-index: 1;
 }
 
 /* VIDEO */
 video {
-  width: auto;
-  height: 100%;
-  object-fit: contain;
-  display: block;
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* desktop: preserve aspect ratio */
   z-index: 2;
 }
 
-/* MOBILE: fill screen but maintain aspect */
+/* MOBILE: fill height, maintain aspect ratio, flush bottom */
 @media (max-width: 768px) {
-  #poster, video {
-    width: 100%;
-    height: auto;
-    max-height: 100%;
-    object-fit: contain;
+  video, #poster {
+    width: auto;
+    height: 100%;
+    object-fit: cover;
   }
 }
 
@@ -153,10 +151,10 @@ const progressText = document.getElementById("progressText");
 let holding = false;
 let finished = false;
 
-// Always show first frame
+// Show first frame immediately on all devices
 video.addEventListener('loadedmetadata', () => {
-  video.pause();
   video.currentTime = 0;
+  video.pause();
   poster.style.display = 'block';
 });
 
@@ -175,6 +173,7 @@ function startMining() {
 
   progressText.style.opacity = '1';
 
+  // iOS autoplay workaround
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   if (isIOS) {
     video.muted = true;
