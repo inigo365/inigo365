@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mining Simulation</title>
+<title>stone in focus</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="../../images/icon.png">
 
@@ -111,9 +111,9 @@ video {
 <div id="video-container">
   <video
     id="video"
-    preload="metadata"
+    preload="auto"
     playsinline
-    src="https://www.dropbox.com/scl/fi/bim4a0b3iyy1g6m9ufvig/stoneinfocus.mp4?raw=1"
+    src="https://github.com/inigo365/inigo365/releases/download/v1.0.0/stoneinfocus.mp4"
     disablepictureinpicture
     controlslist="nodownload noplaybackrate nofullscreen"
   ></video>
@@ -136,7 +136,7 @@ const progressText = document.getElementById("progressText");
 let holding = false;
 let finished = false;
 
-video.load();
+video.load(); // preload immediately
 
 function startMining() {
   if (holding) return;
