@@ -286,6 +286,22 @@ canvas {
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
 }
+
+#overlayHighscore{
+  position: fixed;
+  top: 48px;           /* 8px button top + ~24px button height + gap */
+  right: 8px;          /* align with leaderboard button */
+  font-size: 24px;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  text-align: right;
+  z-index: 101;        /* above playWrap (50) */
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /* Reuse old SoundCloud style for Goodybag button */
 .soundcloud-btn {
   position: fixed;
@@ -476,7 +492,7 @@ canvas {
   <div id="playSplashText"></div>
 </div>
 
-<div id="overlayHighscore" style="position: absolute; top: 84%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
+<div id="overlayHighscore"></div>
 <div id="overlayLastScore" style="position: absolute; top: 90%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
 
 <div id="topScores" style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); font-family: 'RuneScape UF', Arial, sans-serif; color: #2d93ea; z-index: 50; display: flex; justify-content: center; gap: 4vw; white-space: nowrap;">
