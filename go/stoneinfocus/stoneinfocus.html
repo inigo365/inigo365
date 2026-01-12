@@ -7,32 +7,25 @@
 <link rel="icon" href="../../images/icon.png">
 
 <style>
-/* FONT */
 @font-face {
   font-family: "RuneScape UF";
   src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
        url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
-/* RESET */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  background: white;   /* Desktop background white */
+  background: white;
   font-family: "RuneScape UF", Arial, sans-serif;
-
   -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
   user-select: none;
-
   cursor: url("../../images/cursor/cursor.png"), auto;
   overflow: hidden;
 }
 
-/* BACK BUTTON */
 .back-button {
   position: fixed;
   top: 8px;
@@ -48,7 +41,6 @@ html, body {
   z-index: 10;
 }
 
-/* VIDEO CONTAINER */
 #video-container {
   position: relative;
   width: 100%;
@@ -57,30 +49,21 @@ html, body {
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  background: white;  /* desktop background behind video */
+  background: white;
 }
 
-/* VIDEO */
 video {
   display: block;
-  height: 100%;       /* Fill vertical axis on desktop */
-  width: auto;        /* Keep aspect ratio */
+  height: 100%;
+  width: auto;
   object-fit: contain;
 }
 
-/* MOBILE FULLSCREEN OVERRIDE */
 @media (max-width: 768px) {
-  html, body, #video-container {
-    background: black;
-  }
-  video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  html, body, #video-container { background: black; }
+  video { width: 100%; height: 100%; object-fit: cover; }
 }
 
-/* TEXT OVERLAY */
 #overlay {
   position: absolute;
   top: 50%;
@@ -89,20 +72,34 @@ video {
   text-align: center;
   color: #ffffff;
   pointer-events: none;
-  user-select: none;
+  max-width: 90%;
 }
 
+/* UNIFIED TEXT STYLE */
+.overlay-text {
+  filter: blur(0.9px);
+  text-shadow:
+    1px 1px 0 rgba(255,255,255,0.12),
+   -1px -1px 0 rgba(255,255,255,0.06);
+  word-wrap: break-word;
+  white-space: pre-line;
+}
+
+/* TITLE */
 #overlay .title {
-  font-size: 1.5rem;   /* half previous size */
-  margin-bottom: 6px;
+  font-size: 1.5rem;
+  margin-bottom: 8px;
   opacity: 1;
   transition: opacity 0.3s ease;
+  line-height: 1.35;
 }
 
+/* PROGRESS / SUBTEXT */
 #overlay .progress {
   font-size: 1rem;
-  transition: transform 0.2s ease-out, opacity 0.2s ease-out;
-  opacity: 0; /* start hidden */
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  line-height: 1.4;
 }
 </style>
 </head>
@@ -112,89 +109,101 @@ video {
 <button class="back-button" onclick="goBack()">← back</button>
 
 <div id="video-container">
-  <video id="video" preload="auto" src="stoneinfocus.mp4"></video>
+  <video id="video" preload="metadata" playsinline src="stoneinfocus.mp4"></video>
+
   <div id="overlay">
-    <div class="title" id="overlayTitle">click/tap & hold to start mining</div>
-    <div class="progress" id="progressText">0% COMPLETE</div>
+    <div class="title overlay-text" id="overlayTitle">
+      click/tap & hold to start mining
+    </div>
+    <div class="progress overlay-text" id="progressText">
+      0% COMPLETE
+    </div>
   </div>
 </div>
 
 <script>
-const video = document.getElementById('video');
-const progressText = document.getElementById('progressText');
-const overlayTitle = document.getElementById('overlayTitle');
+const video = document.getElementById("video");
+const overlayTitle = document.getElementById("overlayTitle");
+const progressText = document.getElementById("progressText");
 
 let holding = false;
+let finished = false;
 
-// Ensure video is loaded
 video.load();
 
-// Start video on hold
 function startMining() {
-  if (!holding) {
-    holding = true;
-    video.currentTime = 0;
-    video.play().catch(err => console.log("Playback failed:", err));
+  if (holding) return;
 
-    // Fade in progress text
-    progressText.style.opacity = "1";
-
-    // Fade title from initial message to "generating bitcoin..."
-    overlayTitle.style.opacity = "0";
-    setTimeout(() => {
-      overlayTitle.textContent = "generating bitcoin...";
-      overlayTitle.style.opacity = "1";
-    }, 300); // match CSS transition duration
+  if (finished) {
+    finished = false;
+    progressText.style.opacity = "0";
   }
+
+  holding = true;
+  video.currentTime = 0;
+  video.play().catch(() => {});
+
+  progressText.style.opacity = "1";
+
+  overlayTitle.style.opacity = "0";
+  setTimeout(() => {
+    overlayTitle.textContent = "generating bitcoin...";
+    overlayTitle.style.opacity = "1";
+  }, 300);
 }
 
-// Stop and reset on release
 function stopMining() {
+  if (finished) return;
+
   holding = false;
   video.pause();
   video.currentTime = 0;
 
-  // Quick reset animation for progress
-  progressText.style.transform = "translateY(-10px)";
   progressText.style.opacity = "0";
+
   setTimeout(() => {
     progressText.textContent = "0% COMPLETE";
-    progressText.style.transform = "translateY(0)";
-    // Reset overlay title to initial message
     overlayTitle.textContent = "click/tap & hold to start mining";
-    overlayTitle.style.opacity = "1";
   }, 200);
 }
 
-// Animate progress
 function animate() {
-  if (holding) {
-    // Track video progress linearly
-    let percent = (video.currentTime / video.duration) * 100;
-    percent = Math.min(percent, 100);
+  if (holding && !finished) {
+    const percent = Math.min(
+      (video.currentTime / video.duration) * 100,
+      100
+    );
+
     progressText.textContent = Math.floor(percent) + "% COMPLETE";
 
-    // If video reaches the end, reset to 0
-    if (video.currentTime >= video.duration) {
-      video.currentTime = 0;
-      progressText.textContent = "0% COMPLETE";
+    if (video.currentTime >= video.duration - 0.05) {
+      finished = true;
+      holding = false;
+      video.pause();
+      video.currentTime = video.duration;
+
+      overlayTitle.textContent =
+        "you have generated:\n0.0000000000000013 bitcoin";
+
+      progressText.textContent =
+        "tap/click & hold again to keep mining";
+
+      progressText.style.opacity = "1";
     }
   }
+
   requestAnimationFrame(animate);
 }
 
-// Event listeners
 document.addEventListener("mousedown", startMining);
 document.addEventListener("mouseup", stopMining);
-document.addEventListener("touchstart", startMining, {passive: true});
-document.addEventListener("touchend", stopMining, {passive: true});
+document.addEventListener("touchstart", startMining, { passive: true });
+document.addEventListener("touchend", stopMining, { passive: true });
 
-// Navigation
 function goBack() {
   window.location.href = "../index.html";
 }
 
-// Start animation loop
 animate();
 </script>
 
