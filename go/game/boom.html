@@ -497,7 +497,7 @@ canvas {
   background-repeat: no-repeat;
 
   opacity: 0;
-  transition: opacity 12s linear; /* slow fade (both directions) */
+  transition: opacity 1s ease-out; /* slow fade (both directions) */
 }
 
 </style>
@@ -596,23 +596,19 @@ canvas.height = window.innerHeight;
 const POP_TEXT_OFFSET_Y  = 50;  // fun text / "rare bag" line
 const POP_POINT_OFFSET_Y = 20;  // +1/+2/+3 line
 const baghettiBg = document.getElementById('baghettiBg');
-let baghettiHideTimer = null;
+const BAGHETTI_COLOR = '#d9a42a';
+const BAGHETTI_RUN_COUNT = 4; // ✅ only 4 forced
+let baghettiBgActive = false;
 
 function showBaghettiBg() {
-  if (!baghettiBg) return;
-
-  // never fully opaque
+  if (!baghettiBg || baghettiBgActive) return;
+  baghettiBgActive = true;
   baghettiBg.style.opacity = '0.22';
-
-  // retrigger-safe slow fade out
-  if (baghettiHideTimer) clearTimeout(baghettiHideTimer);
-  baghettiHideTimer = setTimeout(() => {
-    hideBaghettiBg();
-  }, 18000);
 }
 
 function hideBaghettiBg() {
-  if (!baghettiBg) return;
+  if (!baghettiBg || !baghettiBgActive) return;
+  baghettiBgActive = false;
   baghettiBg.style.opacity = '0';
 }
 
@@ -916,7 +912,6 @@ allSpritePaths.forEach((path) => {
 function getWeightedSpriteIndex(first = false) {
   const used = new Set();
   used.add(ball.spriteIndex);
-  hoops.forEach(h => used.add(h.spriteIndex));
 
   // ===== PROGRESSIVE BAG LOGIC =====
   if (!first) {
@@ -1133,7 +1128,15 @@ else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
     }
   }
 
-  hoops.push({ x: canvas.width + 50, y, spriteIndex, forcedBaghetti, passedNotBagPopup: false });
+  hoops.push({
+  x: canvas.width + 50,
+  y,
+  spriteIndex,
+  forcedBaghetti,
+  baghettiRun: forcedBaghetti,   // ✅ ONLY the forced ones are part of the run
+  passedNotBagPopup: false
+});
+
 }
 
 const overlayHighscore = document.getElementById('overlayHighscore');
@@ -1329,32 +1332,38 @@ function loop() {
 
   glowPulse += 0.05;
 
-  // Draw ball
-  ctx.save();
-  ctx.translate(ball.x, ball.y);
-  ctx.scale(ball.scaleX, ball.scaleY);
+ // Draw ball
+ctx.save();
+ctx.translate(ball.x, ball.y);
+ctx.scale(ball.scaleX, ball.scaleY);
 
-  if (ball.spriteIndex === NUM_SPRITES) {
-    // Mythic bag
-    ctx.shadowColor = 'yellow';
-    ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
-    ctx.drawImage(mythicImg, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
-    if (shieldArmed) {
-  drawGlowForSprite(mythicImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE, '#2d93ea', glowPulse);
+const ballImg = imgForIndex(ball.spriteIndex);
+
+// 1) draw the sprite with its tier effects
+if (ball.spriteIndex === NUM_SPRITES) {
+  // Mythic tier styling
+  ctx.shadowColor = 'yellow';
+  ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+  if (ballImg) ctx.drawImage(ballImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+  ctx.shadowBlur = 0;
+
+} else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
+  // Rare/goated tier styling (your existing logic)
+  const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+  ctx.shadowColor = 'rgba(255,215,0,0.8)';
+  ctx.shadowBlur = intensity;
+  if (ballImg) ctx.drawImage(ballImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+  ctx.shadowBlur = 0;
+
+} else {
+  // Common/unlock/powerup/notbag (no tier styling)
+  if (ballImg) ctx.drawImage(ballImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
 }
 
-    ctx.shadowBlur = 0;
-  } else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
-    // Rare bags
-    const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
-    ctx.shadowColor = 'rgba(255,215,0,0.8)';
-    ctx.shadowBlur = intensity;
-    const img = imgForIndex(ball.spriteIndex);
-if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-// ✅ ibuprofen/shield indicator = glow matching the sprite silhouette
-if (shieldArmed) {
+// 2) ✅ shield overlay ALWAYS (second pass)
+if (shieldArmed && ballImg) {
   drawGlowForSprite(
-    img,
+    ballImg,
     -SPRITE_SIZE/2, -SPRITE_SIZE/2,
     SPRITE_SIZE, SPRITE_SIZE,
     '#2d93ea',
@@ -1362,16 +1371,7 @@ if (shieldArmed) {
   );
 }
 
-
-    ctx.shadowBlur = 0;
-  } else {
-    // Common bags
-    const img = imgForIndex(ball.spriteIndex);
-if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-
-  }
-
-  ctx.restore();
+ctx.restore();
 
   // Draw hoops
   for (let i = hoops.length - 1; i >= 0; i--) {
@@ -1486,44 +1486,24 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
   const powerId = h.spriteIndex - POWERUP_START;
 
   // ✅ ALL baghetti (pickup + forced) = +4
-  if (powerId === POWERUPS.baghetti || h.forcedBaghetti) {
-    score += 4;
+  // ✅ baghetti (pickup OR forced) = +4 (same color)
+if (powerId === POWERUPS.baghetti) {
+  score += 4;
 
-    showTextPopup(
-      'baghetti',
-      ball.x,
-      ball.y + POP_TEXT_OFFSET_Y,
-      BAGHETTI_COLOR
-    );
+  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, BAGHETTI_COLOR);
+  showPopup('+4', ball.x, ball.y + POP_POINT_OFFSET_Y, BAGHETTI_COLOR);
 
-    showPopup(
-      '+4',
-      ball.x,
-      ball.y + POP_POINT_OFFSET_Y,
-      BAGHETTI_COLOR
-    );
-
-    showBaghettiBg();
-
-    // activate baghetti effect ONLY on pickup
-    if (powerId === POWERUPS.baghetti) {
-      baghettiCharges = 5;
-
-      // instantly convert all hoops on screen
-      const baghettiIndex = POWERUP_START + POWERUPS.baghetti;
-      hoops.forEach(hh => {
-        hh.spriteIndex = baghettiIndex;
-        hh.forcedBaghetti = true;
-        hh.passedNotBagPopup = false;
-      });
-
-      lastHoopWasNotBag = false;
-    }
-
-    ball.spriteIndex = h.spriteIndex;
-    hoops.splice(i, 1);
-    continue;
+  // ✅ ONLY the real pickup starts the run
+  // Forced baghettis must NOT reset charges
+  if (!h.forcedBaghetti) {
+    baghettiCharges = BAGHETTI_RUN_COUNT; // ✅ 4 forced, not 5
   }
+
+  ball.spriteIndex = h.spriteIndex;
+  hoops.splice(i, 1);
+  continue;
+}
+
 
   // -------- Shield (still +1) --------
   score += 1;
@@ -1601,10 +1581,17 @@ if (h.x + SPRITE_SIZE < ball.x - 20) {
 
   }
 
-  // Spawn new hoops
-  if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) addHoop();
+// Spawn new hoops ...
+const GAP = Math.min(420, Math.max(260, Math.floor(canvas.width * 0.7)));
+if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - GAP) addHoop();
 
-  if (!gameOver) requestAnimationFrame(loop);
+// ✅ bg control
+const baghettiStillOnScreen = hoops.some(hh => hh.baghettiRun === true);
+if (baghettiStillOnScreen) showBaghettiBg();
+else hideBaghettiBg();
+
+if (!gameOver) requestAnimationFrame(loop);
+
 }
 
 function endGame() {

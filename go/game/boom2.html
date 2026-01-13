@@ -1602,7 +1602,10 @@ if (h.x + SPRITE_SIZE < ball.x - 20) {
   }
 
   // Spawn new hoops
-  if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) addHoop();
+  // Spawn new hoops (responsive spacing)
+const GAP = Math.min(420, Math.max(260, Math.floor(canvas.width * 0.7)));
+if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - GAP) addHoop();
+
 
   if (!gameOver) requestAnimationFrame(loop);
 }
