@@ -279,6 +279,7 @@ canvas {
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
   z-index: 100;
+  display: none; /* ✅ start hidden */
 }
 
 .leaderboard-close {
@@ -307,7 +308,6 @@ canvas {
   white-space: nowrap;
 }
 
-/* Reuse old SoundCloud style for Goodybag button */
 .soundcloud-btn {
   position: fixed;
   bottom: 8px;
@@ -321,7 +321,7 @@ canvas {
   text-transform: lowercase;
   padding: 0;
   z-index: 400;
-  opacity: 1;
+  display: none; /* ✅ start hidden */
   transition: opacity 0.5s ease;
   touch-action: none;
 }
@@ -590,6 +590,8 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
+const overlayHighscoreEl = document.getElementById('overlayHighscore');
+const topScoresEl = document.getElementById('topScores');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
@@ -1181,6 +1183,12 @@ function updateTopScores() {
 }
 
 function showOverlay(showLastScore = false) {
+
+ // ✅ LOADING SCREEN: keep these hidden
+leaderboardBtn.style.display = 'none';
+if (goodybagBtn) goodybagBtn.style.display = 'none';
+
+  // ✅ LOADING SCREEN: show play overlay
   playWrap.style.opacity = 1;
   playWrap.style.transform = "translate(-50%, -50%) scale(1)";
   playWrap.style.pointerEvents = "auto";
@@ -1189,18 +1197,15 @@ function showOverlay(showLastScore = false) {
   // random every time
   playSplashText.textContent = pickRandomFunText();
 
-  overlayHighscore.style.opacity = 1;
-  overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
-
   overlayLastScore.style.opacity = showLastScore ? 1 : 0;
   if (showLastScore) {
     overlayLastScore.textContent = "last score: " + score;
   }
 
-  hideTopScores();
   gameStarted = false;
   backButton.style.opacity = 1;
-  leaderboardBtn.style.display = 'block';
+
+  // ✅ keep music toggle visible on loading screen
   showMusicButton();
 }
 
@@ -1226,12 +1231,12 @@ function startGame() {
   if (gameStarted || !assetsLoaded) return;
   hideOverlay();
   gameStarted = true;
+  
   SPEED = 3;
   hoops = [];
   score = 0;
   gameOver = false;
   ball.spriteIndex = getWeightedSpriteIndex(true);
-  if (goodybagBtn) goodybagBtn.style.display = 'none';
 
   // ----- START POSITION: MOBILE vs DESKTOP -----
   if (window.innerWidth <= 768) { // mobile
@@ -1246,6 +1251,7 @@ function startGame() {
   loop();
   backButton.style.opacity = 0;
   leaderboardBtn.style.display = 'none';
+if (goodybagBtn) goodybagBtn.style.display = 'none';
   leaderboardBtn.style.zIndex = 100;
   showTopScores();
   hideMusicButton();
@@ -1293,7 +1299,7 @@ function playAgain() {
   nameModal.classList.remove('show');
   leaderboardBackdrop.style.display = 'none';
 
-  if (goodybagBtn) goodybagBtn.style.display = 'block';
+  if (goodybagBtn) goodybagBtn.style.display = 'none';
 
   // Reset game state
   gameStarted = false;
