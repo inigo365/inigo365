@@ -595,6 +595,26 @@ canvas.height = window.innerHeight;
 
 const POP_TEXT_OFFSET_Y  = 50;  // fun text / "rare bag" line
 const POP_POINT_OFFSET_Y = 20;  // +1/+2/+3 line
+const baghettiBg = document.getElementById('baghettiBg');
+let baghettiHideTimer = null;
+
+function showBaghettiBg() {
+  if (!baghettiBg) return;
+
+  // never fully opaque
+  baghettiBg.style.opacity = '0.22';
+
+  // retrigger-safe slow fade out
+  if (baghettiHideTimer) clearTimeout(baghettiHideTimer);
+  baghettiHideTimer = setTimeout(() => {
+    hideBaghettiBg();
+  }, 18000);
+}
+
+function hideBaghettiBg() {
+  if (!baghettiBg) return;
+  baghettiBg.style.opacity = '0';
+}
 
 const COMMON_FUN_TEXTS = [
   "professional bagman",
@@ -693,16 +713,6 @@ function drawTierBanner() {
     tierBanner = null;
     return;
   }
-const baghettiBg = document.getElementById('baghettiBg');
-
-function showBaghettiBg() {
-  // never fully opaque
-  baghettiBg.style.opacity = '0.22'; // tweak 0.12–0.35
-}
-
-function hideBaghettiBg() {
-  baghettiBg.style.opacity = '0';
-}
 
   /* ================= FADE CONTROL ================= */
   const FADE_OUT_MS = 1000; // ⬅ change fade length here (ms)
@@ -1477,7 +1487,6 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
     showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#f7b72d');
     showPopup('+4', ball.x, ball.y + POP_POINT_OFFSET_Y, '#f7b72d');
     showBaghettiBg();
-    setTimeout(hideBaghettiBg, 18000);
     ball.spriteIndex = h.spriteIndex;
     hoops.splice(i, 1);
     continue;
@@ -1499,7 +1508,6 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
   baghettiCharges = 5;
   showTextPopup('baghetti time', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#f7b72d');
   showBaghettiBg();
-setTimeout(hideBaghettiBg, 18000); // fades out slowly
 
 
   // ✅ Instantly convert ALL hoops currently on screen to baghetti
