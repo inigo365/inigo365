@@ -492,7 +492,7 @@ canvas {
 <div id="rotateNotice">Please rotate your phone to portrait</div>
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
-<button id="goodybagBtn" class="soundcloud-btn" style="display:none;">goodybag</button>
+<button id="goodybagBtn" class="soundcloud-btn">goodybag</button>
 <audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
 
 <div id="playWrap">
@@ -609,18 +609,45 @@ const COMMON_FUN_TEXTS = [
   "baghetti",
   "bag o'clock"
 ];
+function isNotBagIndex(idx) {
+  return idx >= NOTBAG_START && idx < NOTBAG_START + NOTBAG_COUNT;
+}
 
-// ------------------- REWARD TRACKING -------------------
-const REWARD_KEYS = {
-  rare: 'rewardRareUnlocked',
-  goated: 'rewardGoatedUnlocked',
-  mythic: 'rewardMythicUnlocked'
+// ------------------- UNLOCK STORAGE KEYS -------------------
+const UNLOCK_KEYS = {
+  password_tinny: "unlock_password_tinny",
+  password_onway: "unlock_password_onway",
+  soundtracks: "unlock_soundtracks"
 };
 
-// Ensure first-time unlock flags exist
-Object.values(REWARD_KEYS).forEach(key => {
-  if (localStorage.getItem(key) === null) localStorage.setItem(key, 'false');
+// Ensure keys exist (optional, keeps storage consistent)
+Object.values(UNLOCK_KEYS).forEach(k => {
+  if (localStorage.getItem(k) === null) localStorage.setItem(k, "false");
 });
+
+// ===================== UNLOCK / POWERUP DEFINITIONS =====================
+const UNLOCK_BAGS = [
+  {
+    spriteOffset: 0, // unlockSprites[0] = tinny.png
+    storageKey: UNLOCK_KEYS.password_tinny,
+    bannerText: '*password found!*\nunlocked: tinny'
+  },
+  {
+    spriteOffset: 1, // onway.png
+    storageKey: UNLOCK_KEYS.password_onway,
+    bannerText: '*password found!*\nunlocked: onway'
+  },
+  {
+    spriteOffset: 2, // music.png
+    storageKey: UNLOCK_KEYS.soundtracks,
+    bannerText: '*music found!*\nsoundtracks unlocked!'
+  }
+];
+
+const POWERUPS = {
+  shield: 0,   // powerupSprites[0] = shield.png
+  baghetti: 1  // powerupSprites[1] = baghetti.png
+};
 
 const TIER_COLORS = {
   common: '#2d93ea',
@@ -687,12 +714,6 @@ function drawTierBanner() {
   ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
   ctx.fillStyle = tierBanner.color;
 
-  // Very light shadow (keeps your style vibe, but not “glowy”)
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetX = 1;
-  ctx.shadowOffsetY = 1;
-
   const lineH = Math.round(fontSize * 1.15);
   for (let i = 0; i < tierBanner.lines.length; i++) {
     ctx.fillText(tierBanner.lines[i], x, baseY + i * lineH);
@@ -748,6 +769,15 @@ let gameOver = false;
 let gameStarted = false;
 let glowPulse = 0;
 
+// ===================== SPECIAL SPAWN + POWERUP STATE =====================
+let lastHoopWasNotBag = false;
+
+// Shield: simplest + safest = 1-use shield (saves you once)
+let shieldArmed = false;
+
+// Baghetti: forces the next N hoops to spawn as baghetti (+4 each)
+let baghettiCharges = 0;
+
 let lastTouchTime = 0;
 document.addEventListener('touchstart', function (e) {
   const now = new Date().getTime();
@@ -762,29 +792,88 @@ const NUM_SPRITES = 25; // regular sprites
 const sprites = [];
 let assetsLoaded = false;
 
-// Combine regular + mythic into one array
-const allSpritePaths = [];
-for (let i = 1; i <= NUM_SPRITES; i++) {
-  allSpritePaths.push(`sprites/${String(i).padStart(2, '0')}.png`);
-}
-allSpritePaths.push('sprites/mythic1.png'); // mythic bag
+// Special sprite groups
+const NOTBAG_COUNT = 10;          // 00..09
+const UNLOCK_COUNT = 3;           // tinny, onway, music
+const POWERUP_COUNT = 2;          // shield, baghetti
 
-// Load all sprites
+const notbagSprites = [];
+const unlockSprites = [];
+const powerupSprites = [];
+
+// Index ranges (keep numeric indices so the rest of your game stays stable)
+const MYTHIC_INDEX = NUM_SPRITES;                 // 25
+const NOTBAG_START = MYTHIC_INDEX + 1;            // 26
+const UNLOCK_START = NOTBAG_START + NOTBAG_COUNT; // 36
+const POWERUP_START = UNLOCK_START + UNLOCK_COUNT;// 39
+
+// Helper: get the correct Image object for any spriteIndex
+function imgForIndex(idx) {
+  if (idx < NUM_SPRITES) return sprites[idx];
+  if (idx === MYTHIC_INDEX) return mythicImg;
+
+  if (idx >= NOTBAG_START && idx < NOTBAG_START + NOTBAG_COUNT) {
+    return notbagSprites[idx - NOTBAG_START];
+  }
+  if (idx >= UNLOCK_START && idx < UNLOCK_START + UNLOCK_COUNT) {
+    return unlockSprites[idx - UNLOCK_START];
+  }
+  if (idx >= POWERUP_START && idx < POWERUP_START + POWERUP_COUNT) {
+    return powerupSprites[idx - POWERUP_START];
+  }
+  return null;
+}
+
+const allSpritePaths = [];
+
+// base bag sprites 01..25
+for (let i = 1; i <= NUM_SPRITES; i++) {
+  allSpritePaths.push(`sprites/${String(i).padStart(2,'0')}.png`);
+}
+
+// mythic
+allSpritePaths.push('sprites/mythic1.png');
+
+// definitely not bag 00..09
+for (let i = 0; i < NOTBAG_COUNT; i++) {
+  allSpritePaths.push(`sprites/notbag/${String(i).padStart(2,'0')}.png`);
+}
+
+// unlock bags (order matters: 0=tinny, 1=onway, 2=music)
+allSpritePaths.push('sprites/unlock/tinny.png');
+allSpritePaths.push('sprites/unlock/onway.png');
+allSpritePaths.push('sprites/unlock/music.png');
+
+// powerups (order matters: 0=shield, 1=baghetti)
+allSpritePaths.push('sprites/powerups/shield.png');
+allSpritePaths.push('sprites/powerups/baghetti.png');
+
 let loadedCount = 0;
-allSpritePaths.forEach((path, index) => {
+
+allSpritePaths.forEach((path) => {
   const img = new Image();
   img.onload = () => {
     loadedCount++;
     if (loadedCount === allSpritePaths.length) {
-      assetsLoaded = true; // all loaded!
+      assetsLoaded = true;
       console.log('All assets loaded!');
     }
   };
   img.src = path;
 
-  // put in sprites array for regular sprites
-  if (index < NUM_SPRITES) sprites.push(img);
-  else window.mythicImg = img; // global mythic image
+  // Assign into correct bucket based on path
+  if (path.startsWith("sprites/notbag/")) {
+    notbagSprites.push(img);
+  } else if (path.startsWith("sprites/unlock/")) {
+    unlockSprites.push(img);
+  } else if (path.startsWith("sprites/powerups/")) {
+    powerupSprites.push(img);
+  } else if (path === "sprites/mythic1.png") {
+    window.mythicImg = img;
+  } else {
+    // base sprites 01..25
+    sprites.push(img);
+  }
 });
 
 function getWeightedSpriteIndex(first = false) {
@@ -944,19 +1033,50 @@ function getPlayableHeight() {
 function addHoop() {
   const playableHeight = getPlayableHeight();
 
-  // Get topScores height to prevent hoops overlapping
   const topScoresEl = document.getElementById('topScores');
   const topScoresHeight = topScoresEl.offsetHeight || 0;
 
-  // verticalMargin: minimum distance from topScores and bottom of playable area
-  const bottomMargin = playableHeight * 0.3; // 15% from bottom
-  const topMargin = topScoresHeight + 100;   // 10px below topScores
+  const bottomMargin = playableHeight * 0.3;
+  const topMargin = topScoresHeight + 100;
 
-  // y-coordinate for hoop spawn
   const y = Math.random() * (playableHeight - topMargin - bottomMargin) + topMargin;
 
-  const spriteIndex = getWeightedSpriteIndex();
-  hoops.push({ x: canvas.width + 50, y, spriteIndex });
+  let spriteIndex;
+  let forcedBaghetti = false;
+
+  // 1) Baghetti override: next N hoops forced to baghetti
+  if (baghettiCharges > 0) {
+    spriteIndex = POWERUP_START + POWERUPS.baghetti;
+    forcedBaghetti = true;
+    baghettiCharges--;
+    lastHoopWasNotBag = false; // prevent weird streak logic
+  } else {
+    // 2) Definitely Not Bag: ~1 in 5, but never 2 in a row
+    const NOTBAG_CHANCE = 1 / 7; // ~0.142857 (≈ 1 in 7)
+    const rollNotBag = Math.random() < NOTBAG_CHANCE;
+
+    if (rollNotBag && !lastHoopWasNotBag) {
+      spriteIndex = NOTBAG_START + Math.floor(Math.random() * NOTBAG_COUNT);
+      lastHoopWasNotBag = true;
+    } else {
+      lastHoopWasNotBag = false;
+
+      // 3) Unlock bag: 1% chance
+      if (Math.random() < 0.01) {
+        spriteIndex = UNLOCK_START + Math.floor(Math.random() * UNLOCK_COUNT);
+      }
+      // 4) Powerup: 5% chance
+      else if (Math.random() < 0.05) {
+        spriteIndex = POWERUP_START + Math.floor(Math.random() * POWERUP_COUNT);
+      }
+      // 5) Otherwise normal bag
+      else {
+        spriteIndex = getWeightedSpriteIndex();
+      }
+    }
+  }
+
+  hoops.push({ x: canvas.width + 50, y, spriteIndex, forcedBaghetti });
 }
 
 const overlayHighscore = document.getElementById('overlayHighscore');
@@ -1113,10 +1233,7 @@ function playAgain() {
   nameModal.classList.remove('show');
   leaderboardBackdrop.style.display = 'none';
 
-  // Only hide goodybag if rare reward not unlocked
-  if (localStorage.getItem(REWARD_KEYS.rare) !== 'true' && goodybagBtn) {
-    goodybagBtn.style.display = 'none';
-  }
+  if (goodybagBtn) goodybagBtn.style.display = 'block';
 
   // Reset game state
   gameStarted = false;
@@ -1158,16 +1275,20 @@ function loop() {
     ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
     ctx.drawImage(mythicImg, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
     ctx.shadowBlur = 0;
-  } else if (ball.spriteIndex >= 11) {
+  } else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
     // Rare bags
     const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
     ctx.shadowColor = 'rgba(255,215,0,0.8)';
     ctx.shadowBlur = intensity;
-    ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+    const img = imgForIndex(ball.spriteIndex);
+if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+
     ctx.shadowBlur = 0;
   } else {
     // Common bags
-    ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+    const img = imgForIndex(ball.spriteIndex);
+if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+
   }
 
   ctx.restore();
@@ -1183,14 +1304,18 @@ function loop() {
       ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
       ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
       ctx.shadowBlur = 0;
-    } else if (h.spriteIndex >= 11) {
+    } else if (h.spriteIndex >= 11 && !isNotBagIndex(h.spriteIndex)) {
       const intensity = (h.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
       ctx.shadowColor = 'rgba(255,215,0,0.8)';
       ctx.shadowBlur = intensity;
-      ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+      const img = imgForIndex(h.spriteIndex);
+if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+
       ctx.shadowBlur = 0;
     } else {
-      ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+      const img = imgForIndex(h.spriteIndex);
+if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+
     }
 
     // Collision detection
@@ -1203,27 +1328,87 @@ function loop() {
     if (hit) {
       const textY = ball.y + POP_TEXT_OFFSET_Y;
       const pointY = ball.y + POP_POINT_OFFSET_Y;
+// -------- SPECIAL: Definitely Not Bag (instant death unless shield) --------
+if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
+  if (shieldArmed) {
+    shieldArmed = false;
+    showTextPopup('shield saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    hoops.splice(i, 1);
+    continue;
+  } else {
+    return endGame();
+  }
+}
+
+// -------- SPECIAL: Unlock bags (+3 always) --------
+if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT) {
+  score += 3;
+  showPopup('+3', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
+
+  const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
+  const key = unlockDef.storageKey;
+
+  if (localStorage.getItem(key) !== 'true') {
+    localStorage.setItem(key, 'true');
+    setTierBanner(unlockDef.bannerText, '#2d93ea', 3000);
+  } else {
+    showTextPopup('unlock bag', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+  }
+
+  ball.spriteIndex = h.spriteIndex;
+  hoops.splice(i, 1);
+  continue;
+}
+
+// -------- SPECIAL: Powerups (+1 always) --------
+if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_COUNT) {
+  // Forced baghetti bags are NOT "powerup hits" — they are +4
+  if (h.forcedBaghetti) {
+    score += 4;
+    showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    showPopup('+4', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
+    ball.spriteIndex = h.spriteIndex;
+    hoops.splice(i, 1);
+    continue;
+  }
+
+  // Normal powerup pickup = +1
+  score += 1;
+  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
+
+  const powerId = h.spriteIndex - POWERUP_START;
+
+  // Shield
+  if (powerId === POWERUPS.shield) {
+    shieldArmed = true;
+    showTextPopup('shield armed', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+  }
+
+  // Baghetti powerup triggers next 5 forced baghetti hoops
+  if (powerId === POWERUPS.baghetti) {
+    baghettiCharges = 5;
+    showTextPopup('baghetti mode', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+  }
+
+  ball.spriteIndex = h.spriteIndex;
+  hoops.splice(i, 1);
+  continue;
+}
 
       if (h.spriteIndex === NUM_SPRITES) {          // mythic
         score += 5;
         showTextPopup('*mythic bag*', ball.x, textY, TIER_COLORS.mythic);
         showPopup('+5', ball.x, pointY, TIER_COLORS.mythic, '28px', true);
-        unlockReward('mythic');
-
       } else if (h.spriteIndex >= 19) {            // goated
         score += 3;
         showTextPopup('goated bag', ball.x, textY, TIER_COLORS.goated);
         showPopup('+3', ball.x, pointY, TIER_COLORS.goated, '28px', true);
         maybeShowFunText(ball.x, ball.y, TIER_COLORS.goated);
-        unlockReward('goated');
-
       } else if (h.spriteIndex >= 10) {            // rare
         score += 2;
         showTextPopup('rare bag', ball.x, textY, TIER_COLORS.rare);
         showPopup('+2', ball.x, pointY, TIER_COLORS.rare, '28px', false);
         maybeShowFunText(ball.x, ball.y, TIER_COLORS.rare);
-        unlockReward('rare');
-
       } else {                                     // common
         score += 1;
 
@@ -1242,8 +1427,27 @@ function loop() {
       continue;
     }
 
-    // Missed hoop ends game
-    if (h.x + SPRITE_SIZE < ball.x - 20) return endGame();
+   // Missed hoop ends game (EXCEPT definitely-not-bag)
+if (h.x + SPRITE_SIZE < ball.x - 20) {
+
+  // If this hoop is definitely-not-bag, you can miss it safely.
+  // Remove it and continue.
+  if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
+    hoops.splice(i, 1);
+    continue;
+  }
+
+  // Otherwise normal miss behaviour
+  if (shieldArmed) {
+    shieldArmed = false;
+    showTextPopup('shield saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    hoops.splice(i, 1);
+    continue;
+  }
+
+  return endGame();
+}
+
   }
 
   // Spawn new hoops
@@ -1400,10 +1604,8 @@ function goBack() { window.location.href = "../index.html"; }
     setTimeout(() => playerNameInput.focus(), 100);
     showMusicButton();
 
-    // ✅ Show goodybag button only if unlocked
-    if (localStorage.getItem(REWARD_KEYS.rare) === 'true' && goodybagBtn) {
-      goodybagBtn.style.display = 'block';
-    }
+    if (goodybagBtn) goodybagBtn.style.display = 'block';
+
   };
 
   window.submitScore = async function () {
@@ -1467,16 +1669,22 @@ const SOUNDTRACKS = {
   }
 };
 
+function refreshGoodybagButtons() {
+  const hasSoundtracks = localStorage.getItem(UNLOCK_KEYS.soundtracks) === 'true';
+  const hasAnyPassword =
+    localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
+    localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true';
+
+  soundtrackBtn.disabled = !hasSoundtracks;
+  passwordBtn.disabled = !hasAnyPassword;
+}
+
 function openGoodybag() {
   goodybagBackdrop.classList.add('active');
+  refreshGoodybagButtons();
 
-  const hasGoated = localStorage.getItem(REWARD_KEYS.goated) === 'true';
-  const hasMythic = localStorage.getItem(REWARD_KEYS.mythic) === 'true';
-
-  soundtrackBtn.disabled = !hasGoated;
-  passwordBtn.disabled = !hasMythic;
-
-  if (!hasGoated && !hasMythic) {
+  // If nothing unlocked yet
+  if (soundtrackBtn.disabled && passwordBtn.disabled) {
     goodybagContent.innerHTML = `
       <div style="opacity:0.6; font-size:20px;">
         no goodies found yet...
@@ -1495,22 +1703,18 @@ goodybagBtn.addEventListener('click', openGoodybag);
 
 // ----- SOUNDTRACK BUTTON -----
 soundtrackBtn.addEventListener('click', () => {
-  goodybagContent.innerHTML = ''; // clear previous content
+  goodybagContent.innerHTML = '';
 
-  // If player hasn't unlocked soundtracks
-  if (localStorage.getItem(REWARD_KEYS.goated) !== 'true') {
-    goodybagContent.innerHTML = '<div>No soundtracks unlocked yet...</div>';
+  if (localStorage.getItem(UNLOCK_KEYS.soundtracks) !== 'true') {
+    goodybagContent.innerHTML = '<div>no soundtracks unlocked yet...</div>';
     return;
   }
 
-  // Loop through SOUNDTRACKS
   for (const [name, data] of Object.entries(SOUNDTRACKS)) {
-    // Outer wrapper block - this will be centered in modal
     const wrapper = document.createElement('div');
     wrapper.classList.add('goodybag-block');
     wrapper.style.marginBottom = '18px';
 
-    // Header row (name + link)
     const headerRow = document.createElement('div');
     headerRow.style.display = 'flex';
     headerRow.style.justifyContent = 'space-between';
@@ -1535,7 +1739,6 @@ soundtrackBtn.addEventListener('click', () => {
     headerRow.appendChild(header);
     headerRow.appendChild(linkBtn);
 
-    // Track list
     const ul = document.createElement('ul');
     ul.style.listStyle = 'none';
     ul.style.padding = '0';
@@ -1556,19 +1759,20 @@ soundtrackBtn.addEventListener('click', () => {
 
 // ----- PASSWORD BUTTON -----
 passwordBtn.addEventListener('click', () => {
-  if (localStorage.getItem(REWARD_KEYS.mythic) !== 'true') {
+  const unlocked = [];
+  if (localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true') unlocked.push('tinny');
+  if (localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true') unlocked.push('onway');
+
+  if (!unlocked.length) {
     goodybagContent.innerHTML = '<div>no passwords unlocked yet...</div>';
     return;
   }
-  goodybagContent.innerHTML = '<div>unlocked passwords: <strong>onway</strong></div>';
+
+  goodybagContent.innerHTML =
+    '<div>unlocked passwords:</div>' +
+    unlocked.map(p => `<div><strong>${p}</strong></div>`).join('');
 });
 
-// ----- SHOW GOODYBAG BUTTON AFTER RELOAD ----- (deduped; kept once)
-window.addEventListener('load', () => {
-  if (localStorage.getItem(REWARD_KEYS.rare) === 'true' && goodybagBtn) {
-    goodybagBtn.style.display = 'block';
-  }
-});
 </script>
 
 </body>
