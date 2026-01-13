@@ -761,7 +761,8 @@ const START_SPEED = 4;       // speed when the game starts
 const MAX_SPEED = 7.3;       // speed when score reaches MAX_SPEED_SCORE
 const MAX_SPEED_SCORE = 500;
 let SPRITE_SIZE = Math.round(canvas.height * 0.12);
-
+      // ✅ Definitely-not-bag hitbox tuning
+const NOTBAG_HITBOX_SCALE = 0.45; // 0.4 very forgiving, 0.55 nice, 0.7 strict
 let ball = { x: Math.round(canvas.width * 0.4), y: canvas.height / 2, vy: 0, spriteIndex: 0, scaleX: 1, scaleY: 1 };
 let hoops = [];
 let score = 0;
@@ -1384,12 +1385,27 @@ if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
 
     }
 
-    // Collision detection
-    const hit =
-      ball.x + SPRITE_SIZE / 2 > h.x &&
-      ball.x - SPRITE_SIZE / 2 < h.x + SPRITE_SIZE &&
-      ball.y + SPRITE_SIZE / 2 > h.y &&
-      ball.y - SPRITE_SIZE / 2 < h.y + SPRITE_SIZE;
+    // draw hoop...
+
+// Collision detection (✅ not-bag uses smaller hitbox)
+let hit = false;
+
+if (isNotBagIndex(h.spriteIndex)) {
+  const shrink = SPRITE_SIZE * NOTBAG_HITBOX_SCALE;
+  const offset = (SPRITE_SIZE - shrink) / 2;
+
+  hit =
+    ball.x + SPRITE_SIZE / 2 > h.x + offset &&
+    ball.x - SPRITE_SIZE / 2 < h.x + offset + shrink &&
+    ball.y + SPRITE_SIZE / 2 > h.y + offset &&
+    ball.y - SPRITE_SIZE / 2 < h.y + offset + shrink;
+} else {
+  hit =
+    ball.x + SPRITE_SIZE / 2 > h.x &&
+    ball.x - SPRITE_SIZE / 2 < h.x + SPRITE_SIZE &&
+    ball.y + SPRITE_SIZE / 2 > h.y &&
+    ball.y - SPRITE_SIZE / 2 < h.y + SPRITE_SIZE;
+}
 
     if (hit) {
       const textY = ball.y + POP_TEXT_OFFSET_Y;
