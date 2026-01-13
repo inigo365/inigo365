@@ -1343,14 +1343,15 @@ function loop() {
 if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
 // ✅ ibuprofen/shield indicator = glow matching the sprite silhouette
 if (shieldArmed) {
-  drawSpriteGlow(
+  drawGlowForSprite(
     img,
     -SPRITE_SIZE/2, -SPRITE_SIZE/2,
     SPRITE_SIZE, SPRITE_SIZE,
     '#2d93ea',
-    22 + Math.sin(glowPulse) * 6
+    glowPulse
   );
 }
+
 
     ctx.shadowBlur = 0;
   } else {
