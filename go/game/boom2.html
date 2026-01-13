@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>put the bag in the bag</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="icon" type="image/png" href="./images/icon.png">
+<style>
+@font-face {
+  font-family: "RuneScape UF";
+  src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
+       url("../../fonts/RuneScape-UF.woff") format("woff");
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor.png"), auto;
+  background: #fff;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Custom hover cursor for all interactive elements */
+button,
+a,
+input,
+.leaderboard-btn,
+.leaderboard-close {
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+
+#topScores{
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 4vw, 40px);
+
+  /* ✅ never resize / never jump */
+  height: 44px;                 /* constant every play */
+  padding: 0 12px;
+  white-space: nowrap;
+
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: clamp(18px, 2.2vw, 26px);  /* responsive without JS */
+  line-height: 1;
+
+  color: #2d93ea;
+
+  /* Start hidden */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+
+#topScores > div{
+  flex: 0 0 auto;               /* prevents shrink */
+}
+
+#rotateNotice {
+    display: none;               /* hidden by default */
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    color: #2d93ea;
+    font-family: 'RuneScape UF', Arial, sans-serif;
+    font-size: 5vw;
+    text-align: center;
+    line-height: 100vh;
+    z-index: 9999;              /* above all game elements */
+    opacity: 0;                 /* hidden initially */
+    pointer-events: none;       /* ignore clicks when hidden */
+    transition: opacity 0.5s ease; /* smooth fade in/out */
+}
+
+#rotateNotice.active {
+    opacity: 1;                 /* visible */
+    pointer-events: none;       /* block interactions while visible */
+}
+
+/* Back Button */
+.back-button {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 0;
+  z-index: 100;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  touch-action: none;
+}
+
+/* Music Button (like back button, bottom-left, hidden initially) */
+.music-button {
+  position: fixed;
+  bottom: 8px;
+  left: 8px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 0;
+  z-index: 400;
+  opacity: 0;           /* hidden initially */
+  transition: opacity 0.5s ease;
+  touch-action: none;
+}
+
+/* Canvas */
+canvas {
+  display: block;
+  margin: 0 auto;
+  background: #ffffff;
+}
+
+/* Point Popup */
+.point-popup {
+  position: absolute;
+  font-size: 28px;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 6;
+}
+
+/* Name Input Modal */
+.name-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.95);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.name-modal > * {
+  pointer-events: auto;
+}
+
+.name-modal.show {
+  display: flex;
+}
+
+.name-modal h2 {
+  font-size: 36px;
+  color: #2d93ea;
+  margin-bottom: 8px;
+}
+
+.name-modal .final-score {
+  font-size: 28px;
+  color: #2d93ea;
+  margin-bottom: 24px;
+}
+
+.name-modal input {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  padding: 12px 16px;
+  border: 2px solid #2d93ea;
+  background: white;
+  outline: none;
+  text-align: center;
+  width: 200px;
+  margin-bottom: 16px;
+}
+
+.name-modal button {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  padding: 12px 32px;
+  border: 2px solid #2d93ea;
+  background: #2d93ea;
+  color: white;
+  margin-top: 12px;
+}
+
+.name-modal button:hover {
+  background: #1a7bd4;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+
+/* Leaderboard */
+#leaderboardBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.95);
+  display: none;
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+.leaderboard {
+  background: white;
+  border: 2px solid #2d93ea;
+  padding: 24px;
+  min-width: 280px;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.leaderboard h3 {
+  font-size: 28px;
+  color: #2d93ea;
+  margin: 0 0 16px 0;
+  text-align: center;
+}
+
+.leaderboard-entry {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  color: #2d93ea;
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.leaderboard-entry:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-entry .rank {
+  width: 30px;
+}
+
+.leaderboard-entry .name {
+  flex: 1;
+  text-align: left;
+  padding-left: 8px;
+}
+
+.leaderboard-entry .score {
+  width: 60px;
+  text-align: right;
+}
+
+.leaderboard-btn {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  z-index: 100;
+}
+
+.leaderboard-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+}
+
+#overlayHighscore{
+  position: fixed;
+  top: 40px;           /* 8px button top + ~24px button height + gap */
+  right: 8px;          /* align with leaderboard button */
+  font-size: 24px;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  text-align: right;
+  z-index: 1001;        /* above playWrap (50) */
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Reuse old SoundCloud style for Goodybag button */
+.soundcloud-btn {
+  position: fixed;
+  bottom: 8px;
+  right: 15px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 0;
+  z-index: 400;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  touch-action: none;
+}
+
+/* Goodybag Backdrop */
+#goodybagBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255,255,255,0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 9998;
+}
+
+#goodybagBackdrop.active {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#goodybagBackdrop button {
+    font-family: "RuneScape UF", Arial, sans-serif;
+    color: #2d93ea;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+    margin: 10px;
+}
+
+#goodybagBackdrop .leaderboard button {
+    margin: 8px 0;               /* vertical spacing between buttons */
+    text-align: center;
+}
+
+#goodybagContent {
+    text-align: center;          /* center text inside simple divs */
+    display: flex;               /* make container flex */
+    flex-direction: column;      /* stack child elements vertically */
+    align-items: center;         /* center horizontally */
+    justify-content: flex-start; /* top-aligned */
+    gap: 12px;                   /* spacing between items */
+}
+#goodybagContent ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;          /* center track names */
+}
+#goodybagContent li {
+    margin: 4px 0;
+}
+
+#goodybagButtons {
+    display: flex;
+    justify-content: space-between; /* one left, one right */
+    width: 100%;                    /* fill the modal width */
+    max-width: 360px;               /* optional, keeps it from being too wide */
+    margin-top: 20px;
+}
+
+#goodybagButtons button {
+    flex: 1;                        /* buttons take equal width */
+    margin: 0 8px;                  /* small gap between buttons */
+    text-align: center;
+    font-size: 24px;
+    background: transparent;
+    border: 2px solid #2d93ea;
+    color: #2d93ea;
+    padding: 8px 0;
+    text-transform: lowercase;
+}
+
+#goodybagButtons button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.goody-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+}
+
+.goody-row button {
+    font-family: "RuneScape UF", Arial, sans-serif;
+    font-size: 28px;
+    background: transparent;
+    border: none;
+    color: #2d93ea;
+    text-transform: lowercase;
+    cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+
+/* One stable overlay “unit” */
+#playWrap{
+  position: absolute;
+  top: 58%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  transition: opacity 0.5s, transform 0.5s;
+  z-index: 50;
+  pointer-events: none; /* enabled when shown via JS */
+
+  /* keep paint cheap */
+  will-change: transform, opacity;
+}
+
+/* play.png sizing */
+#playWrap #playOverlay{
+  display: block;
+  max-width: 80vw;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+}
+
+/* yellow splash locked to play.png */
+#playSplashText{
+  position: absolute;
+
+  /* ✅ THIS is the “same place forever” part */
+  left: 71.4%;
+  top: 61.1%;
+
+  transform: translate(-50%, -50%) rotate(-18deg);
+  pointer-events: none;
+  white-space: nowrap;
+  line-height: 1;
+
+  color: #ffd400;
+  font-family: "RuneScape UF", Arial, sans-serif;
+
+  /* ✅ bigger on mobile, smaller on desktop */
+  font-size: clamp(18px, 5.2vw, 44px);
+
+  /* ✅ cheap shadow (avoid blur) */
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.14);
+}
+@keyframes playPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.05); }
+}
+
+#playWrap.pulsing{
+  animation: playPulse 1.2s ease-in-out infinite;
+}
+
+#funTextPopup{
+  white-space: pre-line;  /* ✅ respects \n */
+  line-height: 1.25;      /* optional but nice */
+}
+</style>
+</head>
+<body>
+
+<div id="rotateNotice">Please rotate your phone to portrait</div>
+<button class="back-button" onclick="goBack()">← back</button>
+<button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
+<button id="goodybagBtn" class="soundcloud-btn" style="display:none;">goodybag</button>
+<audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
+
+<div id="playWrap">
+  <img id="playOverlay" src="play.png" alt="play">
+  <div id="playSplashText"></div>
+</div>
+
+<div id="overlayHighscore"></div>
+<div id="overlayLastScore" style="position: absolute; top: 90%; left: 50%; transform: translateX(-50%); font-size: 28px; color: #2d93ea; z-index: 51; font-family: 'RuneScape UF', Arial, sans-serif; text-align: center; opacity: 0; transition: opacity 0.5s;"></div>
+
+<div id="topScores">
+  <div id="topCurrentScore">current score: 0</div>
+  <div id="topHighscore">highscore: 0</div>
+</div>
+
+<button class="leaderboard-btn" onclick="toggleLeaderboard()">leaderboard</button>
+
+<div class="name-modal" id="nameModal">
+  <h2>game over!</h2>
+  <div class="final-score" id="finalScore">score: 0</div>
+  <input type="text" id="playerName" placeholder="enter name" maxlength="12" autocomplete="off">
+  <button onclick="submitScore()">submit</button>
+  <button onclick="playAgain()">play again</button>
+</div>
+
+<div id="leaderboardBackdrop">
+  <div class="leaderboard" id="leaderboard">
+    <button class="leaderboard-close" onclick="toggleLeaderboard()">×</button>
+    <h3>leaderboard</h3>
+    <div id="leaderboardEntries">loading...</div>
+  </div>
+</div>
+
+<div id="mythicUnlockPopup" style="
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  text-align: center;
+  font-family: 'RuneScape UF', Arial, sans-serif;
+  color: #2d93ea;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  z-index: 5000;
+">
+  <div style="font-size: 32px;">*mythic found*</div>
+  <div style="font-size: 28px; margin-top: 14px;">
+    soundtrack unlocked!
+  </div>
+</div>
+
+<div id="goodybagBackdrop">
+  <div class="leaderboard">
+
+    <button class="leaderboard-close" onclick="closeGoodybag()">×</button>
+
+    <h3>goodies</h3>
+
+    <div id="goodybagContent" style="font-size:18px; color:#2d93ea;">
+      <!-- filled dynamically -->
+    </div>
+
+    <div id="goodybagButtons">
+      <button id="soundtrackBtn" disabled>soundtracks</button>
+      <button id="passwordBtn" disabled>passwords</button>
+    </div>
+
+  </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+<div class="point-popup" id="pointPopup">+1</div>
+<div class="point-popup" id="funTextPopup"></div>
+
+<script>
+// ===================== GAME VARIABLES =====================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const backButton = document.querySelector('.back-button');
+const leaderboardBtn = document.querySelector('.leaderboard-btn');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const POP_TEXT_OFFSET_Y  = 50;  // fun text / "rare bag" line
+const POP_POINT_OFFSET_Y = 20;  // +1/+2/+3 line
+
+const COMMON_FUN_TEXTS = [
+  "professional bagman",
+  "bilbo baggin",
+  "certified bag",
+  "bag enjoyer",
+  "bagtimus prime",
+  "put the fries in the bag!",
+  "bagonomotry",
+  "bagzilla",
+  "in the beginning there was bag...",
+  "dusty ahhh bag",
+  "phat bag",
+  "middle class bag",
+  "trapaholic",
+  "luggage as bro",
+  "probably not bag",
+  "punching bag",
+  "six seveeeeen",
+  "kia ora!",
+  "bagachino",
+  "money bags",
+  "unlimited bags",
+  "manbag",
+  "incredible bag",
+  "wow! what a bag!",
+  "three five",
+  "baghetti",
+  "bag o'clock"
+];
+
+// ------------------- REWARD TRACKING -------------------
+const REWARD_KEYS = {
+  rare: 'rewardRareUnlocked',
+  goated: 'rewardGoatedUnlocked',
+  mythic: 'rewardMythicUnlocked'
+};
+
+// Ensure first-time unlock flags exist
+Object.values(REWARD_KEYS).forEach(key => {
+  if (localStorage.getItem(key) === null) localStorage.setItem(key, 'false');
+});
+
+const TIER_COLORS = {
+  common: '#2d93ea',
+  rare: '#1ccfcf',      // teal blue
+  goated: 'gold',
+  mythic: '#a855f7'     // glowing purple base
+};
+
+// ===================== TIER UNLOCK CANVAS BANNER =====================
+let tierBanner = null; // { lines: string[], color: string, until: number }
+
+function setTierBanner(text, color, durationMs = 4000) {
+  tierBanner = {
+    lines: String(text).split('\n'),
+    color,
+    start: Date.now(),
+    duration: durationMs
+  };
+}
+
+function drawTierBanner() {
+  if (!tierBanner) return;
+
+  const now = Date.now();
+  const elapsed = now - tierBanner.start;
+  if (elapsed > tierBanner.duration) {
+    tierBanner = null;
+    return;
+  }
+
+  /* ================= FADE CONTROL ================= */
+  const FADE_OUT_MS = 1000; // ⬅ change fade length here (ms)
+  let alpha = 1;
+
+  if (elapsed > tierBanner.duration - FADE_OUT_MS) {
+    alpha = 1 - (elapsed - (tierBanner.duration - FADE_OUT_MS)) / FADE_OUT_MS;
+  }
+  /* ================================================= */
+
+  const topScoresEl = document.getElementById('topScores');
+  const rect = topScoresEl ? topScoresEl.getBoundingClientRect() : null;
+
+  // Place just below Top Scores (with a little gap)
+  const baseY = rect ? (rect.bottom + 14) : 70;
+  const x = canvas.width / 2;
+
+  // Responsive font sizing
+  let fontSize = Math.max(16, Math.min(34, Math.round(canvas.width * 0.045)));
+  const maxWidth = canvas.width - 24;
+
+  ctx.save();
+  ctx.globalAlpha = alpha; // ← apply fade
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  // shrink-to-fit (so it scales and never wraps)
+  for (let i = 0; i < 16; i++) {
+    ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
+    const widest = Math.max(...tierBanner.lines.map(line => ctx.measureText(line).width));
+    if (widest <= maxWidth) break;
+    fontSize = Math.max(14, fontSize - 1);
+  }
+
+  ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
+  ctx.fillStyle = tierBanner.color;
+
+  // Very light shadow (keeps your style vibe, but not “glowy”)
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 1;
+
+  const lineH = Math.round(fontSize * 1.15);
+  for (let i = 0; i < tierBanner.lines.length; i++) {
+    ctx.fillText(tierBanner.lines[i], x, baseY + i * lineH);
+  }
+
+  ctx.restore();
+}
+
+function maybeShowFunText(x, y, color) {
+  if (Math.random() < 0.4) {
+    const text = COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
+    showTextPopup(text, x, y + POP_TEXT_OFFSET_Y, color);
+  }
+}
+
+function unlockReward(tier) {
+  const key = REWARD_KEYS[tier];
+  if (!key || localStorage.getItem(key) === 'true') return; // already unlocked
+  localStorage.setItem(key, 'true');
+
+  const RIGHT_MARGIN = 16;
+  const TIER_POPUP_DURATION = 3000; // 3 seconds
+
+switch (tier) {
+  case 'rare':
+    if (goodybagBtn) goodybagBtn.style.display = 'block';
+    setTierBanner('*first rare bag!*\ngoodybag unlocked!', TIER_COLORS.rare, TIER_POPUP_DURATION);
+    break;
+
+  case 'goated':
+    setTierBanner('*first goated bag!*\nsoundtracks unlocked!', TIER_COLORS.goated, TIER_POPUP_DURATION);
+    break;
+
+  case 'mythic':
+    setTierBanner('*first mythic bag!*\npassword unlocked!', TIER_COLORS.mythic, TIER_POPUP_DURATION);
+    break;
+}
+
+}
+
+const GRAVITY = 0.32;
+const LIFT = -6.9;
+let SPEED = 3;
+const START_SPEED = 4;       // speed when the game starts
+const MAX_SPEED = 7.3;       // speed when score reaches MAX_SPEED_SCORE
+const MAX_SPEED_SCORE = 500;
+let SPRITE_SIZE = Math.round(canvas.height * 0.12);
+
+let ball = { x: Math.round(canvas.width * 0.4), y: canvas.height / 2, vy: 0, spriteIndex: 0, scaleX: 1, scaleY: 1 };
+let hoops = [];
+let score = 0;
+let gameOver = false;
+let gameStarted = false;
+let glowPulse = 0;
+
+let lastTouchTime = 0;
+document.addEventListener('touchstart', function (e) {
+  const now = new Date().getTime();
+  if (now - lastTouchTime <= 300) {
+    e.preventDefault(); // stop double-tap zoom
+  }
+  lastTouchTime = now;
+}, { passive: false });
+
+// ===================== SPRITE LOADING =====================
+const NUM_SPRITES = 25; // regular sprites
+const sprites = [];
+let assetsLoaded = false;
+
+// Combine regular + mythic into one array
+const allSpritePaths = [];
+for (let i = 1; i <= NUM_SPRITES; i++) {
+  allSpritePaths.push(`sprites/${String(i).padStart(2, '0')}.png`);
+}
+allSpritePaths.push('sprites/mythic1.png'); // mythic bag
+
+// Load all sprites
+let loadedCount = 0;
+allSpritePaths.forEach((path, index) => {
+  const img = new Image();
+  img.onload = () => {
+    loadedCount++;
+    if (loadedCount === allSpritePaths.length) {
+      assetsLoaded = true; // all loaded!
+      console.log('All assets loaded!');
+    }
+  };
+  img.src = path;
+
+  // put in sprites array for regular sprites
+  if (index < NUM_SPRITES) sprites.push(img);
+  else window.mythicImg = img; // global mythic image
+});
+
+function getWeightedSpriteIndex(first = false) {
+  const used = new Set();
+  used.add(ball.spriteIndex);
+  hoops.forEach(h => used.add(h.spriteIndex));
+
+  // ===== PROGRESSIVE BAG LOGIC =====
+  if (!first) {
+    const roll = Math.random() * 1000; // scaled 0-1000 for easier mapping
+
+    // Mythic: guaranteed at 1000, start chance 150+
+    if (score >= 150) {
+      const mythicChance = Math.min((score - 150) / (1000 - 150), 1); // 0→1
+      if (roll / 1000 < mythicChance) return NUM_SPRITES; // mythic bag
+    }
+
+    // Goated: start 90+, chance ramps up to ~rare max
+    if (score >= 90) {
+      const goatedChance = Math.min((score - 90) / (150 - 90), 1); // 0→1
+      if (roll / 1000 < goatedChance) return 19 + Math.floor(Math.random() * (NUM_SPRITES - 19)); // goated range
+    }
+
+    // Rare: start 35+, chance ramps up
+    if (score >= 35) {
+      const rareChance = Math.min((score - 35) / (90 - 35), 1); // 0→1
+      if (roll / 1000 < rareChance) return 13 + Math.floor(Math.random() * 6); // rare range
+    }
+  }
+
+  // ===== NORMAL COMMON SPRITES =====
+  const min = first ? 0 : 0;
+  const max = first ? 4 : 12;
+
+  const candidates = [];
+  for (let i = min; i <= max; i++) {
+    if (!used.has(i)) candidates.push(i);
+  }
+
+  if (candidates.length === 0) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // Simple weighting for newest bag
+  const newestBag = max;
+  const weighted = [];
+  candidates.forEach(i => {
+    const weight = (i === newestBag) ? 5 : 2;
+    for (let w = 0; w < weight; w++) weighted.push(i);
+  });
+
+  return weighted[Math.floor(Math.random() * weighted.length)];
+}
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(n, max));
+}
+
+const funTextPopup = document.getElementById('funTextPopup');
+const pointPopup = document.getElementById('pointPopup');
+
+function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
+  pointPopup.textContent = text;
+  pointPopup.style.left = x + 'px';
+  pointPopup.style.top = y + 'px';
+  pointPopup.style.color = color;
+
+  const isMobile = window.innerWidth <= 768;
+  pointPopup.style.fontSize = isMobile ? '22px' : size;
+
+  pointPopup.style.opacity = 1;
+  pointPopup.style.transform = "translate(-50%, 0) translateY(10px)";
+
+  // optional glow
+  pointPopup.style.textShadow = glow ? `0 0 6px ${color}` : '';
+
+  setTimeout(() => {
+    pointPopup.style.opacity = 0;
+    pointPopup.style.transform = "translate(-50%, 0) translateY(24px)";
+    pointPopup.style.textShadow = '';
+  }, 400);
+}
+
+function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'center') {
+  const isMobile = window.innerWidth <= 768;
+
+  funTextPopup.textContent = text;
+  funTextPopup.style.color = color;
+
+  // ✅ IMPORTANT: only break where you put \n (never wrap automatically)
+  funTextPopup.style.whiteSpace = 'pre';
+
+  // start size
+  let fontSize = isMobile ? 24 : 24;
+  funTextPopup.style.fontSize = fontSize + 'px';
+
+  // make sure it’s measurable before clamp
+  funTextPopup.style.display = 'block';
+  funTextPopup.style.opacity = 0;
+
+  // alignment + anchor transform
+  if (align === 'right') {
+    funTextPopup.style.textAlign = 'right';
+    funTextPopup.style.transform = "translate(-100%, 0) translateY(8px)";
+  } else {
+    funTextPopup.style.textAlign = 'center';
+    funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";
+  }
+
+  const padding = 12;
+  const maxAllowedWidth = window.innerWidth - padding * 2;
+
+  // ✅ Auto-shrink font until BOTH lines fit on screen without wrapping
+  let w = 0, h = 0;
+  for (let i = 0; i < 20; i++) {
+    w = funTextPopup.offsetWidth || 0;
+    h = funTextPopup.offsetHeight || 0;
+    if (w <= maxAllowedWidth) break;
+    fontSize = Math.max(14, fontSize - 1);
+    funTextPopup.style.fontSize = fontSize + 'px';
+  }
+
+  // clamp X based on anchor type
+  let clampedX = x;
+  if (align === 'right') {
+    clampedX = clamp(x, padding + w, window.innerWidth - padding);
+  } else {
+    clampedX = clamp(x, padding + w / 2, window.innerWidth - padding - w / 2);
+  }
+
+  // clamp Y
+  const clampedY = clamp(y, padding, window.innerHeight - padding - h);
+
+  funTextPopup.style.left = clampedX + 'px';
+  funTextPopup.style.top = clampedY + 'px';
+
+  requestAnimationFrame(() => {
+    funTextPopup.style.opacity = 1;
+  });
+
+  setTimeout(() => {
+    funTextPopup.style.opacity = 0;
+    funTextPopup.style.transform =
+      (align === 'right')
+        ? "translate(-100%, 0) translateY(22px)"
+        : "translate(-50%, 0) translateY(22px)";
+  }, duration);
+}
+
+function getPlayableHeight() {
+  if (window.innerWidth <= 768) {
+    return canvas.height * 0.95; // cut off bottom 20%
+  }
+  return canvas.height;
+}
+
+function addHoop() {
+  const playableHeight = getPlayableHeight();
+
+  // Get topScores height to prevent hoops overlapping
+  const topScoresEl = document.getElementById('topScores');
+  const topScoresHeight = topScoresEl.offsetHeight || 0;
+
+  // verticalMargin: minimum distance from topScores and bottom of playable area
+  const bottomMargin = playableHeight * 0.3; // 15% from bottom
+  const topMargin = topScoresHeight + 100;   // 10px below topScores
+
+  // y-coordinate for hoop spawn
+  const y = Math.random() * (playableHeight - topMargin - bottomMargin) + topMargin;
+
+  const spriteIndex = getWeightedSpriteIndex();
+  hoops.push({ x: canvas.width + 50, y, spriteIndex });
+}
+
+const overlayHighscore = document.getElementById('overlayHighscore');
+const playSplashText = document.getElementById('playSplashText');
+const playWrap = document.getElementById('playWrap');
+
+function pickRandomFunText() {
+  return COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
+}
+
+const overlayLastScore = document.getElementById('overlayLastScore');
+const topCurrentScore = document.getElementById('topCurrentScore');
+const topHighscore = document.getElementById('topHighscore');
+
+function showTopScores() {
+  const topScoresEl = document.getElementById('topScores');
+  topScoresEl.style.opacity = 1;
+  topScoresEl.style.pointerEvents = 'auto';
+}
+function hideTopScores() {
+  document.getElementById('topScores').style.opacity = 0;
+  document.getElementById('topScores').style.pointerEvents = 'none';
+}
+
+function showMusicButton() {
+  musicToggle.style.opacity = 1;
+  if (bgMusic.readyState > 2 && !bgMusic.paused) {
+    musicToggle.textContent = "music: on";
+  } else {
+    musicToggle.textContent = "music: off";
+  }
+}
+
+function hideMusicButton() {
+  musicToggle.style.opacity = 0;
+}
+
+function updateTopScores() {
+  topCurrentScore.textContent = "current score: " + score;
+  const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+  topHighscore.textContent = "highscore: " + hs;
+}
+
+function showOverlay(showLastScore = false) {
+  playWrap.style.opacity = 1;
+  playWrap.style.transform = "translate(-50%, -50%) scale(1)";
+  playWrap.style.pointerEvents = "auto";
+  playWrap.classList.add('pulsing');
+
+  // random every time
+  playSplashText.textContent = pickRandomFunText();
+
+  overlayHighscore.style.opacity = 1;
+  overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
+
+  overlayLastScore.style.opacity = showLastScore ? 1 : 0;
+  if (showLastScore) {
+    overlayLastScore.textContent = "last score: " + score;
+  }
+
+  hideTopScores();
+  gameStarted = false;
+  backButton.style.opacity = 1;
+  leaderboardBtn.style.display = 'block';
+  showMusicButton();
+}
+
+function hideOverlay() {
+  playWrap.style.opacity = 0;
+  playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
+  playWrap.style.pointerEvents = "none";
+  playWrap.classList.remove('pulsing');
+  overlayHighscore.style.opacity = 0;
+  overlayLastScore.style.opacity = 0;
+  showTopScores();
+  hideMusicButton();
+}
+
+setInterval(updateTopScores, 100);
+window.addEventListener('load', () => {
+  showOverlay(false);
+});
+
+// function was never used, safely removed: openSoundCloud()
+
+function startGame() {
+  if (gameStarted || !assetsLoaded) return;
+  hideOverlay();
+  gameStarted = true;
+  SPEED = 3;
+  hoops = [];
+  score = 0;
+  gameOver = false;
+  ball.spriteIndex = getWeightedSpriteIndex(true);
+  if (goodybagBtn) goodybagBtn.style.display = 'none';
+
+  // ----- START POSITION: MOBILE vs DESKTOP -----
+  if (window.innerWidth <= 768) { // mobile
+    ball.x = Math.round(canvas.width * 0.25); // 40% from left
+  } else { // desktop
+    ball.x = Math.round(canvas.width * 0.5); // 25% from left, move further right
+  }
+  ball.y = canvas.height / 2;
+  ball.vy = 0;
+
+  addHoop();
+  loop();
+  backButton.style.opacity = 0;
+  leaderboardBtn.style.display = 'none';
+  leaderboardBtn.style.zIndex = 100;
+  showTopScores();
+  hideMusicButton();
+}
+
+// ------------------- GAME INPUT & AUTO-START -------------------
+// removed: let touchActive = false; (unused)
+
+function jump() {
+  if (gameStarted && !gameOver) {
+    ball.vy = 0;      // reset vertical velocity
+    ball.vy += LIFT;  // apply lift
+  }
+}
+
+// Handles taps/clicks on canvas
+function handleInput(e) {
+  e.preventDefault();
+  if (!gameStarted) {
+    startGame();
+    requestAnimationFrame(() => jump());
+  } else {
+    jump(); // only jump if game already started
+  }
+}
+
+canvas.addEventListener('touchstart', handleInput, { passive: false });
+canvas.addEventListener('mousedown', handleInput);
+
+playWrap.addEventListener('click', (e) => { e.preventDefault(); startGame(); });
+playWrap.addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, { passive: false });
+
+// Prevent zooming/pinch scroll on mobile
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('touchmove', (e) => { if (e.scale !== 1) e.preventDefault(); }, { passive: false });
+
+// Disable scrolling
+document.body.style.overflow = 'hidden';
+
+function playAgain() {
+  const nameModal = document.getElementById('nameModal');
+  const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
+
+  // Hide modals
+  nameModal.classList.remove('show');
+  leaderboardBackdrop.style.display = 'none';
+
+  // Only hide goodybag if rare reward not unlocked
+  if (localStorage.getItem(REWARD_KEYS.rare) !== 'true' && goodybagBtn) {
+    goodybagBtn.style.display = 'none';
+  }
+
+  // Reset game state
+  gameStarted = false;
+  gameOver = false;
+  score = 0;
+  hoops = [];
+
+  overlayHighscore.style.opacity = 0;
+  overlayLastScore.style.opacity = 0;
+
+  // Show play overlay (like submitScore)
+  showOverlay(false);
+}
+
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawTierBanner();
+
+  // Update ball physics
+  ball.vy += GRAVITY;
+  ball.y += ball.vy;
+
+  const playableHeight = getPlayableHeight();
+  if (ball.y < 0 || ball.y > playableHeight) return endGame();
+
+  // Speed scaling
+  SPEED = START_SPEED + ((MAX_SPEED - START_SPEED) * Math.min(score, MAX_SPEED_SCORE) / MAX_SPEED_SCORE);
+
+  glowPulse += 0.05;
+
+  // Draw ball
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.scale(ball.scaleX, ball.scaleY);
+
+  if (ball.spriteIndex === NUM_SPRITES) {
+    // Mythic bag
+    ctx.shadowColor = 'yellow';
+    ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+    ctx.drawImage(mythicImg, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+    ctx.shadowBlur = 0;
+  } else if (ball.spriteIndex >= 11) {
+    // Rare bags
+    const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+    ctx.shadowColor = 'rgba(255,215,0,0.8)';
+    ctx.shadowBlur = intensity;
+    ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+    ctx.shadowBlur = 0;
+  } else {
+    // Common bags
+    ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+  }
+
+  ctx.restore();
+
+  // Draw hoops
+  for (let i = hoops.length - 1; i >= 0; i--) {
+    const h = hoops[i];
+    h.x -= SPEED;
+
+    if (h.spriteIndex === NUM_SPRITES) {
+      // Mythic hoop
+      ctx.shadowColor = 'yellow';
+      ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+      ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+      ctx.shadowBlur = 0;
+    } else if (h.spriteIndex >= 11) {
+      const intensity = (h.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+      ctx.shadowColor = 'rgba(255,215,0,0.8)';
+      ctx.shadowBlur = intensity;
+      ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+    }
+
+    // Collision detection
+    const hit =
+      ball.x + SPRITE_SIZE / 2 > h.x &&
+      ball.x - SPRITE_SIZE / 2 < h.x + SPRITE_SIZE &&
+      ball.y + SPRITE_SIZE / 2 > h.y &&
+      ball.y - SPRITE_SIZE / 2 < h.y + SPRITE_SIZE;
+
+    if (hit) {
+      const textY = ball.y + POP_TEXT_OFFSET_Y;
+      const pointY = ball.y + POP_POINT_OFFSET_Y;
+
+      if (h.spriteIndex === NUM_SPRITES) {          // mythic
+        score += 5;
+        showTextPopup('*mythic bag*', ball.x, textY, TIER_COLORS.mythic);
+        showPopup('+5', ball.x, pointY, TIER_COLORS.mythic, '28px', true);
+        unlockReward('mythic');
+
+      } else if (h.spriteIndex >= 19) {            // goated
+        score += 3;
+        showTextPopup('goated bag', ball.x, textY, TIER_COLORS.goated);
+        showPopup('+3', ball.x, pointY, TIER_COLORS.goated, '28px', true);
+        maybeShowFunText(ball.x, ball.y, TIER_COLORS.goated);
+        unlockReward('goated');
+
+      } else if (h.spriteIndex >= 10) {            // rare
+        score += 2;
+        showTextPopup('rare bag', ball.x, textY, TIER_COLORS.rare);
+        showPopup('+2', ball.x, pointY, TIER_COLORS.rare, '28px', false);
+        maybeShowFunText(ball.x, ball.y, TIER_COLORS.rare);
+        unlockReward('rare');
+
+      } else {                                     // common
+        score += 1;
+
+        if (Math.random() < 0.4) {
+          const text = COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
+          showTextPopup(text, ball.x, textY, TIER_COLORS.common);
+        } else {
+          showTextPopup('standard issue bag', ball.x, textY, TIER_COLORS.common);
+        }
+
+        showPopup('+1', ball.x, pointY, TIER_COLORS.common);
+      }
+
+      ball.spriteIndex = h.spriteIndex;
+      hoops.splice(i, 1);
+      continue;
+    }
+
+    // Missed hoop ends game
+    if (h.x + SPRITE_SIZE < ball.x - 20) return endGame();
+  }
+
+  // Spawn new hoops
+  if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) addHoop();
+
+  if (!gameOver) requestAnimationFrame(loop);
+}
+
+function endGame() {
+  if (gameOver) return;
+  gameOver = true;
+  hideTopScores();
+  const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+  if (score > hs) localStorage.setItem('flappyBasketHighscore', score);
+  backButton.style.opacity = 1;
+  leaderboardBtn.style.display = 'block';
+  showNameModal(score);
+}
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  SPRITE_SIZE = Math.round(canvas.height * 0.12);
+});
+
+// ------------------- MUSIC -------------------
+const bgMusic = document.getElementById('bgMusic');
+bgMusic.volume = 0.5;
+bgMusic.loop = true;
+
+const musicToggle = document.getElementById('musicToggle');
+
+musicToggle.style.opacity = 1;
+musicToggle.textContent = "music: off"; // default state
+
+// Start music on first user gesture (overlay click/touch)
+function handleFirstUserGesture() {
+  if (bgMusic.paused) {
+    bgMusic.play().then(() => {
+      musicToggle.textContent = "music: on"; // update once music actually plays
+    }).catch(() => { });
+  }
+  window.removeEventListener('touchstart', handleFirstUserGesture);
+  window.removeEventListener('mousedown', handleFirstUserGesture);
+}
+
+// Listen for first click/touch anywhere to unlock autoplay
+window.addEventListener('touchstart', handleFirstUserGesture);
+window.addEventListener('mousedown', handleFirstUserGesture);
+
+// MUSIC TOGGLE
+musicToggle.addEventListener('click', () => {
+  if (bgMusic.paused) {
+    bgMusic.play().catch(() => { });
+    musicToggle.textContent = "music: on";
+  } else {
+    bgMusic.pause();
+    musicToggle.textContent = "music: off";
+  }
+});
+musicToggle.style.display = "block"; // ensure visible
+
+// ------------------- PAUSE ON HIDE / CLOSE -------------------
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    bgMusic.pause();
+    musicToggle.textContent = "music: off";
+  } else if (!bgMusic.paused) {
+    bgMusic.play().catch(() => { });
+    musicToggle.textContent = "music: on";
+  }
+});
+
+window.addEventListener('beforeunload', () => {
+  bgMusic.pause();
+});
+
+// ------------------- NAVIGATION -------------------
+function goBack() { window.location.href = "../index.html"; }
+
+// ================== LEADERBOARD ==================
+(function initLeaderboard() {
+  const nameModal = document.getElementById('nameModal');
+  const finalScoreEl = document.getElementById('finalScore');
+  const playerNameInput = document.getElementById('playerName');
+  const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
+  const leaderboardEntriesEl = document.getElementById('leaderboardEntries');
+
+  const SUPABASE_URL = 'https://rlxtggsefecwcpgkjern.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_4mNOVz4GqFxtlJWOtzfXIQ_OaI1hLGT';
+  let supabaseClient = null;
+
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  script.onload = function () {
+    if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  };
+  document.head.appendChild(script);
+
+  async function fetchLeaderboard() {
+    if (!supabaseClient) {
+      leaderboardEntriesEl.innerHTML = '<div style="color:#999;font-size:16px;">leaderboard unavailable</div>';
+      return [];
+    }
+    try {
+      const { data, error } = await supabaseClient.from('highscores').select('*').order('score', { ascending: false }).limit(20);
+      if (error) throw error;
+      return data || [];
+    } catch (e) { console.error(e); return []; }
+  }
+
+  async function saveScoreToDb(name, scoreVal) {
+    if (!supabaseClient) return;
+    try { await supabaseClient.from('highscores').insert([{ name, score: scoreVal }]); }
+    catch (e) { console.error(e); }
+  }
+
+  function renderLeaderboard(entries) {
+    if (!entries.length) {
+      leaderboardEntriesEl.innerHTML = '<div style="color:#999;font-size:16px;">no scores yet</div>';
+      return;
+    }
+    leaderboardEntriesEl.innerHTML = entries.map((entry, i) => `
+      <div class="leaderboard-entry">
+        <span class="rank">${i + 1}.</span>
+        <span class="name">${entry.name}</span>
+        <span class="score">${entry.score}</span>
+      </div>
+    `).join('');
+  }
+
+  window.toggleLeaderboard = async function () {
+    const isOpen = leaderboardBackdrop.style.display === 'flex';
+    if (isOpen) {
+      leaderboardBackdrop.style.display = 'none';
+    } else {
+      leaderboardEntriesEl.innerHTML = 'loading...';
+      leaderboardBackdrop.style.display = 'flex';
+      const entries = await fetchLeaderboard();
+      renderLeaderboard(entries);
+    }
+  };
+
+  window.showNameModal = function (finalScore) {
+    finalScoreEl.textContent = 'score: ' + finalScore;
+    playerNameInput.value = localStorage.getItem('playerName') || '';
+    nameModal.classList.add('show');
+    overlayHighscore.style.opacity = 1;
+    overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
+    backButton.style.zIndex = 400;
+    backButton.style.opacity = 1;
+    leaderboardBtn.style.display = 'block';
+    leaderboardBtn.style.zIndex = 300;
+    setTimeout(() => playerNameInput.focus(), 100);
+    showMusicButton();
+
+    // ✅ Show goodybag button only if unlocked
+    if (localStorage.getItem(REWARD_KEYS.rare) === 'true' && goodybagBtn) {
+      goodybagBtn.style.display = 'block';
+    }
+  };
+
+  window.submitScore = async function () {
+    const name = playerNameInput.value.trim() || 'anonymous';
+    localStorage.setItem('playerName', name);
+    await saveScoreToDb(name, score);
+    nameModal.classList.remove('show');
+    showOverlay(true);
+  };
+
+  // Try to lock the screen (optional, may fail)
+  function lockOrientation() {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('portrait').catch(err => {
+        console.warn('Orientation lock failed (normal for mobile browsers):', err);
+      });
+    }
+  }
+
+  window.addEventListener('load', lockOrientation);
+  window.addEventListener('orientationchange', lockOrientation);
+
+  function checkOrientation() {
+    const rotateNotice = document.getElementById('rotateNotice');
+
+    // Only enforce rotation on mobile
+    if (window.innerWidth <= 768 && window.innerHeight < window.innerWidth) {
+      rotateNotice.classList.add('active');
+    } else {
+      rotateNotice.classList.remove('active');
+    }
+  }
+
+  window.addEventListener('load', checkOrientation);
+  window.addEventListener('resize', checkOrientation);
+  window.addEventListener('orientationchange', checkOrientation);
+
+  playerNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') window.submitScore(); });
+})();
+
+// ===== GOODYBAG SYSTEM =====
+const goodybagBackdrop = document.getElementById('goodybagBackdrop');
+const soundtrackBtn = document.getElementById('soundtrackBtn');
+const passwordBtn = document.getElementById('passwordBtn');
+const goodybagContent = document.getElementById('goodybagContent');
+const goodybagBtn = document.getElementById('goodybagBtn');
+
+const SOUNDTRACKS = {
+  soundtrack01: {
+    link: "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=f9f27c47974341328cdeb5a115aae99f&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    tracks: [
+      "vivz portal - rezzett",
+      "tell her nothing - young thug",
+      "bag - mexikodro",
+      "not many (soul version) - scribe & xylatu",
+      "stick x need2 lc3 remix - jim legxacy",
+      "bazooka - p.slxwly",
+      "home - mazii7400prod glitzclub",
+      "shalimar - inigo365 & skud gambosi"
+    ]
+  }
+};
+
+function openGoodybag() {
+  goodybagBackdrop.classList.add('active');
+
+  const hasGoated = localStorage.getItem(REWARD_KEYS.goated) === 'true';
+  const hasMythic = localStorage.getItem(REWARD_KEYS.mythic) === 'true';
+
+  soundtrackBtn.disabled = !hasGoated;
+  passwordBtn.disabled = !hasMythic;
+
+  if (!hasGoated && !hasMythic) {
+    goodybagContent.innerHTML = `
+      <div style="opacity:0.6; font-size:20px;">
+        no goodies found yet...
+      </div>
+    `;
+  } else {
+    goodybagContent.innerHTML = '';
+  }
+}
+
+function closeGoodybag() {
+  goodybagBackdrop.classList.remove('active');
+}
+
+goodybagBtn.addEventListener('click', openGoodybag);
+
+// ----- SOUNDTRACK BUTTON -----
+soundtrackBtn.addEventListener('click', () => {
+  goodybagContent.innerHTML = ''; // clear previous content
+
+  // If player hasn't unlocked soundtracks
+  if (localStorage.getItem(REWARD_KEYS.goated) !== 'true') {
+    goodybagContent.innerHTML = '<div>No soundtracks unlocked yet...</div>';
+    return;
+  }
+
+  // Loop through SOUNDTRACKS
+  for (const [name, data] of Object.entries(SOUNDTRACKS)) {
+    // Outer wrapper block - this will be centered in modal
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('goodybag-block');
+    wrapper.style.marginBottom = '18px';
+
+    // Header row (name + link)
+    const headerRow = document.createElement('div');
+    headerRow.style.display = 'flex';
+    headerRow.style.justifyContent = 'space-between';
+    headerRow.style.alignItems = 'center';
+    headerRow.style.marginBottom = '6px';
+
+    const header = document.createElement('div');
+    header.style.fontWeight = 'bold';
+    header.textContent = name;
+
+    const linkBtn = document.createElement('button');
+    linkBtn.textContent = 'link';
+    linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+    linkBtn.style.fontSize = '20px';
+    linkBtn.style.padding = '4px 8px';
+    linkBtn.style.background = 'transparent';
+    linkBtn.style.border = 'none';
+    linkBtn.style.color = '#2d93ea';
+    linkBtn.style.textTransform = 'lowercase';
+    linkBtn.onclick = () => window.open(data.link, '_blank');
+
+    headerRow.appendChild(header);
+    headerRow.appendChild(linkBtn);
+
+    // Track list
+    const ul = document.createElement('ul');
+    ul.style.listStyle = 'none';
+    ul.style.padding = '0';
+    ul.style.margin = '0';
+
+    data.tracks.forEach(track => {
+      const li = document.createElement('li');
+      li.textContent = track;
+      li.style.margin = '4px 0';
+      ul.appendChild(li);
+    });
+
+    wrapper.appendChild(headerRow);
+    wrapper.appendChild(ul);
+    goodybagContent.appendChild(wrapper);
+  }
+});
+
+// ----- PASSWORD BUTTON -----
+passwordBtn.addEventListener('click', () => {
+  if (localStorage.getItem(REWARD_KEYS.mythic) !== 'true') {
+    goodybagContent.innerHTML = '<div>no passwords unlocked yet...</div>';
+    return;
+  }
+  goodybagContent.innerHTML = '<div>unlocked passwords: <strong>onway</strong></div>';
+});
+
+// ----- SHOW GOODYBAG BUTTON AFTER RELOAD ----- (deduped; kept once)
+window.addEventListener('load', () => {
+  if (localStorage.getItem(REWARD_KEYS.rare) === 'true' && goodybagBtn) {
+    goodybagBtn.style.display = 'block';
+  }
+});
+</script>
+
+</body>
+</html>
