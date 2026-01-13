@@ -1267,6 +1267,14 @@ function playAgain() {
   // Show play overlay (like submitScore)
   showOverlay(false);
 }
+function drawGlowForSprite(img, drawX, drawY, w, h, color, pulse) {
+  if (!img) return;
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18 + Math.sin(pulse) * 6;
+  ctx.drawImage(img, drawX, drawY, w, h);
+  ctx.restore();
+}
 
 function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1294,6 +1302,10 @@ function loop() {
     ctx.shadowColor = 'yellow';
     ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
     ctx.drawImage(mythicImg, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+    if (shieldArmed) {
+  drawGlowForSprite(mythicImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE, '#2d93ea', glowPulse);
+}
+
     ctx.shadowBlur = 0;
   } else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
     // Rare bags
@@ -1302,6 +1314,16 @@ function loop() {
     ctx.shadowBlur = intensity;
     const img = imgForIndex(ball.spriteIndex);
 if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+// ✅ ibuprofen/shield indicator = glow matching the sprite silhouette
+if (shieldArmed) {
+  drawSpriteGlow(
+    img,
+    -SPRITE_SIZE/2, -SPRITE_SIZE/2,
+    SPRITE_SIZE, SPRITE_SIZE,
+    '#2d93ea',
+    22 + Math.sin(glowPulse) * 6
+  );
+}
 
     ctx.shadowBlur = 0;
   } else {
@@ -1310,18 +1332,6 @@ if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_
 if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
 
   }
-// ✅ Shield visual indicator: blue glow ring around the ball
-if (shieldArmed) {
-  ctx.save();
-  ctx.shadowColor = 'rgba(45,147,234,0.95)';
-  ctx.shadowBlur = 18 + Math.sin(glowPulse) * 4;
-  ctx.strokeStyle = 'rgba(45,147,234,0.75)';
-  ctx.lineWidth = Math.max(4, Math.round(SPRITE_SIZE * 0.06));
-  ctx.beginPath();
-  ctx.arc(0, 0, SPRITE_SIZE * 0.46, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.restore();
-}
 
   ctx.restore();
 
@@ -1329,6 +1339,24 @@ if (shieldArmed) {
   for (let i = hoops.length - 1; i >= 0; i--) {
     const h = hoops[i];
     h.x -= SPEED;
+  // ✅ when player PASSES a definitely-not-bag, show popup once (mobile-safe)
+if (
+  h.spriteIndex >= NOTBAG_START &&
+  h.spriteIndex < NOTBAG_START + NOTBAG_COUNT &&
+  !h.passedNotBagPopup &&
+  h.x + SPRITE_SIZE < ball.x - 20
+) {
+  h.passedNotBagPopup = true;
+  showTextPopup(
+    'definitely not bag',
+    h.x + SPRITE_SIZE / 2,
+    h.y + POP_TEXT_OFFSET_Y,
+    '#2d93ea',
+    700
+  );
+}
+
+
       // Cleanup: remove hoops only once they are fully off the left side
   if (h.x + SPRITE_SIZE < -SPRITE_SIZE) {
     hoops.splice(i, 1);
@@ -1419,12 +1447,12 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
   // Shield
   if (powerId === POWERUPS.shield) {
     shieldArmed = true;
-    showTextPopup('shield armed', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    showTextPopup('ibuprofen found!', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
   }
 
   if (powerId === POWERUPS.baghetti) {
   baghettiCharges = 5;
-  showTextPopup('baghetti mode', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+  showTextPopup('baghetti time', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
 
   // ✅ Instantly convert ALL hoops currently on screen to baghetti
   const baghettiIndex = POWERUP_START + POWERUPS.baghetti;
@@ -1481,25 +1509,16 @@ if (h.x + SPRITE_SIZE < ball.x - 20) {
     // If this hoop is definitely-not-bag, you can miss it safely.
   // Show popup ONCE, but do NOT remove the hoop (let it drift off-screen).
   if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
-
-    if (!h.passedNotBagPopup) {
-      showTextPopup(
-        'definitely not bag',
-        h.x + SPRITE_SIZE / 2,
-        h.y + POP_TEXT_OFFSET_Y,
-        '#2d93ea',
-        700
-      );
-      h.passedNotBagPopup = true;
-    }
-
-    continue;
+  if (h.x + SPRITE_SIZE < -10) {
+    hoops.splice(i, 1);
   }
+  continue;
+}
 
   // Otherwise normal miss behaviour
   if (shieldArmed) {
     shieldArmed = false;
-    showTextPopup('shield saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    showTextPopup('ibuprofen saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
     hoops.splice(i, 1);
     continue;
   }
