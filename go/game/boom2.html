@@ -1052,7 +1052,7 @@ function addHoop() {
     lastHoopWasNotBag = false; // prevent weird streak logic
   } else {
     // 2) Definitely Not Bag: ~1 in 5, but never 2 in a row
-    const NOTBAG_CHANCE = 1 / 7; // ~0.142857 (≈ 1 in 7)
+    const NOTBAG_CHANCE = 1 / 4; // ~0.142857 (≈ 1 in 7)
     const rollNotBag = Math.random() < NOTBAG_CHANCE;
 
     if (rollNotBag && !lastHoopWasNotBag) {
@@ -1061,14 +1061,34 @@ function addHoop() {
     } else {
       lastHoopWasNotBag = false;
 
-      // 3) Unlock bag: 1% chance
-      if (Math.random() < 0.01) {
-        spriteIndex = UNLOCK_START + Math.floor(Math.random() * UNLOCK_COUNT);
-      }
-      // 4) Powerup: 5% chance
+      // 3) Unlock bags (VERY rare, passwords rarer than music)
+
+// Tune these:
+const MUSIC_UNLOCK_CHANCE    = 0.002; 
+const PASSWORD_UNLOCK_CHANCE = 0.0008; 
+
+const roll = Math.random();
+
+// Music unlock (more likely than passwords)
+if (roll < MUSIC_UNLOCK_CHANCE) {
+  // music.png (offset 2)
+  spriteIndex = UNLOCK_START + 2;
+}
+
+// Password unlocks (tinny / onway)
+else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
+  spriteIndex = UNLOCK_START + (Math.random() < 0.5 ? 0 : 1);
+}
+
       else if (Math.random() < 0.05) {
-        spriteIndex = POWERUP_START + Math.floor(Math.random() * POWERUP_COUNT);
-      }
+  // ✅ No shield stacking: if shield already armed, don't spawn shield again
+  if (shieldArmed) {
+    spriteIndex = POWERUP_START + POWERUPS.baghetti; // only baghetti can spawn
+  } else {
+    spriteIndex = POWERUP_START + Math.floor(Math.random() * POWERUP_COUNT);
+  }
+}
+
       // 5) Otherwise normal bag
       else {
         spriteIndex = getWeightedSpriteIndex();
@@ -1076,7 +1096,7 @@ function addHoop() {
     }
   }
 
-  hoops.push({ x: canvas.width + 50, y, spriteIndex, forcedBaghetti });
+  hoops.push({ x: canvas.width + 50, y, spriteIndex, forcedBaghetti, passedNotBagPopup: false });
 }
 
 const overlayHighscore = document.getElementById('overlayHighscore');
@@ -1290,6 +1310,18 @@ if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_
 if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
 
   }
+// ✅ Shield visual indicator: blue glow ring around the ball
+if (shieldArmed) {
+  ctx.save();
+  ctx.shadowColor = 'rgba(45,147,234,0.95)';
+  ctx.shadowBlur = 18 + Math.sin(glowPulse) * 4;
+  ctx.strokeStyle = 'rgba(45,147,234,0.75)';
+  ctx.lineWidth = Math.max(4, Math.round(SPRITE_SIZE * 0.06));
+  ctx.beginPath();
+  ctx.arc(0, 0, SPRITE_SIZE * 0.46, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
 
   ctx.restore();
 
@@ -1297,6 +1329,12 @@ if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_
   for (let i = hoops.length - 1; i >= 0; i--) {
     const h = hoops[i];
     h.x -= SPEED;
+      // Cleanup: remove hoops only once they are fully off the left side
+  if (h.x + SPRITE_SIZE < -SPRITE_SIZE) {
+    hoops.splice(i, 1);
+    continue;
+  }
+
 
     if (h.spriteIndex === NUM_SPRITES) {
       // Mythic hoop
@@ -1384,11 +1422,21 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
     showTextPopup('shield armed', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
   }
 
-  // Baghetti powerup triggers next 5 forced baghetti hoops
   if (powerId === POWERUPS.baghetti) {
-    baghettiCharges = 5;
-    showTextPopup('baghetti mode', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
-  }
+  baghettiCharges = 5;
+  showTextPopup('baghetti mode', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+
+  // ✅ Instantly convert ALL hoops currently on screen to baghetti
+  const baghettiIndex = POWERUP_START + POWERUPS.baghetti;
+  hoops.forEach(hh => {
+    hh.spriteIndex = baghettiIndex;
+    hh.forcedBaghetti = true;      // makes them worth +4 in your existing logic
+    hh.passedNotBagPopup = false;  // (harmless) resets the notbag popup flag
+  });
+
+  lastHoopWasNotBag = false;
+}
+
 
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -1430,10 +1478,21 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
    // Missed hoop ends game (EXCEPT definitely-not-bag)
 if (h.x + SPRITE_SIZE < ball.x - 20) {
 
-  // If this hoop is definitely-not-bag, you can miss it safely.
-  // Remove it and continue.
+    // If this hoop is definitely-not-bag, you can miss it safely.
+  // Show popup ONCE, but do NOT remove the hoop (let it drift off-screen).
   if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
-    hoops.splice(i, 1);
+
+    if (!h.passedNotBagPopup) {
+      showTextPopup(
+        'definitely not bag',
+        h.x + SPRITE_SIZE / 2,
+        h.y + POP_TEXT_OFFSET_Y,
+        '#2d93ea',
+        700
+      );
+      h.passedNotBagPopup = true;
+    }
+
     continue;
   }
 
