@@ -1479,48 +1479,65 @@ if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT
   continue;
 }
 
-// -------- SPECIAL: Powerups (+1 always) --------
+// -------- SPECIAL: Powerups --------
 if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_COUNT) {
-  // Forced baghetti bags are NOT "powerup hits" — they are +4
-  if (h.forcedBaghetti) {
+
+  const BAGHETTI_COLOR = '#d9a42a';
+  const powerId = h.spriteIndex - POWERUP_START;
+
+  // ✅ ALL baghetti (pickup + forced) = +4
+  if (powerId === POWERUPS.baghetti || h.forcedBaghetti) {
     score += 4;
-    showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#f7b72d');
-    showPopup('+4', ball.x, ball.y + POP_POINT_OFFSET_Y, '#f7b72d');
+
+    showTextPopup(
+      'baghetti',
+      ball.x,
+      ball.y + POP_TEXT_OFFSET_Y,
+      BAGHETTI_COLOR
+    );
+
+    showPopup(
+      '+4',
+      ball.x,
+      ball.y + POP_POINT_OFFSET_Y,
+      BAGHETTI_COLOR
+    );
+
     showBaghettiBg();
+
+    // activate baghetti effect ONLY on pickup
+    if (powerId === POWERUPS.baghetti) {
+      baghettiCharges = 5;
+
+      // instantly convert all hoops on screen
+      const baghettiIndex = POWERUP_START + POWERUPS.baghetti;
+      hoops.forEach(hh => {
+        hh.spriteIndex = baghettiIndex;
+        hh.forcedBaghetti = true;
+        hh.passedNotBagPopup = false;
+      });
+
+      lastHoopWasNotBag = false;
+    }
+
     ball.spriteIndex = h.spriteIndex;
     hoops.splice(i, 1);
     continue;
   }
 
-  // Normal powerup pickup = +1
+  // -------- Shield (still +1) --------
   score += 1;
   showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
 
-  const powerId = h.spriteIndex - POWERUP_START;
-
-  // Shield
   if (powerId === POWERUPS.shield) {
     shieldArmed = true;
-    showTextPopup('ibuprofen found!', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    showTextPopup(
+      'ibuprofen found!',
+      ball.x,
+      ball.y + POP_TEXT_OFFSET_Y,
+      '#2d93ea'
+    );
   }
-
-  if (powerId === POWERUPS.baghetti) {
-  baghettiCharges = 5;
-  showTextPopup('baghetti time', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#f7b72d');
-  showBaghettiBg();
-
-
-  // ✅ Instantly convert ALL hoops currently on screen to baghetti
-  const baghettiIndex = POWERUP_START + POWERUPS.baghetti;
-  hoops.forEach(hh => {
-    hh.spriteIndex = baghettiIndex;
-    hh.forcedBaghetti = true;      // makes them worth +4 in your existing logic
-    hh.passedNotBagPopup = false;  // (harmless) resets the notbag popup flag
-  });
-
-  lastHoopWasNotBag = false;
-}
-
 
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
