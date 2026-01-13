@@ -25,7 +25,6 @@ html, body {
   -webkit-text-size-adjust: 100%;
 }
 
-
 /* Custom hover cursor for all interactive elements */
 button,
 a,
@@ -34,7 +33,6 @@ input,
 .leaderboard-close {
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
-
 
 #topScores{
   position: fixed;
@@ -426,7 +424,6 @@ canvas {
     color: #2d93ea;
     text-transform: lowercase;
     cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-
 }
 
 /* One stable overlay “unit” */
@@ -488,6 +485,20 @@ canvas {
   white-space: pre-line;  /* ✅ respects \n */
   line-height: 1.25;      /* optional but nice */
 }
+#baghettiBg{
+  position: fixed;
+  inset: 0;
+  z-index: 2;            /* behind popups/top UI, above the canvas bg */
+  pointer-events: none;
+
+  background-image: url("baghetti-bg.png"); /* <-- change path */
+  background-size: cover;       /* desktop sized, mobile crops */
+  background-position: center;  /* keep the interesting bit centered */
+  background-repeat: no-repeat;
+
+  opacity: 0;
+  transition: opacity 12s linear; /* slow fade (both directions) */
+}
 
 </style>
 </head>
@@ -496,7 +507,7 @@ canvas {
 <div id="rotateNotice">Please rotate your phone to portrait</div>
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
-<button id="goodybagBtn" class="soundcloud-btn" style="display:none;">goodybag</button>
+<button id="goodybagBtn" class="soundcloud-btn">goodybag</button>
 <audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
 
 <div id="playWrap">
@@ -561,16 +572,15 @@ canvas {
     </div>
 
     <div id="goodybagButtons">
-    <button id="soundtrackBtn" disabled>soundtracks</button>
-    <button id="passwordBtn" disabled>passwords</button>
-  </div>
+      <button id="soundtrackBtn" disabled>soundtracks</button>
+      <button id="passwordBtn" disabled>passwords</button>
+    </div>
 
   </div>
-</div>
-  
 </div>
 
 <canvas id="gameCanvas"></canvas>
+<div id="baghettiBg"></div>
 <div class="point-popup" id="pointPopup">+1</div>
 <div class="point-popup" id="funTextPopup"></div>
 
@@ -582,8 +592,10 @@ const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
 const POP_TEXT_OFFSET_Y  = 50;  // fun text / "rare bag" line
 const POP_POINT_OFFSET_Y = 20;  // +1/+2/+3 line
+
 const COMMON_FUN_TEXTS = [
   "professional bagman",
   "bilbo baggin",
@@ -613,25 +625,128 @@ const COMMON_FUN_TEXTS = [
   "baghetti",
   "bag o'clock"
 ];
+function isNotBagIndex(idx) {
+  return idx >= NOTBAG_START && idx < NOTBAG_START + NOTBAG_COUNT;
+}
 
-// ------------------- REWARD TRACKING -------------------
-const REWARD_KEYS = {
-    rare: 'rewardRareUnlocked',
-    goated: 'rewardGoatedUnlocked',
-    mythic: 'rewardMythicUnlocked'
+// ------------------- UNLOCK STORAGE KEYS -------------------
+const UNLOCK_KEYS = {
+  password_tinny: "unlock_password_tinny",
+  password_onway: "unlock_password_onway",
+  soundtracks: "unlock_soundtracks"
 };
 
-// Ensure first-time unlock flags exist
-Object.values(REWARD_KEYS).forEach(key => {
-    if (localStorage.getItem(key) === null) localStorage.setItem(key, 'false');
+// Ensure keys exist (optional, keeps storage consistent)
+Object.values(UNLOCK_KEYS).forEach(k => {
+  if (localStorage.getItem(k) === null) localStorage.setItem(k, "false");
 });
 
-const TIER_COLORS = {
-    common: '#2d93ea',
-    rare: '#1ccfcf',      // teal blue
-    goated: 'gold',
-    mythic: '#a855f7'     // glowing purple base
+// ===================== UNLOCK / POWERUP DEFINITIONS =====================
+const UNLOCK_BAGS = [
+  {
+    spriteOffset: 0, // unlockSprites[0] = tinny.png
+    storageKey: UNLOCK_KEYS.password_tinny,
+    bannerText: '*password found!*\nunlocked: tinny'
+  },
+  {
+    spriteOffset: 1, // onway.png
+    storageKey: UNLOCK_KEYS.password_onway,
+    bannerText: '*password found!*\nunlocked: onway'
+  },
+  {
+    spriteOffset: 2, // music.png
+    storageKey: UNLOCK_KEYS.soundtracks,
+    bannerText: '*music found!*\nsoundtracks unlocked!'
+  }
+];
+
+const POWERUPS = {
+  shield: 0,   // powerupSprites[0] = shield.png
+  baghetti: 1  // powerupSprites[1] = baghetti.png
 };
+
+const TIER_COLORS = {
+  common: '#2d93ea',
+  rare: '#1ccfcf',      // teal blue
+  goated: 'gold',
+  mythic: '#a855f7'     // glowing purple base
+};
+
+// ===================== TIER UNLOCK CANVAS BANNER =====================
+let tierBanner = null; // { lines: string[], color: string, until: number }
+
+function setTierBanner(text, color, durationMs = 4000) {
+  tierBanner = {
+    lines: String(text).split('\n'),
+    color,
+    start: Date.now(),
+    duration: durationMs
+  };
+}
+
+function drawTierBanner() {
+  if (!tierBanner) return;
+
+  const now = Date.now();
+  const elapsed = now - tierBanner.start;
+  if (elapsed > tierBanner.duration) {
+    tierBanner = null;
+    return;
+  }
+const baghettiBg = document.getElementById('baghettiBg');
+
+function showBaghettiBg() {
+  // never fully opaque
+  baghettiBg.style.opacity = '0.22'; // tweak 0.12–0.35
+}
+
+function hideBaghettiBg() {
+  baghettiBg.style.opacity = '0';
+}
+
+  /* ================= FADE CONTROL ================= */
+  const FADE_OUT_MS = 1000; // ⬅ change fade length here (ms)
+  let alpha = 1;
+
+  if (elapsed > tierBanner.duration - FADE_OUT_MS) {
+    alpha = 1 - (elapsed - (tierBanner.duration - FADE_OUT_MS)) / FADE_OUT_MS;
+  }
+  /* ================================================= */
+
+  const topScoresEl = document.getElementById('topScores');
+  const rect = topScoresEl ? topScoresEl.getBoundingClientRect() : null;
+
+  // Place just below Top Scores (with a little gap)
+  const baseY = rect ? (rect.bottom + 14) : 70;
+  const x = canvas.width / 2;
+
+  // Responsive font sizing
+  let fontSize = Math.max(16, Math.min(34, Math.round(canvas.width * 0.045)));
+  const maxWidth = canvas.width - 24;
+
+  ctx.save();
+  ctx.globalAlpha = alpha; // ← apply fade
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  // shrink-to-fit (so it scales and never wraps)
+  for (let i = 0; i < 16; i++) {
+    ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
+    const widest = Math.max(...tierBanner.lines.map(line => ctx.measureText(line).width));
+    if (widest <= maxWidth) break;
+    fontSize = Math.max(14, fontSize - 1);
+  }
+
+  ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
+  ctx.fillStyle = tierBanner.color;
+
+  const lineH = Math.round(fontSize * 1.15);
+  for (let i = 0; i < tierBanner.lines.length; i++) {
+    ctx.fillText(tierBanner.lines[i], x, baseY + i * lineH);
+  }
+
+  ctx.restore();
+}
 
 function maybeShowFunText(x, y, color) {
   if (Math.random() < 0.4) {
@@ -641,77 +756,62 @@ function maybeShowFunText(x, y, color) {
 }
 
 function unlockReward(tier) {
-    const key = REWARD_KEYS[tier];
-    if(!key || localStorage.getItem(key) === 'true') return; // already unlocked
-    localStorage.setItem(key, 'true');
-const RIGHT_MARGIN = 16;
-const TIER_POPUP_DURATION = 5000; // ✅ twice as long (was 600)
+  const key = REWARD_KEYS[tier];
+  if (!key || localStorage.getItem(key) === 'true') return; // already unlocked
+  localStorage.setItem(key, 'true');
+
+  const RIGHT_MARGIN = 16;
+  const TIER_POPUP_DURATION = 3000; // 3 seconds
 
 switch (tier) {
   case 'rare':
     if (goodybagBtn) goodybagBtn.style.display = 'block';
-    showTextPopup(
-      '*first rare bag!*\ngoodybag unlocked!',
-      canvas.width - RIGHT_MARGIN,
-      canvas.height / 2,
-      TIER_COLORS.rare,
-      TIER_POPUP_DURATION,
-      'right'
-    );
+    setTierBanner('*first rare bag!*\ngoodybag unlocked!', TIER_COLORS.rare, TIER_POPUP_DURATION);
     break;
 
   case 'goated':
-    showTextPopup(
-      '*first goated bag!*\nsoundtracks unlocked!',
-      canvas.width - RIGHT_MARGIN,
-      canvas.height / 2,
-      TIER_COLORS.goated,
-      TIER_POPUP_DURATION,
-      'right'
-    );
+    setTierBanner('*first goated bag!*\nsoundtracks unlocked!', TIER_COLORS.goated, TIER_POPUP_DURATION);
     break;
 
   case 'mythic':
-    showTextPopup(
-      '*first mythic bag!* \npassword unlocked!',
-      canvas.width - RIGHT_MARGIN,
-      canvas.height / 2,
-      TIER_COLORS.mythic,
-      TIER_POPUP_DURATION,
-      'right'
-    );
+    setTierBanner('*first mythic bag!*\npassword unlocked!', TIER_COLORS.mythic, TIER_POPUP_DURATION);
     break;
 }
 
-
 }
-
-// ===== SoundCloud link (change only this) =====
-//const SOUNDCLOUD_URL =
- // "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=ced42764564b4b1dbbaf8a6d1486e958&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing";
 
 const GRAVITY = 0.32;
 const LIFT = -6.9;
 let SPEED = 3;
-const START_SPEED = 4;      // speed when the game starts
-const MAX_SPEED = 7.3;        // speed when score reaches MAX_SPEED_SCORE
+const START_SPEED = 4;       // speed when the game starts
+const MAX_SPEED = 7.3;       // speed when score reaches MAX_SPEED_SCORE
 const MAX_SPEED_SCORE = 500;
-let SPRITE_SIZE = Math.round(canvas.height*0.12);
-
-let ball = { x: Math.round(canvas.width*0.4), y: canvas.height/2, vy:0, spriteIndex:0, scaleX:1, scaleY:1 };
+let SPRITE_SIZE = Math.round(canvas.height * 0.12);
+      // ✅ Definitely-not-bag hitbox tuning
+const NOTBAG_HITBOX_SCALE = 0.45; // 0.4 very forgiving, 0.55 nice, 0.7 strict
+let ball = { x: Math.round(canvas.width * 0.4), y: canvas.height / 2, vy: 0, spriteIndex: 0, scaleX: 1, scaleY: 1 };
 let hoops = [];
 let score = 0;
 let gameOver = false;
 let gameStarted = false;
 let glowPulse = 0;
 
+// ===================== SPECIAL SPAWN + POWERUP STATE =====================
+let lastHoopWasNotBag = false;
+
+// Shield: simplest + safest = 1-use shield (saves you once)
+let shieldArmed = false;
+
+// Baghetti: forces the next N hoops to spawn as baghetti (+4 each)
+let baghettiCharges = 0;
+
 let lastTouchTime = 0;
-document.addEventListener('touchstart', function(e) {
-    const now = new Date().getTime();
-    if (now - lastTouchTime <= 300) {
-        e.preventDefault(); // stop double-tap zoom
-    }
-    lastTouchTime = now;
+document.addEventListener('touchstart', function (e) {
+  const now = new Date().getTime();
+  if (now - lastTouchTime <= 300) {
+    e.preventDefault(); // stop double-tap zoom
+  }
+  lastTouchTime = now;
 }, { passive: false });
 
 // ===================== SPRITE LOADING =====================
@@ -719,105 +819,153 @@ const NUM_SPRITES = 25; // regular sprites
 const sprites = [];
 let assetsLoaded = false;
 
-// Combine regular + mythic into one array
-const allSpritePaths = [];
-for (let i = 1; i <= NUM_SPRITES; i++) {
-    allSpritePaths.push(`sprites/${String(i).padStart(2,'0')}.png`);
-}
-allSpritePaths.push('sprites/mythic1.png'); // mythic bag
+// Special sprite groups
+const NOTBAG_COUNT = 10;          // 00..09
+const UNLOCK_COUNT = 3;           // tinny, onway, music
+const POWERUP_COUNT = 2;          // shield, baghetti
 
-// Load all sprites
+const notbagSprites = [];
+const unlockSprites = [];
+const powerupSprites = [];
+
+// Index ranges (keep numeric indices so the rest of your game stays stable)
+const MYTHIC_INDEX = NUM_SPRITES;                 // 25
+const NOTBAG_START = MYTHIC_INDEX + 1;            // 26
+const UNLOCK_START = NOTBAG_START + NOTBAG_COUNT; // 36
+const POWERUP_START = UNLOCK_START + UNLOCK_COUNT;// 39
+
+// Helper: get the correct Image object for any spriteIndex
+function imgForIndex(idx) {
+  if (idx < NUM_SPRITES) return sprites[idx];
+  if (idx === MYTHIC_INDEX) return mythicImg;
+
+  if (idx >= NOTBAG_START && idx < NOTBAG_START + NOTBAG_COUNT) {
+    return notbagSprites[idx - NOTBAG_START];
+  }
+  if (idx >= UNLOCK_START && idx < UNLOCK_START + UNLOCK_COUNT) {
+    return unlockSprites[idx - UNLOCK_START];
+  }
+  if (idx >= POWERUP_START && idx < POWERUP_START + POWERUP_COUNT) {
+    return powerupSprites[idx - POWERUP_START];
+  }
+  return null;
+}
+
+const allSpritePaths = [];
+
+// base bag sprites 01..25
+for (let i = 1; i <= NUM_SPRITES; i++) {
+  allSpritePaths.push(`sprites/${String(i).padStart(2,'0')}.png`);
+}
+
+// mythic
+allSpritePaths.push('sprites/mythic1.png');
+
+// definitely not bag 00..09
+for (let i = 0; i < NOTBAG_COUNT; i++) {
+  allSpritePaths.push(`sprites/notbag/${String(i).padStart(2,'0')}.png`);
+}
+
+// unlock bags (order matters: 0=tinny, 1=onway, 2=music)
+allSpritePaths.push('sprites/unlock/tinny.png');
+allSpritePaths.push('sprites/unlock/onway.png');
+allSpritePaths.push('sprites/unlock/music.png');
+
+// powerups (order matters: 0=shield, 1=baghetti)
+allSpritePaths.push('sprites/powerups/shield.png');
+allSpritePaths.push('sprites/powerups/baghetti.png');
+
 let loadedCount = 0;
-allSpritePaths.forEach((path, index) => {
-    const img = new Image();
-    img.onload = () => {
-        loadedCount++;
-        if (loadedCount === allSpritePaths.length) {
-            assetsLoaded = true; // all loaded!
-            console.log('All assets loaded!');
-        }
-    };
-    img.src = path;
-    // put in sprites array for regular sprites
-    if (index < NUM_SPRITES) sprites.push(img);
-    else window.mythicImg = img; // global mythic image
+
+allSpritePaths.forEach((path) => {
+  const img = new Image();
+  img.onload = () => {
+    loadedCount++;
+    if (loadedCount === allSpritePaths.length) {
+      assetsLoaded = true;
+      console.log('All assets loaded!');
+    }
+  };
+  img.src = path;
+
+  // Assign into correct bucket based on path
+  if (path.startsWith("sprites/notbag/")) {
+    notbagSprites.push(img);
+  } else if (path.startsWith("sprites/unlock/")) {
+    unlockSprites.push(img);
+  } else if (path.startsWith("sprites/powerups/")) {
+    powerupSprites.push(img);
+  } else if (path === "sprites/mythic1.png") {
+    window.mythicImg = img;
+  } else {
+    // base sprites 01..25
+    sprites.push(img);
+  }
 });
 
-function maybeSpawnMythic(score) {
-    if (score < 250) return false;   // no mythic before 250
-    if (score >= 1000) return true;  // guaranteed mythic at 1000+
-
-    // Linear ramp from 250 → 999
-    // At 250 → 20% (0.2)
-    // At 1000 → 100% (1.0)
-    const minScore = 250;
-    const maxScore = 999;
-    const t = (score - minScore) / (maxScore - minScore); // 0→1
-    const chance = 0.2 + t * 0.8;  // 0.2→1.0
-
-    return Math.random() < chance;
-}
-
 function getWeightedSpriteIndex(first = false) {
-    const used = new Set();
-    used.add(ball.spriteIndex);
-    hoops.forEach(h => used.add(h.spriteIndex));
+  const used = new Set();
+  used.add(ball.spriteIndex);
+  hoops.forEach(h => used.add(h.spriteIndex));
 
-    // ===== PROGRESSIVE BAG LOGIC =====
-    if (!first) {
-        const roll = Math.random() * 1000; // scaled 0-1000 for easier mapping
+  // ===== PROGRESSIVE BAG LOGIC =====
+  if (!first) {
+    const roll = Math.random() * 1000; // scaled 0-1000 for easier mapping
 
-        // Mythic: guaranteed at 1000, start chance 150+
-        if (score >= 150) {
-            const mythicChance = Math.min((score - 150) / (1000 - 150), 1); // 0→1
-            if (roll/1000 < mythicChance) return NUM_SPRITES; // mythic bag
-        }
-
-        // Goated: start 90+, chance ramps up to ~rare max
-        if (score >= 90) {
-            const goatedChance = Math.min((score - 90) / (150 - 90), 1); // 0→1
-            if (roll/1000 < goatedChance) return 19 + Math.floor(Math.random() * (NUM_SPRITES - 19)); // goated range
-        }
-
-        // Rare: start 35+, chance ramps up
-        if (score >= 35) {
-            const rareChance = Math.min((score - 35) / (90 - 35), 1); // 0→1
-            if (roll/1000 < rareChance) return 13 + Math.floor(Math.random() * 6); // rare range
-        }
+    // Mythic: guaranteed at 1000, start chance 150+
+    if (score >= 150) {
+      const mythicChance = Math.min((score - 150) / (1000 - 150), 1); // 0→1
+      if (roll / 1000 < mythicChance) return NUM_SPRITES; // mythic bag
     }
 
-    // ===== NORMAL COMMON SPRITES =====
-    const min = first ? 0 : 0;
-    const max = first ? 4 : 12;
-
-    const candidates = [];
-    for (let i = min; i <= max; i++) {
-        if (!used.has(i)) candidates.push(i);
+    // Goated: start 90+, chance ramps up to ~rare max
+    if (score >= 90) {
+      const goatedChance = Math.min((score - 90) / (150 - 90), 1); // 0→1
+      if (roll / 1000 < goatedChance) return 19 + Math.floor(Math.random() * (NUM_SPRITES - 19)); // goated range
     }
 
-    if (candidates.length === 0) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+    // Rare: start 35+, chance ramps up
+    if (score >= 35) {
+      const rareChance = Math.min((score - 35) / (90 - 35), 1); // 0→1
+      if (roll / 1000 < rareChance) return 13 + Math.floor(Math.random() * 6); // rare range
     }
+  }
 
-    // Simple weighting for newest bag
-    const newestBag = max;
-    const weighted = [];
-    candidates.forEach(i => {
-        const weight = (i === newestBag) ? 5 : 2;
-        for (let w = 0; w < weight; w++) weighted.push(i);
-    });
+  // ===== NORMAL COMMON SPRITES =====
+  const min = first ? 0 : 0;
+  const max = first ? 4 : 12;
 
-    return weighted[Math.floor(Math.random() * weighted.length)];
+  const candidates = [];
+  for (let i = min; i <= max; i++) {
+    if (!used.has(i)) candidates.push(i);
+  }
+
+  if (candidates.length === 0) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // Simple weighting for newest bag
+  const newestBag = max;
+  const weighted = [];
+  candidates.forEach(i => {
+    const weight = (i === newestBag) ? 5 : 2;
+    for (let w = 0; w < weight; w++) weighted.push(i);
+  });
+
+  return weighted[Math.floor(Math.random() * weighted.length)];
 }
+
 function clamp(n, min, max) {
   return Math.max(min, Math.min(n, max));
 }
+
 const funTextPopup = document.getElementById('funTextPopup');
-const pointPopup=document.getElementById('pointPopup');
+const pointPopup = document.getElementById('pointPopup');
+
 function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
   pointPopup.textContent = text;
   pointPopup.style.left = x + 'px';
-  pointPopup.style.top  = y + 'px';
+  pointPopup.style.top = y + 'px';
   pointPopup.style.color = color;
 
   const isMobile = window.innerWidth <= 768;
@@ -866,7 +1014,6 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'c
   const maxAllowedWidth = window.innerWidth - padding * 2;
 
   // ✅ Auto-shrink font until BOTH lines fit on screen without wrapping
-  // (because whiteSpace: pre will never wrap, so we must make it fit)
   let w = 0, h = 0;
   for (let i = 0; i < 20; i++) {
     w = funTextPopup.offsetWidth || 0;
@@ -876,7 +1023,7 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'c
     funTextPopup.style.fontSize = fontSize + 'px';
   }
 
-  // clamp X based on anchor type (same logic you had)
+  // clamp X based on anchor type
   let clampedX = x;
   if (align === 'right') {
     clampedX = clamp(x, padding + w, window.innerWidth - padding);
@@ -888,7 +1035,7 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'c
   const clampedY = clamp(y, padding, window.innerHeight - padding - h);
 
   funTextPopup.style.left = clampedX + 'px';
-  funTextPopup.style.top  = clampedY + 'px';
+  funTextPopup.style.top = clampedY + 'px';
 
   requestAnimationFrame(() => {
     funTextPopup.style.opacity = 1;
@@ -903,201 +1050,213 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'c
   }, duration);
 }
 
-
-// +2 score popup (slightly delayed, same style)
-function showMythicPlusTwo(x, y) {
-    setTimeout(() => {
-        pointPopup.textContent = '+2';
-        pointPopup.style.left = (x + 20) + 'px'; // slight offset
-        pointPopup.style.top = y + 'px';
-        pointPopup.style.color = 'gold';
-        pointPopup.style.opacity = 1;
-        pointPopup.style.transform = "translateY(-30px)";
-
-        setTimeout(() => {
-            pointPopup.style.opacity = 0;
-            pointPopup.style.transform = "translateY(-50px)";
-            pointPopup.style.color = '#2d93ea'; // reset
-        }, 400);
-    }, 120);
-}
-// ===================== MYTHIC UNLOCK SYSTEM =====================
-
-// Show center-screen "soundtrack unlocked" popup
-function showMythicUnlockPopup() {
-    const popup = document.getElementById('mythicUnlockPopup');
-
-    popup.style.opacity = 1;
-    popup.style.transform = 'translate(-50%, -50%) scale(1)';
-
-    setTimeout(() => {
-        popup.style.opacity = 0;
-        popup.style.transform = 'translate(-50%, -50%) scale(0.9)';
-    }, 2500);
-}
-
 function getPlayableHeight() {
-    if (window.innerWidth <= 768) {
-        return canvas.height * 0.95; // cut off bottom 20%
+  if (window.innerWidth <= 768) {
+    return canvas.height * 0.95; // cut off bottom 20%
+  }
+  return canvas.height;
+}
+
+function addHoop() {
+  const playableHeight = getPlayableHeight();
+
+  const topScoresEl = document.getElementById('topScores');
+  const topScoresHeight = topScoresEl.offsetHeight || 0;
+
+  const bottomMargin = playableHeight * 0.3;
+  const topMargin = topScoresHeight + 100;
+
+  const y = Math.random() * (playableHeight - topMargin - bottomMargin) + topMargin;
+
+  let spriteIndex;
+  let forcedBaghetti = false;
+
+  // 1) Baghetti override: next N hoops forced to baghetti
+  if (baghettiCharges > 0) {
+    spriteIndex = POWERUP_START + POWERUPS.baghetti;
+    forcedBaghetti = true;
+    baghettiCharges--;
+    lastHoopWasNotBag = false; // prevent weird streak logic
+  } else {
+    // 2) Definitely Not Bag: ~1 in 5, but never 2 in a row
+    const NOTBAG_CHANCE = 1 / 4; // ~0.142857 (≈ 1 in 7)
+    const rollNotBag = Math.random() < NOTBAG_CHANCE;
+
+    if (rollNotBag && !lastHoopWasNotBag) {
+      spriteIndex = NOTBAG_START + Math.floor(Math.random() * NOTBAG_COUNT);
+      lastHoopWasNotBag = true;
+    } else {
+      lastHoopWasNotBag = false;
+
+      // 3) Unlock bags (VERY rare, passwords rarer than music)
+
+// Tune these:
+const MUSIC_UNLOCK_CHANCE    = 0.002; 
+const PASSWORD_UNLOCK_CHANCE = 0.0008; 
+
+const roll = Math.random();
+
+// Music unlock (more likely than passwords)
+if (roll < MUSIC_UNLOCK_CHANCE) {
+  // music.png (offset 2)
+  spriteIndex = UNLOCK_START + 2;
+}
+
+// Password unlocks (tinny / onway)
+else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
+  spriteIndex = UNLOCK_START + (Math.random() < 0.5 ? 0 : 1);
+}
+
+      else if (Math.random() < 0.05) {
+  // ✅ No shield stacking: if shield already armed, don't spawn shield again
+  if (shieldArmed) {
+    spriteIndex = POWERUP_START + POWERUPS.baghetti; // only baghetti can spawn
+  } else {
+    spriteIndex = POWERUP_START + Math.floor(Math.random() * POWERUP_COUNT);
+  }
+}
+
+      // 5) Otherwise normal bag
+      else {
+        spriteIndex = getWeightedSpriteIndex();
+      }
     }
-    return canvas.height;
+  }
+
+  hoops.push({ x: canvas.width + 50, y, spriteIndex, forcedBaghetti, passedNotBagPopup: false });
 }
 
-function addHoop(){
-    const playableHeight = getPlayableHeight();
-
-    // Get topScores height to prevent hoops overlapping
-    const topScoresEl = document.getElementById('topScores');
-    const topScoresHeight = topScoresEl.offsetHeight || 0;
-
-    // verticalMargin: minimum distance from topScores and bottom of playable area
-    const bottomMargin = playableHeight * 0.3; // 15% from bottom
-    const topMargin = topScoresHeight + 100;     // 10px below topScores
-
-    // y-coordinate for hoop spawn
-    const y = Math.random() * (playableHeight - topMargin - bottomMargin) + topMargin;
-
-    const spriteIndex = getWeightedSpriteIndex();
-    hoops.push({x: canvas.width + 50, y, spriteIndex});
-}
-
-const playOverlay=document.getElementById('playOverlay');
-const overlayHighscore=document.getElementById('overlayHighscore');
+const overlayHighscore = document.getElementById('overlayHighscore');
 const playSplashText = document.getElementById('playSplashText');
 const playWrap = document.getElementById('playWrap');
 
-// These come from your reference image placement
-// (measured as percentages of the play.png bounding box)
-const SPLASH_X = 0.714; // 71.4% across
-const SPLASH_Y = 0.611; // 61.1% down
-
-function pickRandomFunText(){
+function pickRandomFunText() {
   return COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
 }
 
-const overlayLastScore=document.getElementById('overlayLastScore');
-const topCurrentScore=document.getElementById('topCurrentScore');
-const topHighscore=document.getElementById('topHighscore');
+const overlayLastScore = document.getElementById('overlayLastScore');
+const topCurrentScore = document.getElementById('topCurrentScore');
+const topHighscore = document.getElementById('topHighscore');
 
 function showTopScores() {
-    const topScoresEl = document.getElementById('topScores');
-    topScoresEl.style.opacity = 1;
-    topScoresEl.style.pointerEvents = 'auto';
+  const topScoresEl = document.getElementById('topScores');
+  topScoresEl.style.opacity = 1;
+  topScoresEl.style.pointerEvents = 'auto';
 }
-function hideTopScores(){document.getElementById('topScores').style.opacity=0;document.getElementById('topScores').style.pointerEvents='none';}
+function hideTopScores() {
+  document.getElementById('topScores').style.opacity = 0;
+  document.getElementById('topScores').style.pointerEvents = 'none';
+}
 
 function showMusicButton() {
-    musicToggle.style.opacity = 1;
-    if (bgMusic.readyState > 2 && !bgMusic.paused) {
-        musicToggle.textContent = "music: on";
-    } else {
-        musicToggle.textContent = "music: off";
-    }
+  musicToggle.style.opacity = 1;
+  if (bgMusic.readyState > 2 && !bgMusic.paused) {
+    musicToggle.textContent = "music: on";
+  } else {
+    musicToggle.textContent = "music: off";
+  }
 }
 
 function hideMusicButton() {
-    musicToggle.style.opacity = 0;
+  musicToggle.style.opacity = 0;
 }
 
-function updateTopScores(){
-    topCurrentScore.textContent="current score: "+score;
-    const hs=localStorage.getItem('flappyBasketHighscore')||0;
-    topHighscore.textContent="highscore: "+hs;
+function updateTopScores() {
+  topCurrentScore.textContent = "current score: " + score;
+  const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+  topHighscore.textContent = "highscore: " + hs;
 }
 
-function showOverlay(showLastScore=false){
-    playWrap.style.opacity = 1;
-    playWrap.style.transform = "translate(-50%, -50%) scale(1)";
-    playWrap.style.pointerEvents = "auto";
-    playWrap.classList.add('pulsing');
+function showOverlay(showLastScore = false) {
+  playWrap.style.opacity = 1;
+  playWrap.style.transform = "translate(-50%, -50%) scale(1)";
+  playWrap.style.pointerEvents = "auto";
+  playWrap.classList.add('pulsing');
 
-    // random every time
-    playSplashText.textContent = pickRandomFunText();
+  // random every time
+  playSplashText.textContent = pickRandomFunText();
 
-    overlayHighscore.style.opacity=1;
-    overlayHighscore.textContent="highscore: "+(localStorage.getItem('flappyBasketHighscore')||0);
+  overlayHighscore.style.opacity = 1;
+  overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
 
-    overlayLastScore.style.opacity = showLastScore ? 1 : 0;
-    if(showLastScore){
-        overlayLastScore.textContent = "last score: " + score;
-    }
+  overlayLastScore.style.opacity = showLastScore ? 1 : 0;
+  if (showLastScore) {
+    overlayLastScore.textContent = "last score: " + score;
+  }
 
-    hideTopScores();
-    gameStarted = false;
-    backButton.style.opacity = 1;
-    leaderboardBtn.style.display = 'block';
-    showMusicButton();
+  hideTopScores();
+  gameStarted = false;
+  backButton.style.opacity = 1;
+  leaderboardBtn.style.display = 'block';
+  showMusicButton();
 }
 
-function hideOverlay(){
-    playWrap.style.opacity = 0;
-    playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
-    playWrap.style.pointerEvents = "none";
-    playWrap.classList.remove('pulsing');
-    overlayHighscore.style.opacity=0;
-    overlayLastScore.style.opacity=0;
-    showTopScores();
-    hideMusicButton();
+function hideOverlay() {
+  playWrap.style.opacity = 0;
+  playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
+  playWrap.style.pointerEvents = "none";
+  playWrap.classList.remove('pulsing');
+  overlayHighscore.style.opacity = 0;
+  overlayLastScore.style.opacity = 0;
+  showTopScores();
+  hideMusicButton();
 }
 
-setInterval(updateTopScores,100);
+setInterval(updateTopScores, 100);
 window.addEventListener('load', () => {
-    showOverlay(false);
+  showOverlay(false);
 });
 
-function openSoundCloud() {
-    window.open(SOUNDCLOUD_URL, '_blank', 'noopener,noreferrer');
+// function was never used, safely removed: openSoundCloud()
+
+function startGame() {
+  if (gameStarted || !assetsLoaded) return;
+  hideOverlay();
+  gameStarted = true;
+  SPEED = 3;
+  hoops = [];
+  score = 0;
+  gameOver = false;
+  ball.spriteIndex = getWeightedSpriteIndex(true);
+  if (goodybagBtn) goodybagBtn.style.display = 'none';
+
+  // ----- START POSITION: MOBILE vs DESKTOP -----
+  if (window.innerWidth <= 768) { // mobile
+    ball.x = Math.round(canvas.width * 0.25); // 40% from left
+  } else { // desktop
+    ball.x = Math.round(canvas.width * 0.5); // 25% from left, move further right
+  }
+  ball.y = canvas.height / 2;
+  ball.vy = 0;
+
+  addHoop();
+  loop();
+  backButton.style.opacity = 0;
+  leaderboardBtn.style.display = 'none';
+  leaderboardBtn.style.zIndex = 100;
+  showTopScores();
+  hideMusicButton();
 }
-
-function startGame(){
-    if(gameStarted||!assetsLoaded) return;
-    hideOverlay();
-    gameStarted = true;
-    SPEED = 3;
-    hoops = [];
-    score = 0;
-    gameOver = false;
-    ball.spriteIndex = getWeightedSpriteIndex(true);
-    if (goodybagBtn) goodybagBtn.style.display = 'none';
-
-    // ----- START POSITION: MOBILE vs DESKTOP -----
-    if(window.innerWidth <= 768){ // mobile
-        ball.x = Math.round(canvas.width * 0.25); // 40% from left
-    } else { // desktop
-        ball.x = Math.round(canvas.width * 0.5); // 25% from left, move further right
-    }
-    ball.y = canvas.height / 2;
-    ball.vy = 0;
-
-    addHoop();
-    loop();
-    backButton.style.opacity = 0;
-    leaderboardBtn.style.display = 'none'; 
-    leaderboardBtn.style.zIndex = 100; 
-    showTopScores(); 
-    hideMusicButton();
-}
-
 
 // ------------------- GAME INPUT & AUTO-START -------------------
-let touchActive = false;
+// removed: let touchActive = false; (unused)
 
 function jump() {
-    if (gameStarted && !gameOver) {
-        ball.vy = 0;   // reset vertical velocity
-        ball.vy += LIFT; // apply lift
-    }
+  if (gameStarted && !gameOver) {
+    ball.vy = 0;      // reset vertical velocity
+    ball.vy += LIFT;  // apply lift
+  }
 }
 
 // Handles taps/clicks on canvas
 function handleInput(e) {
-    e.preventDefault();
-    if (!gameStarted) {
-        startGame();
-        requestAnimationFrame(() => jump());
-    } else {
-        jump();      // only jump if game already started
-    }
+  e.preventDefault();
+  if (!gameStarted) {
+    startGame();
+    requestAnimationFrame(() => jump());
+  } else {
+    jump(); // only jump if game already started
+  }
 }
 
 canvas.addEventListener('touchstart', handleInput, { passive: false });
@@ -1114,133 +1273,194 @@ document.addEventListener('touchmove', (e) => { if (e.scale !== 1) e.preventDefa
 document.body.style.overflow = 'hidden';
 
 function playAgain() {
-    const nameModal = document.getElementById('nameModal');
-    const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
+  const nameModal = document.getElementById('nameModal');
+  const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
 
-    // Hide modals
-    nameModal.classList.remove('show');
-    leaderboardBackdrop.style.display = 'none';
-   // Only hide goodybag if rare reward not unlocked
-    if (localStorage.getItem(REWARD_KEYS.rare) !== 'true' && goodybagBtn) {
-        goodybagBtn.style.display = 'none';
-    }
+  // Hide modals
+  nameModal.classList.remove('show');
+  leaderboardBackdrop.style.display = 'none';
 
-    // Reset game state
-    gameStarted = false;
-    gameOver = false;
-    score = 0;
-    hoops = [];
+  if (goodybagBtn) goodybagBtn.style.display = 'block';
 
-    overlayHighscore.style.opacity = 0;
-    overlayLastScore.style.opacity = 0;
+  // Reset game state
+  gameStarted = false;
+  gameOver = false;
+  score = 0;
+  hoops = [];
 
-    // Show play overlay (like submitScore)
-    showOverlay(false);
+  overlayHighscore.style.opacity = 0;
+  overlayLastScore.style.opacity = 0;
+
+  // Show play overlay (like submitScore)
+  showOverlay(false);
+}
+function drawGlowForSprite(img, drawX, drawY, w, h, color, pulse) {
+  if (!img) return;
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18 + Math.sin(pulse) * 6;
+  ctx.drawImage(img, drawX, drawY, w, h);
+  ctx.restore();
 }
 
 function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawTierBanner();
 
-    // Update ball physics
-    ball.vy += GRAVITY;
-    ball.y += ball.vy;
+  // Update ball physics
+  ball.vy += GRAVITY;
+  ball.y += ball.vy;
 
-    const playableHeight = getPlayableHeight();
-    if (ball.y < 0 || ball.y > playableHeight) return endGame();
+  const playableHeight = getPlayableHeight();
+  if (ball.y < 0 || ball.y > playableHeight) return endGame();
 
-    // Speed scaling
-    SPEED = START_SPEED + ((MAX_SPEED - START_SPEED) * Math.min(score, MAX_SPEED_SCORE) / MAX_SPEED_SCORE);
+  // Speed scaling
+  SPEED = START_SPEED + ((MAX_SPEED - START_SPEED) * Math.min(score, MAX_SPEED_SCORE) / MAX_SPEED_SCORE);
 
-    glowPulse += 0.05;
+  glowPulse += 0.05;
 
-    // Draw ball
-    ctx.save();
-    ctx.translate(ball.x, ball.y);
-    ctx.scale(ball.scaleX, ball.scaleY);
+  // Draw ball
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.scale(ball.scaleX, ball.scaleY);
 
-    if (ball.spriteIndex === NUM_SPRITES) {
-        // Mythic bag
-        ctx.shadowColor = 'yellow';
-        ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
-        ctx.drawImage(mythicImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-        ctx.shadowBlur = 0;
-    } else if (ball.spriteIndex >= 11) {
-        // Rare bags
-        const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
-        ctx.shadowColor = 'rgba(255,215,0,0.8)';
-        ctx.shadowBlur = intensity;
-        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-        ctx.shadowBlur = 0;
+  if (ball.spriteIndex === NUM_SPRITES) {
+    // Mythic bag
+    ctx.shadowColor = 'yellow';
+    ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+    ctx.drawImage(mythicImg, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2, SPRITE_SIZE, SPRITE_SIZE);
+    if (shieldArmed) {
+  drawGlowForSprite(mythicImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE, '#2d93ea', glowPulse);
+}
+
+    ctx.shadowBlur = 0;
+  } else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
+    // Rare bags
+    const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+    ctx.shadowColor = 'rgba(255,215,0,0.8)';
+    ctx.shadowBlur = intensity;
+    const img = imgForIndex(ball.spriteIndex);
+if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+// ✅ ibuprofen/shield indicator = glow matching the sprite silhouette
+if (shieldArmed) {
+  drawSpriteGlow(
+    img,
+    -SPRITE_SIZE/2, -SPRITE_SIZE/2,
+    SPRITE_SIZE, SPRITE_SIZE,
+    '#2d93ea',
+    22 + Math.sin(glowPulse) * 6
+  );
+}
+
+    ctx.shadowBlur = 0;
+  } else {
+    // Common bags
+    const img = imgForIndex(ball.spriteIndex);
+if (img) ctx.drawImage(img, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+
+  }
+
+  ctx.restore();
+
+  // Draw hoops
+  for (let i = hoops.length - 1; i >= 0; i--) {
+    const h = hoops[i];
+    h.x -= SPEED;
+  // ✅ when player PASSES a definitely-not-bag, show popup once (mobile-safe)
+if (
+  h.spriteIndex >= NOTBAG_START &&
+  h.spriteIndex < NOTBAG_START + NOTBAG_COUNT &&
+  !h.passedNotBagPopup &&
+  h.x + SPRITE_SIZE < ball.x - 20
+) {
+  h.passedNotBagPopup = true;
+  showTextPopup(
+    'definitely not bag',
+    h.x + SPRITE_SIZE / 2,
+    h.y + POP_TEXT_OFFSET_Y,
+    '#2d93ea',
+    700
+  );
+}
+
+
+      // Cleanup: remove hoops only once they are fully off the left side
+  if (h.x + SPRITE_SIZE < -SPRITE_SIZE) {
+    hoops.splice(i, 1);
+    continue;
+  }
+
+
+    if (h.spriteIndex === NUM_SPRITES) {
+      // Mythic hoop
+      ctx.shadowColor = 'yellow';
+      ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+      ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+      ctx.shadowBlur = 0;
+    } else if (h.spriteIndex >= 11 && !isNotBagIndex(h.spriteIndex)) {
+      const intensity = (h.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+      ctx.shadowColor = 'rgba(255,215,0,0.8)';
+      ctx.shadowBlur = intensity;
+      const img = imgForIndex(h.spriteIndex);
+if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+
+      ctx.shadowBlur = 0;
     } else {
-        // Common bags
-        ctx.drawImage(sprites[ball.spriteIndex], -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+      const img = imgForIndex(h.spriteIndex);
+if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+
     }
 
-    ctx.restore();
+    // draw hoop...
 
-    // Draw hoops
-    for (let i = hoops.length - 1; i >= 0; i--) {
-        const h = hoops[i];
-        h.x -= SPEED;
+// Collision detection (✅ not-bag uses smaller hitbox)
+let hit = false;
 
-        if (h.spriteIndex === NUM_SPRITES) {
-            // Mythic hoop
-            ctx.shadowColor = 'yellow';
-            ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
-            ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-            ctx.shadowBlur = 0;
-        } else if (h.spriteIndex >= 11) {
-            const intensity = (h.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
-            ctx.shadowColor = 'rgba(255,215,0,0.8)';
-            ctx.shadowBlur = intensity;
-            ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-            ctx.shadowBlur = 0;
-        } else {
-            ctx.drawImage(sprites[h.spriteIndex], h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-        }
+if (isNotBagIndex(h.spriteIndex)) {
+  const shrink = SPRITE_SIZE * NOTBAG_HITBOX_SCALE;
+  const offset = (SPRITE_SIZE - shrink) / 2;
 
-        // Collision detection
-        const hit =
-            ball.x + SPRITE_SIZE/2 > h.x &&
-            ball.x - SPRITE_SIZE/2 < h.x + SPRITE_SIZE &&
-            ball.y + SPRITE_SIZE/2 > h.y &&
-            ball.y - SPRITE_SIZE/2 < h.y + SPRITE_SIZE;
+  hit =
+    ball.x + SPRITE_SIZE / 2 > h.x + offset &&
+    ball.x - SPRITE_SIZE / 2 < h.x + offset + shrink &&
+    ball.y + SPRITE_SIZE / 2 > h.y + offset &&
+    ball.y - SPRITE_SIZE / 2 < h.y + offset + shrink;
+} else {
+  hit =
+    ball.x + SPRITE_SIZE / 2 > h.x &&
+    ball.x - SPRITE_SIZE / 2 < h.x + SPRITE_SIZE &&
+    ball.y + SPRITE_SIZE / 2 > h.y &&
+    ball.y - SPRITE_SIZE / 2 < h.y + SPRITE_SIZE;
+}
 
-if (hit) {
-  const textY  = ball.y + POP_TEXT_OFFSET_Y;
-  const pointY = ball.y + POP_POINT_OFFSET_Y;
+    if (hit) {
+      const textY = ball.y + POP_TEXT_OFFSET_Y;
+      const pointY = ball.y + POP_POINT_OFFSET_Y;
+// -------- SPECIAL: Definitely Not Bag (instant death unless shield) --------
+if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
+  if (shieldArmed) {
+    shieldArmed = false;
+    showTextPopup('shield saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    hoops.splice(i, 1);
+    continue;
+  } else {
+    return endGame();
+  }
+}
 
-  if (h.spriteIndex === NUM_SPRITES) {          // mythic
-    score += 5;
-    showTextPopup('*mythic bag*', ball.x, textY, TIER_COLORS.mythic);
-    showPopup('+5', ball.x, pointY, TIER_COLORS.mythic, '28px', true);
-    unlockReward('mythic');
+// -------- SPECIAL: Unlock bags (+3 always) --------
+if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT) {
+  score += 3;
+  showPopup('+3', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
 
-  } else if (h.spriteIndex >= 19) {            // goated
-    score += 3;
-    showTextPopup('goated bag', ball.x, textY, TIER_COLORS.goated);
-    showPopup('+3', ball.x, pointY, TIER_COLORS.goated, '28px', true);
-    maybeShowFunText(ball.x, ball.y, TIER_COLORS.goated); // <- update this too (below)
-    unlockReward('goated');
+  const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
+  const key = unlockDef.storageKey;
 
-  } else if (h.spriteIndex >= 10) {            // rare
-    score += 2;
-    showTextPopup('rare bag', ball.x, textY, TIER_COLORS.rare);
-    showPopup('+2', ball.x, pointY, TIER_COLORS.rare, '28px', false);
-    maybeShowFunText(ball.x, ball.y, TIER_COLORS.rare);   // <- update this too (below)
-    unlockReward('rare');
-
-  } else {                                     // common
-    score += 1;
-
-    if (Math.random() < 0.4) {
-      const text = COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
-      showTextPopup(text, ball.x, textY, TIER_COLORS.common);
-    } else {
-      showTextPopup('standard issue bag', ball.x, textY, TIER_COLORS.common);
-    }
-
-    showPopup('+1', ball.x, pointY, TIER_COLORS.common);
+  if (localStorage.getItem(key) !== 'true') {
+    localStorage.setItem(key, 'true');
+    setTierBanner(unlockDef.bannerText, '#2d93ea', 3000);
+  } else {
+    showTextPopup('unlock bag', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
   }
 
   ball.spriteIndex = h.spriteIndex;
@@ -1248,38 +1468,140 @@ if (hit) {
   continue;
 }
 
-        // Missed hoop ends game
-        if (h.x + SPRITE_SIZE < ball.x - 20) return endGame();
-    }
+// -------- SPECIAL: Powerups (+1 always) --------
+if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_COUNT) {
+  // Forced baghetti bags are NOT "powerup hits" — they are +4
+  if (h.forcedBaghetti) {
+    score += 4;
+    showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#f7b72d');
+    showPopup('+4', ball.x, ball.y + POP_POINT_OFFSET_Y, '#f7b72d');
+    showBaghettiBg();
+    setTimeout(hideBaghettiBg, 18000);
+    ball.spriteIndex = h.spriteIndex;
+    hoops.splice(i, 1);
+    continue;
+  }
 
-    // Spawn new hoops
-    if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) addHoop();
+  // Normal powerup pickup = +1
+  score += 1;
+  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
 
-    if (!gameOver) requestAnimationFrame(loop);
+  const powerId = h.spriteIndex - POWERUP_START;
+
+  // Shield
+  if (powerId === POWERUPS.shield) {
+    shieldArmed = true;
+    showTextPopup('ibuprofen found!', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+  }
+
+  if (powerId === POWERUPS.baghetti) {
+  baghettiCharges = 5;
+  showTextPopup('baghetti time', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#f7b72d');
+  showBaghettiBg();
+setTimeout(hideBaghettiBg, 18000); // fades out slowly
+
+
+  // ✅ Instantly convert ALL hoops currently on screen to baghetti
+  const baghettiIndex = POWERUP_START + POWERUPS.baghetti;
+  hoops.forEach(hh => {
+    hh.spriteIndex = baghettiIndex;
+    hh.forcedBaghetti = true;      // makes them worth +4 in your existing logic
+    hh.passedNotBagPopup = false;  // (harmless) resets the notbag popup flag
+  });
+
+  lastHoopWasNotBag = false;
 }
 
-function endGame(){
-  if(gameOver)return;
-  gameOver=true;
+
+  ball.spriteIndex = h.spriteIndex;
+  hoops.splice(i, 1);
+  continue;
+}
+
+      if (h.spriteIndex === NUM_SPRITES) {          // mythic
+        score += 5;
+        showTextPopup('*mythic bag*', ball.x, textY, TIER_COLORS.mythic);
+        showPopup('+5', ball.x, pointY, TIER_COLORS.mythic, '28px', true);
+      } else if (h.spriteIndex >= 19) {            // goated
+        score += 3;
+        showTextPopup('goated bag', ball.x, textY, TIER_COLORS.goated);
+        showPopup('+3', ball.x, pointY, TIER_COLORS.goated, '28px', true);
+        maybeShowFunText(ball.x, ball.y, TIER_COLORS.goated);
+      } else if (h.spriteIndex >= 10) {            // rare
+        score += 2;
+        showTextPopup('rare bag', ball.x, textY, TIER_COLORS.rare);
+        showPopup('+2', ball.x, pointY, TIER_COLORS.rare, '28px', false);
+        maybeShowFunText(ball.x, ball.y, TIER_COLORS.rare);
+      } else {                                     // common
+        score += 1;
+
+        if (Math.random() < 0.4) {
+          const text = COMMON_FUN_TEXTS[Math.floor(Math.random() * COMMON_FUN_TEXTS.length)];
+          showTextPopup(text, ball.x, textY, TIER_COLORS.common);
+        } else {
+          showTextPopup('standard issue bag', ball.x, textY, TIER_COLORS.common);
+        }
+
+        showPopup('+1', ball.x, pointY, TIER_COLORS.common);
+      }
+
+      ball.spriteIndex = h.spriteIndex;
+      hoops.splice(i, 1);
+      continue;
+    }
+
+   // Missed hoop ends game (EXCEPT definitely-not-bag)
+if (h.x + SPRITE_SIZE < ball.x - 20) {
+
+    // If this hoop is definitely-not-bag, you can miss it safely.
+  // Show popup ONCE, but do NOT remove the hoop (let it drift off-screen).
+  if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
+  if (h.x + SPRITE_SIZE < -10) {
+    hoops.splice(i, 1);
+  }
+  continue;
+}
+
+  // Otherwise normal miss behaviour
+  if (shieldArmed) {
+    shieldArmed = false;
+    showTextPopup('ibuprofen saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    hoops.splice(i, 1);
+    continue;
+  }
+
+  return endGame();
+}
+
+  }
+
+  // Spawn new hoops
+  if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - 420) addHoop();
+
+  if (!gameOver) requestAnimationFrame(loop);
+}
+
+function endGame() {
+  if (gameOver) return;
+  gameOver = true;
   hideTopScores();
-  const hs=localStorage.getItem('flappyBasketHighscore')||0;
-  if(score>hs)localStorage.setItem('flappyBasketHighscore',score);
+  const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+  if (score > hs) localStorage.setItem('flappyBasketHighscore', score);
   backButton.style.opacity = 1;
   leaderboardBtn.style.display = 'block';
   showNameModal(score);
 }
 
-window.addEventListener('resize',()=>{
-  canvas.width=window.innerWidth;
-  canvas.height=window.innerHeight;
-  SPRITE_SIZE=Math.round(canvas.height*0.12);
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  SPRITE_SIZE = Math.round(canvas.height * 0.12);
 });
 
 // ------------------- MUSIC -------------------
 const bgMusic = document.getElementById('bgMusic');
 bgMusic.volume = 0.5;
 bgMusic.loop = true;
-
 
 const musicToggle = document.getElementById('musicToggle');
 
@@ -1288,13 +1610,13 @@ musicToggle.textContent = "music: off"; // default state
 
 // Start music on first user gesture (overlay click/touch)
 function handleFirstUserGesture() {
-    if(bgMusic.paused){
-        bgMusic.play().then(() => {
-            musicToggle.textContent = "music: on"; // update once music actually plays
-        }).catch(()=>{});
-    }
-    window.removeEventListener('touchstart', handleFirstUserGesture);
-    window.removeEventListener('mousedown', handleFirstUserGesture);
+  if (bgMusic.paused) {
+    bgMusic.play().then(() => {
+      musicToggle.textContent = "music: on"; // update once music actually plays
+    }).catch(() => { });
+  }
+  window.removeEventListener('touchstart', handleFirstUserGesture);
+  window.removeEventListener('mousedown', handleFirstUserGesture);
 }
 
 // Listen for first click/touch anywhere to unlock autoplay
@@ -1303,40 +1625,39 @@ window.addEventListener('mousedown', handleFirstUserGesture);
 
 // MUSIC TOGGLE
 musicToggle.addEventListener('click', () => {
-    if (bgMusic.paused) {
-        bgMusic.play().catch(() => {});
-        musicToggle.textContent = "music: on";
-    } else {
-        bgMusic.pause();
-        musicToggle.textContent = "music: off";
-    }
+  if (bgMusic.paused) {
+    bgMusic.play().catch(() => { });
+    musicToggle.textContent = "music: on";
+  } else {
+    bgMusic.pause();
+    musicToggle.textContent = "music: off";
+  }
 });
 musicToggle.style.display = "block"; // ensure visible
 
 // ------------------- PAUSE ON HIDE / CLOSE -------------------
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        bgMusic.pause();
-        musicToggle.textContent = "music: off";
-    } else if (!bgMusic.paused) {
-        bgMusic.play().catch(()=>{});
-        musicToggle.textContent = "music: on";
-    }
+  if (document.hidden) {
+    bgMusic.pause();
+    musicToggle.textContent = "music: off";
+  } else if (!bgMusic.paused) {
+    bgMusic.play().catch(() => { });
+    musicToggle.textContent = "music: on";
+  }
 });
 
 window.addEventListener('beforeunload', () => {
-    bgMusic.pause();
+  bgMusic.pause();
 });
 
 // ------------------- NAVIGATION -------------------
-function goBack(){window.location.href="../index.html";}
+function goBack() { window.location.href = "../index.html"; }
 
 // ================== LEADERBOARD ==================
 (function initLeaderboard() {
   const nameModal = document.getElementById('nameModal');
   const finalScoreEl = document.getElementById('finalScore');
   const playerNameInput = document.getElementById('playerName');
-  const leaderboardEl = document.getElementById('leaderboard');
   const leaderboardBackdrop = document.getElementById('leaderboardBackdrop');
   const leaderboardEntriesEl = document.getElementById('leaderboardEntries');
 
@@ -1346,7 +1667,7 @@ function goBack(){window.location.href="../index.html";}
 
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-  script.onload = function() {
+  script.onload = function () {
     if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   };
   document.head.appendChild(script);
@@ -1360,13 +1681,13 @@ function goBack(){window.location.href="../index.html";}
       const { data, error } = await supabaseClient.from('highscores').select('*').order('score', { ascending: false }).limit(20);
       if (error) throw error;
       return data || [];
-    } catch(e){ console.error(e); return []; }
+    } catch (e) { console.error(e); return []; }
   }
 
   async function saveScoreToDb(name, scoreVal) {
     if (!supabaseClient) return;
     try { await supabaseClient.from('highscores').insert([{ name, score: scoreVal }]); }
-    catch(e){ console.error(e); }
+    catch (e) { console.error(e); }
   }
 
   function renderLeaderboard(entries) {
@@ -1374,16 +1695,16 @@ function goBack(){window.location.href="../index.html";}
       leaderboardEntriesEl.innerHTML = '<div style="color:#999;font-size:16px;">no scores yet</div>';
       return;
     }
-    leaderboardEntriesEl.innerHTML = entries.map((entry,i)=>`
+    leaderboardEntriesEl.innerHTML = entries.map((entry, i) => `
       <div class="leaderboard-entry">
-        <span class="rank">${i+1}.</span>
+        <span class="rank">${i + 1}.</span>
         <span class="name">${entry.name}</span>
         <span class="score">${entry.score}</span>
       </div>
     `).join('');
   }
 
-  window.toggleLeaderboard = async function() {
+  window.toggleLeaderboard = async function () {
     const isOpen = leaderboardBackdrop.style.display === 'flex';
     if (isOpen) {
       leaderboardBackdrop.style.display = 'none';
@@ -1395,26 +1716,24 @@ function goBack(){window.location.href="../index.html";}
     }
   };
 
-window.showNameModal = function(finalScore) {
-  finalScoreEl.textContent = 'score: ' + finalScore;
-  playerNameInput.value = localStorage.getItem('playerName') || '';
-  nameModal.classList.add('show');
-  overlayHighscore.style.opacity = 1;
-  overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
-  backButton.style.zIndex = 400;
-  backButton.style.opacity = 1;
-  leaderboardBtn.style.display = 'block';
-  leaderboardBtn.style.zIndex = 300;
-  setTimeout(()=>playerNameInput.focus(), 100);
-  showMusicButton();
+  window.showNameModal = function (finalScore) {
+    finalScoreEl.textContent = 'score: ' + finalScore;
+    playerNameInput.value = localStorage.getItem('playerName') || '';
+    nameModal.classList.add('show');
+    overlayHighscore.style.opacity = 1;
+    overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
+    backButton.style.zIndex = 400;
+    backButton.style.opacity = 1;
+    leaderboardBtn.style.display = 'block';
+    leaderboardBtn.style.zIndex = 300;
+    setTimeout(() => playerNameInput.focus(), 100);
+    showMusicButton();
 
-  // ✅ Show goodybag button only if unlocked
-    if(localStorage.getItem(REWARD_KEYS.rare) === 'true' && goodybagBtn){
-        goodybagBtn.style.display = 'block';
-    }
-};
+    if (goodybagBtn) goodybagBtn.style.display = 'block';
 
-  window.submitScore = async function() {
+  };
+
+  window.submitScore = async function () {
     const name = playerNameInput.value.trim() || 'anonymous';
     localStorage.setItem('playerName', name);
     await saveScoreToDb(name, score);
@@ -1422,50 +1741,34 @@ window.showNameModal = function(finalScore) {
     showOverlay(true);
   };
 
-
-// Try to lock the screen (optional, may fail)
-function lockOrientation() {
+  // Try to lock the screen (optional, may fail)
+  function lockOrientation() {
     if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('portrait').catch(err => {
-            console.warn('Orientation lock failed (normal for mobile browsers):', err);
-        });
+      screen.orientation.lock('portrait').catch(err => {
+        console.warn('Orientation lock failed (normal for mobile browsers):', err);
+      });
     }
-}
+  }
 
-window.addEventListener('load', lockOrientation);
-window.addEventListener('orientationchange', lockOrientation);
+  window.addEventListener('load', lockOrientation);
+  window.addEventListener('orientationchange', lockOrientation);
 
-function checkOrientation() {
+  function checkOrientation() {
     const rotateNotice = document.getElementById('rotateNotice');
 
     // Only enforce rotation on mobile
     if (window.innerWidth <= 768 && window.innerHeight < window.innerWidth) {
-        rotateNotice.classList.add('active');
+      rotateNotice.classList.add('active');
     } else {
-        rotateNotice.classList.remove('active');
+      rotateNotice.classList.remove('active');
     }
-}
+  }
 
-window.addEventListener('load', checkOrientation);
-window.addEventListener('resize', checkOrientation);
-window.addEventListener('orientationchange', checkOrientation);
+  window.addEventListener('load', checkOrientation);
+  window.addEventListener('resize', checkOrientation);
+  window.addEventListener('orientationchange', checkOrientation);
 
-const topScoresEl = document.getElementById('topScores');
-const topCurrentScore = document.getElementById('topCurrentScore');
-const topHighscore = document.getElementById('topHighscore');
-
-function updateTopScoreFontSize() {
-    const vw = window.innerWidth;
-    if (vw <= 768) {
-        topCurrentScore.style.fontSize = '5.5vw';
-        topHighscore.style.fontSize = '5.5vw';
-    } else {
-        topCurrentScore.style.fontSize = '2vw';
-        topHighscore.style.fontSize = '2vw';
-    }
-}
-
-playerNameInput.addEventListener('keydown', e => { if(e.key==='Enter') window.submitScore(); });
+  playerNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') window.submitScore(); });
 })();
 
 // ===== GOODYBAG SYSTEM =====
@@ -1476,133 +1779,126 @@ const goodybagContent = document.getElementById('goodybagContent');
 const goodybagBtn = document.getElementById('goodybagBtn');
 
 const SOUNDTRACKS = {
-    soundtrack01: {
-        link: "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=f9f27c47974341328cdeb5a115aae99f&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
-        tracks: [
-            "vivz portal - rezzett",
-            "tell her nothing - young thug",
-            "bag - mexikodro",
-            "not many (soul version) - scribe & xylatu",
-            "stick x need2 lc3 remix - jim legxacy",
-            "bazooka - p.slxwly",
-            "home - mazii7400prod glitzclub",
-            "shalimar - inigo365 & skud gambosi"
-        ]
-    }
+  soundtrack01: {
+    link: "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=f9f27c47974341328cdeb5a115aae99f&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    tracks: [
+      "vivz portal - rezzett",
+      "tell her nothing - young thug",
+      "bag - mexikodro",
+      "not many (soul version) - scribe & xylatu",
+      "stick x need2 lc3 remix - jim legxacy",
+      "bazooka - p.slxwly",
+      "home - mazii7400prod glitzclub",
+      "shalimar - inigo365 & skud gambosi"
+    ]
+  }
 };
 
-function openGoodybag() {
-    goodybagBackdrop.classList.add('active');
+function refreshGoodybagButtons() {
+  const hasSoundtracks = localStorage.getItem(UNLOCK_KEYS.soundtracks) === 'true';
+  const hasAnyPassword =
+    localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
+    localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true';
 
-    const hasGoated  = localStorage.getItem(REWARD_KEYS.goated) === 'true';
-    const hasMythic  = localStorage.getItem(REWARD_KEYS.mythic) === 'true';
-
-    soundtrackBtn.disabled = !hasGoated;
-    passwordBtn.disabled   = !hasMythic;
-
-    if (!hasGoated && !hasMythic) {
-        goodybagContent.innerHTML = `
-          <div style="opacity:0.6; font-size:20px;">
-            no goodies found yet...
-          </div>
-        `;
-    } else {
-    goodybagContent.innerHTML = '';
+  soundtrackBtn.disabled = !hasSoundtracks;
+  passwordBtn.disabled = !hasAnyPassword;
 }
 
+function openGoodybag() {
+  goodybagBackdrop.classList.add('active');
+  refreshGoodybagButtons();
+
+  // If nothing unlocked yet
+  if (soundtrackBtn.disabled && passwordBtn.disabled) {
+    goodybagContent.innerHTML = `
+      <div style="opacity:0.6; font-size:20px;">
+        no goodies found yet...
+      </div>
+    `;
+  } else {
+    goodybagContent.innerHTML = '';
+  }
 }
 
 function closeGoodybag() {
-    goodybagBackdrop.classList.remove('active');
+  goodybagBackdrop.classList.remove('active');
 }
-
 
 goodybagBtn.addEventListener('click', openGoodybag);
 
 // ----- SOUNDTRACK BUTTON -----
 soundtrackBtn.addEventListener('click', () => {
-    goodybagContent.innerHTML = ''; // clear previous content
+  goodybagContent.innerHTML = '';
 
-    // If player hasn't unlocked soundtracks
-    if (localStorage.getItem(REWARD_KEYS.goated) !== 'true') {
-        goodybagContent.innerHTML = '<div>No soundtracks unlocked yet...</div>';
-        return;
-    }
+  if (localStorage.getItem(UNLOCK_KEYS.soundtracks) !== 'true') {
+    goodybagContent.innerHTML = '<div>no soundtracks unlocked yet...</div>';
+    return;
+  }
 
-    // Loop through SOUNDTRACKS
-    for (const [name, data] of Object.entries(SOUNDTRACKS)) {
-        // Outer wrapper block - this will be centered in modal
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('goodybag-block');
-        wrapper.style.marginBottom = '18px';
+  for (const [name, data] of Object.entries(SOUNDTRACKS)) {
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('goodybag-block');
+    wrapper.style.marginBottom = '18px';
 
-        // Header row (name + link)
-        const headerRow = document.createElement('div');
-        headerRow.style.display = 'flex';
-        headerRow.style.justifyContent = 'space-between';
-        headerRow.style.alignItems = 'center';
-        headerRow.style.marginBottom = '6px';
+    const headerRow = document.createElement('div');
+    headerRow.style.display = 'flex';
+    headerRow.style.justifyContent = 'space-between';
+    headerRow.style.alignItems = 'center';
+    headerRow.style.marginBottom = '6px';
 
-        const header = document.createElement('div');
-        header.style.fontWeight = 'bold';
-        header.textContent = name;
+    const header = document.createElement('div');
+    header.style.fontWeight = 'bold';
+    header.textContent = name;
 
-        const linkBtn = document.createElement('button');
-        linkBtn.textContent = 'link';
-        linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
-        linkBtn.style.fontSize = '20px';
-        linkBtn.style.padding = '4px 8px';
-        linkBtn.style.background = 'transparent';
-        linkBtn.style.border = 'none';
-        linkBtn.style.color = '#2d93ea';
-        linkBtn.style.textTransform = 'lowercase';
-        linkBtn.onclick = () => window.open(data.link, '_blank');
+    const linkBtn = document.createElement('button');
+    linkBtn.textContent = 'link';
+    linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+    linkBtn.style.fontSize = '20px';
+    linkBtn.style.padding = '4px 8px';
+    linkBtn.style.background = 'transparent';
+    linkBtn.style.border = 'none';
+    linkBtn.style.color = '#2d93ea';
+    linkBtn.style.textTransform = 'lowercase';
+    linkBtn.onclick = () => window.open(data.link, '_blank');
 
-        headerRow.appendChild(header);
-        headerRow.appendChild(linkBtn);
+    headerRow.appendChild(header);
+    headerRow.appendChild(linkBtn);
 
-        // Track list
-        const ul = document.createElement('ul');
-        ul.style.listStyle = 'none';
-        ul.style.padding = '0';
-        ul.style.margin = '0';
+    const ul = document.createElement('ul');
+    ul.style.listStyle = 'none';
+    ul.style.padding = '0';
+    ul.style.margin = '0';
 
-        data.tracks.forEach(track => {
-            const li = document.createElement('li');
-            li.textContent = track;
-            li.style.margin = '4px 0';
-            ul.appendChild(li);
-        });
+    data.tracks.forEach(track => {
+      const li = document.createElement('li');
+      li.textContent = track;
+      li.style.margin = '4px 0';
+      ul.appendChild(li);
+    });
 
-        wrapper.appendChild(headerRow);
-        wrapper.appendChild(ul);
-        goodybagContent.appendChild(wrapper);
-    }
+    wrapper.appendChild(headerRow);
+    wrapper.appendChild(ul);
+    goodybagContent.appendChild(wrapper);
+  }
 });
 
 // ----- PASSWORD BUTTON -----
 passwordBtn.addEventListener('click', () => {
-    if(localStorage.getItem(REWARD_KEYS.mythic)!=='true'){
-        goodybagContent.innerHTML='<div>no passwords unlocked yet...</div>';
-        return;
-    }
-    goodybagContent.innerHTML='<div>unlocked passwords: <strong>onway</strong></div>';
-});
+  const unlocked = [];
+  if (localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true') unlocked.push('tinny');
+  if (localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true') unlocked.push('onway');
 
-// ----- SHOW GOODYBAG BUTTON AFTER RELOAD -----
-window.addEventListener('load', ()=>{
-    if(localStorage.getItem(REWARD_KEYS.rare)==='true' && goodybagBtn){
-        goodybagBtn.style.display='block';
-    }
-});
+  if (!unlocked.length) {
+    goodybagContent.innerHTML = '<div>no passwords unlocked yet...</div>';
+    return;
+  }
 
-// ---- ENSURE GOODYBAG BUTTON STAYS VISIBLE AFTER RELOAD ----
-window.addEventListener('load', () => {
-    if (localStorage.getItem(REWARD_KEYS.rare) === 'true' && goodybagBtn) {
-        goodybagBtn.style.display = 'block';
-    }
+  goodybagContent.innerHTML =
+    '<div>unlocked passwords:</div>' +
+    unlocked.map(p => `<div><strong>${p}</strong></div>`).join('');
 });
 
 </script>
+
 </body>
 </html>
