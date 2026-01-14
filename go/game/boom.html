@@ -599,7 +599,8 @@ const POP_TEXT_OFFSET_Y  = 50;  // fun text / "rare bag" line
 const POP_POINT_OFFSET_Y = 20;  // +1/+2/+3 line
 const baghettiBg = document.getElementById('baghettiBg');
 const BAGHETTI_COLOR = '#d9a42a';
-const BAGHETTI_RUN_COUNT = 4; // ✅ only 4 forced
+const BAGHETTI_TOTAL_RUN = 3;           // total baghettis in a run (pickup + forced)
+const BAGHETTI_FORCED_COUNT = BAGHETTI_TOTAL_RUN - 1; // 2 forced after pickup
 let baghettiBgActive = false;
 
 function showBaghettiBg() {
@@ -662,19 +663,22 @@ Object.values(UNLOCK_KEYS).forEach(k => {
 // ===================== UNLOCK / POWERUP DEFINITIONS =====================
 const UNLOCK_BAGS = [
   {
-    spriteOffset: 0, // unlockSprites[0] = tinny.png
+    spriteOffset: 0,
     storageKey: UNLOCK_KEYS.password_tinny,
+    popupText: 'tinny bag!',
     bannerText: '*password found!*\nunlocked: tinny'
   },
   {
-    spriteOffset: 1, // onway.png
+    spriteOffset: 1,
     storageKey: UNLOCK_KEYS.password_onway,
+    popupText: 'crypto bag!',
     bannerText: '*password found!*\nunlocked: onway'
   },
   {
-    spriteOffset: 2, // music.png
+    spriteOffset: 2,
     storageKey: UNLOCK_KEYS.soundtracks,
-    bannerText: '*music found!*\nsoundtracks unlocked!'
+    popupText: 'remix bag!',
+    bannerText: '*music found!*\nunlocked soundtracks!'
   }
 ];
 
@@ -811,7 +815,8 @@ let lastHoopWasNotBag = false;
 let shieldArmed = false;
 
 // Baghetti: forces the next N hoops to spawn as baghetti (+4 each)
-let baghettiCharges = 0;
+let baghettiCharges = 0;         // number of forced baghettis still to spawn
+let baghettiRunLeft = 0;         // total baghettis remaining on-screen for bg (pickup+forced)
 
 let lastTouchTime = 0;
 document.addEventListener('touchstart', function (e) {
@@ -1098,8 +1103,8 @@ function addHoop() {
       // 3) Unlock bags (VERY rare, passwords rarer than music)
 
 // Tune these:
-const MUSIC_UNLOCK_CHANCE    = 0.04; 
-const PASSWORD_UNLOCK_CHANCE = 0.02; 
+const MUSIC_UNLOCK_CHANCE    = 0.006; 
+const PASSWORD_UNLOCK_CHANCE = 0.006; 
 
 const roll = Math.random();
 
@@ -1473,17 +1478,20 @@ if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT
   const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
   const key = unlockDef.storageKey;
 
+  // ✅ under-bag popup EVERY time (always gold)
+  showTextPopup(unlockDef.popupText, ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
+
+  // ✅ banner ONLY first time
   if (localStorage.getItem(key) !== 'true') {
     localStorage.setItem(key, 'true');
-    setTierBanner(unlockDef.bannerText, '#2d93ea', 3000);
-  } else {
-    showTextPopup('unlock bag', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    setTierBanner(unlockDef.bannerText, 'gold', 3000);
   }
 
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
   continue;
 }
+
 
 // -------- SPECIAL: Powerups --------
 if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_COUNT) {
@@ -1494,16 +1502,18 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
   // ✅ ALL baghetti (pickup + forced) = +4
   // ✅ baghetti (pickup OR forced) = +4 (same color)
 if (powerId === POWERUPS.baghetti) {
-  score += 4;
+  score += 1;
 
   showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, BAGHETTI_COLOR);
-  showPopup('+4', ball.x, ball.y + POP_POINT_OFFSET_Y, BAGHETTI_COLOR);
+  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, BAGHETTI_COLOR);
 
-  // ✅ ONLY the real pickup starts the run
-  // Forced baghettis must NOT reset charges
   if (!h.forcedBaghetti) {
-    baghettiCharges = BAGHETTI_RUN_COUNT; // ✅ 4 forced, not 5
+    baghettiCharges = BAGHETTI_FORCED_COUNT; // 2 forced
+    baghettiRunLeft = BAGHETTI_TOTAL_RUN;    // 3 total
   }
+
+  // ✅ decrement for every baghetti collected (pickup + forced)
+  if (baghettiRunLeft > 0) baghettiRunLeft--;
 
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -1591,9 +1601,8 @@ if (h.x + SPRITE_SIZE < ball.x - 20) {
 const GAP = Math.min(420, Math.max(260, Math.floor(canvas.width * 0.7)));
 if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - GAP) addHoop();
 
-// ✅ bg control
-const baghettiStillOnScreen = hoops.some(hh => hh.baghettiRun === true);
-if (baghettiStillOnScreen) showBaghettiBg();
+// ✅ bg active only during the 3-baghetti run (pickup+forced)
+if (baghettiRunLeft > 0) showBaghettiBg();
 else hideBaghettiBg();
 
 if (!gameOver) requestAnimationFrame(loop);
