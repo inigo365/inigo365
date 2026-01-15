@@ -434,7 +434,7 @@ canvas {
 /* One stable overlay “unit” */
 #playWrap{
   position: absolute;
-  top: 48%;
+  top: 44%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.8);
   opacity: 0;
@@ -525,7 +525,7 @@ canvas {
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 <button id="goodybagBtn" class="soundcloud-btn">goodybag</button>
-<audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
+<audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 
 <div id="playWrap">
   <img id="playOverlay" src="play.png" alt="play">
@@ -677,6 +677,35 @@ const UNLOCK_KEYS = {
 Object.values(UNLOCK_KEYS).forEach(k => {
   if (localStorage.getItem(k) === null) localStorage.setItem(k, "false");
 });
+// ===================== SOUNDTRACK SYSTEM (3 for now) =====================
+const TOTAL_SOUNDTRACKS = 3;
+const SOUNDTRACK_UNLOCK_LEVEL_KEY = "soundtrack_unlock_level";    // "0".."3"
+const SELECTED_SOUNDTRACK_INDEX_KEY = "selected_soundtrack_index"; // "-1"=random, "0..2"=selected
+
+if (localStorage.getItem(SOUNDTRACK_UNLOCK_LEVEL_KEY) === null) {
+  localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, "0");
+}
+if (localStorage.getItem(SELECTED_SOUNDTRACK_INDEX_KEY) === null) {
+  localStorage.setItem(SELECTED_SOUNDTRACK_INDEX_KEY, "-1");
+}
+
+// Keep compatibility with old boolean unlock
+(function migrateSoundtracksFlag() {
+  const old = localStorage.getItem(UNLOCK_KEYS.soundtracks);
+  const lvl = Number(localStorage.getItem(SOUNDTRACK_UNLOCK_LEVEL_KEY) || "0");
+  if (old === "true" && lvl < 1) localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, "1");
+})();
+
+function getUnlockedSoundtrackLevel() {
+  const lvl = Number(localStorage.getItem(SOUNDTRACK_UNLOCK_LEVEL_KEY) || "0");
+  return Math.max(0, Math.min(TOTAL_SOUNDTRACKS, lvl));
+}
+function getSelectedSoundtrackIndex() {
+  return Number(localStorage.getItem(SELECTED_SOUNDTRACK_INDEX_KEY) || "-1");
+}
+function setSelectedSoundtrackIndex(i) {
+  localStorage.setItem(SELECTED_SOUNDTRACK_INDEX_KEY, String(i));
+}
 
 // ===================== UNLOCK / POWERUP DEFINITIONS =====================
 const UNLOCK_BAGS = [
@@ -1267,7 +1296,14 @@ function startGame() {
   if (gameStarted || !assetsLoaded) return;
   hideOverlay();
   gameStarted = true;
-  
+  // ✅ choose soundtrack on start (selected overrides random)
+const selected = getSelectedSoundtrackIndex();
+if (selected >= 0 && selected < SOUNDTRACKS.length) {
+  setSoundtrackByIndex(selected, !bgMusic.paused);
+} else {
+  setSoundtrackByIndex(pickRandomSoundtrackIndex(), !bgMusic.paused);
+}
+
   SPEED = 3;
   hoops = [];
   score = 0;
@@ -1513,10 +1549,28 @@ if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT
   showTextPopup(unlockDef.popupText, ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
 
   // ✅ banner ONLY first time
+  // ✅ banner logic
+if (key === UNLOCK_KEYS.soundtracks) {
+  let lvl = getUnlockedSoundtrackLevel();
+
+  if (lvl < TOTAL_SOUNDTRACKS) {
+    lvl++;
+    localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, String(lvl));
+    localStorage.setItem(UNLOCK_KEYS.soundtracks, "true"); // legacy flag
+
+    setTierBanner(`*soundtrack found!*\nunlocked soundtrack0${lvl}!`, 'gold', 3000);
+  } else {
+    setTierBanner(`*soundtrack found!*\nall soundtracks unlocked!`, 'gold', 2200);
+  }
+
+} else {
+  // passwords: banner only first time
   if (localStorage.getItem(key) !== 'true') {
     localStorage.setItem(key, 'true');
     setTierBanner(unlockDef.bannerText, 'gold', 3000);
   }
+}
+
 
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -1659,6 +1713,26 @@ window.addEventListener('resize', () => {
 
 // ------------------- MUSIC -------------------
 const bgMusic = document.getElementById('bgMusic');
+function setSoundtrackByIndex(idx, tryPlay = true) {
+  const s = SOUNDTRACKS[idx];
+  if (!s) return;
+
+  bgMusic.pause();
+  bgMusic.src = s.src;
+  bgMusic.load();
+  bgMusic.loop = true;
+
+  if (tryPlay) {
+    bgMusic.play().then(() => {
+      musicToggle.textContent = "music: on";
+    }).catch(() => {});
+  }
+}
+
+function pickRandomSoundtrackIndex() {
+  return Math.floor(Math.random() * SOUNDTRACKS.length);
+}
+
 bgMusic.volume = 0.5;
 bgMusic.loop = true;
 
@@ -1837,8 +1911,10 @@ const passwordBtn = document.getElementById('passwordBtn');
 const goodybagContent = document.getElementById('goodybagContent');
 const goodybagBtn = document.getElementById('goodybagBtn');
 
-const SOUNDTRACKS = {
-  soundtrack01: {
+const SOUNDTRACKS = [
+  {
+    title: "soundtrack01",
+    src: "/go/game/soundtrack01.mp3",
     link: "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=f9f27c47974341328cdeb5a115aae99f&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
     tracks: [
       "vivz portal - rezzett",
@@ -1850,11 +1926,39 @@ const SOUNDTRACKS = {
       "home - mazii7400prod glitzclub",
       "shalimar - inigo365 & skud gambosi"
     ]
+  },
+  {
+    title: "soundtrack02",
+    src: "/go/game/soundtrack02.mp3",
+    link: "https://soundcloud.com/",  // placeholder for now
+    tracks: [
+      "just another day - nines",
+      "chasing a comfort - 16 underground",
+      "dmt - xxyyxx",
+      "dna (melodownz refix) - inigo365",
+      "never2much @@@ - inigo365",
+      "east atlanta luv lettrr - wavsbyleo"
+    ]
+  },
+  {
+    title: "soundtrack03",
+    src: "/go/game/soundtrack03.mp3",
+    link: "https://soundcloud.com/",  // placeholder for now
+    tracks: [
+      "from the roof top ~ sniper's theme (Da-P edition)",
+      "i wish i was off the vitamins - n64kiddo x djsmokey & soudiere",
+      "get it - wasteey monroe feat. tay-k",
+      "supposed to do - ace hood feat. skepta",
+      "iron shell - esdeekid x montreality",
+      "bored of the uk - jawnino",
+      "no feelings - deadforest"
+    ]
   }
-};
+];
+
 
 function refreshGoodybagButtons() {
-  const hasSoundtracks = localStorage.getItem(UNLOCK_KEYS.soundtracks) === 'true';
+const hasSoundtracks = getUnlockedSoundtrackLevel() > 0;
 const hasAnyPassword =
   localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
   localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true' ||
@@ -1886,61 +1990,130 @@ function closeGoodybag() {
 
 goodybagBtn.addEventListener('click', openGoodybag);
 
-// ----- SOUNDTRACK BUTTON -----
-soundtrackBtn.addEventListener('click', () => {
-  goodybagContent.innerHTML = '';
+let soundtrackPageIndex = 0;
 
-  if (localStorage.getItem(UNLOCK_KEYS.soundtracks) !== 'true') {
+function renderSoundtrackPage() {
+  const unlocked = getUnlockedSoundtrackLevel();
+
+  if (unlocked <= 0) {
     goodybagContent.innerHTML = '<div>no soundtracks unlocked yet...</div>';
     return;
   }
 
-  for (const [name, data] of Object.entries(SOUNDTRACKS)) {
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('goodybag-block');
-    wrapper.style.marginBottom = '18px';
+  // clamp to unlocked range
+  soundtrackPageIndex = Math.max(0, Math.min(soundtrackPageIndex, unlocked - 1));
+  const s = SOUNDTRACKS[soundtrackPageIndex];
 
-    const headerRow = document.createElement('div');
-    headerRow.style.display = 'flex';
-    headerRow.style.justifyContent = 'space-between';
-    headerRow.style.alignItems = 'center';
-    headerRow.style.marginBottom = '6px';
+  goodybagContent.innerHTML = ''; // clear
 
-    const header = document.createElement('div');
-    header.style.fontWeight = 'bold';
-    header.textContent = name;
+  const wrapper = document.createElement('div');
+  wrapper.style.width = '100%';
+  wrapper.style.maxWidth = '520px';
 
-    const linkBtn = document.createElement('button');
-    linkBtn.textContent = 'link';
-    linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
-    linkBtn.style.fontSize = '20px';
-    linkBtn.style.padding = '4px 8px';
-    linkBtn.style.background = 'transparent';
-    linkBtn.style.border = 'none';
-    linkBtn.style.color = '#2d93ea';
-    linkBtn.style.textTransform = 'lowercase';
-    linkBtn.onclick = () => window.open(data.link, '_blank');
+  // header row: title left, link right
+  const headerRow = document.createElement('div');
+  headerRow.style.display = 'flex';
+  headerRow.style.justifyContent = 'space-between';
+  headerRow.style.alignItems = 'center';
+  headerRow.style.marginBottom = '6px';
 
-    headerRow.appendChild(header);
-    headerRow.appendChild(linkBtn);
+  const header = document.createElement('div');
+  header.style.fontWeight = 'bold';
+  header.textContent = s.title;
 
-    const ul = document.createElement('ul');
-    ul.style.listStyle = 'none';
-    ul.style.padding = '0';
-    ul.style.margin = '0';
+  const linkBtn = document.createElement('button');
+  linkBtn.textContent = 'link';
+  linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+  linkBtn.style.fontSize = '20px';
+  linkBtn.style.padding = '4px 8px';
+  linkBtn.style.background = 'transparent';
+  linkBtn.style.border = 'none';
+  linkBtn.style.color = '#2d93ea';
+  linkBtn.style.textTransform = 'lowercase';
+  linkBtn.onclick = () => window.open(s.link, '_blank');
 
-    data.tracks.forEach(track => {
-      const li = document.createElement('li');
-      li.textContent = track;
-      li.style.margin = '4px 0';
-      ul.appendChild(li);
-    });
+  headerRow.appendChild(header);
+  headerRow.appendChild(linkBtn);
 
-    wrapper.appendChild(headerRow);
-    wrapper.appendChild(ul);
-    goodybagContent.appendChild(wrapper);
-  }
+  // track list
+  const ul = document.createElement('ul');
+  ul.style.listStyle = 'none';
+  ul.style.padding = '0';
+  ul.style.margin = '0';
+  ul.style.textAlign = 'center';
+
+  s.tracks.forEach(track => {
+    const li = document.createElement('li');
+    li.textContent = track;
+    li.style.margin = '4px 0';
+    ul.appendChild(li);
+  });
+
+  // bottom row: back/next left, select right
+  const bottomRow = document.createElement('div');
+  bottomRow.style.display = 'flex';
+  bottomRow.style.justifyContent = 'space-between';
+  bottomRow.style.alignItems = 'center';
+  bottomRow.style.marginTop = '16px';
+  bottomRow.style.width = '100%';
+
+  const leftControls = document.createElement('div');
+  leftControls.style.display = 'flex';
+  leftControls.style.gap = '12px';
+
+  const backBtn = document.createElement('button');
+  backBtn.textContent = 'back';
+  backBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+  backBtn.style.fontSize = '24px';
+  backBtn.style.background = 'transparent';
+  backBtn.style.border = 'none';
+  backBtn.style.color = '#2d93ea';
+  backBtn.style.textTransform = 'lowercase';
+  backBtn.style.visibility = (soundtrackPageIndex === 0) ? 'hidden' : 'visible';
+  backBtn.onclick = () => { soundtrackPageIndex--; renderSoundtrackPage(); };
+
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'next';
+  nextBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+  nextBtn.style.fontSize = '24px';
+  nextBtn.style.background = 'transparent';
+  nextBtn.style.border = 'none';
+  nextBtn.style.color = '#2d93ea';
+  nextBtn.style.textTransform = 'lowercase';
+  nextBtn.style.visibility = (soundtrackPageIndex >= unlocked - 1) ? 'hidden' : 'visible';
+  nextBtn.onclick = () => { soundtrackPageIndex++; renderSoundtrackPage(); };
+
+  leftControls.appendChild(backBtn);
+  leftControls.appendChild(nextBtn);
+
+  const selectBtn = document.createElement('button');
+  selectBtn.textContent = 'select';
+  selectBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+  selectBtn.style.fontSize = '24px';
+  selectBtn.style.background = 'transparent';
+  selectBtn.style.border = 'none';
+  selectBtn.style.color = '#2d93ea';
+  selectBtn.style.textTransform = 'lowercase';
+  selectBtn.onclick = () => {
+    setSelectedSoundtrackIndex(soundtrackPageIndex);
+    setSoundtrackByIndex(soundtrackPageIndex, true);
+  };
+
+  bottomRow.appendChild(leftControls);
+  bottomRow.appendChild(selectBtn);
+
+  wrapper.appendChild(headerRow);
+  wrapper.appendChild(ul);
+  wrapper.appendChild(bottomRow);
+
+  goodybagContent.appendChild(wrapper);
+}
+
+soundtrackBtn.addEventListener('click', () => {
+  soundtrackPageIndex = 0; // always start at soundtrack01
+  renderSoundtrackPage();
 });
+
 
 // ----- PASSWORD BUTTON -----
 passwordBtn.addEventListener('click', () => {
