@@ -1111,8 +1111,12 @@ function addHoop() {
       // 3) Unlock bags (VERY rare, passwords rarer than music)
 
 // Tune these:
-const MUSIC_UNLOCK_CHANCE    = 0.007; 
-const PASSWORD_UNLOCK_CHANCE = 0.007; 
+const MUSIC_UNLOCK_CHANCE    = 1/100; 
+const PASSWORD_UNLOCK_CHANCE = 1/100; 
+// Powerup spawn tuning (per hoop spawn)
+const SHIELD_SPAWN_CHANCE   = 1 / 80;   // ~1.25%
+const BAGHETTI_SPAWN_CHANCE = 1 / 200;  // ~0.5%
+
 
 const roll = Math.random();
 
@@ -1833,10 +1837,10 @@ const SOUNDTRACKS = {
 
 function refreshGoodybagButtons() {
   const hasSoundtracks = localStorage.getItem(UNLOCK_KEYS.soundtracks) === 'true';
-  const hasAnyPassword =
-    localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
-    localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true';
-    localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true';
+const hasAnyPassword =
+  localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
+  localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true' ||
+  localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true';
 
   soundtrackBtn.disabled = !hasSoundtracks;
   passwordBtn.disabled = !hasAnyPassword;
