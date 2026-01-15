@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>couch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="/images/icon.png" />
+
+<style>
+@font-face {
+  font-family: "RuneScape UF";
+  src: url("../../fonts/RuneScape-UF.woff2") format("woff2"),
+       url("../../fonts/RuneScape-UF.woff") format("woff");
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  font-family: "RuneScape UF", Arial, sans-serif;
+
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+
+  cursor: url("../../images/cursor/cursor.png"), auto;
+}
+
+.back-button {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  font-size: 28px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 0;
+  z-index: 10;
+}
+
+.wrapper {
+  height: 100%;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.stage {
+  position: relative;
+  width: min(70vw, 360px);
+  aspect-ratio: 1 / 1; /* 128x128 base */
+}
+
+.stage img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.couch { z-index: 1; }
+
+.fire {
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 80ms;
+  will-change: transform;
+}
+
+.smoke {
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 140ms;
+  will-change: transform;
+}
+
+.status {
+  font-size: 22px;
+  color: #2d93ea;
+  text-transform: lowercase;
+  line-height: 1;
+}
+</style>
+</head>
+
+<body>
+<button class="back-button" onclick="goBack()">← back</button>
+
+<div class="wrapper">
+  <div class="stack">
+    <div class="stage" id="stage">
+      <img class="couch" src="couch.png" alt="couch" />
+      <img class="fire"  id="fire"  src="fire_1.png"  alt="fire" />
+      <img class="smoke" id="smoke" src="smoke_1.png" alt="smoke" />
+    </div>
+
+    <div class="status" id="status">click / tap to ignite</div>
+  </div>
+</div>
+
+<script>
+/* ELEMENTS */
+const fireEl = document.getElementById("fire");
+const smokeEl = document.getElementById("smoke");
+const statusEl = document.getElementById("status");
+
+/* FRAMES */
+const fireFrames = [
+  "fire_1.png","fire_2.png","fire_3.png","fire_4.png","fire_5.png","fire_6.png","fire_7.png"
+];
+
+const smokeFrames = [
+  "smoke_1.png","smoke_2.png","smoke_3.png"
+];
+
+/* TIMING (tweak to taste) */
+const FIRE_MS  = 110;  // 90–140 good
+const SMOKE_MS = 220;  // slower than fire
+
+/* STATE */
+let holding = false;
+
+let fireTimer = null;
+let fireIndex = 0;
+
+let smokeTimer = null;
+let smokeIndex = 0;
+let smokeY = 0;
+
+let stopSmokeTimeout = null;
+
+/* FIRE (8-bit: frame swap + whole-pixel jitter) */
+function startFire() {
+  if (fireTimer) return;
+
+  statusEl.textContent = "burning...";
+  fireEl.style.opacity = "1";
+
+  fireIndex = Math.floor(Math.random() * fireFrames.length);
+  fireEl.src = fireFrames[fireIndex];
+
+  fireTimer = setInterval(() => {
+    fireIndex = (fireIndex + 1) % fireFrames.length;
+    fireEl.src = fireFrames[fireIndex];
+
+    // tiny whole-pixel jitter: retro flicker vibe
+    const jx = (Math.random() < 0.35) ? (Math.random() < 0.5 ? -1 : 1) : 0;
+    const jy = (Math.random() < 0.25) ? (Math.random() < 0.5 ? -1 : 1) : 0;
+    fireEl.style.transform = `translate(${jx}px, ${jy}px)`;
+  }, FIRE_MS);
+}
+
+function stopFire() {
+  statusEl.textContent = "click / tap to ignite";
+  fireEl.style.opacity = "0";
+  fireEl.style.transform = "translate(0px, 0px)";
+
+  clearInterval(fireTimer);
+  fireTimer = null;
+}
+
+/* SMOKE (separate layer: slower, drifting) */
+function startSmoke() {
+  // if we were about to stop smoke, cancel that
+  if (stopSmokeTimeout) {
+    clearTimeout(stopSmokeTimeout);
+    stopSmokeTimeout = null;
+  }
+  if (smokeTimer) return;
+
+  smokeEl.style.opacity = "1";
+  smokeY = 0;
+
+  smokeIndex = Math.floor(Math.random() * smokeFrames.length);
+  smokeEl.src = smokeFrames[smokeIndex];
+
+  smokeTimer = setInterval(() => {
+    smokeIndex = (smokeIndex + 1) % smokeFrames.length;
+    smokeEl.src = smokeFrames[smokeIndex];
+
+    // drift up in whole pixels
+    if (Math.random() < 0.75) smokeY -= 1;
+
+    // keep drift looping subtly so it doesn't wander off forever
+    if (smokeY < -10) smokeY = 0;
+
+    // slight sideways wobble (rare)
+    const sx = (Math.random() < 0.15) ? (Math.random() < 0.5 ? -1 : 1) : 0;
+
+    smokeEl.style.transform = `translate(${sx}px, ${smokeY}px)`;
+  }, SMOKE_MS);
+}
+
+function stopSmokeWithLinger() {
+  // linger briefly after release (looks nicer)
+  if (stopSmokeTimeout) clearTimeout(stopSmokeTimeout);
+
+  stopSmokeTimeout = setTimeout(() => {
+    smokeEl.style.opacity = "0";
+    smokeEl.style.transform = "translate(0px, 0px)";
+
+    clearInterval(smokeTimer);
+    smokeTimer = null;
+    stopSmokeTimeout = null;
+  }, 300);
+}
+
+/* INPUT */
+function onDown() {
+  holding = true;
+  startFire();
+
+  // smoke starts a beat after fire so it feels like it “catches”
+  setTimeout(() => {
+    if (holding) startSmoke();
+  }, 120);
+}
+
+function onUp() {
+  holding = false;
+  stopFire();
+  stopSmokeWithLinger();
+}
+
+document.addEventListener("mousedown", onDown);
+document.addEventListener("mouseup", onUp);
+
+document.addEventListener("touchstart", onDown, { passive: true });
+document.addEventListener("touchend", onUp, { passive: true });
+
+function goBack() {
+  window.location.href = "../index.html";
+}
+</script>
+</body>
+</html>
