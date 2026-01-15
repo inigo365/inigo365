@@ -117,6 +117,17 @@ video {
   }
 }
 
+/* ===== MOBILE SCALE OVERRIDE (ONLY FOR SPECIFIC VIDEOS) ===== */
+@media (max-width: 768px) {
+  .video-wrapper.mobile-fill {
+    width: 100vw;
+    max-width: none;
+    height: calc(100vh - 56px); /* leave space for back button area */
+    aspect-ratio: auto;         /* don't force 16:9 */
+  }
+}
+/* ===== END MOBILE SCALE OVERRIDE ===== */
+
 /* PLAY BUTTON */
 .play-button {
   position: absolute;
@@ -200,14 +211,17 @@ const actions = {
   "donovan": { src: "videos/video.mp4" },
   "gambosi": { src: "videos/skud.mp4" },
   "wasted": { src: "videos/litty.mp4" },
+
   "tinny": { redirect: "scale/scale.html", sameTab: true },
   "bag": { redirect: "game/boom.html", sameTab: true },
   "home": { redirect: "../home.html", sameTab: true },
   "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", sameTab: false },
   "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true },
   "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true },
-  "1millionfrogs": { src: "videos/1millionfrogs.mp4" },
-  "heavychest": { src: "videos/andre.mov" }
+
+  /* NEW VIDEOS: only these get the mobile scaling class */
+  "1millionfrogs": { src: "videos/1millionfrogs.mp4", mobileFill: true },
+  "heavychest": { src: "videos/andre.mov", mobileFill: true }
 };
 
 function resetToPassword() {
@@ -225,6 +239,9 @@ function resetToPassword() {
   videoWrapper.style.display = "none";
   videoWrapper.style.opacity = 0;
 
+  // IMPORTANT: remove the per-video mobile class when leaving
+  videoWrapper.classList.remove("mobile-fill");
+
   playButton.classList.remove("show");
   playButton.onclick = null;
 
@@ -235,31 +252,29 @@ function resetToPassword() {
 
 /* ===== FIX FOR BROWSER BACK BUTTON / BFCache RESTORE ===== */
 function hardResetPasswordUI() {
-  // remove any old ended listener just in case
   if (endedListener) video.removeEventListener("ended", endedListener);
 
-  // reset video completely
   video.pause();
   video.removeAttribute("src");
   video.load();
 
-  // clear state
   currentAction = null;
   endedListener = null;
 
-  // force correct screen visibility
   contentPage.style.display = "none";
   passwordScreen.style.display = "flex";
   passwordScreen.style.opacity = 1;
 
-  // hide video/play/back UI
   videoWrapper.style.display = "none";
   videoWrapper.style.opacity = 0;
+
+  // IMPORTANT: remove the per-video mobile class on restore
+  videoWrapper.classList.remove("mobile-fill");
+
   playButton.classList.remove("show");
   playButton.onclick = null;
   backButton.classList.remove("show");
 
-  // ensure input is always usable + cleared
   passwordInput.disabled = false;
   passwordInput.value = "";
   passwordInput.setAttribute("value", "");
@@ -267,12 +282,10 @@ function hardResetPasswordUI() {
   requestAnimationFrame(() => passwordInput.focus());
 }
 
-// Runs when page is shown (including returning via browser back/forward cache)
 window.addEventListener("pageshow", () => {
   hardResetPasswordUI();
 });
 
-// Safety: if page is being put into bfcache, don't leave input disabled
 window.addEventListener("pagehide", () => {
   passwordInput.disabled = false;
 });
@@ -292,18 +305,15 @@ passwordInput.addEventListener("keydown", e => {
 
   passwordInput.disabled = true;
 
- if (action.redirect) {
-  // default to same-tab unless explicitly set to false
-  const sameTab = action.sameTab !== false;
+  if (action.redirect) {
+    const sameTab = action.sameTab !== false;
+    passwordInput.disabled = false;
+    passwordInput.value = "";
 
-  // (optional but helps) make sure input isn't left disabled when leaving
-  passwordInput.disabled = false;
-  passwordInput.value = "";
-
-  if (sameTab) window.location.href = action.redirect;
-  else window.open(action.redirect, "_blank");
-  return;
-}
+    if (sameTab) window.location.href = action.redirect;
+    else window.open(action.redirect, "_blank");
+    return;
+  }
 
   currentAction = action;
 
@@ -319,6 +329,11 @@ passwordInput.addEventListener("keydown", e => {
     videoWrapper.style.display = "block";
     videoWrapper.style.opacity = 0;
     backButton.classList.add("show");
+
+    // ===== APPLY MOBILE CLASS ONLY FOR SELECTED VIDEOS =====
+    if (currentAction.mobileFill) videoWrapper.classList.add("mobile-fill");
+    else videoWrapper.classList.remove("mobile-fill");
+    // ===== END =====
 
     video.src = currentAction.src + "?v=" + Date.now();
     video.currentTime = 0;
