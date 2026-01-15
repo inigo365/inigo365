@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>stone in focus</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="../../images/icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="../../images/icon.png" />
 
 <style>
 @font-face {
@@ -39,7 +39,7 @@ html, body {
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
-  z-index: 10;
+  z-index: 50;
 }
 
 /* VIDEO CONTAINER */
@@ -54,19 +54,6 @@ html, body {
   overflow: hidden;
 }
 
-/* POSTER IMAGE */
-#poster {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* mobile: cover whole viewport */
-  z-index: 1;
-  pointer-events: none;
-}
-
 /* VIDEO */
 video {
   position: absolute;
@@ -78,6 +65,26 @@ video {
   object-fit: cover; /* mobile: cover entire area */
   max-height: 100%;
   z-index: 2;
+}
+
+/* POSTER IMAGE (always present, fades out when first real frame renders) */
+#poster {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 3; /* above video until we fade it */
+  pointer-events: none;
+
+  opacity: 1;
+  transition: opacity 220ms ease;
+  will-change: opacity;
+}
+#poster.is-hidden {
+  opacity: 0;
 }
 
 /* DESKTOP: preserve aspect ratio */
@@ -103,7 +110,7 @@ video {
   text-align: center;
   pointer-events: none;
   max-width: 90%;
-  z-index: 3;
+  z-index: 10;
 }
 
 .overlay-text {
@@ -123,13 +130,12 @@ video {
 </head>
 
 <body>
-
 <button class="back-button" onclick="goBack()">← back</button>
 
 <div id="video-container">
 
   <!-- Poster image (screenshot of first frame) -->
-<img id="poster" src="stoneinfocus.jpg" alt="First frame">
+  <img id="poster" src="stoneinfocus.jpg" alt="First frame" />
 
   <!-- Video element -->
   <video
@@ -158,35 +164,188 @@ const progressText = document.getElementById("progressText");
 let holding = false;
 let finished = false;
 
+// A "start attempt" token. Every time we start/stop, increment it.
+// Any async callbacks (play promises, frame callbacks) check token
+// to ensure they belong to the latest attempt.
+let startToken = 0;
+
+// Track whether we've actually shown a real video frame for this start attempt.
+let firstFrameShown = false;
+
+// iOS detection (simple + practical)
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+function showPoster() {
+  poster.classList.remove("is-hidden");
+}
+
+function hidePosterSmooth() {
+  poster.classList.add("is-hidden");
+}
+
+function resetUIToStart() {
+  overlayTitle.textContent = "click/tap & hold to start mining";
+  progressText.textContent = "0% COMPLETE";
+  overlayTitle.style.opacity = "1";
+  progressText.style.opacity = "0";
+}
+
 // Ensure poster shows immediately on all devices
-poster.style.display = 'block';
+showPoster();
 video.pause();
 video.currentTime = 0;
 
+// --- BULLETPROOF: wait for FIRST RENDERED FRAME ---
+// Uses requestVideoFrameCallback where available.
+// Falls back to "playing" + "timeupdate" + painted-frame heuristics.
+function waitForFirstRenderedFrame(myToken) {
+  firstFrameShown = false;
+
+  // If the browser supports requestVideoFrameCallback, it's the best signal.
+  if (typeof video.requestVideoFrameCallback === "function") {
+    const onFrame = () => {
+      // stale attempt? ignore
+      if (myToken !== startToken) return;
+
+      // If user already let go, ignore
+      if (!holding || finished) return;
+
+      // We got a frame. Fade poster out.
+      firstFrameShown = true;
+      hidePosterSmooth();
+    };
+
+    // Register a frame callback. If playback hasn't produced a frame yet,
+    // this will trigger when it does.
+    video.requestVideoFrameCallback(onFrame);
+
+    // Also add a safety fallback in case some browsers don't fire promptly:
+    // if we are already advancing time and have data, hide.
+    // (This runs once after a short delay and re-checks.)
+    setTimeout(() => {
+      if (myToken !== startToken) return;
+      if (!holding || finished) return;
+      if (!firstFrameShown && video.readyState >= 2 && !video.paused) {
+        // If time is moving, we're effectively rendering.
+        hidePosterSmooth();
+      }
+    }, 250);
+
+    return;
+  }
+
+  // Fallback path: Use events + time progression.
+  // We'll hide poster only once:
+  // - video is not paused
+  // - readyState indicates current data
+  // - and we see currentTime advance (via timeupdate)
+  let lastTime = video.currentTime;
+
+  const cleanup = () => {
+    video.removeEventListener("timeupdate", onTimeUpdate);
+    video.removeEventListener("playing", onPlaying);
+  };
+
+  const tryHideIfAdvancing = () => {
+    if (myToken !== startToken) return cleanup();
+    if (!holding || finished) return cleanup();
+    if (video.paused) return;
+
+    // Needs some data available.
+    if (video.readyState < 2) return;
+
+    // Check if time has advanced.
+    if (video.currentTime > lastTime + 0.001) {
+      firstFrameShown = true;
+      hidePosterSmooth();
+      cleanup();
+    } else {
+      lastTime = video.currentTime;
+    }
+  };
+
+  const onTimeUpdate = () => tryHideIfAdvancing();
+
+  const onPlaying = () => {
+    // Sometimes timeupdate is slow; do a quick poll loop for a few frames.
+    let checks = 0;
+    const poll = () => {
+      if (myToken !== startToken) return cleanup();
+      if (!holding || finished) return cleanup();
+      if (firstFrameShown) return cleanup();
+
+      tryHideIfAdvancing();
+      checks++;
+      if (!firstFrameShown && checks < 20) requestAnimationFrame(poll);
+    };
+    requestAnimationFrame(poll);
+  };
+
+  video.addEventListener("timeupdate", onTimeUpdate);
+  video.addEventListener("playing", onPlaying);
+}
+
 // TAP/HOLD START
-function startMining() {
+function startMining(e) {
+  // Prevent long-press selection / context menu behaviour on some mobile browsers
+  // (safe even when passive touch handlers are used elsewhere)
+  if (e && typeof e.preventDefault === "function") {
+    // Only prevent for mouse/touch down; not needed for all.
+    // We won't call preventDefault for touchstart because our listener is passive.
+  }
+
   if (holding) return;
   holding = true;
   finished = false;
-  poster.style.display = 'none';
 
-  overlayTitle.style.opacity = '0';
+  // New start attempt
+  startToken++;
+  const myToken = startToken;
+
+  // Keep poster visible until first real frame renders
+  showPoster();
+
+  overlayTitle.style.opacity = "0";
   setTimeout(() => {
-    overlayTitle.textContent = 'generating bitcoin...';
-    overlayTitle.style.opacity = '1';
+    // stale?
+    if (myToken !== startToken) return;
+    overlayTitle.textContent = "generating bitcoin...";
+    overlayTitle.style.opacity = "1";
   }, 300);
 
-  progressText.style.opacity = '1';
+  progressText.style.opacity = "1";
 
-  // iOS autoplay workaround
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  // Always reset to 0 for the sim
+  try { video.currentTime = 0; } catch (_) {}
+
+  // Kick off wait-for-first-frame before play, so we never flash white
+  waitForFirstRenderedFrame(myToken);
+
+  // iOS autoplay quirks:
+  // - play() must be triggered by a user gesture (we are)
+  // - unmuted play may fail; start muted then unmute
   if (isIOS) {
     video.muted = true;
-    video.currentTime = 0;
-    video.play().then(() => { video.muted = false; }).catch(() => {});
+
+    video.play().then(() => {
+      if (myToken !== startToken) return;
+      // If still holding, unmute after playback begins
+      // (If your video has no audio, you can delete this line.)
+      video.muted = false;
+    }).catch(() => {
+      // If play fails, keep poster, reset holding state gracefully
+      if (myToken !== startToken) return;
+      holding = false;
+      showPoster();
+      resetUIToStart();
+    });
   } else {
-    video.currentTime = 0;
-    video.play().catch(() => {});
+    video.play().catch(() => {
+      if (myToken !== startToken) return;
+      holding = false;
+      showPoster();
+      resetUIToStart();
+    });
   }
 }
 
@@ -194,42 +353,92 @@ function startMining() {
 function stopMining() {
   if (finished) return;
   holding = false;
-  video.pause();
-  video.currentTime = 0;
 
-  poster.style.display = 'block';
-  overlayTitle.textContent = 'click/tap & hold to start mining';
-  progressText.textContent = '0% COMPLETE';
-  overlayTitle.style.opacity = '1';
-  progressText.style.opacity = '0';
+  // Invalidate any pending async callbacks
+  startToken++;
+
+  video.pause();
+  try { video.currentTime = 0; } catch (_) {}
+
+  // Immediately show poster (no flashes, no waiting)
+  showPoster();
+  resetUIToStart();
 }
 
 // Animate progress
 function animate() {
   if (holding && !finished) {
-    const percent = Math.min((video.currentTime / video.duration) * 100, 100);
-    progressText.textContent = Math.floor(percent) + '% COMPLETE';
+    const dur = video.duration;
+    const ct = video.currentTime;
 
-    if (video.currentTime >= video.duration - 0.05) {
-      finished = true;
-      holding = false;
-      video.pause();
-      video.currentTime = video.duration;
+    if (Number.isFinite(dur) && dur > 0) {
+      const percent = Math.min((ct / dur) * 100, 100);
+      progressText.textContent = Math.floor(percent) + "% COMPLETE";
 
-      overlayTitle.textContent = 'you have generated:\n0.0000000000000013 bitcoin';
-      progressText.textContent = 'tap/click & hold again to keep mining';
-      progressText.style.opacity = '1';
-      poster.style.display = 'none';
+      if (ct >= dur - 0.05) {
+        finished = true;
+        holding = false;
+
+        video.pause();
+        try { video.currentTime = dur; } catch (_) {}
+
+        overlayTitle.textContent = "you have generated:\n0.0000000000000013 bitcoin";
+        progressText.textContent = "tap/click & hold again to keep mining";
+        progressText.style.opacity = "1";
+
+        // At finish, we want the video visible.
+        hidePosterSmooth();
+      }
+    } else {
+      // Duration not ready yet; keep UI stable
+      progressText.textContent = "0% COMPLETE";
     }
   }
   requestAnimationFrame(animate);
 }
 
-// Events
-document.addEventListener('mousedown', startMining);
-document.addEventListener('mouseup', stopMining);
-document.addEventListener('touchstart', startMining, { passive: true });
-document.addEventListener('touchend', stopMining, { passive: true });
+// Buffering protection:
+// If the browser stalls (waiting), bring poster back to hide any blank frame.
+// When it resumes, hide poster again once frames are flowing.
+video.addEventListener("waiting", () => {
+  if (holding && !finished) showPoster();
+});
+
+// Some browsers fire "stalled" separately
+video.addEventListener("stalled", () => {
+  if (holding && !finished) showPoster();
+});
+
+video.addEventListener("playing", () => {
+  // If we're holding, ensure we hide poster once playback is actually running.
+  // (First frame callback handles the real "bulletproof" hide; this is extra.)
+  if (holding && !finished) {
+    // Don't force-hide if we haven't shown a frame yet; requestVideoFrameCallback will.
+    // But if we already have enough data and time is advancing, hide.
+    if (video.readyState >= 2 && !video.paused) {
+      // Tiny delay helps Safari sometimes
+      setTimeout(() => {
+        if (holding && !finished && video.readyState >= 2 && !video.paused) {
+          hidePosterSmooth();
+        }
+      }, 0);
+    }
+  }
+});
+
+// Input events
+document.addEventListener("mousedown", startMining);
+document.addEventListener("mouseup", stopMining);
+
+// Touch: keep your passive listeners (fast, no scroll-blocking)
+document.addEventListener("touchstart", startMining, { passive: true });
+document.addEventListener("touchend", stopMining, { passive: true });
+
+// Optional: if touch is cancelled (incoming call / gesture / scroll), stop cleanly
+document.addEventListener("touchcancel", stopMining, { passive: true });
+
+// Prevent right-click context menu from interrupting hold on desktop
+document.addEventListener("contextmenu", (e) => e.preventDefault());
 
 function goBack() {
   window.location.href = "../index.html";
@@ -237,6 +446,5 @@ function goBack() {
 
 animate();
 </script>
-
 </body>
 </html>
