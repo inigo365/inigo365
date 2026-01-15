@@ -652,6 +652,7 @@ function isNotBagIndex(idx) {
 const UNLOCK_KEYS = {
   password_tinny: "unlock_password_tinny",
   password_onway: "unlock_password_onway",
+  password_deathstar: "unlock_password_deathstar",
   soundtracks: "unlock_soundtracks"
 };
 
@@ -679,6 +680,12 @@ const UNLOCK_BAGS = [
     storageKey: UNLOCK_KEYS.soundtracks,
     popupText: 'remix bag!',
     bannerText: '*music found!*\nunlocked soundtracks!'
+  },
+   {
+    spriteOffset: 3,
+    storageKey: UNLOCK_KEYS.password_deathstar,     // ✅ NEW
+    popupText: 'deathstar bag!',
+    bannerText: '*password found!*\nunlocked: deathstar'
   }
 ];
 
@@ -834,7 +841,7 @@ let assetsLoaded = false;
 
 // Special sprite groups
 const NOTBAG_COUNT = 10;          // 00..09
-const UNLOCK_COUNT = 3;           // tinny, onway, music
+const UNLOCK_COUNT = 4;           // tinny, onway, music
 const POWERUP_COUNT = 2;          // shield, baghetti
 
 const notbagSprites = [];
@@ -883,6 +890,7 @@ for (let i = 0; i < NOTBAG_COUNT; i++) {
 allSpritePaths.push('sprites/unlock/tinny.png');
 allSpritePaths.push('sprites/unlock/onway.png');
 allSpritePaths.push('sprites/unlock/music.png');
+allSpritePaths.push('sprites/unlock/deathstar.png');
 
 // powerups (order matters: 0=shield, 1=baghetti)
 allSpritePaths.push('sprites/powerups/shield.png');
@@ -1114,9 +1122,10 @@ if (roll < MUSIC_UNLOCK_CHANCE) {
   spriteIndex = UNLOCK_START + 2;
 }
 
-// Password unlocks (tinny / onway)
 else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
-  spriteIndex = UNLOCK_START + (Math.random() < 0.5 ? 0 : 1);
+  // tinny (0), onway (1), deathstar (3)
+  const pwOffsets = [0, 1, 3];
+  spriteIndex = UNLOCK_START + pwOffsets[Math.floor(Math.random() * pwOffsets.length)];
 }
 
       else if (Math.random() < 0.002) {
@@ -1827,6 +1836,7 @@ function refreshGoodybagButtons() {
   const hasAnyPassword =
     localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
     localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true';
+    localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true';
 
   soundtrackBtn.disabled = !hasSoundtracks;
   passwordBtn.disabled = !hasAnyPassword;
@@ -1915,6 +1925,8 @@ passwordBtn.addEventListener('click', () => {
   const unlocked = [];
   if (localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true') unlocked.push('tinny');
   if (localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true') unlocked.push('onway');
+  if (localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true') unlocked.push('deathstar'); // ✅ NEW
+
 
   if (!unlocked.length) {
     goodybagContent.innerHTML = '<div>no passwords unlocked yet...</div>';
