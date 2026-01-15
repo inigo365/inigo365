@@ -1132,10 +1132,11 @@ else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
   spriteIndex = UNLOCK_START + pwOffsets[Math.floor(Math.random() * pwOffsets.length)];
 }
 
-      else if (Math.random() < 0.002) {
-  // ✅ No shield stacking: if shield already armed, don't spawn shield again
+ // 4) Powerups (separate from unlocks)
+else if (Math.random() < 0.002) {
+  // ✅ No shield stacking
   if (shieldArmed) {
-    spriteIndex = POWERUP_START + POWERUPS.baghetti; // only baghetti can spawn
+    spriteIndex = POWERUP_START + POWERUPS.baghetti;
   } else {
     spriteIndex = POWERUP_START + Math.floor(Math.random() * POWERUP_COUNT);
   }
