@@ -158,7 +158,6 @@ video {
 .back-button.show {
   opacity: 1;
 }
-
 </style>
 </head>
 
@@ -205,8 +204,8 @@ const actions = {
   "bag": { redirect: "game/boom.html", sameTab: true },
   "home": { redirect: "../home.html", sameTab: true },
   "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-  "onway": {redirect: "stoneinfocus/stoneinfocus.html"},
-  "deathstar": {redirect: "couchburnsimulator/couch.html"}
+  "onway": { redirect: "stoneinfocus/stoneinfocus.html" },
+  "deathstar": { redirect: "couchburnsimulator/couch.html" }
 };
 
 function resetToPassword() {
@@ -231,6 +230,51 @@ function resetToPassword() {
   passwordInput.value = "";
   passwordInput.focus();
 }
+
+/* ===== FIX FOR BROWSER BACK BUTTON / BFCache RESTORE ===== */
+function hardResetPasswordUI() {
+  // remove any old ended listener just in case
+  if (endedListener) video.removeEventListener("ended", endedListener);
+
+  // reset video completely
+  video.pause();
+  video.removeAttribute("src");
+  video.load();
+
+  // clear state
+  currentAction = null;
+  endedListener = null;
+
+  // force correct screen visibility
+  contentPage.style.display = "none";
+  passwordScreen.style.display = "flex";
+  passwordScreen.style.opacity = 1;
+
+  // hide video/play/back UI
+  videoWrapper.style.display = "none";
+  videoWrapper.style.opacity = 0;
+  playButton.classList.remove("show");
+  playButton.onclick = null;
+  backButton.classList.remove("show");
+
+  // ensure input is always usable + cleared
+  passwordInput.disabled = false;
+  passwordInput.value = "";
+  passwordInput.setAttribute("value", "");
+
+  requestAnimationFrame(() => passwordInput.focus());
+}
+
+// Runs when page is shown (including returning via browser back/forward cache)
+window.addEventListener("pageshow", () => {
+  hardResetPasswordUI();
+});
+
+// Safety: if page is being put into bfcache, don't leave input disabled
+window.addEventListener("pagehide", () => {
+  passwordInput.disabled = false;
+});
+/* ===== END FIX ===== */
 
 backButton.onclick = resetToPassword;
 

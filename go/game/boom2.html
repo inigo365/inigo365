@@ -652,6 +652,7 @@ function isNotBagIndex(idx) {
 const UNLOCK_KEYS = {
   password_tinny: "unlock_password_tinny",
   password_onway: "unlock_password_onway",
+  password_deathstar: "unlock_password_deathstar",
   soundtracks: "unlock_soundtracks"
 };
 
@@ -665,20 +666,26 @@ const UNLOCK_BAGS = [
   {
     spriteOffset: 0,
     storageKey: UNLOCK_KEYS.password_tinny,
-    popupText: 'tinny bag!',
-    bannerText: '*password found!*\nunlocked: tinny'
+    popupText: 'twenny bag!',
+    bannerText: '*password found!'
   },
   {
     spriteOffset: 1,
     storageKey: UNLOCK_KEYS.password_onway,
-    popupText: 'crypto bag!',
-    bannerText: '*password found!*\nunlocked: onway'
+    popupText: 'fake money bag!',
+    bannerText: '*password found!'
   },
   {
     spriteOffset: 2,
     storageKey: UNLOCK_KEYS.soundtracks,
-    popupText: 'remix bag!',
-    bannerText: '*music found!*\nunlocked soundtracks!'
+    popupText: 'ipod bag!',
+    bannerText: '*soundtrack found!'
+  },
+   {
+    spriteOffset: 3,
+    storageKey: UNLOCK_KEYS.password_deathstar,     // ✅ NEW
+    popupText: 'yoda bag!',
+    bannerText: '*password found!'
   }
 ];
 
@@ -778,15 +785,15 @@ function unlockReward(tier) {
 switch (tier) {
   case 'rare':
     if (goodybagBtn) goodybagBtn.style.display = 'block';
-    setTierBanner('*first rare bag!*\ngoodybag unlocked!', TIER_COLORS.rare, TIER_POPUP_DURATION);
+    setTierBanner('*first rare bag!*', TIER_COLORS.rare, TIER_POPUP_DURATION);
     break;
 
   case 'goated':
-    setTierBanner('*first goated bag!*\nsoundtracks unlocked!', TIER_COLORS.goated, TIER_POPUP_DURATION);
+    setTierBanner('*first goated bag!*', TIER_COLORS.goated, TIER_POPUP_DURATION);
     break;
 
   case 'mythic':
-    setTierBanner('*first mythic bag!*\npassword unlocked!', TIER_COLORS.mythic, TIER_POPUP_DURATION);
+    setTierBanner('*first mythic bag!*', TIER_COLORS.mythic, TIER_POPUP_DURATION);
     break;
 }
 
@@ -834,7 +841,7 @@ let assetsLoaded = false;
 
 // Special sprite groups
 const NOTBAG_COUNT = 10;          // 00..09
-const UNLOCK_COUNT = 3;           // tinny, onway, music
+const UNLOCK_COUNT = 4;           // tinny, onway, music
 const POWERUP_COUNT = 2;          // shield, baghetti
 
 const notbagSprites = [];
@@ -883,6 +890,7 @@ for (let i = 0; i < NOTBAG_COUNT; i++) {
 allSpritePaths.push('sprites/unlock/tinny.png');
 allSpritePaths.push('sprites/unlock/onway.png');
 allSpritePaths.push('sprites/unlock/music.png');
+allSpritePaths.push('sprites/unlock/deathstar.png');
 
 // powerups (order matters: 0=shield, 1=baghetti)
 allSpritePaths.push('sprites/powerups/shield.png');
@@ -1103,8 +1111,12 @@ function addHoop() {
       // 3) Unlock bags (VERY rare, passwords rarer than music)
 
 // Tune these:
-const MUSIC_UNLOCK_CHANCE    = 0.006; 
-const PASSWORD_UNLOCK_CHANCE = 0.006; 
+const MUSIC_UNLOCK_CHANCE    = 1/100; 
+const PASSWORD_UNLOCK_CHANCE = 1/150; 
+// Powerup spawn tuning (per hoop spawn)
+const SHIELD_SPAWN_CHANCE   = 1 / 60;   // ~1.25%
+const BAGHETTI_SPAWN_CHANCE = 1 / 200;  // ~0.5%
+
 
 const roll = Math.random();
 
@@ -1114,15 +1126,17 @@ if (roll < MUSIC_UNLOCK_CHANCE) {
   spriteIndex = UNLOCK_START + 2;
 }
 
-// Password unlocks (tinny / onway)
 else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
-  spriteIndex = UNLOCK_START + (Math.random() < 0.5 ? 0 : 1);
+  // tinny (0), onway (1), deathstar (3)
+  const pwOffsets = [0, 1, 3];
+  spriteIndex = UNLOCK_START + pwOffsets[Math.floor(Math.random() * pwOffsets.length)];
 }
 
-      else if (Math.random() < 0.002) {
-  // ✅ No shield stacking: if shield already armed, don't spawn shield again
+ // 4) Powerups (separate from unlocks)
+else if (Math.random() < 0.002) {
+  // ✅ No shield stacking
   if (shieldArmed) {
-    spriteIndex = POWERUP_START + POWERUPS.baghetti; // only baghetti can spawn
+    spriteIndex = POWERUP_START + POWERUPS.baghetti;
   } else {
     spriteIndex = POWERUP_START + Math.floor(Math.random() * POWERUP_COUNT);
   }
@@ -1400,7 +1414,7 @@ if (
     'definitely not bag',
     h.x + SPRITE_SIZE / 2,
     h.y + POP_TEXT_OFFSET_Y,
-    '#2d93ea',
+    '#ec564f',
     700
   );
 }
@@ -1473,7 +1487,7 @@ if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT
 // -------- SPECIAL: Unlock bags (+3 always) --------
 if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT) {
   score += 3;
-  showPopup('+3', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
+  showPopup('+3', ball.x, ball.y + POP_POINT_OFFSET_Y, 'gold');
 
   const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
   const key = unlockDef.storageKey;
@@ -1824,9 +1838,10 @@ const SOUNDTRACKS = {
 
 function refreshGoodybagButtons() {
   const hasSoundtracks = localStorage.getItem(UNLOCK_KEYS.soundtracks) === 'true';
-  const hasAnyPassword =
-    localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
-    localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true';
+const hasAnyPassword =
+  localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
+  localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true' ||
+  localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true';
 
   soundtrackBtn.disabled = !hasSoundtracks;
   passwordBtn.disabled = !hasAnyPassword;
@@ -1915,6 +1930,8 @@ passwordBtn.addEventListener('click', () => {
   const unlocked = [];
   if (localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true') unlocked.push('tinny');
   if (localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true') unlocked.push('onway');
+  if (localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true') unlocked.push('deathstar'); // ✅ NEW
+
 
   if (!unlocked.length) {
     goodybagContent.innerHTML = '<div>no passwords unlocked yet...</div>';
