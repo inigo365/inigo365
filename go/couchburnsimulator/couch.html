@@ -229,12 +229,11 @@ function stopSmokeWithLinger() {
     stopSmokeTimeout = null;
   }, 300);
 }
-
 /* -------------------------------------------------------
-   AUDIO (BEST PRACTICE FOR MOST USERS)
-   - WebAudio for reliable one-shot + loop, low latency
-   - Fallback to HTMLAudio if WebAudio fails
-   - Crackle is volume-gated so it is "only on while holding"
+   AUDIO (no overlay, most reliable possible)
+   - WebAudio primary (decoded buffers + volume-gated loop)
+   - HTMLAudio fallback
+   - Crucial: onDown awaits init on first interaction
 ------------------------------------------------------- */
 const igniteEl  = document.getElementById("igniteEl");
 const crackleEl = document.getElementById("crackleEl");
@@ -242,20 +241,17 @@ const crackleEl = document.getElementById("crackleEl");
 let audioMode = "none"; // "webaudio" | "htmlaudio" | "none"
 let audioReady = false;
 
-/* WebAudio nodes */
 let ctx = null;
 let masterGain = null;
+let compressor = null;
 
 let igniteBuffer = null;
 let crackleBuffer = null;
 
-let crackleSource = null; // looping source
-let crackleGain = null;   // volume gate for loop
+let crackleSource = null;
+let crackleGain = null;
 
-/* Simple limiter-ish (prevents nasty peaks) */
-let compressor = null;
-
-function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+let initPromise = null; // prevents multiple inits racing
 
 async function fetchArrayBuffer(url) {
   const res = await fetch(url, { cache: "force-cache" });
@@ -263,85 +259,86 @@ async function fetchArrayBuffer(url) {
   return await res.arrayBuffer();
 }
 
-async function decode(ctx, arrayBuffer) {
-  // Safari sometimes needs decodeAudioData callback style, but modern supports promise
-  return await ctx.decodeAudioData(arrayBuffer);
+async function initWebAudio() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) throw new Error("No AudioContext");
+
+  ctx = new AudioCtx();
+  if (ctx.state === "suspended") await ctx.resume();
+
+  masterGain = ctx.createGain();
+  masterGain.gain.value = 1.0;
+
+  compressor = ctx.createDynamicsCompressor();
+  compressor.threshold.value = -18;
+  compressor.knee.value = 12;
+  compressor.ratio.value = 6;
+  compressor.attack.value = 0.003;
+  compressor.release.value = 0.12;
+
+  masterGain.connect(compressor);
+  compressor.connect(ctx.destination);
+
+  const [igniteAB, crackleAB] = await Promise.all([
+    fetchArrayBuffer("ignite.mp3"),
+    fetchArrayBuffer("crackle.mp3"),
+  ]);
+
+  igniteBuffer = await ctx.decodeAudioData(igniteAB);
+  crackleBuffer = await ctx.decodeAudioData(crackleAB);
+
+  // loop source (starts once, stays running silently)
+  crackleGain = ctx.createGain();
+  crackleGain.gain.value = 0.0;
+  crackleGain.connect(masterGain);
+
+  crackleSource = ctx.createBufferSource();
+  crackleSource.buffer = crackleBuffer;
+  crackleSource.loop = true;
+  crackleSource.connect(crackleGain);
+  crackleSource.start(0);
+
+  audioMode = "webaudio";
+  audioReady = true;
 }
 
-async function initWebAudioFromGesture() {
-  if (audioReady) return;
-
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) throw new Error("No AudioContext");
-
-    ctx = new AudioCtx();
-
-    // must resume inside gesture for iOS
-    if (ctx.state === "suspended") await ctx.resume();
-
-    masterGain = ctx.createGain();
-    masterGain.gain.value = 1.0;
-
-    compressor = ctx.createDynamicsCompressor();
-    compressor.threshold.value = -18;
-    compressor.knee.value = 12;
-    compressor.ratio.value = 6;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.12;
-
-    masterGain.connect(compressor);
-    compressor.connect(ctx.destination);
-
-    // Load & decode both sounds
-    const [igniteAB, crackleAB] = await Promise.all([
-      fetchArrayBuffer("ignite.mp3"),
-      fetchArrayBuffer("crackle.mp3"),
-    ]);
-
-    [igniteBuffer, crackleBuffer] = await Promise.all([
-      decode(ctx, igniteAB),
-      decode(ctx, crackleAB),
-    ]);
-
-    // Crackle loop setup (volume-gated)
-    crackleGain = ctx.createGain();
-    crackleGain.gain.value = 0.0; // off until holding
-    crackleGain.connect(masterGain);
-
-    crackleSource = ctx.createBufferSource();
-    crackleSource.buffer = crackleBuffer;
-    crackleSource.loop = true;
-    crackleSource.connect(crackleGain);
-    crackleSource.start(0);
-
-    audioMode = "webaudio";
-    audioReady = true;
-    return;
-  } catch (err) {
-    // If WebAudio fails for any reason, fall back to HTMLAudio
-    initHTMLAudioFromGesture();
-  }
-}
-
-function initHTMLAudioFromGesture() {
-  if (audioReady) return;
-
-  // prime crackle (silent) so it becomes instant later
+async function initHTMLAudio() {
+  // prime crackle (silent) — must be in gesture on iOS
   crackleEl.volume = 0;
   crackleEl.currentTime = 0;
 
-  crackleEl.play().then(() => {
-    // immediately silence (already 0) and keep it "alive"
-    crackleEl.pause();
-    crackleEl.currentTime = 0;
-    audioMode = "htmlaudio";
-    audioReady = true;
-  }).catch(() => {
-    // even if this fails, we still attempt later; but we won't claim ready
-    audioMode = "none";
-    audioReady = false;
-  });
+  await crackleEl.play();
+  crackleEl.pause();
+  crackleEl.currentTime = 0;
+
+  audioMode = "htmlaudio";
+  audioReady = true;
+}
+
+async function ensureAudioReadyFromGesture() {
+  if (audioReady) return true;
+  if (initPromise) {
+    await initPromise;
+    return audioReady;
+  }
+
+  initPromise = (async () => {
+    try {
+      await initWebAudio();
+    } catch (e) {
+      try {
+        await initHTMLAudio();
+      } catch (e2) {
+        audioMode = "none";
+        audioReady = false;
+      }
+    } finally {
+      initPromise = null;
+    }
+  })();
+
+  await initPromise;
+  return audioReady;
 }
 
 /* Play ignite */
@@ -349,7 +346,6 @@ function audioIgnite() {
   if (!audioReady) return;
 
   if (audioMode === "webaudio") {
-    // one-shot buffer source (most reliable)
     const src = ctx.createBufferSource();
     src.buffer = igniteBuffer;
 
@@ -364,19 +360,18 @@ function audioIgnite() {
   }
 
   if (audioMode === "htmlaudio") {
-    // clone trick = more reliable retrigger on iOS
+    // clone is most reliable for repeated one-shots on iOS
     const oneShot = igniteEl.cloneNode(true);
     oneShot.volume = 1.0;
     oneShot.play().catch(() => {});
   }
 }
 
-/* Crackle ON/OFF (instant volume gating) */
+/* Crackle ON/OFF (volume gating) */
 function audioCrackleOn() {
   if (!audioReady) return;
 
   if (audioMode === "webaudio") {
-    // quick ramp avoids clicks, still feels instant
     const t = ctx.currentTime;
     crackleGain.gain.cancelScheduledValues(t);
     crackleGain.gain.setValueAtTime(crackleGain.gain.value, t);
@@ -385,7 +380,6 @@ function audioCrackleOn() {
   }
 
   if (audioMode === "htmlaudio") {
-    // start loop and set volume
     crackleEl.volume = 0.70;
     crackleEl.play().catch(() => {});
   }
@@ -403,9 +397,7 @@ function audioCrackleOff() {
   }
 
   if (audioMode === "htmlaudio") {
-    // show-stoppingly fast "off"
     crackleEl.volume = 0;
-    // optional: pause a bit later to reduce iOS weirdness
     setTimeout(() => {
       crackleEl.pause();
       crackleEl.currentTime = 0;
@@ -415,26 +407,29 @@ function audioCrackleOff() {
 
 /* -------------------------------------------------------
    INPUT (Pointer Events)
+   - crucial: onDown is async and awaits audio init
 ------------------------------------------------------- */
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
-function onDown(e) {
+async function onDown(e) {
   e.preventDefault();
   holding = true;
 
-  // BEST reliability: init audio inside the gesture
-  // (If already ready, this is a no-op)
-  initWebAudioFromGesture();
+  // Ensure audio is unlocked/decoded on first interaction
+  const ok = await ensureAudioReadyFromGesture();
 
-  // Make "press = immediate sound + visuals"
-  audioIgnite();
-  audioCrackleOn();
-
+  // If init failed, still allow visuals
   startFire();
 
   setTimeout(() => {
     if (holding) startSmoke();
   }, 120);
+
+  if (!ok) return;
+
+  // Now audio is guaranteed "ready" (as much as possible)
+  audioIgnite();
+  audioCrackleOn();
 }
 
 function onUp(e) {
@@ -443,8 +438,6 @@ function onUp(e) {
 
   stopFire();
   stopSmokeWithLinger();
-
-  // "Only on while holding" = instant off
   audioCrackleOff();
 }
 
