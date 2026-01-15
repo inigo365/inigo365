@@ -29,6 +29,15 @@ html, body {
   cursor: url("../../images/cursor/cursor.png"), auto;
 }
 
+/* STOP MOBILE LONG-PRESS CALLOUTS / BLACK BOX */
+body, .stage, .stage * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; /* iOS long-press menu */
+  -webkit-user-drag: none;     /* iOS image drag */
+  touch-action: none;          /* prevent touch gestures */
+}
+
 .back-button {
   position: fixed;
   top: 8px;
@@ -106,20 +115,28 @@ html, body {
 <div class="wrapper">
   <div class="stack">
     <div class="stage" id="stage">
-      <img class="couch" src="couch.png" alt="couch" />
-      <img class="fire"  id="fire"  src="fire_1.png"  alt="fire" />
-      <img class="smoke" id="smoke" src="smoke_1.png" alt="smoke" />
+      <img class="couch" src="couch.png" alt="couch" draggable="false" />
+      <img class="fire"  id="fire"  src="fire_1.png"  alt="fire"  draggable="false" />
+      <img class="smoke" id="smoke" src="smoke_1.png" alt="smoke" draggable="false" />
     </div>
 
     <div class="status" id="status">click / tap to ignite</div>
   </div>
 </div>
 
+<!-- AUDIO (same folder as this HTML) -->
+<audio id="igniteSound" src="ignite.mp3" preload="auto" playsinline></audio>
+<audio id="crackleSound" src="crackle.mp3" preload="auto" loop playsinline></audio>
+
 <script>
 /* ELEMENTS */
-const fireEl = document.getElementById("fire");
-const smokeEl = document.getElementById("smoke");
+const stageEl  = document.getElementById("stage");
+const fireEl   = document.getElementById("fire");
+const smokeEl  = document.getElementById("smoke");
 const statusEl = document.getElementById("status");
+
+const igniteSound  = document.getElementById("igniteSound");
+const crackleSound = document.getElementById("crackleSound");
 
 /* FRAMES */
 const fireFrames = [
@@ -146,6 +163,44 @@ let smokeY = 0;
 
 let stopSmokeTimeout = null;
 
+/* AUDIO UNLOCK (mobile-safe) */
+let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+
+  const audios = [igniteSound, crackleSound];
+  let unlockedCount = 0;
+
+  audios.forEach(a => {
+    a.muted = true;
+    a.play().then(() => {
+      a.pause();
+      a.currentTime = 0;
+      a.muted = false;
+      unlockedCount++;
+      if (unlockedCount === audios.length) audioUnlocked = true;
+    }).catch(() => {});
+  });
+}
+
+function playIgnite() {
+  igniteSound.pause();
+  igniteSound.currentTime = 0;
+  igniteSound.volume = 1;
+  igniteSound.play().catch(() => {});
+}
+
+function startCrackle() {
+  crackleSound.volume = 0.7;
+  crackleSound.play().catch(() => {});
+}
+
+function stopCrackle() {
+  crackleSound.pause();
+  crackleSound.currentTime = 0;
+}
+
 /* FIRE (8-bit: frame swap + whole-pixel jitter) */
 function startFire() {
   if (fireTimer) return;
@@ -160,7 +215,6 @@ function startFire() {
     fireIndex = (fireIndex + 1) % fireFrames.length;
     fireEl.src = fireFrames[fireIndex];
 
-    // tiny whole-pixel jitter: retro flicker vibe
     const jx = (Math.random() < 0.35) ? (Math.random() < 0.5 ? -1 : 1) : 0;
     const jy = (Math.random() < 0.25) ? (Math.random() < 0.5 ? -1 : 1) : 0;
     fireEl.style.transform = `translate(${jx}px, ${jy}px)`;
@@ -178,7 +232,6 @@ function stopFire() {
 
 /* SMOKE (separate layer: slower, drifting) */
 function startSmoke() {
-  // if we were about to stop smoke, cancel that
   if (stopSmokeTimeout) {
     clearTimeout(stopSmokeTimeout);
     stopSmokeTimeout = null;
@@ -195,21 +248,15 @@ function startSmoke() {
     smokeIndex = (smokeIndex + 1) % smokeFrames.length;
     smokeEl.src = smokeFrames[smokeIndex];
 
-    // drift up in whole pixels
     if (Math.random() < 0.75) smokeY -= 1;
-
-    // keep drift looping subtly so it doesn't wander off forever
     if (smokeY < -10) smokeY = 0;
 
-    // slight sideways wobble (rare)
     const sx = (Math.random() < 0.15) ? (Math.random() < 0.5 ? -1 : 1) : 0;
-
     smokeEl.style.transform = `translate(${sx}px, ${smokeY}px)`;
   }, SMOKE_MS);
 }
 
 function stopSmokeWithLinger() {
-  // linger briefly after release (looks nicer)
   if (stopSmokeTimeout) clearTimeout(stopSmokeTimeout);
 
   stopSmokeTimeout = setTimeout(() => {
@@ -222,9 +269,18 @@ function stopSmokeWithLinger() {
   }, 300);
 }
 
-/* INPUT */
-function onDown() {
+/* STOP ANDROID/IOS CONTEXT MENUS */
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+/* INPUT (Pointer Events = best for mobile + prevents black box) */
+function onDown(e) {
+  e.preventDefault();
   holding = true;
+
+  unlockAudio();
+  playIgnite();
+  startCrackle();
+
   startFire();
 
   // smoke starts a beat after fire so it feels like it “catches”
@@ -233,17 +289,19 @@ function onDown() {
   }, 120);
 }
 
-function onUp() {
+function onUp(e) {
+  if (e) e.preventDefault();
   holding = false;
+
   stopFire();
   stopSmokeWithLinger();
+  stopCrackle();
 }
 
-document.addEventListener("mousedown", onDown);
-document.addEventListener("mouseup", onUp);
-
-document.addEventListener("touchstart", onDown, { passive: true });
-document.addEventListener("touchend", onUp, { passive: true });
+stageEl.addEventListener("pointerdown", onDown, { passive: false });
+window.addEventListener("pointerup", onUp, { passive: false });
+window.addEventListener("pointercancel", onUp, { passive: false });
+window.addEventListener("pointerleave", onUp, { passive: false });
 
 function goBack() {
   window.location.href = "../index.html";
