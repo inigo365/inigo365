@@ -132,7 +132,8 @@ html, body {
 
 <!-- Audio files live in the same folder as this HTML -->
 <audio id="igniteEl"  src="ignite.mp3"  preload="auto" playsinline></audio>
-<!-- Kept as fallback only (HTMLAudio loop can gap); WebAudio will be used for crackle -->
+
+<!-- Fallback only (iOS HTMLAudio looping can gap). We will NOT use this unless WebAudio fails. -->
 <audio id="crackleEl" src="crackle.wav" preload="auto" loop playsinline></audio>
 
 <script>
@@ -232,13 +233,13 @@ function stopSmokeWithLinger() {
 /* -------------------------------------------------------
    AUDIO
    - Ignite: HTMLAudio pool (unchanged)
-   - Crackle: WebAudio gapless loop (new), HTMLAudio fallback
+   - Crackle: WebAudio gapless loop (preferred)
+   - HTML crackle element is fallback only
 ------------------------------------------------------- */
-const igniteEl  = document.getElementById("igniteEl");   // kept for preload
+const igniteEl  = document.getElementById("igniteEl");   // preload helper
 const crackleEl = document.getElementById("crackleEl");  // fallback only
 
 let audioUnlocked = false;
-let cracklePauseTimer = null;
 
 const CRACKLE_VOL_ON = 0.70;
 const IGNITE_POOL_SIZE = 6;
@@ -252,84 +253,8 @@ const ignitePool = Array.from({ length: IGNITE_POOL_SIZE }, () => {
 });
 let ignitePoolIndex = 0;
 
-/* WebAudio crackle loop (gapless) */
-let webAudioOk = false;
-let ctx = null;
-let masterGain = null;
-let crackleGain = null;
-let crackleSource = null;
-let crackleBuffer = null;
-let crackleLoading = false;
-
-async function initGaplessCrackleFromGesture() {
-  if (webAudioOk || crackleLoading) return;
-  crackleLoading = true;
-
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) throw new Error("No AudioContext");
-    ctx = new AudioCtx();
-
-    // Must resume inside gesture on iOS
-    if (ctx.state === "suspended") await ctx.resume();
-
-    masterGain = ctx.createGain();
-    masterGain.gain.value = 1.0;
-    masterGain.connect(ctx.destination);
-
-    crackleGain = ctx.createGain();
-    crackleGain.gain.value = 0.0; // start silent
-    crackleGain.connect(masterGain);
-
-    // Fetch & decode WAV (needs http/https, not file://)
-    const res = await fetch("crackle.wav", { cache: "force-cache" });
-    if (!res.ok) throw new Error("fetch crackle.wav failed");
-    const ab = await res.arrayBuffer();
-    crackleBuffer = await ctx.decodeAudioData(ab);
-
-    crackleSource = ctx.createBufferSource();
-    crackleSource.buffer = crackleBuffer;
-    crackleSource.loop = true;
-    crackleSource.connect(crackleGain);
-    crackleSource.start(0);
-
-    webAudioOk = true;
-  } catch (e) {
-    // If WebAudio setup fails, we’ll fall back to HTMLAudio.
-    webAudioOk = false;
-  } finally {
-    crackleLoading = false;
-  }
-}
-
-function unlockAudioFromGesture() {
-  if (audioUnlocked) return;
-
-  // Ensure browser starts fetching/decoding
-  try { igniteEl.load(); } catch (_) {}
-  try { crackleEl.load(); } catch (_) {}
-
-  // Start crackle silently to unlock iOS audio (HTML path).
-  // Even if we later use WebAudio for the loop, this helps "unlock" audio reliably.
-  crackleEl.loop = true;
-  crackleEl.volume = 0;
-  crackleEl.currentTime = 0;
-
-  crackleEl.play().then(() => {
-    audioUnlocked = true;
-    crackleEl.volume = 0;
-  }).catch(() => {
-    audioUnlocked = false;
-  });
-}
-
 function playIgnite() {
   if (!audioUnlocked) return;
-
-  if (cracklePauseTimer) {
-    clearTimeout(cracklePauseTimer);
-    cracklePauseTimer = null;
-  }
 
   const a = ignitePool[ignitePoolIndex];
   ignitePoolIndex = (ignitePoolIndex + 1) % ignitePool.length;
@@ -342,11 +267,71 @@ function playIgnite() {
   } catch (_) {}
 }
 
+/* ---- WebAudio crackle (gapless) ---- */
+let ctx = null;
+let crackleGain = null;
+let crackleSource = null;
+let webAudioOk = false;
+let initPromise = null;
+
+async function initWebAudioCrackleFromGesture() {
+  if (webAudioOk) return true;
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) throw new Error("No AudioContext");
+
+      // latencyHint helps responsiveness on mobile
+      ctx = new AudioCtx({ latencyHint: "interactive" });
+
+      if (ctx.state === "suspended") await ctx.resume();
+
+      // tiny silent unlock blip (keeps iOS happy)
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      g.gain.value = 0.00001;
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.01);
+
+      crackleGain = ctx.createGain();
+      crackleGain.gain.value = 0.0;
+      crackleGain.connect(ctx.destination);
+
+      // Robust fetch for iOS (sometimes happier with no extra options)
+      const res = await fetch("crackle.wav");
+      if (!res.ok) throw new Error("fetch crackle.wav failed");
+      const ab = await res.arrayBuffer();
+
+      // decodeAudioData is promise-based on modern Safari; this works fine
+      const buffer = await ctx.decodeAudioData(ab);
+
+      crackleSource = ctx.createBufferSource();
+      crackleSource.buffer = buffer;
+      crackleSource.loop = true;
+      crackleSource.connect(crackleGain);
+      crackleSource.start(0);
+
+      webAudioOk = true;
+      return true;
+    } catch (e) {
+      webAudioOk = false;
+      return false;
+    } finally {
+      initPromise = null;
+    }
+  })();
+
+  return initPromise;
+}
+
 function crackleOn() {
   if (!audioUnlocked) return;
 
-  // Prefer WebAudio gapless loop if available
-  if (webAudioOk && crackleGain && ctx) {
+  if (webAudioOk && ctx && crackleGain) {
     const t = ctx.currentTime;
     crackleGain.gain.cancelScheduledValues(t);
     crackleGain.gain.setValueAtTime(crackleGain.gain.value, t);
@@ -354,7 +339,7 @@ function crackleOn() {
     return;
   }
 
-  // Fallback to HTMLAudio (may gap)
+  // Fallback only (may gap on iOS)
   if (crackleEl.paused) {
     crackleEl.currentTime = 0;
     crackleEl.play().catch(() => {});
@@ -365,8 +350,7 @@ function crackleOn() {
 function crackleOff() {
   if (!audioUnlocked) return;
 
-  // WebAudio off (instant)
-  if (webAudioOk && crackleGain && ctx) {
+  if (webAudioOk && ctx && crackleGain) {
     const t = ctx.currentTime;
     crackleGain.gain.cancelScheduledValues(t);
     crackleGain.gain.setValueAtTime(crackleGain.gain.value, t);
@@ -374,14 +358,44 @@ function crackleOff() {
     return;
   }
 
-  // HTML fallback
+  // Fallback only
   crackleEl.volume = 0;
-
-  cracklePauseTimer = setTimeout(() => {
+  setTimeout(() => {
     crackleEl.pause();
     crackleEl.currentTime = 0;
-    cracklePauseTimer = null;
   }, 150);
+}
+
+/* Unlock audio without using HTML crackle playback (prevents iOS loop-gap path) */
+async function unlockAudioFromGesture() {
+  if (audioUnlocked) return;
+
+  // ensure ignite starts loading
+  try { igniteEl.load(); } catch (_) {}
+
+  // Try to init WebAudio crackle (gapless) inside the gesture
+  const ok = await initWebAudioCrackleFromGesture();
+
+  // If WebAudio worked, we’re unlocked
+  if (ok) {
+    audioUnlocked = true;
+    // ensure HTML fallback is silent/off
+    try { crackleEl.pause(); crackleEl.volume = 0; } catch (_) {}
+    return;
+  }
+
+  // Fallback unlock via HTMLAudio (only if WebAudio unavailable)
+  // (this path can still gap on iOS, but at least you get audio)
+  crackleEl.loop = true;
+  crackleEl.volume = 0;
+  crackleEl.currentTime = 0;
+
+  await crackleEl.play().then(() => {
+    audioUnlocked = true;
+    crackleEl.volume = 0;
+  }).catch(() => {
+    audioUnlocked = false;
+  });
 }
 
 /* -------------------------------------------------------
@@ -395,14 +409,13 @@ function onDown(e) {
 
   // visuals instantly
   startFire();
-  setTimeout(() => {
-    if (holding) startSmoke();
-  }, 120);
+  setTimeout(() => { if (holding) startSmoke(); }, 120);
 
-  // audio: unlock + start loading gapless loop in the same gesture
+  // audio unlock + play (no overlay)
+  // don’t await — visuals remain instant; audio will be perfect after first unlock
   unlockAudioFromGesture();
-  initGaplessCrackleFromGesture();
 
+  // These will do nothing until unlocked, then work reliably.
   playIgnite();
   crackleOn();
 }
