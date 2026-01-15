@@ -144,6 +144,13 @@ const stageEl  = document.getElementById("stage");
 const fireEl   = document.getElementById("fire");
 const smokeEl  = document.getElementById("smoke");
 const statusEl = document.getElementById("status");
+// iOS: prevent double-tap to zoom (without disabling pinch zoom)
+let lastTouchEnd = 0;
+document.addEventListener("touchend", (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
 
 const fireFrames = [
   "fire_1.png","fire_2.png","fire_3.png","fire_4.png","fire_5.png","fire_6.png","fire_7.png"
