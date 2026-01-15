@@ -130,9 +130,9 @@ html, body {
   </div>
 </div>
 
-<!-- MP3s live in the same folder as this HTML -->
+<!-- Audio files live in the same folder as this HTML -->
 <audio id="igniteEl"  src="ignite.mp3"  preload="auto" playsinline></audio>
-<audio id="crackleEl" src="crackle.mp3" preload="auto" loop playsinline></audio>
+<audio id="crackleEl" src="crackle.wav" preload="auto" loop playsinline></audio>
 
 <script>
 /* -------------------------------------------------------
@@ -237,7 +237,7 @@ function stopSmokeWithLinger() {
    - Crackle is volume-gated so it is only audible while holding.
 ------------------------------------------------------- */
 const igniteEl  = document.getElementById("igniteEl");   // kept for preload
-const crackleEl = document.getElementById("crackleEl");  // loop element
+const crackleEl = document.getElementById("crackleEl");  // loop element (now WAV)
 
 let audioUnlocked = false;
 let cracklePauseTimer = null;
@@ -249,7 +249,6 @@ const IGNITE_POOL_SIZE = 6;
 const ignitePool = Array.from({ length: IGNITE_POOL_SIZE }, () => {
   const a = new Audio("ignite.mp3");
   a.preload = "auto";
-  // playsInline isn't a real JS property everywhere, but harmless:
   a.playsInline = true;
   return a;
 });
@@ -269,11 +268,8 @@ function unlockAudioFromGesture() {
 
   crackleEl.play().then(() => {
     audioUnlocked = true;
-    // keep it silent until holding
     crackleEl.volume = 0;
   }).catch(() => {
-    // If it fails, iOS didn't accept that gesture for audio.
-    // We'll try again next press.
     audioUnlocked = false;
   });
 }
@@ -281,7 +277,6 @@ function unlockAudioFromGesture() {
 function playIgnite() {
   if (!audioUnlocked) return;
 
-  // cancel scheduled pause, if any
   if (cracklePauseTimer) {
     clearTimeout(cracklePauseTimer);
     cracklePauseTimer = null;
@@ -301,7 +296,6 @@ function playIgnite() {
 function crackleOn() {
   if (!audioUnlocked) return;
 
-  // ensure playing (may pause when tabbing away / iOS weirdness)
   if (crackleEl.paused) {
     crackleEl.currentTime = 0;
     crackleEl.play().catch(() => {});
@@ -313,10 +307,8 @@ function crackleOn() {
 function crackleOff() {
   if (!audioUnlocked) return;
 
-  // instant off so it feels tied to holding
   crackleEl.volume = 0;
 
-  // pause shortly after to reduce glitches on rapid taps
   cracklePauseTimer = setTimeout(() => {
     crackleEl.pause();
     crackleEl.currentTime = 0;
@@ -326,8 +318,6 @@ function crackleOff() {
 
 /* -------------------------------------------------------
    INPUT (Pointer Events)
-   - visuals always start immediately
-   - audio unlock + trigger inside same gesture
 ------------------------------------------------------- */
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -335,13 +325,11 @@ function onDown(e) {
   e.preventDefault();
   holding = true;
 
-  // visuals instantly
   startFire();
   setTimeout(() => {
     if (holding) startSmoke();
   }, 120);
 
-  // audio best-effort unlock + play
   unlockAudioFromGesture();
   playIgnite();
   crackleOn();
