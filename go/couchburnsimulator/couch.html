@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <title>couch</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <link rel="icon" href="/images/icon.png" />
 
 <style>
@@ -27,6 +27,10 @@ html, body {
   user-select: none;
 
   cursor: url("../../images/cursor/cursor.png"), auto;
+}
+html, body {
+  touch-action: manipulation; /* reduces double-tap zoom behavior */
+  -webkit-text-size-adjust: 100%;
 }
 
 /* STOP MOBILE LONG-PRESS CALLOUTS / BLACK BOX */
