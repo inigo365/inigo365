@@ -128,12 +128,14 @@ input,
   touch-action: none;
 }
 
-/* Canvas */
 canvas {
   display: block;
   margin: 0 auto;
-  background: #ffffff;
+  background: transparent;
+  position: relative;
+  z-index: 1; /* above the background layer */
 }
+
 
 /* Point Popup */
 .point-popup {
@@ -485,6 +487,18 @@ canvas {
   white-space: pre-line;  /* ✅ respects \n */
   line-height: 1.25;      /* optional but nice */
 }
+#pageBg{
+  position: fixed;
+  inset: 0;
+  z-index: 0;            /* behind everything */
+  pointer-events: none;
+
+  background-image: url("background.png"); /* same folder as play.png */
+  background-size: cover;       /* keeps aspect ratio, crops as needed */
+  background-position: center;  /* nice crop */
+  background-repeat: no-repeat;
+}
+
 #baghettiBg{
   position: fixed;
   inset: 0;
@@ -503,7 +517,7 @@ canvas {
 </style>
 </head>
 <body>
-
+<div id="pageBg"></div>
 <div id="rotateNotice">Please rotate your phone to portrait</div>
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
