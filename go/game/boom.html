@@ -666,26 +666,26 @@ const UNLOCK_BAGS = [
   {
     spriteOffset: 0,
     storageKey: UNLOCK_KEYS.password_tinny,
-    popupText: 'tinny bag!',
-    bannerText: '*password found!*\nunlocked: tinny'
+    popupText: 'twenny bag!',
+    bannerText: '*password found!'
   },
   {
     spriteOffset: 1,
     storageKey: UNLOCK_KEYS.password_onway,
-    popupText: 'crypto bag!',
-    bannerText: '*password found!*\nunlocked: onway'
+    popupText: 'fake money bag!',
+    bannerText: '*password found!'
   },
   {
     spriteOffset: 2,
     storageKey: UNLOCK_KEYS.soundtracks,
-    popupText: 'remix bag!',
-    bannerText: '*music found!*\nunlocked soundtracks!'
+    popupText: 'ipod bag!',
+    bannerText: '*soundtrack found!'
   },
    {
     spriteOffset: 3,
     storageKey: UNLOCK_KEYS.password_deathstar,     // ✅ NEW
-    popupText: 'deathstar bag!',
-    bannerText: '*password found!*\nunlocked: deathstar'
+    popupText: 'yoda bag!',
+    bannerText: '*password found!'
   }
 ];
 
@@ -785,15 +785,15 @@ function unlockReward(tier) {
 switch (tier) {
   case 'rare':
     if (goodybagBtn) goodybagBtn.style.display = 'block';
-    setTierBanner('*first rare bag!*\ngoodybag unlocked!', TIER_COLORS.rare, TIER_POPUP_DURATION);
+    setTierBanner('*first rare bag!*', TIER_COLORS.rare, TIER_POPUP_DURATION);
     break;
 
   case 'goated':
-    setTierBanner('*first goated bag!*\nsoundtracks unlocked!', TIER_COLORS.goated, TIER_POPUP_DURATION);
+    setTierBanner('*first goated bag!*', TIER_COLORS.goated, TIER_POPUP_DURATION);
     break;
 
   case 'mythic':
-    setTierBanner('*first mythic bag!*\npassword unlocked!', TIER_COLORS.mythic, TIER_POPUP_DURATION);
+    setTierBanner('*first mythic bag!*', TIER_COLORS.mythic, TIER_POPUP_DURATION);
     break;
 }
 
@@ -1112,9 +1112,9 @@ function addHoop() {
 
 // Tune these:
 const MUSIC_UNLOCK_CHANCE    = 1/100; 
-const PASSWORD_UNLOCK_CHANCE = 1/100; 
+const PASSWORD_UNLOCK_CHANCE = 1/150; 
 // Powerup spawn tuning (per hoop spawn)
-const SHIELD_SPAWN_CHANCE   = 1 / 80;   // ~1.25%
+const SHIELD_SPAWN_CHANCE   = 1 / 60;   // ~1.25%
 const BAGHETTI_SPAWN_CHANCE = 1 / 200;  // ~0.5%
 
 
@@ -1487,7 +1487,7 @@ if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT
 // -------- SPECIAL: Unlock bags (+3 always) --------
 if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT) {
   score += 3;
-  showPopup('+3', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
+  showPopup('+3', ball.x, ball.y + POP_POINT_OFFSET_Y, 'gold');
 
   const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
   const key = unlockDef.storageKey;
