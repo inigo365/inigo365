@@ -204,8 +204,8 @@ const actions = {
   "bag": { redirect: "game/boom.html", sameTab: true },
   "home": { redirect: "../home.html", sameTab: true },
   "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-  "onway": { redirect: "stoneinfocus/stoneinfocus.html" },
-  "deathstar": { redirect: "couchburnsimulator/couch.html" }
+  "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true },
+  "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true }
 };
 
 function resetToPassword() {
@@ -290,11 +290,18 @@ passwordInput.addEventListener("keydown", e => {
 
   passwordInput.disabled = true;
 
-  if (action.redirect) {
-    if (action.sameTab) window.location.href = action.redirect;
-    else window.open(action.redirect, "_blank");
-    return;
-  }
+ if (action.redirect) {
+  // default to same-tab unless explicitly set to false
+  const sameTab = action.sameTab !== false;
+
+  // (optional but helps) make sure input isn't left disabled when leaving
+  passwordInput.disabled = false;
+  passwordInput.value = "";
+
+  if (sameTab) window.location.href = action.redirect;
+  else window.open(action.redirect, "_blank");
+  return;
+}
 
   currentAction = action;
 
