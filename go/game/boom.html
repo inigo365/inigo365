@@ -588,10 +588,13 @@ canvas {
 <div class="name-modal" id="nameModal">
   <h2>game over!</h2>
   <div class="final-score" id="finalScore">score: 0</div>
+  <div class="final-score" id="modalHighscore">highscore: 0</div>
+
   <input type="text" id="playerName" placeholder="enter name" maxlength="12" autocomplete="off">
   <button onclick="submitScore()">submit</button>
   <button onclick="playAgain()">play again</button>
 </div>
+
 
 <div id="leaderboardBackdrop">
   <div class="leaderboard" id="leaderboard">
@@ -1993,8 +1996,8 @@ function goBack() { window.location.href = "../index.html"; }
     finalScoreEl.textContent = 'score: ' + finalScore;
     playerNameInput.value = localStorage.getItem('playerName') || '';
     nameModal.classList.add('show');
-    overlayHighscore.style.opacity = 1;
-    overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
+    const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+    document.getElementById('modalHighscore').textContent = 'highscore: ' + hs;
     backButton.style.zIndex = 400;
     backButton.style.opacity = 1;
     leaderboardBtn.style.display = 'block';
