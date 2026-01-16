@@ -2118,7 +2118,7 @@ function renderSoundtrackPage() {
   const wrapper = document.createElement('div');
   wrapper.style.width = 'min(520px, 86vw)';  // ✅ always same-ish width, mobile-safe
   wrapper.style.boxSizing = 'border-box';
-  rapper.style.overflow = 'hidden';         // ✅ prevent long text from widening the panel
+  wrapper.style.overflow = 'hidden';         // ✅ prevent long text from widening the panel
   wrapper.style.height = '58vh';       // ✅ stable height across pages
   wrapper.style.maxHeight = '520px';   // ✅ stops it getting huge on desktop
   wrapper.style.minHeight = '360px';   // ✅ prevents tiny boxes
