@@ -1343,18 +1343,6 @@ function startGame() {
   if (gameStarted || !assetsLoaded) return;
   hideOverlay();
   gameStarted = true;
-// ✅ choose soundtrack on first page load only (unless user selected one)
-const selected = getSelectedSoundtrackIndex();
-
-if (selected >= 0 && selected < SOUNDTRACKS.length) {
-  // user override
-  setSoundtrackByIndex(selected, !bgMusic.paused);
-} else {
-  // random chosen ONCE per page load
-  setSoundtrackByIndex(getPageLoadRandomSoundtrackIndex(), !bgMusic.paused);
-}
-
-
   SPEED = 3;
   hoops = [];
   score = 0;
@@ -1764,9 +1752,39 @@ window.addEventListener('resize', () => {
 
 // ------------------- MUSIC -------------------
 const bgMusic = document.getElementById('bgMusic');
+let currentSoundtrackIndex = null;
+
+function resolveInitialSoundtrackIndex() {
+  const selected = getSelectedSoundtrackIndex();
+  if (selected >= 0 && selected < SOUNDTRACKS.length) return selected;
+  return getPageLoadRandomSoundtrackIndex(); // random ONCE per page load
+}
+
+function ensureSoundtrackLoadedOnce() {
+  if (currentSoundtrackIndex !== null) return; // already chosen this page load
+  currentSoundtrackIndex = resolveInitialSoundtrackIndex();
+  const s = SOUNDTRACKS[currentSoundtrackIndex];
+  if (!s) return;
+
+  // only set src once so it never restarts between runs
+  bgMusic.src = s.src;
+  bgMusic.load();
+  bgMusic.loop = true;
+}
+
 function setSoundtrackByIndex(idx, tryPlay = true) {
   const s = SOUNDTRACKS[idx];
   if (!s) return;
+
+  // ✅ If already on this track, don't restart it
+  if (currentSoundtrackIndex === idx) {
+    if (tryPlay && bgMusic.paused) {
+      bgMusic.play().then(() => musicToggle.textContent = "music: on").catch(() => {});
+    }
+    return;
+  }
+
+  currentSoundtrackIndex = idx;
 
   bgMusic.pause();
   bgMusic.src = s.src;
@@ -1779,6 +1797,7 @@ function setSoundtrackByIndex(idx, tryPlay = true) {
     }).catch(() => {});
   }
 }
+
 
 function pickRandomSoundtrackIndex() {
   return Math.floor(Math.random() * SOUNDTRACKS.length);
@@ -1800,13 +1819,15 @@ const musicToggle = document.getElementById('musicToggle');
 musicToggle.style.opacity = 1;
 musicToggle.textContent = "music: off"; // default state
 
-// Start music on first user gesture (overlay click/touch)
 function handleFirstUserGesture() {
+  ensureSoundtrackLoadedOnce();
+
   if (bgMusic.paused) {
     bgMusic.play().then(() => {
-      musicToggle.textContent = "music: on"; // update once music actually plays
+      musicToggle.textContent = "music: on";
     }).catch(() => { });
   }
+
   window.removeEventListener('touchstart', handleFirstUserGesture);
   window.removeEventListener('mousedown', handleFirstUserGesture);
 }
