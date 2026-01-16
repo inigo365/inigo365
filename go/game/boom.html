@@ -1393,7 +1393,7 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   hideMusicButton();
 }
 
-setInterval(updateTopScores, 100);
+//setInterval(updateTopScores, 100);
 window.addEventListener('load', () => {
   showOverlay(false);
 });
@@ -1794,6 +1794,11 @@ else hideBaghettiBg();
 
 if (!gameOver) requestAnimationFrame(loop);
 
+}
+// ✅ lightweight throttled score UI update
+if (!loop._lastTopUpdate || performance.now() - loop._lastTopUpdate > 120) {
+  updateTopScores();
+  loop._lastTopUpdate = performance.now();
 }
 
 function endGame() {
