@@ -707,6 +707,51 @@ function setSelectedSoundtrackIndex(i) {
   localStorage.setItem(SELECTED_SOUNDTRACK_INDEX_KEY, String(i));
 }
 
+const SOUNDTRACKS = [
+  {
+    title: "soundtrack01",
+    src: "/go/game/soundtrack01.mp3",
+    link: "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=f9f27c47974341328cdeb5a115aae99f&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    tracks: [
+      "vivz portal - rezzett",
+      "tell her nothing - young thug",
+      "bag - mexikodro",
+      "not many (soul version) - scribe & xylatu",
+      "stick x need2 lc3 remix - jim legxacy",
+      "bazooka - p.slxwly",
+      "home - mazii7400prod glitzclub",
+      "shalimar - inigo365 & skud gambosi"
+    ]
+  },
+  {
+    title: "soundtrack02",
+    src: "/go/game/soundtrack02.mp3",
+    link: "https://soundcloud.com/",  // placeholder for now
+    tracks: [
+      "just another day - nines",
+      "chasing a comfort - 16 underground",
+      "dmt - xxyyxx",
+      "dna (melodownz refix) - inigo365",
+      "never2much @@@ - inigo365",
+      "east atlanta luv lettrr - wavsbyleo"
+    ]
+  },
+  {
+    title: "soundtrack03",
+    src: "/go/game/soundtrack03.mp3",
+    link: "https://soundcloud.com/",  // placeholder for now
+    tracks: [
+      "from the roof top ~ sniper's theme (Da-P edition)",
+      "i wish i was off the vitamins - n64kiddo x djsmokey & soudiere",
+      "get it - wasteey monroe feat. tay-k",
+      "supposed to do - ace hood feat. skepta",
+      "iron shell - esdeekid x montreality",
+      "bored of the uk - jawnino",
+      "no feelings - deadforest"
+    ]
+  }
+];
+
 // ===================== UNLOCK / POWERUP DEFINITIONS =====================
 const UNLOCK_BAGS = [
   {
@@ -1178,14 +1223,16 @@ else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
   spriteIndex = UNLOCK_START + pwOffsets[Math.floor(Math.random() * pwOffsets.length)];
 }
 
- // 4) Powerups (separate from unlocks)
-else if (Math.random() < 0.002) {
-  // ✅ No shield stacking
-  if (shieldArmed) {
-    spriteIndex = POWERUP_START + POWERUPS.baghetti;
-  } else {
-    spriteIndex = POWERUP_START + Math.floor(Math.random() * POWERUP_COUNT);
-  }
+// 4) Powerups (separate from unlocks)
+
+// ✅ Shield can only spawn if you DON'T already have one armed
+if (!shieldArmed && Math.random() < SHIELD_SPAWN_CHANCE) {
+  spriteIndex = POWERUP_START + POWERUPS.shield;
+}
+
+// ✅ Baghetti can spawn any time (independent rate)
+else if (Math.random() < BAGHETTI_SPAWN_CHANCE) {
+  spriteIndex = POWERUP_START + POWERUPS.baghetti;
 }
 
       // 5) Otherwise normal bag
@@ -1296,13 +1343,17 @@ function startGame() {
   if (gameStarted || !assetsLoaded) return;
   hideOverlay();
   gameStarted = true;
-  // ✅ choose soundtrack on start (selected overrides random)
+// ✅ choose soundtrack on first page load only (unless user selected one)
 const selected = getSelectedSoundtrackIndex();
+
 if (selected >= 0 && selected < SOUNDTRACKS.length) {
+  // user override
   setSoundtrackByIndex(selected, !bgMusic.paused);
 } else {
-  setSoundtrackByIndex(pickRandomSoundtrackIndex(), !bgMusic.paused);
+  // random chosen ONCE per page load
+  setSoundtrackByIndex(getPageLoadRandomSoundtrackIndex(), !bgMusic.paused);
 }
+
 
   SPEED = 3;
   hoops = [];
@@ -1732,6 +1783,14 @@ function setSoundtrackByIndex(idx, tryPlay = true) {
 function pickRandomSoundtrackIndex() {
   return Math.floor(Math.random() * SOUNDTRACKS.length);
 }
+let pageLoadRandomSoundtrackIndex = null;
+
+function getPageLoadRandomSoundtrackIndex() {
+  if (pageLoadRandomSoundtrackIndex === null) {
+    pageLoadRandomSoundtrackIndex = pickRandomSoundtrackIndex();
+  }
+  return pageLoadRandomSoundtrackIndex;
+}
 
 bgMusic.volume = 0.5;
 bgMusic.loop = true;
@@ -1911,51 +1970,6 @@ const passwordBtn = document.getElementById('passwordBtn');
 const goodybagContent = document.getElementById('goodybagContent');
 const goodybagBtn = document.getElementById('goodybagBtn');
 
-const SOUNDTRACKS = [
-  {
-    title: "soundtrack01",
-    src: "/go/game/soundtrack01.mp3",
-    link: "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=f9f27c47974341328cdeb5a115aae99f&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
-    tracks: [
-      "vivz portal - rezzett",
-      "tell her nothing - young thug",
-      "bag - mexikodro",
-      "not many (soul version) - scribe & xylatu",
-      "stick x need2 lc3 remix - jim legxacy",
-      "bazooka - p.slxwly",
-      "home - mazii7400prod glitzclub",
-      "shalimar - inigo365 & skud gambosi"
-    ]
-  },
-  {
-    title: "soundtrack02",
-    src: "/go/game/soundtrack02.mp3",
-    link: "https://soundcloud.com/",  // placeholder for now
-    tracks: [
-      "just another day - nines",
-      "chasing a comfort - 16 underground",
-      "dmt - xxyyxx",
-      "dna (melodownz refix) - inigo365",
-      "never2much @@@ - inigo365",
-      "east atlanta luv lettrr - wavsbyleo"
-    ]
-  },
-  {
-    title: "soundtrack03",
-    src: "/go/game/soundtrack03.mp3",
-    link: "https://soundcloud.com/",  // placeholder for now
-    tracks: [
-      "from the roof top ~ sniper's theme (Da-P edition)",
-      "i wish i was off the vitamins - n64kiddo x djsmokey & soudiere",
-      "get it - wasteey monroe feat. tay-k",
-      "supposed to do - ace hood feat. skepta",
-      "iron shell - esdeekid x montreality",
-      "bored of the uk - jawnino",
-      "no feelings - deadforest"
-    ]
-  }
-];
-
 
 function refreshGoodybagButtons() {
 const hasSoundtracks = getUnlockedSoundtrackLevel() > 0;
@@ -2009,6 +2023,12 @@ function renderSoundtrackPage() {
   const wrapper = document.createElement('div');
   wrapper.style.width = '100%';
   wrapper.style.maxWidth = '520px';
+  wrapper.style.height = '58vh';       // ✅ stable height across pages
+wrapper.style.maxHeight = '520px';   // ✅ stops it getting huge on desktop
+wrapper.style.minHeight = '360px';   // ✅ prevents tiny boxes
+wrapper.style.display = 'flex';
+wrapper.style.flexDirection = 'column';
+
 
   // header row: title left, link right
   const headerRow = document.createElement('div');
@@ -2041,6 +2061,10 @@ function renderSoundtrackPage() {
   ul.style.padding = '0';
   ul.style.margin = '0';
   ul.style.textAlign = 'center';
+  ul.style.flex = '1 1 auto';     // ✅ takes remaining height
+ul.style.overflowY = 'auto';    // ✅ scroll instead of resizing modal
+ul.style.paddingRight = '6px';  // ✅ room for scrollbar
+
 
   s.tracks.forEach(track => {
     const li = document.createElement('li');
@@ -2049,17 +2073,21 @@ function renderSoundtrackPage() {
     ul.appendChild(li);
   });
 
-  // bottom row: back/next left, select right
-  const bottomRow = document.createElement('div');
-  bottomRow.style.display = 'flex';
-  bottomRow.style.justifyContent = 'space-between';
-  bottomRow.style.alignItems = 'center';
-  bottomRow.style.marginTop = '16px';
-  bottomRow.style.width = '100%';
+// bottom row: back/next left, select right (never shifts)
+const bottomRow = document.createElement('div');
+bottomRow.style.display = 'flex';
+bottomRow.style.alignItems = 'center';
+bottomRow.style.marginTop = '16px';
+bottomRow.style.width = '100%';
 
-  const leftControls = document.createElement('div');
-  leftControls.style.display = 'flex';
-  leftControls.style.gap = '12px';
+const leftControls = document.createElement('div');
+leftControls.style.display = 'flex';
+leftControls.style.gap = '12px';
+leftControls.style.flex = '0 0 auto'; // ✅ never stretches
+leftControls.style.justifyContent = 'flex-start';
+
+const spacer = document.createElement('div');
+spacer.style.flex = '1 1 auto'; // ✅ pushes select to the right
 
   const backBtn = document.createElement('button');
   backBtn.textContent = 'back';
@@ -2069,7 +2097,7 @@ function renderSoundtrackPage() {
   backBtn.style.border = 'none';
   backBtn.style.color = '#2d93ea';
   backBtn.style.textTransform = 'lowercase';
-  backBtn.style.visibility = (soundtrackPageIndex === 0) ? 'hidden' : 'visible';
+  backBtn.style.display = (soundtrackPageIndex === 0) ? 'none' : 'inline-block';
   backBtn.onclick = () => { soundtrackPageIndex--; renderSoundtrackPage(); };
 
   const nextBtn = document.createElement('button');
@@ -2080,7 +2108,7 @@ function renderSoundtrackPage() {
   nextBtn.style.border = 'none';
   nextBtn.style.color = '#2d93ea';
   nextBtn.style.textTransform = 'lowercase';
-  nextBtn.style.visibility = (soundtrackPageIndex >= unlocked - 1) ? 'hidden' : 'visible';
+  nextBtn.style.display = (soundtrackPageIndex >= unlocked - 1) ? 'none' : 'inline-block';
   nextBtn.onclick = () => { soundtrackPageIndex++; renderSoundtrackPage(); };
 
   leftControls.appendChild(backBtn);
@@ -2099,8 +2127,9 @@ function renderSoundtrackPage() {
     setSoundtrackByIndex(soundtrackPageIndex, true);
   };
 
-  bottomRow.appendChild(leftControls);
-  bottomRow.appendChild(selectBtn);
+bottomRow.appendChild(leftControls);
+bottomRow.appendChild(spacer);
+bottomRow.appendChild(selectBtn);
 
   wrapper.appendChild(headerRow);
   wrapper.appendChild(ul);
