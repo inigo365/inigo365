@@ -1266,7 +1266,7 @@ function addHoop() {
      // 3) Unlock bags + Powerups (all in ONE chain so nothing overwrites)
 
 // Tune these (unlock total should feel ~like baghetti)
-const MUSIC_UNLOCK_CHANCE    = 1 / 50; // ~0.33%
+const MUSIC_UNLOCK_CHANCE    = 1 / 60; // ~0.33%
 const PASSWORD_UNLOCK_CHANCE = 1 / 60; // ~0.17%  (rarer than music)
 const SHIELD_SPAWN_CHANCE    = 1 / 60;  // ~1.67%
 const BAGHETTI_SPAWN_CHANCE  = 1 / 200; // ~0.5%
@@ -1628,7 +1628,7 @@ if (isNotBagIndex(h.spriteIndex)) {
 if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
   if (shieldArmed) {
     shieldArmed = false;
-    showTextPopup('shield saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    showTextPopup('healed by da brufen', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
     hoops.splice(i, 1);
     continue;
   } else {
@@ -2113,13 +2113,14 @@ function renderSoundtrackPage() {
   goodybagContent.innerHTML = ''; // clear
 
   const wrapper = document.createElement('div');
-  wrapper.style.width = '100%';
-  wrapper.style.maxWidth = '520px';
+  wrapper.style.width = 'min(520px, 86vw)';  // ✅ always same-ish width, mobile-safe
+  wrapper.style.boxSizing = 'border-box';
+  rapper.style.overflow = 'hidden';         // ✅ prevent long text from widening the panel
   wrapper.style.height = '58vh';       // ✅ stable height across pages
-wrapper.style.maxHeight = '520px';   // ✅ stops it getting huge on desktop
-wrapper.style.minHeight = '360px';   // ✅ prevents tiny boxes
-wrapper.style.display = 'flex';
-wrapper.style.flexDirection = 'column';
+  wrapper.style.maxHeight = '520px';   // ✅ stops it getting huge on desktop
+  wrapper.style.minHeight = '360px';   // ✅ prevents tiny boxes
+  wrapper.style.display = 'flex';
+  wrapper.style.flexDirection = 'column';
 
 
   // header row: title left, link right
@@ -2153,15 +2154,18 @@ wrapper.style.flexDirection = 'column';
   ul.style.padding = '0';
   ul.style.margin = '0';
   ul.style.textAlign = 'center';
-  ul.style.flex = '1 1 auto';     // ✅ takes remaining height
-ul.style.overflowY = 'auto';    // ✅ scroll instead of resizing modal
-ul.style.paddingRight = '6px';  // ✅ room for scrollbar
-
-
+  ul.style.flex = '0 1 auto';       // ✅ don't expand to fill tall wrapper
+  ul.style.overflowY = 'auto';
+  ul.style.paddingRight = '6px';
+  ul.style.maxHeight = '36vh';      // ✅ consistent list area (adjust if you want)
+  ul.style.marginBottom = '10px';   // ✅ small consistent gap to buttons
   s.tracks.forEach(track => {
     const li = document.createElement('li');
     li.textContent = track;
     li.style.margin = '4px 0';
+    li.style.whiteSpace = 'normal';        // ✅ allow wrap
+    li.style.wordBreak = 'break-word';     // ✅ break long chunks safely
+    li.style.overflowWrap = 'anywhere';    // ✅ prevents width push
     ul.appendChild(li);
   });
 
@@ -2169,7 +2173,7 @@ ul.style.paddingRight = '6px';  // ✅ room for scrollbar
 const bottomRow = document.createElement('div');
 bottomRow.style.display = 'flex';
 bottomRow.style.alignItems = 'center';
-bottomRow.style.marginTop = '16px';
+bottomRow.style.marginTop = '8px';
 bottomRow.style.width = '100%';
 
 const leftControls = document.createElement('div');
