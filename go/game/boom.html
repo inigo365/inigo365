@@ -430,6 +430,48 @@ canvas {
     text-transform: lowercase;
     cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
+#howToBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 9998;
+}
+
+#howToBackdrop.active {
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#howToButtons {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 20px;
+}
+
+#howToButtons button {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  background: transparent;
+  border: 2px solid #2d93ea;
+  color: #2d93ea;
+  padding: 8px 22px;
+  text-transform: lowercase;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
 
 /* One stable overlay “unit” */
 #playWrap{
@@ -525,6 +567,7 @@ canvas {
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 <button id="goodybagBtn" class="soundcloud-btn">goodybag</button>
+<button id="howToBtn" class="soundcloud-btn">how to play</button>
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 
 <div id="playWrap">
@@ -593,6 +636,28 @@ canvas {
       <button id="passwordBtn" disabled>passwords</button>
     </div>
 
+  </div>
+</div>
+<div id="howToBackdrop">
+  <div class="leaderboard">
+    <button class="leaderboard-close" onclick="closeHowTo()">×</button>
+    <h3>how to play</h3>
+
+    <div id="howToContent" style="font-size:18px; color:#2d93ea; text-align:center; white-space:pre-line;">
+click/tap to jump
+
+your aim:
+to put the bag, into the bag.
+
+avoid all non bags.
+collect immense & powerful bags.
+sonically benefit yourself.
+prosper greatly.
+    </div>
+
+    <div id="howToButtons">
+      <button onclick="closeHowTo()">back</button>
+    </div>
   </div>
 </div>
 
@@ -1289,7 +1354,7 @@ function updateTopScores() {
 }
 
 function showOverlay(showLastScore = false) {
-
+if (howToBtn) howToBtn.style.display = 'block';
  // ✅ LOADING SCREEN: keep these hidden
 leaderboardBtn.style.display = 'none';
 if (goodybagBtn) goodybagBtn.style.display = 'none';
@@ -1320,6 +1385,7 @@ function hideOverlay() {
   playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
   playWrap.style.pointerEvents = "none";
   playWrap.classList.remove('pulsing');
+  if (howToBtn) howToBtn.style.display = 'none';
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
   showTopScores();
@@ -1335,6 +1401,7 @@ window.addEventListener('load', () => {
 
 function startGame() {
   if (gameStarted || !assetsLoaded) return;
+  if (howToBtn) howToBtn.style.display = 'none';
   hideOverlay();
   gameStarted = true;
   SPEED = 3;
@@ -1983,6 +2050,18 @@ const soundtrackBtn = document.getElementById('soundtrackBtn');
 const passwordBtn = document.getElementById('passwordBtn');
 const goodybagContent = document.getElementById('goodybagContent');
 const goodybagBtn = document.getElementById('goodybagBtn');
+const howToBtn = document.getElementById('howToBtn');
+const howToBackdrop = document.getElementById('howToBackdrop');
+
+function openHowTo() {
+  howToBackdrop.classList.add('active');
+}
+
+function closeHowTo() {
+  howToBackdrop.classList.remove('active');
+}
+
+howToBtn.addEventListener('click', openHowTo);
 
 
 function refreshGoodybagButtons() {
