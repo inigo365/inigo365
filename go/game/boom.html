@@ -1362,7 +1362,8 @@ function updateTopScores() {
 }
 
 function showOverlay(showLastScore = false) {
-if (howToBtn) howToBtn.style.display = 'block';
+const howToBtnEl = document.getElementById('howToBtn');
+if (howToBtnEl) howToBtnEl.style.display = 'block';
  // ✅ LOADING SCREEN: keep these hidden
 leaderboardBtn.style.display = 'none';
 if (goodybagBtn) goodybagBtn.style.display = 'none';
@@ -1393,7 +1394,8 @@ function hideOverlay() {
   playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
   playWrap.style.pointerEvents = "none";
   playWrap.classList.remove('pulsing');
-  if (howToBtn) howToBtn.style.display = 'none';
+const howToBtnEl = document.getElementById('howToBtn');
+if (howToBtnEl) howToBtnEl.style.display = 'none';
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
   showTopScores();
@@ -1409,7 +1411,8 @@ window.addEventListener('load', () => {
 
 function startGame() {
   if (gameStarted || !assetsLoaded) return;
-  if (howToBtn) howToBtn.style.display = 'none';
+const howToBtnEl = document.getElementById('howToBtn');
+if (howToBtnEl) howToBtnEl.style.display = 'none';
   hideOverlay();
   gameStarted = true;
   SPEED = 3;
@@ -1805,6 +1808,11 @@ else hideBaghettiBg();
 
 if (!gameOver) rafId = requestAnimationFrame(loop);
 
+}
+// ✅ lightweight throttled score UI update
+if (!loop._lastTopUpdate || performance.now() - loop._lastTopUpdate > 120) {
+  updateTopScores();
+  loop._lastTopUpdate = performance.now();
 }
 
 function endGame() {
