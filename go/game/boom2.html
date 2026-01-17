@@ -128,18 +128,20 @@ input,
   touch-action: none;
 }
 
-/* Canvas */
 canvas {
   display: block;
   margin: 0 auto;
-  background: #ffffff;
+  background: transparent;
+  position: relative;
+  z-index: 1; /* above the background layer */
 }
+
 
 /* Point Popup */
 .point-popup {
   position: absolute;
   font-size: 28px;
-  color: #2d93ea;
+  color: #d1dce8;
   font-family: "RuneScape UF", Arial, sans-serif;
   pointer-events: none;
   opacity: 0;
@@ -154,7 +156,9 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: none;
+  background: rgba(255,255,255,0.75);  /* bump this up a bit */
   display: none;
   align-items: center;
   justify-content: center;
@@ -217,7 +221,9 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: none;
+  background: rgba(255,255,255,0.75);  /* bump this up a bit */
   display: none;
   z-index: 9999;
   align-items: center;
@@ -338,7 +344,9 @@ canvas {
     align-items: center;
     justify-content: center;
 
-    background: rgba(255,255,255,0.95);
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: none;
+    background: rgba(255,255,255,0.75);  /* bump this up a bit */
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
@@ -425,11 +433,54 @@ canvas {
     text-transform: lowercase;
     cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
+#howToBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: none;
+  background: rgba(255,255,255,0.75);  /* bump this up a bit */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 9998;
+}
+
+#howToBackdrop.active {
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#howToButtons {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 20px;
+}
+
+#howToButtons button {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  background: transparent;
+  border: 2px solid #2d93ea;
+  color: #2d93ea;
+  padding: 8px 22px;
+  text-transform: lowercase;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
 
 /* One stable overlay “unit” */
 #playWrap{
   position: absolute;
-  top: 58%;
+  top: 44%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.8);
   opacity: 0;
@@ -485,6 +536,18 @@ canvas {
   white-space: pre-line;  /* ✅ respects \n */
   line-height: 1.25;      /* optional but nice */
 }
+#pageBg{
+  position: fixed;
+  inset: 0;
+  z-index: 0;            /* behind everything */
+  pointer-events: none;
+
+  background-image: url("background.png"); /* same folder as play.png */
+  background-size: cover;       /* keeps aspect ratio, crops as needed */
+  background-position: center;  /* nice crop */
+  background-repeat: no-repeat;
+}
+
 #baghettiBg{
   position: fixed;
   inset: 0;
@@ -503,12 +566,13 @@ canvas {
 </style>
 </head>
 <body>
-
+<div id="pageBg"></div>
 <div id="rotateNotice">Please rotate your phone to portrait</div>
 <button class="back-button" onclick="goBack()">← back</button>
 <button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 <button id="goodybagBtn" class="soundcloud-btn">goodybag</button>
-<audio id="bgMusic" src="/go/game/soundtrack.mp3" loop></audio>
+<button id="howToBtn" class="soundcloud-btn">how to play</button>
+<audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 
 <div id="playWrap">
   <img id="playOverlay" src="play.png" alt="play">
@@ -528,10 +592,13 @@ canvas {
 <div class="name-modal" id="nameModal">
   <h2>game over!</h2>
   <div class="final-score" id="finalScore">score: 0</div>
+  <div class="final-score" id="modalHighscore">highscore: 0</div>
+
   <input type="text" id="playerName" placeholder="enter name" maxlength="12" autocomplete="off">
   <button onclick="submitScore()">submit</button>
   <button onclick="playAgain()">play again</button>
 </div>
+
 
 <div id="leaderboardBackdrop">
   <div class="leaderboard" id="leaderboard">
@@ -576,6 +643,24 @@ canvas {
       <button id="passwordBtn" disabled>passwords</button>
     </div>
 
+  </div>
+</div>
+<div id="howToBackdrop">
+  <div class="leaderboard">
+    <button class="leaderboard-close" onclick="closeHowTo()">×</button>
+    <h3>how to play</h3>
+    <div id="howToContent" style="font-size:18px; color:#2d93ea; text-align:center; white-space:pre-line;">
+click/tap to jump
+your aim:
+to put the bag, into the bag.
+
+avoid all non bags.
+collect immense & powerful bags.
+sonically benefit yourself.
+prosper greatly.
+    </div>
+
+    </div>
   </div>
 </div>
 
@@ -660,6 +745,80 @@ const UNLOCK_KEYS = {
 Object.values(UNLOCK_KEYS).forEach(k => {
   if (localStorage.getItem(k) === null) localStorage.setItem(k, "false");
 });
+// ===================== SOUNDTRACK SYSTEM (3 for now) =====================
+const TOTAL_SOUNDTRACKS = 3;
+const SOUNDTRACK_UNLOCK_LEVEL_KEY = "soundtrack_unlock_level";    // "0".."3"
+const SELECTED_SOUNDTRACK_INDEX_KEY = "selected_soundtrack_index"; // "-1"=random, "0..2"=selected
+
+if (localStorage.getItem(SOUNDTRACK_UNLOCK_LEVEL_KEY) === null) {
+  localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, "0");
+}
+if (localStorage.getItem(SELECTED_SOUNDTRACK_INDEX_KEY) === null) {
+  localStorage.setItem(SELECTED_SOUNDTRACK_INDEX_KEY, "-1");
+}
+
+// Keep compatibility with old boolean unlock
+(function migrateSoundtracksFlag() {
+  const old = localStorage.getItem(UNLOCK_KEYS.soundtracks);
+  const lvl = Number(localStorage.getItem(SOUNDTRACK_UNLOCK_LEVEL_KEY) || "0");
+  if (old === "true" && lvl < 1) localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, "1");
+})();
+
+function getUnlockedSoundtrackLevel() {
+  const lvl = Number(localStorage.getItem(SOUNDTRACK_UNLOCK_LEVEL_KEY) || "0");
+  return Math.max(0, Math.min(TOTAL_SOUNDTRACKS, lvl));
+}
+function getSelectedSoundtrackIndex() {
+  return Number(localStorage.getItem(SELECTED_SOUNDTRACK_INDEX_KEY) || "-1");
+}
+function setSelectedSoundtrackIndex(i) {
+  localStorage.setItem(SELECTED_SOUNDTRACK_INDEX_KEY, String(i));
+}
+
+const SOUNDTRACKS = [
+  {
+    title: "soundtrack01",
+    src: "/go/game/soundtrack01.mp3",
+    link: "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=f9f27c47974341328cdeb5a115aae99f&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    tracks: [
+      "vivz portal - rezzett",
+      "tell her nothing - young thug",
+      "bag - mexikodro",
+      "not many (soul version) - scribe & xylatu",
+      "stick x need2 lc3 remix - jim legxacy",
+      "bazooka - p.slxwly",
+      "home - mazii7400prod glitzclub",
+      "shalimar - inigo365 & skud gambosi"
+    ]
+  },
+  {
+    title: "soundtrack02",
+    src: "/go/game/soundtrack02.mp3",
+    link: "https://soundcloud.com/",  // placeholder for now
+    tracks: [
+      "just another day - nines",
+      "chasing a comfort - 16 underground",
+      "dmt - xxyyxx",
+      "dna (melodownz refix) - inigo365",
+      "never2much @@@ - inigo365",
+      "east atlanta luv lettrr - wavsbyleo"
+    ]
+  },
+  {
+    title: "soundtrack03",
+    src: "/go/game/soundtrack03.mp3",
+    link: "https://soundcloud.com/",  // placeholder for now
+    tracks: [
+      "from the roof top ~ sniper's theme (Da-P edition)",
+      "i wish i was off the vitamins - n64kiddo x djsmokey & soudiere",
+      "get it - wasteey monroe feat. tay-k",
+      "supposed to do - ace hood feat. skepta",
+      "iron shell - esdeekid x montreality",
+      "bored of the uk - jawnino",
+      "no feelings - deadforest"
+    ]
+  }
+];
 
 // ===================== UNLOCK / POWERUP DEFINITIONS =====================
 const UNLOCK_BAGS = [
@@ -695,7 +854,7 @@ const POWERUPS = {
 };
 
 const TIER_COLORS = {
-  common: '#2d93ea',
+  common: '#c78665',
   rare: '#1ccfcf',      // teal blue
   goated: 'gold',
   mythic: '#a855f7'     // glowing purple base
@@ -705,13 +864,19 @@ const TIER_COLORS = {
 let tierBanner = null; // { lines: string[], color: string, until: number }
 
 function setTierBanner(text, color, durationMs = 4000) {
+  const topScoresEl = document.getElementById('topScores');
+  const rect = topScoresEl ? topScoresEl.getBoundingClientRect() : null;
+  const baseY = rect ? (rect.bottom + 14) : 70;
+
   tierBanner = {
     lines: String(text).split('\n'),
     color,
     start: Date.now(),
-    duration: durationMs
+    duration: durationMs,
+    baseY
   };
 }
+
 
 function drawTierBanner() {
   if (!tierBanner) return;
@@ -732,11 +897,7 @@ function drawTierBanner() {
   }
   /* ================================================= */
 
-  const topScoresEl = document.getElementById('topScores');
-  const rect = topScoresEl ? topScoresEl.getBoundingClientRect() : null;
-
-  // Place just below Top Scores (with a little gap)
-  const baseY = rect ? (rect.bottom + 14) : 70;
+  const baseY = tierBanner.baseY || 70;
   const x = canvas.width / 2;
 
   // Responsive font sizing
@@ -1035,7 +1196,7 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'c
 
   // ✅ Auto-shrink font until BOTH lines fit on screen without wrapping
   let w = 0, h = 0;
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 8; i++) {
     w = funTextPopup.offsetWidth || 0;
     h = funTextPopup.offsetHeight || 0;
     if (w <= maxAllowedWidth) break;
@@ -1108,44 +1269,40 @@ function addHoop() {
     } else {
       lastHoopWasNotBag = false;
 
-      // 3) Unlock bags (VERY rare, passwords rarer than music)
+     // 3) Unlock bags + Powerups (all in ONE chain so nothing overwrites)
 
-// Tune these:
-const MUSIC_UNLOCK_CHANCE    = 1/100; 
-const PASSWORD_UNLOCK_CHANCE = 1/150; 
-// Powerup spawn tuning (per hoop spawn)
-const SHIELD_SPAWN_CHANCE   = 1 / 60;   // ~1.25%
-const BAGHETTI_SPAWN_CHANCE = 1 / 200;  // ~0.5%
-
+// Tune these (unlock total should feel ~like baghetti)
+const MUSIC_UNLOCK_CHANCE    = 1 / 60; // ~0.33%
+const PASSWORD_UNLOCK_CHANCE = 1 / 60; // ~0.17%  (rarer than music)
+const SHIELD_SPAWN_CHANCE    = 1 / 60;  // ~1.67%
+const BAGHETTI_SPAWN_CHANCE  = 1 / 200; // ~0.5%
 
 const roll = Math.random();
 
-// Music unlock (more likely than passwords)
+// --- unlocks first ---
 if (roll < MUSIC_UNLOCK_CHANCE) {
-  // music.png (offset 2)
+  // music unlock (offset 2)
   spriteIndex = UNLOCK_START + 2;
 }
-
 else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
-  // tinny (0), onway (1), deathstar (3)
+  // passwords: tinny (0), onway (1), deathstar (3)
   const pwOffsets = [0, 1, 3];
   spriteIndex = UNLOCK_START + pwOffsets[Math.floor(Math.random() * pwOffsets.length)];
 }
 
- // 4) Powerups (separate from unlocks)
-else if (Math.random() < 0.002) {
-  // ✅ No shield stacking
-  if (shieldArmed) {
-    spriteIndex = POWERUP_START + POWERUPS.baghetti;
-  } else {
-    spriteIndex = POWERUP_START + Math.floor(Math.random() * POWERUP_COUNT);
-  }
+// --- otherwise, consider powerups ---
+else if (!shieldArmed && Math.random() < SHIELD_SPAWN_CHANCE) {
+  spriteIndex = POWERUP_START + POWERUPS.shield;
+}
+else if (Math.random() < BAGHETTI_SPAWN_CHANCE) {
+  spriteIndex = POWERUP_START + POWERUPS.baghetti;
 }
 
-      // 5) Otherwise normal bag
-      else {
-        spriteIndex = getWeightedSpriteIndex();
-      }
+// --- otherwise normal bag ---
+else {
+  spriteIndex = getWeightedSpriteIndex();
+}
+
     }
   }
 
@@ -1202,7 +1359,7 @@ function updateTopScores() {
 }
 
 function showOverlay(showLastScore = false) {
-
+if (howToBtn) howToBtn.style.display = 'block';
  // ✅ LOADING SCREEN: keep these hidden
 leaderboardBtn.style.display = 'none';
 if (goodybagBtn) goodybagBtn.style.display = 'none';
@@ -1233,6 +1390,7 @@ function hideOverlay() {
   playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
   playWrap.style.pointerEvents = "none";
   playWrap.classList.remove('pulsing');
+  if (howToBtn) howToBtn.style.display = 'none';
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
   showTopScores();
@@ -1248,12 +1406,13 @@ window.addEventListener('load', () => {
 
 function startGame() {
   if (gameStarted || !assetsLoaded) return;
+  if (howToBtn) howToBtn.style.display = 'none';
   hideOverlay();
   gameStarted = true;
-  
   SPEED = 3;
   hoops = [];
   score = 0;
+  updateTopScores();
   gameOver = false;
   ball.spriteIndex = getWeightedSpriteIndex(true);
 
@@ -1336,7 +1495,7 @@ function drawGlowForSprite(img, drawX, drawY, w, h, color, pulse) {
   if (!img) return;
   ctx.save();
   ctx.shadowColor = color;
-  ctx.shadowBlur = 18 + Math.sin(pulse) * 6;
+  ctx.shadowBlur = 10 + Math.sin(pulse) * 3;
   ctx.drawImage(img, drawX, drawY, w, h);
   ctx.restore();
 }
@@ -1368,13 +1527,13 @@ const ballImg = imgForIndex(ball.spriteIndex);
 if (ball.spriteIndex === NUM_SPRITES) {
   // Mythic tier styling
   ctx.shadowColor = 'yellow';
-  ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
+  ctx.shadowBlur = 12 + Math.sin(glowPulse) * 6;
   if (ballImg) ctx.drawImage(ballImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
   ctx.shadowBlur = 0;
 
 } else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
   // Rare/goated tier styling (your existing logic)
-  const intensity = (ball.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
+  const intensity = (ball.spriteIndex - 14) * 2 + Math.sin(glowPulse) * 2;
   ctx.shadowColor = 'rgba(255,215,0,0.8)';
   ctx.shadowBlur = intensity;
   if (ballImg) ctx.drawImage(ballImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
@@ -1476,7 +1635,7 @@ if (isNotBagIndex(h.spriteIndex)) {
 if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
   if (shieldArmed) {
     shieldArmed = false;
-    showTextPopup('shield saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
+    showTextPopup('healed by da brufen', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
     hoops.splice(i, 1);
     continue;
   } else {
@@ -1496,11 +1655,29 @@ if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT
   showTextPopup(unlockDef.popupText, ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
 
   // ✅ banner ONLY first time
+  // ✅ banner logic
+if (key === UNLOCK_KEYS.soundtracks) {
+  let lvl = getUnlockedSoundtrackLevel();
+
+  if (lvl < TOTAL_SOUNDTRACKS) {
+    lvl++;
+    localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, String(lvl));
+    localStorage.setItem(UNLOCK_KEYS.soundtracks, "true"); // legacy flag
+
+    setTierBanner(`*soundtrack found!*\nunlocked soundtrack0${lvl}!`, 'gold', 3000);
+  } else {
+    setTierBanner(`*soundtrack found!*\nall soundtracks unlocked!`, 'gold', 2200);
+  }
+
+} else {
+  // passwords: banner only first time
   if (localStorage.getItem(key) !== 'true') {
     localStorage.setItem(key, 'true');
     setTierBanner(unlockDef.bannerText, 'gold', 3000);
   }
+}
 
+  updateTopScores();
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
   continue;
@@ -1580,7 +1757,7 @@ if (powerId === POWERUPS.baghetti) {
 
         showPopup('+1', ball.x, pointY, TIER_COLORS.common);
       }
-
+      updateTopScores();
       ball.spriteIndex = h.spriteIndex;
       hoops.splice(i, 1);
       continue;
@@ -1642,6 +1819,64 @@ window.addEventListener('resize', () => {
 
 // ------------------- MUSIC -------------------
 const bgMusic = document.getElementById('bgMusic');
+let currentSoundtrackIndex = null;
+
+function resolveInitialSoundtrackIndex() {
+  const selected = getSelectedSoundtrackIndex();
+  if (selected >= 0 && selected < SOUNDTRACKS.length) return selected;
+  return getPageLoadRandomSoundtrackIndex(); // random ONCE per page load
+}
+
+function ensureSoundtrackLoadedOnce() {
+  if (currentSoundtrackIndex !== null) return; // already chosen this page load
+  currentSoundtrackIndex = resolveInitialSoundtrackIndex();
+  const s = SOUNDTRACKS[currentSoundtrackIndex];
+  if (!s) return;
+
+  // only set src once so it never restarts between runs
+  bgMusic.src = s.src;
+  bgMusic.load();
+  bgMusic.loop = true;
+}
+
+function setSoundtrackByIndex(idx, tryPlay = true) {
+  const s = SOUNDTRACKS[idx];
+  if (!s) return;
+
+  // ✅ If already on this track, don't restart it
+  if (currentSoundtrackIndex === idx) {
+    if (tryPlay && bgMusic.paused) {
+      bgMusic.play().then(() => musicToggle.textContent = "music: on").catch(() => {});
+    }
+    return;
+  }
+
+  currentSoundtrackIndex = idx;
+
+  bgMusic.pause();
+  bgMusic.src = s.src;
+  bgMusic.load();
+  bgMusic.loop = true;
+
+  if (tryPlay) {
+    bgMusic.play().then(() => {
+      musicToggle.textContent = "music: on";
+    }).catch(() => {});
+  }
+}
+
+function pickRandomSoundtrackIndex() {
+  return Math.floor(Math.random() * SOUNDTRACKS.length);
+}
+let pageLoadRandomSoundtrackIndex = null;
+
+function getPageLoadRandomSoundtrackIndex() {
+  if (pageLoadRandomSoundtrackIndex === null) {
+    pageLoadRandomSoundtrackIndex = pickRandomSoundtrackIndex();
+  }
+  return pageLoadRandomSoundtrackIndex;
+}
+
 bgMusic.volume = 0.5;
 bgMusic.loop = true;
 
@@ -1650,13 +1885,15 @@ const musicToggle = document.getElementById('musicToggle');
 musicToggle.style.opacity = 1;
 musicToggle.textContent = "music: off"; // default state
 
-// Start music on first user gesture (overlay click/touch)
 function handleFirstUserGesture() {
+  ensureSoundtrackLoadedOnce();
+
   if (bgMusic.paused) {
     bgMusic.play().then(() => {
-      musicToggle.textContent = "music: on"; // update once music actually plays
+      musicToggle.textContent = "music: on";
     }).catch(() => { });
   }
+
   window.removeEventListener('touchstart', handleFirstUserGesture);
   window.removeEventListener('mousedown', handleFirstUserGesture);
 }
@@ -1762,8 +1999,8 @@ function goBack() { window.location.href = "../index.html"; }
     finalScoreEl.textContent = 'score: ' + finalScore;
     playerNameInput.value = localStorage.getItem('playerName') || '';
     nameModal.classList.add('show');
-    overlayHighscore.style.opacity = 1;
-    overlayHighscore.textContent = "highscore: " + (localStorage.getItem('flappyBasketHighscore') || 0);
+    const hs = localStorage.getItem('flappyBasketHighscore') || 0;
+    document.getElementById('modalHighscore').textContent = 'highscore: ' + hs;
     backButton.style.zIndex = 400;
     backButton.style.opacity = 1;
     leaderboardBtn.style.display = 'block';
@@ -1819,25 +2056,22 @@ const soundtrackBtn = document.getElementById('soundtrackBtn');
 const passwordBtn = document.getElementById('passwordBtn');
 const goodybagContent = document.getElementById('goodybagContent');
 const goodybagBtn = document.getElementById('goodybagBtn');
+const howToBtn = document.getElementById('howToBtn');
+const howToBackdrop = document.getElementById('howToBackdrop');
 
-const SOUNDTRACKS = {
-  soundtrack01: {
-    link: "https://soundcloud.com/iggysmallls/put-the-bag-in-the-bag-official-soundtrack-gambosi-assisted/s-aKLrelhPjlt?si=f9f27c47974341328cdeb5a115aae99f&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
-    tracks: [
-      "vivz portal - rezzett",
-      "tell her nothing - young thug",
-      "bag - mexikodro",
-      "not many (soul version) - scribe & xylatu",
-      "stick x need2 lc3 remix - jim legxacy",
-      "bazooka - p.slxwly",
-      "home - mazii7400prod glitzclub",
-      "shalimar - inigo365 & skud gambosi"
-    ]
-  }
-};
+function openHowTo() {
+  howToBackdrop.classList.add('active');
+}
+
+function closeHowTo() {
+  howToBackdrop.classList.remove('active');
+}
+
+howToBtn.addEventListener('click', openHowTo);
+
 
 function refreshGoodybagButtons() {
-  const hasSoundtracks = localStorage.getItem(UNLOCK_KEYS.soundtracks) === 'true';
+const hasSoundtracks = getUnlockedSoundtrackLevel() > 0;
 const hasAnyPassword =
   localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
   localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true' ||
@@ -1869,61 +2103,149 @@ function closeGoodybag() {
 
 goodybagBtn.addEventListener('click', openGoodybag);
 
-// ----- SOUNDTRACK BUTTON -----
-soundtrackBtn.addEventListener('click', () => {
-  goodybagContent.innerHTML = '';
+let soundtrackPageIndex = 0;
 
-  if (localStorage.getItem(UNLOCK_KEYS.soundtracks) !== 'true') {
+function renderSoundtrackPage() {
+  const unlocked = getUnlockedSoundtrackLevel();
+
+  if (unlocked <= 0) {
     goodybagContent.innerHTML = '<div>no soundtracks unlocked yet...</div>';
     return;
   }
 
-  for (const [name, data] of Object.entries(SOUNDTRACKS)) {
-    const wrapper = document.createElement('div');
-    wrapper.classList.add('goodybag-block');
-    wrapper.style.marginBottom = '18px';
+  // clamp to unlocked range
+  soundtrackPageIndex = Math.max(0, Math.min(soundtrackPageIndex, unlocked - 1));
+  const s = SOUNDTRACKS[soundtrackPageIndex];
 
-    const headerRow = document.createElement('div');
-    headerRow.style.display = 'flex';
-    headerRow.style.justifyContent = 'space-between';
-    headerRow.style.alignItems = 'center';
-    headerRow.style.marginBottom = '6px';
+  goodybagContent.innerHTML = ''; // clear
 
-    const header = document.createElement('div');
-    header.style.fontWeight = 'bold';
-    header.textContent = name;
+  const wrapper = document.createElement('div');
+  wrapper.style.width = 'min(520px, 86vw)';  // ✅ always same-ish width, mobile-safe
+  wrapper.style.boxSizing = 'border-box';
+  wrapper.style.overflow = 'hidden';         // ✅ prevent long text from widening the panel
+  wrapper.style.height = '58vh';       // ✅ stable height across pages
+  wrapper.style.maxHeight = '520px';   // ✅ stops it getting huge on desktop
+  wrapper.style.minHeight = '360px';   // ✅ prevents tiny boxes
+  wrapper.style.display = 'flex';
+  wrapper.style.flexDirection = 'column';
 
-    const linkBtn = document.createElement('button');
-    linkBtn.textContent = 'link';
-    linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
-    linkBtn.style.fontSize = '20px';
-    linkBtn.style.padding = '4px 8px';
-    linkBtn.style.background = 'transparent';
-    linkBtn.style.border = 'none';
-    linkBtn.style.color = '#2d93ea';
-    linkBtn.style.textTransform = 'lowercase';
-    linkBtn.onclick = () => window.open(data.link, '_blank');
 
-    headerRow.appendChild(header);
-    headerRow.appendChild(linkBtn);
+  // header row: title left, link right
+  const headerRow = document.createElement('div');
+  headerRow.style.display = 'flex';
+  headerRow.style.justifyContent = 'space-between';
+  headerRow.style.alignItems = 'center';
+  headerRow.style.marginBottom = '6px';
 
-    const ul = document.createElement('ul');
-    ul.style.listStyle = 'none';
-    ul.style.padding = '0';
-    ul.style.margin = '0';
+  const header = document.createElement('div');
+  header.style.fontWeight = 'bold';
+  header.textContent = s.title;
 
-    data.tracks.forEach(track => {
-      const li = document.createElement('li');
-      li.textContent = track;
-      li.style.margin = '4px 0';
-      ul.appendChild(li);
-    });
+  const linkBtn = document.createElement('button');
+  linkBtn.textContent = 'link';
+  linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+  linkBtn.style.fontSize = '20px';
+  linkBtn.style.padding = '4px 8px';
+  linkBtn.style.background = 'transparent';
+  linkBtn.style.border = 'none';
+  linkBtn.style.color = '#2d93ea';
+  linkBtn.style.textTransform = 'lowercase';
+  linkBtn.onclick = () => window.open(s.link, '_blank');
 
-    wrapper.appendChild(headerRow);
-    wrapper.appendChild(ul);
-    goodybagContent.appendChild(wrapper);
-  }
+  headerRow.appendChild(header);
+  headerRow.appendChild(linkBtn);
+
+  // track list
+  const ul = document.createElement('ul');
+  ul.style.listStyle = 'none';
+  ul.style.padding = '0';
+  ul.style.margin = '0';
+  ul.style.textAlign = 'center';
+  ul.style.flex = '0 1 auto';       // ✅ don't expand to fill tall wrapper
+  ul.style.overflowY = 'auto';
+  ul.style.paddingRight = '6px';
+  ul.style.maxHeight = '36vh';      // ✅ consistent list area (adjust if you want)
+  ul.style.marginBottom = '10px';   // ✅ small consistent gap to buttons
+  s.tracks.forEach(track => {
+    const li = document.createElement('li');
+    li.textContent = track;
+    li.style.margin = '4px 0';
+    li.style.whiteSpace = 'normal';        // ✅ allow wrap
+    li.style.wordBreak = 'break-word';     // ✅ break long chunks safely
+    li.style.overflowWrap = 'anywhere';    // ✅ prevents width push
+    ul.appendChild(li);
+  });
+
+// bottom row: back/next left, select right (never shifts)
+const bottomRow = document.createElement('div');
+bottomRow.style.display = 'flex';
+bottomRow.style.alignItems = 'center';
+bottomRow.style.marginTop = '8px';
+bottomRow.style.width = '100%';
+
+const leftControls = document.createElement('div');
+leftControls.style.display = 'flex';
+leftControls.style.gap = '12px';
+leftControls.style.flex = '0 0 auto'; // ✅ never stretches
+leftControls.style.justifyContent = 'flex-start';
+
+const spacer = document.createElement('div');
+spacer.style.flex = '1 1 auto'; // ✅ pushes select to the right
+
+  const backBtn = document.createElement('button');
+  backBtn.textContent = 'back';
+  backBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+  backBtn.style.fontSize = '24px';
+  backBtn.style.background = 'transparent';
+  backBtn.style.border = 'none';
+  backBtn.style.color = '#2d93ea';
+  backBtn.style.textTransform = 'lowercase';
+  backBtn.style.display = (soundtrackPageIndex === 0) ? 'none' : 'inline-block';
+  backBtn.onclick = () => { soundtrackPageIndex--; renderSoundtrackPage(); };
+
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'next';
+  nextBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+  nextBtn.style.fontSize = '24px';
+  nextBtn.style.background = 'transparent';
+  nextBtn.style.border = 'none';
+  nextBtn.style.color = '#2d93ea';
+  nextBtn.style.textTransform = 'lowercase';
+  nextBtn.style.display = (soundtrackPageIndex >= unlocked - 1) ? 'none' : 'inline-block';
+  nextBtn.onclick = () => { soundtrackPageIndex++; renderSoundtrackPage(); };
+
+  leftControls.appendChild(backBtn);
+  leftControls.appendChild(nextBtn);
+
+  const selectBtn = document.createElement('button');
+  selectBtn.textContent = 'select';
+  selectBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
+  selectBtn.style.fontSize = '24px';
+  selectBtn.style.background = 'transparent';
+  selectBtn.style.border = 'none';
+  selectBtn.style.color = '#2d93ea';
+  selectBtn.style.textTransform = 'lowercase';
+  selectBtn.onclick = () => {
+    setSelectedSoundtrackIndex(soundtrackPageIndex);
+    setSoundtrackByIndex(soundtrackPageIndex, true);
+  };
+
+bottomRow.appendChild(leftControls);
+bottomRow.appendChild(spacer);
+bottomRow.appendChild(selectBtn);
+
+  wrapper.appendChild(headerRow);
+  wrapper.appendChild(ul);
+  wrapper.appendChild(bottomRow);
+
+  goodybagContent.appendChild(wrapper);
+}
+
+soundtrackBtn.addEventListener('click', () => {
+  soundtrackPageIndex = 0; // always start at soundtrack01
+  renderSoundtrackPage();
 });
+
 
 // ----- PASSWORD BUTTON -----
 passwordBtn.addEventListener('click', () => {
