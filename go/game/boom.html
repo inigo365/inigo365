@@ -1448,7 +1448,8 @@ if (goodybagBtn) goodybagBtn.style.display = 'none';
 
 function jump() {
   if (gameStarted && !gameOver) {
-    ball.vy = LIFT;   // single impulse, same feel as original
+    ball.vy = 0;     // reset vertical velocity
+    ball.vy += LIFT; // apply lift
   }
 }
 
