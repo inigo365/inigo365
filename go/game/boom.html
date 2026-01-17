@@ -1448,10 +1448,10 @@ if (goodybagBtn) goodybagBtn.style.display = 'none';
 
 function jump() {
   if (gameStarted && !gameOver) {
-    ball.vy = 0;
-    ball.vy += LIFT * lastDt;
+    ball.vy = LIFT;   // single impulse, same feel as original
   }
 }
+
 
 // Handles taps/clicks on canvas
 function handleInput(e) {
@@ -1807,12 +1807,11 @@ if (baghettiRunLeft > 0) showBaghettiBg();
 else hideBaghettiBg();
 
 if (!gameOver) rafId = requestAnimationFrame(loop);
-
-}
 // ✅ lightweight throttled score UI update
 if (!loop._lastTopUpdate || performance.now() - loop._lastTopUpdate > 120) {
   updateTopScores();
   loop._lastTopUpdate = performance.now();
+}
 }
 
 function endGame() {
