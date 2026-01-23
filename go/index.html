@@ -853,43 +853,49 @@ const SFX = (() => {
   return { play, unlockNow };
 })();
 
-/* Global click sound for ALL buttons EXCEPT the enter button
-   - fire on touchstart for iOS immediacy
-   - ignore subsequent pointerdown to avoid double trigger
-*/
-function isEnterButton(btn) {
-  return btn && btn.id === "enterButton";
-}
+/* ===========================
+   GLOBAL CLICK SFX (simple, no doubles)
+   - plays on "main" buttons only
+   - NOT on enterButton
+   - NOT on cheat pad buttons (.cheat-btn)
+=========================== */
 
-function isCheatPadButton(btn) {
-  return btn && btn.classList && btn.classList.contains("cheat-btn");
-}
+(function setupClickSfx() {
+  let lastAt = 0;
 
+  function shouldPlayClick(btn) {
+    if (!btn || btn.disabled) return false;
 
-let lastTouchStamp = 0;
+    // Exclude enter (special)
+    if (btn.id === "enterButton") return false;
 
-document.addEventListener("touchstart", (e) => {
-  const btn = e.target.closest("button");
-  if (!btn || btn.disabled) return;
-  if (isEnterButton(btn) || isCheatPadButton(btn)) return;
+    // Exclude cheat-pad buttons (↑ ↓ ← → a b)
+    if (btn.classList.contains("cheat-btn")) return false;
 
+    return true;
+  }
 
-  lastTouchStamp = Date.now();
-  SFX.unlockNow();        // within gesture
-  SFX.play("click");      // immediate
-}, { capture: true, passive: true });
+  function handler(e) {
+    const btn = e.target.closest("button");
+    if (!shouldPlayClick(btn)) return;
 
-document.addEventListener("pointerdown", (e) => {
-  // if touch just happened, don't double-play
-  if (Date.now() - lastTouchStamp < 350) return;
+    // tiny debounce to prevent any double-fire edge cases
+    const now = performance.now();
+    if (now - lastAt < 120) return;
+    lastAt = now;
 
-  const btn = e.target.closest("button");
-  if (!btn || btn.disabled) return;
-  if (isEnterButton(btn) || isCheatPadButton(btn)) return;
+    SFX.unlockNow();
+    SFX.play("click");
+  }
 
-  SFX.unlockNow();
-  SFX.play("click");
-}, true);
+  // Use ONE fast event path (prevents double audio)
+  if ("PointerEvent" in window) {
+    document.addEventListener("pointerdown", handler, { capture: true });
+  } else {
+    document.addEventListener("touchstart", handler, { capture: true, passive: true });
+  }
+})();
+
 
 // keyboard activates buttons too (space/enter on focused button)
 document.addEventListener("keydown", (e) => {
