@@ -67,9 +67,9 @@ button {
   color: inherit;
 }
 
-/* === Accent (blue like you liked on iOS) === */
+/* === Accent: set to BLACK for consistency === */
 :root {
-  --accent: #2d93ea;
+  --accent: #000000;
 }
 
 /* PASSWORD SCREEN */
@@ -291,12 +291,24 @@ button {
   flex-wrap: wrap;
 }
 
-/* centered "cheatcodes" info button under submit row */
+/* centered "?" info button under submit row */
 .cheat-info-wrap {
   margin-top: 10px;
   display: flex;
   justify-content: center;
 }
+
+.cheat-info-q {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 24px; /* slightly bigger like your other ? */
+  padding: 0;
+  line-height: 1;
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+}
+.cheat-info-q:hover { text-decoration: underline; }
 
 /* unlocked feedback */
 .unlock-flash {
@@ -518,7 +530,8 @@ video {
     <div class="unlock-flash" id="unlockFlash"></div>
 
     <div class="cheat-info-wrap">
-      <button class="linkish" id="cheatInfo" type="button">cheatcodes</button>
+      <!-- changed from "cheatcodes" to "?" in same location -->
+      <button class="cheat-info-q" id="cheatInfo" type="button">?</button>
     </div>
 
     <div class="panel-footer">
@@ -621,11 +634,11 @@ let endedListener = null;
 const actions = {
   "donovan": { src: "videos/video.mp4" },
   "gambosi": { src: "videos/skud.mp4" },
-  "wasted": { src: "videos/litty.mp4" },   // NEW: locked until cheat
+  "wasted": { src: "videos/litty.mp4" },   // unlocked by vault, but always enterable
 
   "tinny": { redirect: "scale/scale.html", sameTab: true },
-  "bag": { redirect: "game/boom.html", sameTab: true},
-  "home": { redirect: "../home.html", sameTab: true},
+  "bag": { redirect: "game/boom.html", sameTab: true },
+  "home": { redirect: "../home.html", sameTab: true },
   "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", sameTab: false },
   "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true },
   "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true },
@@ -641,7 +654,7 @@ const actions = {
 const cheatUnlocks = {
   "U U D D L R L R B A": ["wasted"],
   "U D U D A B": ["bag"],
-  "A B A B": ["home"] // NEW generic-ish code
+  "A B A B": ["home"]
 };
 
 // ===== unlock storage =====
@@ -670,7 +683,7 @@ let hasWrongAttempt = false;
 function revealQ() { vaultQ.classList.add("show"); }
 function hideQ() { vaultQ.classList.remove("show"); }
 
-// helper: only enforce locks if action.locked === true
+/* isLocked remains unused; keeping for safety (no functionality impact) */
 function isLocked(code, action) {
   if (!action || action.locked !== true) return false;
   return !unlocked.has(code);
