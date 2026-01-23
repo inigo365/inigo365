@@ -135,30 +135,6 @@ button {
   text-decoration: underline;
 }
 
-.enter-button{
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 24px;
-
-  /* FIXED SLOT so nothing moves */
-  width: 140px;
-  height: 28px;
-  line-height: 28px;
-  text-align: center;
-
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-transform: lowercase;
-  color: var(--btn);
-
-  transform: none;                 /* keep static */
-  transition: opacity 0.15s ease;  /* only fade */
-}
-
-.enter-button:hover{
-  text-decoration: underline;
-}
-
 .enter-button.flash{
   opacity: 0.25;   /* feedback without movement */
   transform: none; /* IMPORTANT: no translate */
@@ -168,13 +144,6 @@ button {
 .enter-button.ready{
   transform: none;
 }
-
-
-/* You can delete this entirely, but keeping harmless */
-.enter-button.ready{
-  transform: none;
-}
-
 
 /* ===== NEW: add to home page button (mobile only) ===== */
 .add-home-btn {
