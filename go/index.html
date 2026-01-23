@@ -67,9 +67,9 @@ button {
   color: inherit;
 }
 
-/* === Accent: set to BLACK for consistency === */
-:root {
-  --accent: #000000;
+:root{
+  --accent: #2d93ea;     /* keep blue for nav/play/back */
+  --btn: #000000;        /* black for buttons inside menus etc */
 }
 
 /* PASSWORD SCREEN */
@@ -138,7 +138,7 @@ button {
   border: 0;
   background: transparent;
   text-transform: lowercase;
-  color: var(--accent);
+  color: var(--btn);
 
   opacity: 0;
   pointer-events: none;
@@ -225,7 +225,7 @@ button {
   font-family: "RuneScape UF", Arial, sans-serif;
   background: transparent;
   border: none;
-  color: var(--accent);
+  color: var(--btn);
   font-size: 22px;
   padding: 0;
   text-transform: lowercase;
@@ -247,7 +247,7 @@ button {
   border: 2px solid black;
   background: white;
   text-transform: lowercase;
-  color: var(--accent);
+  color: var(--btn);
   cursor: url("../images/cursor/cursor-hover.png"), pointer;
 }
 
@@ -280,7 +280,7 @@ button {
   border: 2px solid black;
   background: white;
   text-transform: lowercase;
-  color: var(--accent);
+  color: var(--btn);
 }
 
 .cheat-actions {
@@ -302,7 +302,7 @@ button {
   font-family: "RuneScape UF", Arial, sans-serif;
   background: transparent;
   border: none;
-  color: var(--accent);
+  color: var(--btn);
   font-size: 24px; /* slightly bigger like your other ? */
   padding: 0;
   line-height: 1;
@@ -318,7 +318,7 @@ button {
   opacity: 0;
   transition: opacity 0.15s ease;
   text-transform: lowercase;
-  color: var(--accent);
+  color: var(--btn);
 }
 .unlock-flash.show { opacity: 1; }
 
