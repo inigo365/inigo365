@@ -127,8 +127,17 @@ button {
   text-transform: lowercase;
   color: var(--btn);
 
-  transform: none;                 /* keep static */
-  transition: opacity 0.15s ease;  /* only fade */
+  transform: none;
+  transition: opacity 0.15s ease;
+
+  /* default hidden (until typing OR first wrong attempt) */
+  opacity: 0;
+  pointer-events: none;
+}
+
+.enter-button.show {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .enter-button:hover{
@@ -136,12 +145,7 @@ button {
 }
 
 .enter-button.flash{
-  opacity: 0.25;   /* feedback without movement */
-  transform: none; /* IMPORTANT: no translate */
-}
-
-/* You can delete this entirely, but keeping harmless */
-.enter-button.ready{
+  opacity: 0.25;
   transform: none;
 }
 
@@ -332,7 +336,7 @@ button {
 }
 button.vault-item:hover { text-decoration: underline; }
 
-/* MINI POPUP (codes only, no mapping) */
+/* MINI POPUP */
 .mini-overlay {
   position: fixed;
   inset: 0;
@@ -503,7 +507,6 @@ video {
           spellcheck="false"
           enterkeyhint="go"
         >
-        <!-- one button: "?" when empty, "enter ↵" when typing -->
         <button type="button" class="enter-button" id="enterButton" aria-label="enter or help">?</button>
       </form>
     </div>
@@ -742,6 +745,7 @@ function closeAllOverlays() {
 }
 
 function openCheatOverlay() {
+  if (!hasWrongAttempt) return; /* only after first wrong attempt */
   clearCheat();
   hideUnlockFlash();
   cheatOverlay.style.display = "flex";
@@ -793,9 +797,7 @@ function openHomeOverlay() {
     `;
   } else {
     homeHow.textContent = "mobile";
-    homeSteps.innerHTML = `
-      <div class="home-step">open this page on your phone to add it to your home screen.</div>
-    `;
+    homeSteps.innerHTML = `<div class="home-step">open this page on your phone to add it to your home screen.</div>`;
   }
 
   homeOverlay.style.display = "flex";
@@ -815,7 +817,6 @@ function runActionByKey(keyRaw) {
   if (!action) return;
 
   passwordInput.disabled = true;
-
   closeAllOverlays();
 
   if (action.redirect) {
@@ -953,7 +954,7 @@ window.addEventListener("pagehide", () => { passwordInput.disabled = false; });
 
 backButton.onclick = resetToPassword;
 
-// ===== enter button state logic ("?", "enter ↵", "nope") =====
+// ===== enter button state logic ("(hidden)", "enter ↵", "nope", "?") =====
 let enterFlashTimer = null;
 let enterLock = false;
 
@@ -961,12 +962,21 @@ function setEnterButtonState() {
   if (enterLock) return;
 
   const hasText = passwordInput.value && passwordInput.value.length > 0;
+
   if (hasText) {
     enterButton.textContent = "enter ↵";
-    enterButton.classList.add("ready");
-  } else {
+    enterButton.classList.add("show");
+    return;
+  }
+
+  // empty input:
+  if (hasWrongAttempt) {
     enterButton.textContent = "?";
-    enterButton.classList.remove("ready");
+    enterButton.classList.add("show");
+  } else {
+    // not visible at all until first wrong attempt
+    enterButton.textContent = "?";
+    enterButton.classList.remove("show");
   }
 }
 
@@ -974,6 +984,8 @@ function flashEnter(text, ms = 650) {
   clearTimeout(enterFlashTimer);
   enterLock = true;
 
+  // make sure it's visible during the flash
+  enterButton.classList.add("show");
   enterButton.classList.add("flash");
   enterButton.textContent = text;
 
@@ -996,7 +1008,7 @@ function tryPassword() {
   if (!action) {
     hasWrongAttempt = true;
     passwordInput.value = "";
-    flashEnter("nope", 700);
+    flashEnter("nope", 700); // after flash, state becomes "?"
     return;
   }
 
@@ -1019,21 +1031,32 @@ passwordInput.addEventListener("keydown", (e) => {
   }
 });
 
-enterButton.addEventListener("click", () => {
+/* MOBILE FIX: use pointerdown so first tap triggers (prevents iOS blur-eats-click) */
+function handleEnterOrHelp(e) {
   if (passwordInput.disabled) return;
 
   const text = passwordInput.value.trim();
 
-  // if there's text, it's an enter button
+  // if there's text, submit immediately
   if (text.length > 0) {
     tryPassword();
     return;
   }
 
-  // if empty, it's always a help button now
-  openCheatOverlay();
+  // empty => only open cheats after first wrong attempt
+  if (hasWrongAttempt) openCheatOverlay();
+}
+
+enterButton.addEventListener("pointerdown", (e) => {
+  // Prevent iOS from blurring input / hiding keyboard before our handler runs
+  e.preventDefault();
+  handleEnterOrHelp(e);
 });
 
+enterButton.addEventListener("click", (e) => {
+  // Desktop / fallback
+  handleEnterOrHelp(e);
+});
 
 /* Tap outside after typing submits (unchanged behavior) */
 passwordScreen.addEventListener("pointerdown", (e) => {
