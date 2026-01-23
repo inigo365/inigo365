@@ -620,11 +620,11 @@ let endedListener = null;
 const actions = {
   "donovan": { src: "videos/video.mp4" },
   "gambosi": { src: "videos/skud.mp4" },
-  "wasted": { src: "videos/litty.mp4", locked: true },   // NEW: locked until cheat
+  "wasted": { src: "videos/litty.mp4" },   // NEW: locked until cheat
 
   "tinny": { redirect: "scale/scale.html", sameTab: true },
-  "bag": { redirect: "game/boom.html", sameTab: true, locked: true },
-  "home": { redirect: "../home.html", sameTab: true, locked: true },
+  "bag": { redirect: "game/boom.html", sameTab: true},
+  "home": { redirect: "../home.html", sameTab: true},
   "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", sameTab: false },
   "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true },
   "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true },
@@ -638,9 +638,9 @@ const actions = {
  * Tokens: U D L R A B
  */
 const cheatUnlocks = {
-  "U U D D L R L R B A": ["home"],
+  "U U D D L R L R B A": ["wasted"],
   "U D U D A B": ["bag"],
-  "A B A B": ["wasted"] // NEW generic-ish code
+  "A B A B": ["home"] // NEW generic-ish code
 };
 
 // ===== unlock storage =====
@@ -843,16 +843,6 @@ function tryPassword() {
   const action = actions[key];
 
   if (!action) {
-    if (!hasWrongAttempt) {
-      hasWrongAttempt = true;
-      revealQ();
-    }
-    passwordInput.value = "";
-    enterButton.classList.remove("show");
-    return;
-  }
-
-  if (isLocked(key, action)) {
     if (!hasWrongAttempt) {
       hasWrongAttempt = true;
       revealQ();
