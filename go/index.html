@@ -692,6 +692,77 @@ const homeClose = document.getElementById("homeClose");
 const homeHow = document.getElementById("homeHow");
 const homeSteps = document.getElementById("homeSteps");
 
+/* ===== SOUND (click + password) ===== */
+const CLICK_SFX_SRC = "sounds/click.mp3";
+const PASS_SFX_SRC  = "sounds/password.mp3";
+
+let clickSfx = null;
+let passSfx = null;
+let sfxPrimed = false;
+
+function safePlay(audio) {
+  if (!audio) return;
+  try {
+    audio.currentTime = 0;
+    const p = audio.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch {}
+}
+
+function primeSfxOnce() {
+  if (sfxPrimed) return;
+  sfxPrimed = true;
+
+  clickSfx = new Audio(CLICK_SFX_SRC);
+  clickSfx.preload = "auto";
+  clickSfx.volume = 0.55;
+
+  passSfx = new Audio(PASS_SFX_SRC);
+  passSfx.preload = "auto";
+  passSfx.volume = 0.75;
+
+  // "Prime" on iOS/Safari: try a silent-ish play/pause in a user gesture.
+  const prime = () => {
+    try {
+      if (clickSfx) { clickSfx.currentTime = 0; const p1 = clickSfx.play(); if (p1 && p1.then) p1.then(() => clickSfx.pause()).catch(() => {}); else clickSfx.pause(); }
+      if (passSfx)  { passSfx.currentTime = 0;  const p2 = passSfx.play();  if (p2 && p2.then) p2.then(() => passSfx.pause()).catch(() => {});  else passSfx.pause(); }
+    } catch {}
+    window.removeEventListener("pointerdown", prime, true);
+    window.removeEventListener("touchstart", prime, true);
+    window.removeEventListener("keydown", prime, true);
+  };
+
+  window.addEventListener("pointerdown", prime, true);
+  window.addEventListener("touchstart", prime, true);
+  window.addEventListener("keydown", prime, true);
+}
+primeSfxOnce();
+
+// Global click sound for ALL buttons EXCEPT the enter button
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  if (btn.disabled) return;
+
+  // enter is special (no click sound)
+  if (btn.id === "enterButton") return;
+
+  safePlay(clickSfx);
+}, true);
+
+// Also cover pointerdown so it feels instant on mobile
+document.addEventListener("pointerdown", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  if (btn.disabled) return;
+
+  // enter is special (no click sound)
+  if (btn.id === "enterButton") return;
+
+  safePlay(clickSfx);
+}, true);
+/* ===== END SOUND ===== */
+
 let currentAction = null;
 let endedListener = null;
 
@@ -780,6 +851,10 @@ function closeAllOverlays() {
 
 function openCheatOverlay() {
   if (!hasWrongAttempt) return;
+
+  // close keyboard on mobile
+  try { passwordInput.blur(); } catch {}
+
   clearCheat();
   hideUnlockFlash();
   cheatOverlay.style.display = "flex";
@@ -1014,13 +1089,16 @@ function setButtonsForInputState() {
   }
 }
 
-// ===== enter flash ("nope") =====
+// ===== enter flash ("nope") + password sfx =====
 let enterFlashTimer = null;
 let enterLock = false;
 
 function flashNope(ms = 520) {
   clearTimeout(enterFlashTimer);
   enterLock = true;
+
+  // play password sound on WRONG password
+  safePlay(passSfx);
 
   helpButton.classList.remove("show");
   enterButton.textContent = "nope";
@@ -1036,13 +1114,17 @@ function flashNope(ms = 520) {
   }, ms);
 }
 
-function tryPassword() {
+function tryPassword(playPasswordSound = true) {
   const key = passwordInput.value.toLowerCase().trim();
   const action = actions[key];
+
+  // play password sound on EVERY attempt (keyboard enter or enter button)
+  if (playPasswordSound) safePlay(passSfx);
 
   if (!action) {
     hasWrongAttempt = true;
     passwordInput.value = "";
+    // don't double-play the sound here (already played above)
     flashNope(520);
     return;
   }
@@ -1060,38 +1142,45 @@ passwordForm.addEventListener("submit", (e) => {
   e.preventDefault();
   if (passwordInput.disabled) return;
   if (passwordInput.value.trim().length === 0) return;
-  tryPassword();
+  tryPassword(true);
 });
 
 /* Enter key works */
 passwordInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
-    if (!passwordInput.disabled && passwordInput.value.trim().length > 0) tryPassword();
+    if (!passwordInput.disabled && passwordInput.value.trim().length > 0) {
+      tryPassword(true);
+    }
   }
 });
 
-/* iOS: make tapping ENTER always submit before blur */
+/* iOS: make tapping ENTER always submit before blur (and play password sound) */
 enterButton.addEventListener("pointerdown", (e) => {
   if (passwordInput.disabled) return;
   if (passwordInput.value.trim().length === 0) return;
   e.preventDefault();
   e.stopPropagation();
-  tryPassword();
+  tryPassword(true);
 });
 
-/* Help only opens cheats (and only after wrong attempt) */
+/* Help only opens cheats (and only after wrong attempt) + closes keyboard */
 helpButton.addEventListener("pointerdown", (e) => {
   e.preventDefault();
+  // close keyboard on mobile
+  try { passwordInput.blur(); } catch {}
   openCheatOverlay();
 });
-helpButton.addEventListener("click", () => openCheatOverlay());
+helpButton.addEventListener("click", () => {
+  try { passwordInput.blur(); } catch {}
+  openCheatOverlay();
+});
 
 /* Tap outside after typing submits */
 passwordScreen.addEventListener("pointerdown", (e) => {
   if (e.target === passwordInput || e.target === enterButton || e.target === helpButton || e.target === addHomeBtn) return;
   if (!passwordInput.disabled && passwordInput.value.trim().length > 0) {
-    tryPassword();
+    tryPassword(true);
   }
 });
 
