@@ -692,76 +692,182 @@ const homeClose = document.getElementById("homeClose");
 const homeHow = document.getElementById("homeHow");
 const homeSteps = document.getElementById("homeSteps");
 
-/* ===== SOUND (click + password) ===== */
-const CLICK_SFX_SRC = "sounds/click.mp3";
-const PASS_SFX_SRC  = "sounds/password.mp3";
-
-let clickSfx = null;
-let passSfx = null;
-let sfxPrimed = false;
-
-function safePlay(audio) {
-  if (!audio) return;
-  try {
-    audio.currentTime = 0;
-    const p = audio.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
-  } catch {}
-}
-
-function primeSfxOnce() {
-  if (sfxPrimed) return;
-  sfxPrimed = true;
-
-  clickSfx = new Audio(CLICK_SFX_SRC);
-  clickSfx.preload = "auto";
-  clickSfx.volume = 0.55;
-
-  passSfx = new Audio(PASS_SFX_SRC);
-  passSfx.preload = "auto";
-  passSfx.volume = 0.75;
-
-  // "Prime" on iOS/Safari: try a silent-ish play/pause in a user gesture.
-  const prime = () => {
-    try {
-      if (clickSfx) { clickSfx.currentTime = 0; const p1 = clickSfx.play(); if (p1 && p1.then) p1.then(() => clickSfx.pause()).catch(() => {}); else clickSfx.pause(); }
-      if (passSfx)  { passSfx.currentTime = 0;  const p2 = passSfx.play();  if (p2 && p2.then) p2.then(() => passSfx.pause()).catch(() => {});  else passSfx.pause(); }
-    } catch {}
-    window.removeEventListener("pointerdown", prime, true);
-    window.removeEventListener("touchstart", prime, true);
-    window.removeEventListener("keydown", prime, true);
+/* ===========================
+   SFX (more iOS-proof)
+   - Uses WebAudio when possible
+   - Falls back to <audio>
+   - Primes/unlocks on first gesture
+=========================== */
+const SFX = (() => {
+  const paths = {
+    click:   "sounds/click.mp3",
+    password:"sounds/password.mp3",
+    correct: "sounds/correct.mp3"
   };
 
-  window.addEventListener("pointerdown", prime, true);
-  window.addEventListener("touchstart", prime, true);
-  window.addEventListener("keydown", prime, true);
+  // tweak volumes here
+  const volumes = { click: 0.55, password: 0.75, correct: 0.75 };
+
+  let ctx = null;
+  let master = null;
+  let unlocked = false;
+
+  const fetched = new Map();  // name -> ArrayBuffer
+  const buffers = new Map();  // name -> AudioBuffer
+
+  const fallback = new Map(); // name -> HTMLAudioElement
+
+  function makeFallback(name) {
+    if (fallback.has(name)) return fallback.get(name);
+    const a = new Audio(paths[name]);
+    a.preload = "auto";
+    a.volume = volumes[name] ?? 1;
+    fallback.set(name, a);
+    return a;
+  }
+
+  async function fetchAll() {
+    // start fetching early (not blocked by gesture)
+    await Promise.all(Object.keys(paths).map(async (name) => {
+      try {
+        const res = await fetch(paths[name], { cache: "force-cache" });
+        const arr = await res.arrayBuffer();
+        fetched.set(name, arr);
+      } catch {
+        // ensure fallback still exists
+        makeFallback(name);
+      }
+    }));
+  }
+
+  function ensureContext() {
+    if (ctx) return ctx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 1;
+    master.connect(ctx.destination);
+    return ctx;
+  }
+
+  async function decodeAllIfPossible() {
+    if (!ctx) return;
+    if (ctx.state === "suspended") {
+      try { await ctx.resume(); } catch {}
+    }
+
+    for (const name of Object.keys(paths)) {
+      if (buffers.has(name)) continue;
+      const arr = fetched.get(name);
+      if (!arr) continue;
+
+      try {
+        const buf = await ctx.decodeAudioData(arr.slice(0));
+        buffers.set(name, buf);
+      } catch {
+        // fallback will handle
+        makeFallback(name);
+      }
+    }
+  }
+
+  // call inside a user gesture
+  async function unlockNow() {
+    if (unlocked) return;
+    unlocked = true;
+
+    // create context + resume + decode
+    ensureContext();
+    // also create fallbacks
+    for (const n of Object.keys(paths)) makeFallback(n);
+
+    await decodeAllIfPossible();
+
+    // iOS "warm-up": play a near-silent blip (still within gesture)
+    if (ctx && master && ctx.state === "running") {
+      try {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        g.gain.value = 0.0001;
+        osc.connect(g);
+        g.connect(master);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.01);
+      } catch {}
+    }
+  }
+
+  function playWebAudio(name) {
+    if (!ctx || !master) return false;
+    const buf = buffers.get(name);
+    if (!buf) return false;
+    try {
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const g = ctx.createGain();
+      g.gain.value = volumes[name] ?? 1;
+      src.connect(g);
+      g.connect(master);
+      src.start(0);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function playFallback(name) {
+    const a = makeFallback(name);
+    try {
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {}
+  }
+
+  function play(name) {
+    // best effort: WebAudio if decoded, otherwise fallback
+    const ok = playWebAudio(name);
+    if (!ok) playFallback(name);
+  }
+
+  // prime: fetch immediately, unlock on first gesture
+  fetchAll();
+
+  const primeHandler = () => { unlockNow(); };
+  window.addEventListener("pointerdown", primeHandler, { capture: true, once: true });
+  window.addEventListener("touchstart", primeHandler, { capture: true, once: true });
+  window.addEventListener("keydown", primeHandler, { capture: true, once: true });
+
+  return { play, unlockNow };
+})();
+
+/* Global click sound for ALL buttons EXCEPT the enter button */
+function isEnterButton(btn) {
+  return btn && btn.id === "enterButton";
 }
-primeSfxOnce();
 
-// Global click sound for ALL buttons EXCEPT the enter button
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest("button");
-  if (!btn) return;
-  if (btn.disabled) return;
-
-  // enter is special (no click sound)
-  if (btn.id === "enterButton") return;
-
-  safePlay(clickSfx);
-}, true);
-
-// Also cover pointerdown so it feels instant on mobile
+// instant feel on touch/mouse
 document.addEventListener("pointerdown", (e) => {
   const btn = e.target.closest("button");
-  if (!btn) return;
-  if (btn.disabled) return;
-
-  // enter is special (no click sound)
-  if (btn.id === "enterButton") return;
-
-  safePlay(clickSfx);
+  if (!btn || btn.disabled) return;
+  if (isEnterButton(btn)) return; // special exception
+  SFX.unlockNow(); // keep within gesture
+  SFX.play("click");
 }, true);
-/* ===== END SOUND ===== */
+
+// keyboard activates buttons too (space/enter on focused button)
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const el = document.activeElement;
+  if (!el || el.tagName !== "BUTTON") return;
+  if (el.disabled) return;
+  if (isEnterButton(el)) return; // enter button is special exception
+  SFX.unlockNow();
+  SFX.play("click");
+}, true);
+
+/* =========================== */
 
 let currentAction = null;
 let endedListener = null;
@@ -1089,16 +1195,13 @@ function setButtonsForInputState() {
   }
 }
 
-// ===== enter flash ("nope") + password sfx =====
+// ===== enter flash ("nope") =====
 let enterFlashTimer = null;
 let enterLock = false;
 
 function flashNope(ms = 520) {
   clearTimeout(enterFlashTimer);
   enterLock = true;
-
-  // play password sound on WRONG password
-  safePlay(passSfx);
 
   helpButton.classList.remove("show");
   enterButton.textContent = "nope";
@@ -1114,21 +1217,20 @@ function flashNope(ms = 520) {
   }, ms);
 }
 
-function tryPassword(playPasswordSound = true) {
+function tryPassword() {
   const key = passwordInput.value.toLowerCase().trim();
   const action = actions[key];
 
-  // play password sound on EVERY attempt (keyboard enter or enter button)
-  if (playPasswordSound) safePlay(passSfx);
-
+  // "password.mp3" on attempts that are WRONG, "correct.mp3" on attempts that are RIGHT
   if (!action) {
+    SFX.play("password");
     hasWrongAttempt = true;
     passwordInput.value = "";
-    // don't double-play the sound here (already played above)
     flashNope(520);
     return;
   }
 
+  SFX.play("correct");
   runActionByKey(key);
 }
 
@@ -1142,32 +1244,31 @@ passwordForm.addEventListener("submit", (e) => {
   e.preventDefault();
   if (passwordInput.disabled) return;
   if (passwordInput.value.trim().length === 0) return;
-  tryPassword(true);
+  tryPassword();
 });
 
 /* Enter key works */
 passwordInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
-    if (!passwordInput.disabled && passwordInput.value.trim().length > 0) {
-      tryPassword(true);
-    }
+    if (!passwordInput.disabled && passwordInput.value.trim().length > 0) tryPassword();
   }
 });
 
-/* iOS: make tapping ENTER always submit before blur (and play password sound) */
+/* iOS: make tapping ENTER always submit before blur */
 enterButton.addEventListener("pointerdown", (e) => {
   if (passwordInput.disabled) return;
   if (passwordInput.value.trim().length === 0) return;
   e.preventDefault();
   e.stopPropagation();
-  tryPassword(true);
+  SFX.unlockNow(); // keep within gesture
+  tryPassword();
 });
 
-/* Help only opens cheats (and only after wrong attempt) + closes keyboard */
+/* Help only opens cheats (and only after wrong attempt) */
 helpButton.addEventListener("pointerdown", (e) => {
   e.preventDefault();
-  // close keyboard on mobile
+  SFX.unlockNow();
   try { passwordInput.blur(); } catch {}
   openCheatOverlay();
 });
@@ -1180,7 +1281,7 @@ helpButton.addEventListener("click", () => {
 passwordScreen.addEventListener("pointerdown", (e) => {
   if (e.target === passwordInput || e.target === enterButton || e.target === helpButton || e.target === addHomeBtn) return;
   if (!passwordInput.disabled && passwordInput.value.trim().length > 0) {
-    tryPassword(true);
+    tryPassword();
   }
 });
 
@@ -1232,9 +1333,13 @@ function submitCheat() {
 
   if (!unlockList || unlockList.length === 0) {
     clearCheat();
+    SFX.play("password"); // wrong cheatcode => password.mp3
     showUnlockFlash("nope");
     return;
   }
+
+  // correct cheatcode (even if already unlocked) => correct.mp3
+  SFX.play("correct");
 
   const beforeSize = unlocked.size;
 
