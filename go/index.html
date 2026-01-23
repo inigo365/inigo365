@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>go</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- iOS: stop zoom/double-tap zoom -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <link rel="icon" type="image/png" href="../images/icon.png">
 
@@ -14,18 +16,39 @@
        url("../fonts/RuneScape-UF.woff") format("woff");
 }
 
+/* Force white everywhere (helps iOS "grey" behind bounce) */
+html {
+  background: white;
+  height: 100%;
+}
+
+body {
+  background: white;
+  min-height: 100%;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
-  background: white;
+
+  /* iOS-friendly viewport centering */
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+
   font-family: "RuneScape UF", Arial, sans-serif;
 
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+
+  /* reduce double-tap zoom quirks on supporting browsers */
+  touch-action: manipulation;
+
+  /* prevent iOS text auto-zooming */
+  -webkit-text-size-adjust: 100%;
 }
 
 html, body {
@@ -37,13 +60,27 @@ input {
   cursor: url("../images/cursor/cursor-hover.png"), pointer;
 }
 
+/* ==== Common: make buttons consistent across iOS/desktop ==== */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  color: inherit;
+}
+
+/* === Accent (blue like you liked on iOS) === */
+:root {
+  --accent: #2d93ea;
+}
+
 /* PASSWORD SCREEN */
 .password-screen {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
   background: white;
   transition: opacity 0.4s ease;
 }
@@ -78,6 +115,11 @@ input {
   background: white;
   outline: none;
   text-align: center;
+
+  /* iOS: avoid weird default styling */
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* form + text-only enter */
@@ -95,6 +137,7 @@ input {
   border: 0;
   background: transparent;
   text-transform: lowercase;
+  color: var(--accent);
 
   opacity: 0;
   pointer-events: none;
@@ -181,7 +224,7 @@ input {
   font-family: "RuneScape UF", Arial, sans-serif;
   background: transparent;
   border: none;
-  color: black;
+  color: var(--accent);
   font-size: 22px;
   padding: 0;
   text-transform: lowercase;
@@ -195,7 +238,7 @@ input {
   gap: 12px;
 }
 
-/* boxed buttons (same as your code buttons) */
+/* boxed buttons */
 .boxbtn {
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 20px;
@@ -203,6 +246,7 @@ input {
   border: 2px solid black;
   background: white;
   text-transform: lowercase;
+  color: var(--accent);
   cursor: url("../images/cursor/cursor-hover.png"), pointer;
 }
 
@@ -235,6 +279,7 @@ input {
   border: 2px solid black;
   background: white;
   text-transform: lowercase;
+  color: var(--accent);
 }
 
 .cheat-actions {
@@ -252,7 +297,7 @@ input {
   justify-content: center;
 }
 
-/* NEW: visual "unlocked" feedback */
+/* unlocked feedback */
 .unlock-flash {
   font-size: 20px;
   margin-top: 10px;
@@ -260,13 +305,11 @@ input {
   opacity: 0;
   transition: opacity 0.15s ease;
   text-transform: lowercase;
+  color: var(--accent);
 }
+.unlock-flash.show { opacity: 1; }
 
-.unlock-flash.show {
-  opacity: 1;
-}
-
-/* vault list (no individual boxes; spaced evenly) */
+/* vault list spaced evenly */
 .vault-list {
   border: 2px solid black;
   padding: 18px 14px;
@@ -281,13 +324,9 @@ input {
   gap: 28px;
 }
 
-.vault-item {
-  /* no border box, just text */
-  padding: 0;
-  border: 0;
-}
+.vault-item { padding: 0; border: 0; }
 
-/* tiny popup for showing the actual combos (no reveals of what they unlock) */
+/* MINI POPUP (codes only, no mapping) */
 .mini-overlay {
   position: fixed;
   inset: 0;
@@ -328,7 +367,9 @@ input {
 .content-page {
   display: none;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
   background: white;
 }
 
@@ -381,7 +422,7 @@ video {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 52px;
-  color: #2d93ea;
+  color: var(--accent);
   background: transparent;
   border: none;
   text-transform: lowercase;
@@ -405,7 +446,7 @@ video {
   font-size: 28px;
   background: transparent;
   border: none;
-  color: #2d93ea;
+  color: var(--accent);
   font-family: "RuneScape UF", Arial, sans-serif;
   text-transform: lowercase;
   padding: 0;
@@ -473,10 +514,8 @@ video {
       <button class="boxbtn" id="cheatSubmit" type="button">submit</button>
     </div>
 
-    <!-- NEW: unlocked feedback -->
     <div class="unlock-flash" id="unlockFlash"></div>
 
-    <!-- centered info button under submit row -->
     <div class="cheat-info-wrap">
       <button class="linkish" id="cheatInfo" type="button">cheatcodes</button>
     </div>
@@ -507,13 +546,14 @@ video {
   </div>
 </div>
 
-<!-- MINI POPUP: shows exact combos only (no mapping to passwords) -->
+<!-- MINI POPUP: shows exact combos only (no mapping) -->
 <div class="mini-overlay" id="miniOverlay" aria-hidden="true">
   <div class="mini-panel" role="dialog" aria-modal="true" aria-label="cheatcodes list">
     <div class="mini-title">cheatcodes</div>
     <div class="mini-body" id="miniBody">
       <span class="code-line">↑ ↑ ↓ ↓ ← → ← → b a</span>
       <span class="code-line">↑ ↓ ↑ ↓ a b</span>
+      <span class="code-line">a b a b</span>
     </div>
     <button class="linkish" id="miniClose" type="button">close</button>
   </div>
@@ -532,6 +572,11 @@ video {
 </div>
 
 <script>
+/* iOS: prevent pinch-zoom gesture glitches */
+document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
+document.addEventListener("gesturechange", (e) => e.preventDefault(), { passive: false });
+document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: false });
+
 const passwordInput = document.getElementById("passwordInput");
 const passwordForm = document.getElementById("passwordForm");
 const enterButton = document.getElementById("enterButton");
@@ -567,13 +612,15 @@ let currentAction = null;
 let endedListener = null;
 
 /**
- * Only "home" and "bag" unlock via cheat codes (vault).
- * They start locked until unlocked.
+ * Unlockables via cheat codes:
+ * - home
+ * - bag
+ * - wasted (NEW)
  */
 const actions = {
   "donovan": { src: "videos/video.mp4" },
   "gambosi": { src: "videos/skud.mp4" },
-  "wasted": { src: "videos/litty.mp4" },
+  "wasted": { src: "videos/litty.mp4", locked: true },   // NEW: locked until cheat
 
   "tinny": { redirect: "scale/scale.html", sameTab: true },
   "bag": { redirect: "game/boom.html", sameTab: true, locked: true },
@@ -582,7 +629,6 @@ const actions = {
   "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true },
   "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true },
 
-  /* NEW VIDEOS: only these get the mobile scaling class */
   "1millionfrogs": { src: "videos/1millionfrogs.mp4", mobileFill: true },
   "heavychest": { src: "videos/andre.mp4", mobileFill: true }
 };
@@ -593,7 +639,8 @@ const actions = {
  */
 const cheatUnlocks = {
   "U U D D L R L R B A": ["home"],
-  "U D U D A B": ["bag"]
+  "U D U D A B": ["bag"],
+  "A B A B": ["wasted"] // NEW generic-ish code
 };
 
 // ===== unlock storage =====
@@ -628,7 +675,21 @@ function isLocked(code, action) {
   return !unlocked.has(code);
 }
 
-// ===== overlays: close always returns to password screen (just closes overlays) =====
+// ===== overlays =====
+function hideUnlockFlash() {
+  unlockFlash.textContent = "";
+  unlockFlash.classList.remove("show");
+  clearTimeout(hideUnlockFlash._t);
+}
+function showUnlockFlash(text) {
+  unlockFlash.textContent = text;
+  unlockFlash.classList.add("show");
+  clearTimeout(hideUnlockFlash._t);
+  hideUnlockFlash._t = setTimeout(() => {
+    unlockFlash.classList.remove("show");
+  }, 1200);
+}
+
 function closeAllOverlays() {
   cheatOverlay.style.display = "none";
   cheatOverlay.setAttribute("aria-hidden", "true");
@@ -662,7 +723,6 @@ function openMini() {
   miniOverlay.style.display = "flex";
   miniOverlay.setAttribute("aria-hidden", "false");
 }
-
 function closeMini() {
   miniOverlay.style.display = "none";
   miniOverlay.setAttribute("aria-hidden", "true");
@@ -679,9 +739,9 @@ miniOverlay.addEventListener("pointerdown", (e) => {
   if (e.target === miniOverlay) closeMini();
 });
 
-// ===== vault render (spaced evenly, no commas) =====
+// ===== vault render (spaced evenly) =====
 function renderVault() {
-  const unlockables = ["bag", "home"];
+  const unlockables = ["bag", "home", "wasted"];
   const unlockedNow = unlockables.filter(c => unlocked.has(c));
 
   if (unlockedNow.length === 0) {
@@ -699,22 +759,6 @@ function renderVault() {
     el.textContent = code;
     vaultList.appendChild(el);
   }
-}
-
-// ===== unlocked feedback =====
-function hideUnlockFlash() {
-  unlockFlash.textContent = "";
-  unlockFlash.classList.remove("show");
-  clearTimeout(hideUnlockFlash._t);
-}
-
-function showUnlockFlash(text) {
-  unlockFlash.textContent = text;
-  unlockFlash.classList.add("show");
-  clearTimeout(hideUnlockFlash._t);
-  hideUnlockFlash._t = setTimeout(() => {
-    unlockFlash.classList.remove("show");
-  }, 1200);
 }
 
 // ===== password flow =====
@@ -862,11 +906,15 @@ function tryPassword() {
   };
 }
 
-// show/hide visible enter as user types
-passwordInput.addEventListener("input", () => {
-  if (passwordInput.value.length > 0) enterButton.classList.add("show");
+// ==== Enter button visibility (more robust for iOS) ====
+function updateEnterButtonVisibility() {
+  if (passwordInput.value && passwordInput.value.length > 0) enterButton.classList.add("show");
   else enterButton.classList.remove("show");
-});
+}
+passwordInput.addEventListener("input", updateEnterButtonVisibility);
+passwordInput.addEventListener("keyup", updateEnterButtonVisibility);
+passwordInput.addEventListener("change", updateEnterButtonVisibility);
+passwordInput.addEventListener("focus", updateEnterButtonVisibility);
 
 // iOS-friendly submit
 passwordForm.addEventListener("submit", (e) => {
@@ -891,41 +939,27 @@ passwordScreen.addEventListener("pointerdown", (e) => {
   }
 });
 
-// ===== wiring per your requested navigation =====
-// ? goes straight to ENTER CODE (not vault)
-vaultQ.addEventListener("click", () => {
-  openCheatOverlay();
-});
+// ===== navigation =====
+vaultQ.addEventListener("click", () => openCheatOverlay());
 
-// cheat page: "code vault" goes to vault
 cheatToVault.addEventListener("click", () => {
   cheatOverlay.style.display = "none";
   cheatOverlay.setAttribute("aria-hidden", "true");
   openVaultOverlay();
 });
 
-// cheat page: close -> password screen
-cheatClose.addEventListener("click", () => {
-  closeAllOverlays();
-});
+cheatClose.addEventListener("click", () => closeAllOverlays());
 
-// cheat page: cheatcodes info popup
-cheatInfo.addEventListener("click", () => {
-  openMini();
-});
+cheatInfo.addEventListener("click", () => openMini());
 miniClose.addEventListener("click", () => closeMini());
 
-// vault page: back -> enter code page
 vaultBack.addEventListener("click", () => {
   vaultOverlay.style.display = "none";
   vaultOverlay.setAttribute("aria-hidden", "true");
   openCheatOverlay();
 });
 
-// vault page: close -> password screen
-vaultClose.addEventListener("click", () => {
-  closeAllOverlays();
-});
+vaultClose.addEventListener("click", () => closeAllOverlays());
 
 // ===== cheat entry mechanics =====
 let cheatTokens = [];
@@ -957,15 +991,13 @@ function submitCheat() {
 
   const beforeSize = unlocked.size;
 
-  // only allow unlocking bag + home
   for (const code of unlockList) {
-    if (code === "home" || code === "bag") unlocked.add(code);
+    if (code === "home" || code === "bag" || code === "wasted") unlocked.add(code);
   }
   saveUnlockedSet(unlocked);
 
   clearCheat();
 
-  // visual feedback: unlocked vs already unlocked
   if (unlocked.size > beforeSize) showUnlockFlash("unlocked");
   else showUnlockFlash("already unlocked");
 }
@@ -982,13 +1014,11 @@ cheatOverlay.addEventListener("click", (e) => {
 
 // keyboard support: arrows + a + b + enter/backspace/escape
 document.addEventListener("keydown", (e) => {
-  // mini popup handling
   if (miniOverlay.style.display === "flex") {
     if (e.key === "Escape") { e.preventDefault(); closeMini(); }
     return;
   }
 
-  // cheat overlay handling
   if (cheatOverlay.style.display !== "flex") return;
 
   if (e.key === "Escape") {
