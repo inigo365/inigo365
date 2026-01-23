@@ -6,7 +6,6 @@
 
 <!-- iOS: stop zoom/double-tap zoom -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
 <link rel="icon" type="image/png" href="../images/icon.png">
 
 <style>
@@ -17,22 +16,14 @@
 }
 
 /* Force white everywhere (helps iOS "grey" behind bounce) */
-html {
-  background: white;
-  height: 100%;
-}
-
-body {
-  background: white;
-  min-height: 100%;
-}
+html { background: white; height: 100%; }
+body { background: white; min-height: 100%; }
 
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
 
-  /* iOS-friendly viewport centering */
   height: 100vh;
   height: 100svh;
   height: 100dvh;
@@ -44,23 +35,13 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 
-  /* reduce double-tap zoom quirks on supporting browsers */
   touch-action: manipulation;
-
-  /* prevent iOS text auto-zooming */
   -webkit-text-size-adjust: 100%;
 }
 
-html, body {
-  cursor: url("../images/cursor/cursor.png"), auto;
-}
+html, body { cursor: url("../images/cursor/cursor.png"), auto; }
+button, input { cursor: url("../images/cursor/cursor-hover.png"), pointer; }
 
-button,
-input {
-  cursor: url("../images/cursor/cursor-hover.png"), pointer;
-}
-
-/* ==== Common: make buttons consistent across iOS/desktop ==== */
 button {
   -webkit-appearance: none;
   appearance: none;
@@ -68,8 +49,8 @@ button {
 }
 
 :root{
-  --accent: #2d93ea;     /* keep blue for nav/play/back */
-  --btn: #000000;        /* black for buttons inside menus etc */
+  --accent: #2d93ea;  /* blue for nav/play/back */
+  --btn: #000000;     /* black for UI buttons */
 }
 
 /* PASSWORD SCREEN */
@@ -83,10 +64,9 @@ button {
   height: 100dvh;
   background: white;
   transition: opacity 0.4s ease;
-  position: relative; /* for bottom button positioning */
+  position: relative;
 }
 
-/* password + ? */
 .password-row {
   display: flex;
   align-items: flex-start;
@@ -118,13 +98,12 @@ button {
   outline: none;
   text-align: center;
 
-  /* iOS: avoid weird default styling */
   border-radius: 0;
   -webkit-appearance: none;
   appearance: none;
 }
 
-/* form + text-only enter */
+/* form + action button */
 #passwordForm {
   display: inline-flex;
   flex-direction: column;
@@ -132,58 +111,74 @@ button {
   gap: 10px;
 }
 
-.enter-button {
+.enter-button{
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 24px;
+
+  /* FIXED SLOT so nothing moves */
+  width: 140px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+
   padding: 0;
   border: 0;
   background: transparent;
   text-transform: lowercase;
   color: var(--btn);
 
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-4px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: none;                 /* keep static */
+  transition: opacity 0.15s ease;  /* only fade */
 }
 
-.enter-button.show {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.enter-button.show:hover {
+.enter-button:hover{
   text-decoration: underline;
 }
 
-/* tiny ? button to the RIGHT of the password box */
-.vault-q {
+.enter-button{
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 26px;
-  line-height: 1;
-  margin-top: 48px;
+  font-size: 24px;
+
+  /* FIXED SLOT so nothing moves */
+  width: 140px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+
   padding: 0;
   border: 0;
   background: transparent;
-  color: black;
+  text-transform: lowercase;
+  color: var(--btn);
 
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
+  transform: none;                 /* keep static */
+  transition: opacity 0.15s ease;  /* only fade */
 }
 
-.vault-q.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.vault-q.show:hover {
+.enter-button:hover{
   text-decoration: underline;
 }
 
-/* ===== NEW: add to home page button (bottom) ===== */
+.enter-button.flash{
+  opacity: 0.25;   /* feedback without movement */
+  transform: none; /* IMPORTANT: no translate */
+}
+
+/* You can delete this entirely, but keeping harmless */
+.enter-button.ready{
+  transform: none;
+}
+
+
+/* You can delete this entirely, but keeping harmless */
+.enter-button.ready{
+  transform: none;
+}
+
+
+/* ===== NEW: add to home page button (mobile only) ===== */
 .add-home-btn {
+  display: none; /* default hidden */
   position: fixed;
   left: 50%;
   bottom: 14px;
@@ -198,6 +193,10 @@ button {
   z-index: 20;
 }
 .add-home-btn:hover { text-decoration: underline; }
+
+@media (max-width: 768px) {
+  .add-home-btn { display: block; }
+}
 
 /* ===== overlays ===== */
 .overlay {
@@ -345,17 +344,15 @@ button {
   border: 2px solid black;
   padding: 18px 14px;
   min-height: 96px;
-
   display: flex;
   align-items: center;
   justify-content: space-evenly;
-
   font-size: 28px;
   text-transform: lowercase;
   gap: 28px;
 }
 
-/* ===== NEW: vault items clickable ===== */
+/* clickable vault items */
 .vault-item {
   padding: 0;
   border: 0;
@@ -401,6 +398,27 @@ button.vault-item:hover { text-decoration: underline; }
 .mini-body .code-line {
   display: block;
   margin: 6px 0;
+}
+
+/* Add-to-home panel visuals */
+.home-steps {
+  font-size: 18px;
+  text-transform: lowercase;
+  line-height: 1.4;
+}
+.home-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+.share-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* CONTENT PAGE */
@@ -516,21 +534,16 @@ video {
           spellcheck="false"
           enterkeyhint="go"
         >
-        <button type="submit" class="enter-button" id="enterButton" aria-label="enter">
-          enter ↵
-        </button>
+        <!-- one button: "?" when empty, "enter ↵" when typing -->
+        <button type="button" class="enter-button" id="enterButton" aria-label="enter or help">?</button>
       </form>
     </div>
-
-    <!-- appears only after first wrong attempt -->
-    <button class="vault-q" id="vaultQ" type="button">?</button>
   </div>
 
-  <!-- NEW: add to home page -->
   <button class="add-home-btn" id="addHomeBtn" type="button">add to home page</button>
 </div>
 
-<!-- CHEAT ENTRY OVERLAY (opens FIRST from ?) -->
+<!-- CHEAT ENTRY OVERLAY -->
 <div class="overlay" id="cheatOverlay" aria-hidden="true">
   <div class="panel" role="dialog" aria-modal="true" aria-label="enter code">
     <div class="panel-title">enter code:</div>
@@ -589,7 +602,7 @@ video {
   </div>
 </div>
 
-<!-- MINI POPUP: shows exact combos only (no mapping) -->
+<!-- MINI POPUP -->
 <div class="mini-overlay" id="miniOverlay" aria-hidden="true">
   <div class="mini-panel" role="dialog" aria-modal="true" aria-label="cheatcodes list">
     <div class="mini-title">cheatcodes</div>
@@ -602,15 +615,13 @@ video {
   </div>
 </div>
 
-<!-- NEW: Add-to-Home instructions overlay -->
+<!-- Add-to-Home instructions overlay -->
 <div class="overlay" id="homeOverlay" aria-hidden="true">
   <div class="panel" role="dialog" aria-modal="true" aria-label="add to home page">
     <div class="panel-title">add to home page</div>
     <div class="panel-sub" id="homeHow"></div>
 
-    <div style="font-size:18px; text-transform: lowercase; line-height: 1.4;">
-      <div id="homeSteps"></div>
-    </div>
+    <div class="home-steps" id="homeSteps"></div>
 
     <div class="panel-footer">
       <div></div>
@@ -650,8 +661,6 @@ const videoWrapper = document.getElementById("videoWrapper");
 const video = document.getElementById("videoElement");
 const backButton = document.getElementById("backButton");
 
-const vaultQ = document.getElementById("vaultQ");
-
 const cheatOverlay = document.getElementById("cheatOverlay");
 const cheatSequenceEl = document.getElementById("cheatSequence");
 const cheatClear = document.getElementById("cheatClear");
@@ -670,7 +679,7 @@ const vaultClose = document.getElementById("vaultClose");
 const miniOverlay = document.getElementById("miniOverlay");
 const miniClose = document.getElementById("miniClose");
 
-/* NEW: add to home */
+/* add to home */
 const addHomeBtn = document.getElementById("addHomeBtn");
 const homeOverlay = document.getElementById("homeOverlay");
 const homeClose = document.getElementById("homeClose");
@@ -681,20 +690,17 @@ let currentAction = null;
 let endedListener = null;
 
 /**
- * Unlockables via cheat codes:
- * - home
- * - bag
- * - wasted
+ * Actions
  */
 const actions = {
   "donovan": { src: "videos/video.mp4" },
   "gambosi": { src: "videos/skud.mp4" },
-  "wasted": { src: "videos/litty.mp4" },
+  "wasted":  { src: "videos/litty.mp4" },
 
   "tinny": { redirect: "scale/scale.html", sameTab: true },
-  "bag": { redirect: "game/boom.html", sameTab: true },
-  "home": { redirect: "../home.html", sameTab: true },
-  "rick": { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", sameTab: false },
+  "bag":   { redirect: "game/boom.html", sameTab: true },
+  "home":  { redirect: "../home.html", sameTab: true },
+  "rick":  { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", sameTab: false },
   "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true },
   "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true },
 
@@ -726,17 +732,13 @@ function loadUnlockedSet() {
 }
 
 function saveUnlockedSet(set) {
-  try {
-    localStorage.setItem(UNLOCK_KEY, JSON.stringify([...set]));
-  } catch {}
+  try { localStorage.setItem(UNLOCK_KEY, JSON.stringify([...set])); } catch {}
 }
 
 let unlocked = loadUnlockedSet();
 
-// ===== reveal ? only after first wrong attempt =====
+// ===== state for showing cheat access =====
 let hasWrongAttempt = false;
-function revealQ() { vaultQ.classList.add("show"); }
-function hideQ() { vaultQ.classList.remove("show"); }
 
 // ===== overlays =====
 function hideUnlockFlash() {
@@ -771,7 +773,6 @@ function closeAllOverlays() {
 }
 
 function openCheatOverlay() {
-  if (!hasWrongAttempt) return;
   clearCheat();
   hideUnlockFlash();
   cheatOverlay.style.display = "flex";
@@ -779,7 +780,6 @@ function openCheatOverlay() {
 }
 
 function openVaultOverlay() {
-  if (!hasWrongAttempt) return;
   renderVault();
   vaultOverlay.style.display = "flex";
   vaultOverlay.setAttribute("aria-hidden", "false");
@@ -794,30 +794,39 @@ function closeMini() {
   miniOverlay.setAttribute("aria-hidden", "true");
 }
 
-/* NEW: add-to-home overlay */
+/* Add-to-home overlay */
 function openHomeOverlay() {
-  // basic device sniffing (kept simple)
   const ua = navigator.userAgent || "";
   const isIOS = /iPhone|iPad|iPod/i.test(ua);
   const isAndroid = /Android/i.test(ua);
 
-  homeHow.textContent = isIOS ? "ios safari" : isAndroid ? "android chrome" : "desktop";
+  const shareSVG = `
+    <svg class="share-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3v10" fill="none" stroke="black" stroke-width="2" stroke-linecap="round"/>
+      <path d="M8.5 6.5 12 3l3.5 3.5" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M6 10v10h12V10" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  `;
+
   if (isIOS) {
-    homeSteps.innerHTML = [
-      "1) tap the share button (square with arrow up)",
-      "2) scroll and tap “add to home screen”",
-      "3) tap “add”"
-    ].map(s => `<div>${s}</div>`).join("");
+    homeHow.textContent = "ios safari";
+    homeSteps.innerHTML = `
+      <div class="home-step">1) tap share ${shareSVG}</div>
+      <div class="home-step">2) scroll → “add to home screen”</div>
+      <div class="home-step">3) tap “add”</div>
+    `;
   } else if (isAndroid) {
-    homeSteps.innerHTML = [
-      "1) tap the ⋮ menu in the top right",
-      "2) tap “add to home screen” (or “install app”)",
-      "3) confirm"
-    ].map(s => `<div>${s}</div>`).join("");
+    homeHow.textContent = "android chrome";
+    homeSteps.innerHTML = `
+      <div class="home-step">1) tap the ⋮ menu</div>
+      <div class="home-step">2) “add to home screen” (or “install app”)</div>
+      <div class="home-step">3) confirm</div>
+    `;
   } else {
-    homeSteps.innerHTML = [
-      "open this page on your phone to add it to your home screen."
-    ].map(s => `<div>${s}</div>`).join("");
+    homeHow.textContent = "mobile";
+    homeSteps.innerHTML = `
+      <div class="home-step">open this page on your phone to add it to your home screen.</div>
+    `;
   }
 
   homeOverlay.style.display = "flex";
@@ -825,36 +834,26 @@ function openHomeOverlay() {
 }
 
 // close when clicking outside panels
-cheatOverlay.addEventListener("pointerdown", (e) => {
-  if (e.target === cheatOverlay) closeAllOverlays();
-});
-vaultOverlay.addEventListener("pointerdown", (e) => {
-  if (e.target === vaultOverlay) closeAllOverlays();
-});
-miniOverlay.addEventListener("pointerdown", (e) => {
-  if (e.target === miniOverlay) closeMini();
-});
-homeOverlay.addEventListener("pointerdown", (e) => {
-  if (e.target === homeOverlay) closeAllOverlays();
-});
+cheatOverlay.addEventListener("pointerdown", (e) => { if (e.target === cheatOverlay) closeAllOverlays(); });
+vaultOverlay.addEventListener("pointerdown", (e) => { if (e.target === vaultOverlay) closeAllOverlays(); });
+miniOverlay.addEventListener("pointerdown", (e) => { if (e.target === miniOverlay) closeMini(); });
+homeOverlay.addEventListener("pointerdown", (e) => { if (e.target === homeOverlay) closeAllOverlays(); });
 
-// ===== NEW: single place that performs the same action as entering a password =====
+// ===== shared action runner =====
 function runActionByKey(keyRaw) {
   const key = (keyRaw || "").toLowerCase().trim();
   const action = actions[key];
   if (!action) return;
 
-  // mimic tryPassword() behavior
   passwordInput.disabled = true;
-  enterButton.classList.remove("show");
 
-  // close overlays so it feels like "entering" it
   closeAllOverlays();
 
   if (action.redirect) {
     const sameTab = action.sameTab !== false;
     passwordInput.disabled = false;
     passwordInput.value = "";
+    setEnterButtonState();
 
     if (sameTab) window.location.href = action.redirect;
     else window.open(action.redirect, "_blank");
@@ -892,7 +891,7 @@ function runActionByKey(keyRaw) {
   };
 }
 
-// ===== vault render (spaced evenly + clickable) =====
+// ===== vault render (clickable) =====
 function renderVault() {
   const unlockables = ["bag", "home", "wasted"];
   const unlockedNow = unlockables.filter(c => unlocked.has(c));
@@ -938,16 +937,15 @@ function resetToPassword() {
 
   passwordInput.disabled = false;
   passwordInput.value = "";
-  enterButton.classList.remove("show");
 
-  hideQ();
   hasWrongAttempt = false;
-
   closeAllOverlays();
+
+  setEnterButtonState();
   passwordInput.focus();
 }
 
-/* ===== FIX FOR BROWSER BACK BUTTON / BFCache RESTORE ===== */
+/* BFCache restore */
 function hardResetPasswordUI() {
   if (endedListener) video.removeEventListener("ended", endedListener);
 
@@ -973,81 +971,110 @@ function hardResetPasswordUI() {
   passwordInput.disabled = false;
   passwordInput.value = "";
   passwordInput.setAttribute("value", "");
-  enterButton.classList.remove("show");
 
-  hideQ();
   hasWrongAttempt = false;
-
   closeAllOverlays();
+
+  setEnterButtonState();
   requestAnimationFrame(() => passwordInput.focus());
 }
 
-window.addEventListener("pageshow", () => {
-  hardResetPasswordUI();
-});
-
-window.addEventListener("pagehide", () => {
-  passwordInput.disabled = false;
-});
-/* ===== END FIX ===== */
+window.addEventListener("pageshow", () => hardResetPasswordUI());
+window.addEventListener("pagehide", () => { passwordInput.disabled = false; });
 
 backButton.onclick = resetToPassword;
+
+// ===== enter button state logic ("?", "enter ↵", "nope") =====
+let enterFlashTimer = null;
+let enterLock = false;
+
+function setEnterButtonState() {
+  if (enterLock) return;
+
+  const hasText = passwordInput.value && passwordInput.value.length > 0;
+  if (hasText) {
+    enterButton.textContent = "enter ↵";
+    enterButton.classList.add("ready");
+  } else {
+    enterButton.textContent = "?";
+    enterButton.classList.remove("ready");
+  }
+}
+
+function flashEnter(text, ms = 650) {
+  clearTimeout(enterFlashTimer);
+  enterLock = true;
+
+  enterButton.classList.add("flash");
+  enterButton.textContent = text;
+
+  enterFlashTimer = setTimeout(() => {
+    enterButton.classList.remove("flash");
+    enterLock = false;
+    setEnterButtonState();
+  }, ms);
+}
+
+passwordInput.addEventListener("input", setEnterButtonState);
+passwordInput.addEventListener("keyup", setEnterButtonState);
+passwordInput.addEventListener("change", setEnterButtonState);
+passwordInput.addEventListener("focus", setEnterButtonState);
 
 function tryPassword() {
   const key = passwordInput.value.toLowerCase().trim();
   const action = actions[key];
 
   if (!action) {
-    if (!hasWrongAttempt) {
-      hasWrongAttempt = true;
-      revealQ();
-    }
+    hasWrongAttempt = true;
     passwordInput.value = "";
-    enterButton.classList.remove("show");
+    flashEnter("nope", 700);
     return;
   }
 
-  // use shared runner (keeps identical behavior between typed + vault click)
   runActionByKey(key);
 }
 
-// ==== Enter button visibility (more robust for iOS) ====
-function updateEnterButtonVisibility() {
-  if (passwordInput.value && passwordInput.value.length > 0) enterButton.classList.add("show");
-  else enterButton.classList.remove("show");
-}
-passwordInput.addEventListener("input", updateEnterButtonVisibility);
-passwordInput.addEventListener("keyup", updateEnterButtonVisibility);
-passwordInput.addEventListener("change", updateEnterButtonVisibility);
-passwordInput.addEventListener("focus", updateEnterButtonVisibility);
-
-// iOS-friendly submit
+/* Form submit: only submit if there's text */
 passwordForm.addEventListener("submit", (e) => {
   e.preventDefault();
   if (passwordInput.disabled) return;
+  if (passwordInput.value.trim().length === 0) return;
   tryPassword();
 });
 
-// keep Enter working on desktop
+/* Enter key works */
 passwordInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
-    if (!passwordInput.disabled) tryPassword();
+    if (!passwordInput.disabled && passwordInput.value.trim().length > 0) tryPassword();
   }
 });
 
-// OPTIONAL UX: tapping outside after typing submits
+enterButton.addEventListener("click", () => {
+  if (passwordInput.disabled) return;
+
+  const text = passwordInput.value.trim();
+
+  // if there's text, it's an enter button
+  if (text.length > 0) {
+    tryPassword();
+    return;
+  }
+
+  // if empty, it's always a help button now
+  openCheatOverlay();
+});
+
+
+/* Tap outside after typing submits (unchanged behavior) */
 passwordScreen.addEventListener("pointerdown", (e) => {
-  // don't auto-submit if tapping the new home button
-  if (e.target === passwordInput || e.target === enterButton || e.target === vaultQ || e.target === addHomeBtn) return;
+  if (e.target === passwordInput || e.target === enterButton || e.target === addHomeBtn) return;
   if (!passwordInput.disabled && passwordInput.value.trim().length > 0) {
     tryPassword();
   }
 });
 
 // ===== navigation =====
-vaultQ.addEventListener("click", () => openCheatOverlay());
-
 cheatToVault.addEventListener("click", () => {
   cheatOverlay.style.display = "none";
   cheatOverlay.setAttribute("aria-hidden", "true");
@@ -1067,7 +1094,7 @@ vaultBack.addEventListener("click", () => {
 
 vaultClose.addEventListener("click", () => closeAllOverlays());
 
-// ===== NEW: add-to-home wiring =====
+// add-to-home wiring
 addHomeBtn.addEventListener("click", () => openHomeOverlay());
 homeClose.addEventListener("click", () => closeAllOverlays());
 
@@ -1165,6 +1192,9 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("contextmenu", e => e.preventDefault());
+
+// init
+setEnterButtonState();
 </script>
 
 </body>
