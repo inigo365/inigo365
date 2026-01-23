@@ -693,10 +693,10 @@ const homeHow = document.getElementById("homeHow");
 const homeSteps = document.getElementById("homeSteps");
 
 /* ===========================
-   SFX (more iOS-proof)
-   - Uses WebAudio when possible
-   - Falls back to <audio>
-   - Primes/unlocks on first gesture
+   SFX (more iOS-proof + lower latency)
+   - WebAudio when possible
+   - pooled <audio> fallback (important for iOS latency)
+   - primes/unlocks on first gesture
 =========================== */
 const SFX = (() => {
   const paths = {
@@ -705,37 +705,58 @@ const SFX = (() => {
     correct: "sounds/correct.mp3"
   };
 
-  // tweak volumes here
   const volumes = { click: 0.55, password: 0.75, correct: 0.75 };
 
   let ctx = null;
   let master = null;
   let unlocked = false;
 
-  const fetched = new Map();  // name -> ArrayBuffer
-  const buffers = new Map();  // name -> AudioBuffer
+  const fetched = new Map();   // name -> ArrayBuffer
+  const buffers = new Map();   // name -> AudioBuffer
 
-  const fallback = new Map(); // name -> HTMLAudioElement
+  // pooled HTMLAudio (reduces "clunky" / delayed feeling on iOS)
+  const pools = new Map();     // name -> { els: HTMLAudioElement[], i: number }
+  const POOL_SIZES = { click: 8, password: 3, correct: 3 };
 
-  function makeFallback(name) {
-    if (fallback.has(name)) return fallback.get(name);
-    const a = new Audio(paths[name]);
-    a.preload = "auto";
-    a.volume = volumes[name] ?? 1;
-    fallback.set(name, a);
-    return a;
+  function ensurePool(name) {
+    if (pools.has(name)) return pools.get(name);
+
+    const n = POOL_SIZES[name] ?? 3;
+    const els = Array.from({ length: n }, () => {
+      const a = new Audio(paths[name]);
+      a.preload = "auto";
+      a.volume = volumes[name] ?? 1;
+      return a;
+    });
+
+    const obj = { els, i: 0 };
+    pools.set(name, obj);
+    return obj;
+  }
+
+  function playFromPool(name) {
+    const pool = ensurePool(name);
+    const a = pool.els[pool.i];
+    pool.i = (pool.i + 1) % pool.els.length;
+
+    try {
+      // restart fast
+      a.pause();
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    } catch {}
   }
 
   async function fetchAll() {
-    // start fetching early (not blocked by gesture)
     await Promise.all(Object.keys(paths).map(async (name) => {
       try {
         const res = await fetch(paths[name], { cache: "force-cache" });
         const arr = await res.arrayBuffer();
         fetched.set(name, arr);
       } catch {
-        // ensure fallback still exists
-        makeFallback(name);
+        // fallback pool still exists
+        ensurePool(name);
       }
     }));
   }
@@ -753,6 +774,7 @@ const SFX = (() => {
 
   async function decodeAllIfPossible() {
     if (!ctx) return;
+
     if (ctx.state === "suspended") {
       try { await ctx.resume(); } catch {}
     }
@@ -766,8 +788,7 @@ const SFX = (() => {
         const buf = await ctx.decodeAudioData(arr.slice(0));
         buffers.set(name, buf);
       } catch {
-        // fallback will handle
-        makeFallback(name);
+        ensurePool(name);
       }
     }
   }
@@ -777,14 +798,12 @@ const SFX = (() => {
     if (unlocked) return;
     unlocked = true;
 
-    // create context + resume + decode
     ensureContext();
-    // also create fallbacks
-    for (const n of Object.keys(paths)) makeFallback(n);
+    for (const n of Object.keys(paths)) ensurePool(n);
 
     await decodeAllIfPossible();
 
-    // iOS "warm-up": play a near-silent blip (still within gesture)
+    // iOS warm-up blip
     if (ctx && master && ctx.state === "running") {
       try {
         const osc = ctx.createOscillator();
@@ -802,6 +821,7 @@ const SFX = (() => {
     if (!ctx || !master) return false;
     const buf = buffers.get(name);
     if (!buf) return false;
+
     try {
       const src = ctx.createBufferSource();
       src.buffer = buf;
@@ -816,43 +836,52 @@ const SFX = (() => {
     }
   }
 
-  function playFallback(name) {
-    const a = makeFallback(name);
-    try {
-      a.currentTime = 0;
-      const p = a.play();
-      if (p && typeof p.catch === "function") p.catch(() => {});
-    } catch {}
-  }
-
   function play(name) {
-    // best effort: WebAudio if decoded, otherwise fallback
+    // WebAudio if ready, else pooled <audio> (fast on iOS)
     const ok = playWebAudio(name);
-    if (!ok) playFallback(name);
+    if (!ok) playFromPool(name);
   }
 
-  // prime: fetch immediately, unlock on first gesture
+  // start fetching early
   fetchAll();
 
   const primeHandler = () => { unlockNow(); };
-  window.addEventListener("pointerdown", primeHandler, { capture: true, once: true });
   window.addEventListener("touchstart", primeHandler, { capture: true, once: true });
+  window.addEventListener("pointerdown", primeHandler, { capture: true, once: true });
   window.addEventListener("keydown", primeHandler, { capture: true, once: true });
 
   return { play, unlockNow };
 })();
 
-/* Global click sound for ALL buttons EXCEPT the enter button */
+/* Global click sound for ALL buttons EXCEPT the enter button
+   - fire on touchstart for iOS immediacy
+   - ignore subsequent pointerdown to avoid double trigger
+*/
 function isEnterButton(btn) {
   return btn && btn.id === "enterButton";
 }
 
-// instant feel on touch/mouse
-document.addEventListener("pointerdown", (e) => {
+let lastTouchStamp = 0;
+
+document.addEventListener("touchstart", (e) => {
   const btn = e.target.closest("button");
   if (!btn || btn.disabled) return;
-  if (isEnterButton(btn)) return; // special exception
-  SFX.unlockNow(); // keep within gesture
+  if (isEnterButton(btn)) return;
+
+  lastTouchStamp = Date.now();
+  SFX.unlockNow();        // within gesture
+  SFX.play("click");      // immediate
+}, { capture: true, passive: true });
+
+document.addEventListener("pointerdown", (e) => {
+  // if touch just happened, don't double-play
+  if (Date.now() - lastTouchStamp < 350) return;
+
+  const btn = e.target.closest("button");
+  if (!btn || btn.disabled) return;
+  if (isEnterButton(btn)) return;
+
+  SFX.unlockNow();
   SFX.play("click");
 }, true);
 
@@ -862,12 +891,14 @@ document.addEventListener("keydown", (e) => {
   const el = document.activeElement;
   if (!el || el.tagName !== "BUTTON") return;
   if (el.disabled) return;
-  if (isEnterButton(el)) return; // enter button is special exception
+  if (isEnterButton(el)) return;
+
   SFX.unlockNow();
   SFX.play("click");
 }, true);
 
 /* =========================== */
+
 
 let currentAction = null;
 let endedListener = null;
@@ -1216,23 +1247,33 @@ function flashNope(ms = 520) {
     setButtonsForInputState();
   }, ms);
 }
+function shouldPlayCorrectForAction(action) {
+  if (!action) return false;
+  if (action.redirect) {
+    const sameTab = action.sameTab !== false; // default true
+    if (sameTab) return false;                // same-tab nav cuts audio
+  }
+  return true; // videos + new-tab redirects are fine
+}
 
 function tryPassword() {
   const key = passwordInput.value.toLowerCase().trim();
   const action = actions[key];
 
-  // "password.mp3" on attempts that are WRONG, "correct.mp3" on attempts that are RIGHT
   if (!action) {
-    SFX.play("password");
+    SFX.play("password"); // wrong password
     hasWrongAttempt = true;
     passwordInput.value = "";
     flashNope(520);
     return;
   }
 
-  SFX.play("correct");
+  // only play "correct" if we won't immediately navigate away in same tab
+  if (shouldPlayCorrectForAction(action)) SFX.play("correct");
+
   runActionByKey(key);
 }
+
 
 passwordInput.addEventListener("input", () => { if (!enterLock) setButtonsForInputState(); });
 passwordInput.addEventListener("keyup", () => { if (!enterLock) setButtonsForInputState(); });
