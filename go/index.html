@@ -103,7 +103,7 @@ button {
   appearance: none;
 }
 
-/* form + action button */
+/* form + buttons */
 #passwordForm {
   display: inline-flex;
   flex-direction: column;
@@ -111,11 +111,20 @@ button {
   gap: 10px;
 }
 
-.enter-button{
+/* fixed slot so nothing shifts */
+.action-row {
+  width: 140px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  position: relative;
+}
+
+/* ===== SMOOTH SWITCHING BASE ===== */
+.switch-btn {
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 24px;
 
-  /* FIXED SLOT so nothing moves */
   width: 140px;
   height: 28px;
   line-height: 28px;
@@ -127,29 +136,49 @@ button {
   text-transform: lowercase;
   color: var(--btn);
 
-  transform: none;
-  transition: opacity 0.15s ease;
+  position: absolute;
+  inset: 0;
 
-  /* default hidden (until typing OR first wrong attempt) */
+  /* smoother on iOS */
+  will-change: opacity, transform;
+  transform: translate3d(0, 2px, 0);
   opacity: 0;
   pointer-events: none;
+
+  transition:
+    opacity 120ms ease,
+    transform 180ms cubic-bezier(.2,.9,.2,1);
 }
 
-.enter-button.show {
+.switch-btn.show {
   opacity: 1;
   pointer-events: auto;
+  transform: translate3d(0, 0, 0);
 }
 
-.enter-button:hover{
-  text-decoration: underline;
+.switch-btn:hover { text-decoration: underline; }
+
+/* ENTER button (ONLY submits, never opens cheats) */
+.enter-button { z-index: 2; }
+
+/* HELP "?" button (ONLY opens cheats) */
+.help-button { z-index: 1; }
+.help-button.show { z-index: 3; } /* help above enter when help is shown */
+
+/* Crisp "nope" flash */
+.enter-button.flash {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  animation: nopePulse 260ms ease both;
 }
 
-.enter-button.flash{
-  opacity: 0.25;
-  transform: none;
+@keyframes nopePulse {
+  0%   { opacity: 1; }
+  45%  { opacity: .22; }
+  100% { opacity: 1; }
 }
 
-/* ===== NEW: add to home page button (mobile only) ===== */
+/* ===== add to home page button (mobile only) ===== */
 .add-home-btn {
   display: none; /* default hidden */
   position: fixed;
@@ -507,7 +536,11 @@ video {
           spellcheck="false"
           enterkeyhint="go"
         >
-        <button type="button" class="enter-button" id="enterButton" aria-label="enter or help">?</button>
+
+        <div class="action-row">
+          <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
+          <button type="button" class="switch-btn help-button" id="helpButton" aria-label="help">?</button>
+        </div>
       </form>
     </div>
   </div>
@@ -625,6 +658,7 @@ document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: fa
 const passwordInput = document.getElementById("passwordInput");
 const passwordForm = document.getElementById("passwordForm");
 const enterButton = document.getElementById("enterButton");
+const helpButton = document.getElementById("helpButton");
 
 const passwordScreen = document.getElementById("passwordScreen");
 const contentPage = document.getElementById("contentPage");
@@ -745,7 +779,7 @@ function closeAllOverlays() {
 }
 
 function openCheatOverlay() {
-  if (!hasWrongAttempt) return; /* only after first wrong attempt */
+  if (!hasWrongAttempt) return;
   clearCheat();
   hideUnlockFlash();
   cheatOverlay.style.display = "flex";
@@ -823,7 +857,7 @@ function runActionByKey(keyRaw) {
     const sameTab = action.sameTab !== false;
     passwordInput.disabled = false;
     passwordInput.value = "";
-    setEnterButtonState();
+    setButtonsForInputState();
 
     if (sameTab) window.location.href = action.redirect;
     else window.open(action.redirect, "_blank");
@@ -911,7 +945,7 @@ function resetToPassword() {
   hasWrongAttempt = false;
   closeAllOverlays();
 
-  setEnterButtonState();
+  setButtonsForInputState();
   passwordInput.focus();
 }
 
@@ -945,7 +979,7 @@ function hardResetPasswordUI() {
   hasWrongAttempt = false;
   closeAllOverlays();
 
-  setEnterButtonState();
+  setButtonsForInputState();
   requestAnimationFrame(() => passwordInput.focus());
 }
 
@@ -954,52 +988,53 @@ window.addEventListener("pagehide", () => { passwordInput.disabled = false; });
 
 backButton.onclick = resetToPassword;
 
-// ===== enter button state logic ("(hidden)", "enter ↵", "nope", "?") =====
-let enterFlashTimer = null;
-let enterLock = false;
-
-function setEnterButtonState() {
-  if (enterLock) return;
-
-  const hasText = passwordInput.value && passwordInput.value.length > 0;
+// ===== Button visibility rules =====
+// - typing => show ENTER
+// - empty + before first wrong => show nothing
+// - empty + after first wrong => show ?
+function setButtonsForInputState() {
+  const hasText = passwordInput.value.length > 0;
 
   if (hasText) {
-    enterButton.textContent = "enter ↵";
     enterButton.classList.add("show");
+    helpButton.classList.remove("show");
+    addHomeBtn.style.display = "none";
     return;
   }
 
-  // empty input:
+  // empty
+  enterButton.classList.remove("show");
+
   if (hasWrongAttempt) {
-    enterButton.textContent = "?";
-    enterButton.classList.add("show");
+    helpButton.classList.add("show");
+    addHomeBtn.style.display = "";
   } else {
-    // not visible at all until first wrong attempt
-    enterButton.textContent = "?";
-    enterButton.classList.remove("show");
+    helpButton.classList.remove("show");
+    addHomeBtn.style.display = "none";
   }
 }
 
-function flashEnter(text, ms = 650) {
+// ===== enter flash ("nope") =====
+let enterFlashTimer = null;
+let enterLock = false;
+
+function flashNope(ms = 520) {
   clearTimeout(enterFlashTimer);
   enterLock = true;
 
-  // make sure it's visible during the flash
+  helpButton.classList.remove("show");
+  enterButton.textContent = "nope";
   enterButton.classList.add("show");
   enterButton.classList.add("flash");
-  enterButton.textContent = text;
+  addHomeBtn.style.display = "none";
 
   enterFlashTimer = setTimeout(() => {
     enterButton.classList.remove("flash");
+    enterButton.textContent = "enter ↵";
     enterLock = false;
-    setEnterButtonState();
+    setButtonsForInputState();
   }, ms);
 }
-
-passwordInput.addEventListener("input", setEnterButtonState);
-passwordInput.addEventListener("keyup", setEnterButtonState);
-passwordInput.addEventListener("change", setEnterButtonState);
-passwordInput.addEventListener("focus", setEnterButtonState);
 
 function tryPassword() {
   const key = passwordInput.value.toLowerCase().trim();
@@ -1008,14 +1043,19 @@ function tryPassword() {
   if (!action) {
     hasWrongAttempt = true;
     passwordInput.value = "";
-    flashEnter("nope", 700); // after flash, state becomes "?"
+    flashNope(520);
     return;
   }
 
   runActionByKey(key);
 }
 
-/* Form submit: only submit if there's text */
+passwordInput.addEventListener("input", () => { if (!enterLock) setButtonsForInputState(); });
+passwordInput.addEventListener("keyup", () => { if (!enterLock) setButtonsForInputState(); });
+passwordInput.addEventListener("change", () => { if (!enterLock) setButtonsForInputState(); });
+passwordInput.addEventListener("focus", () => { if (!enterLock) setButtonsForInputState(); });
+
+/* SUBMIT: only submits */
 passwordForm.addEventListener("submit", (e) => {
   e.preventDefault();
   if (passwordInput.disabled) return;
@@ -1031,36 +1071,25 @@ passwordInput.addEventListener("keydown", (e) => {
   }
 });
 
-/* MOBILE FIX: use pointerdown so first tap triggers (prevents iOS blur-eats-click) */
-function handleEnterOrHelp(e) {
-  if (passwordInput.disabled) return;
-
-  const text = passwordInput.value.trim();
-
-  // if there's text, submit immediately
-  if (text.length > 0) {
-    tryPassword();
-    return;
-  }
-
-  // empty => only open cheats after first wrong attempt
-  if (hasWrongAttempt) openCheatOverlay();
-}
-
+/* iOS: make tapping ENTER always submit before blur */
 enterButton.addEventListener("pointerdown", (e) => {
-  // Prevent iOS from blurring input / hiding keyboard before our handler runs
+  if (passwordInput.disabled) return;
+  if (passwordInput.value.trim().length === 0) return;
   e.preventDefault();
-  handleEnterOrHelp(e);
+  e.stopPropagation();
+  tryPassword();
 });
 
-enterButton.addEventListener("click", (e) => {
-  // Desktop / fallback
-  handleEnterOrHelp(e);
+/* Help only opens cheats (and only after wrong attempt) */
+helpButton.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  openCheatOverlay();
 });
+helpButton.addEventListener("click", () => openCheatOverlay());
 
-/* Tap outside after typing submits (unchanged behavior) */
+/* Tap outside after typing submits */
 passwordScreen.addEventListener("pointerdown", (e) => {
-  if (e.target === passwordInput || e.target === enterButton || e.target === addHomeBtn) return;
+  if (e.target === passwordInput || e.target === enterButton || e.target === helpButton || e.target === addHomeBtn) return;
   if (!passwordInput.disabled && passwordInput.value.trim().length > 0) {
     tryPassword();
   }
@@ -1186,7 +1215,8 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("contextmenu", e => e.preventDefault());
 
 // init
-setEnterButtonState();
+addHomeBtn.style.display = "none";
+setButtonsForInputState();
 </script>
 
 </body>
