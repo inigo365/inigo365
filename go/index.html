@@ -83,6 +83,7 @@ button {
   height: 100dvh;
   background: white;
   transition: opacity 0.4s ease;
+  position: relative; /* for bottom button positioning */
 }
 
 /* password + ? */
@@ -180,6 +181,23 @@ button {
 .vault-q.show:hover {
   text-decoration: underline;
 }
+
+/* ===== NEW: add to home page button (bottom) ===== */
+.add-home-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--btn);
+  text-transform: lowercase;
+  z-index: 20;
+}
+.add-home-btn:hover { text-decoration: underline; }
 
 /* ===== overlays ===== */
 .overlay {
@@ -303,7 +321,7 @@ button {
   background: transparent;
   border: none;
   color: var(--btn);
-  font-size: 24px; /* slightly bigger like your other ? */
+  font-size: 24px;
   padding: 0;
   line-height: 1;
   cursor: url("../images/cursor/cursor-hover.png"), pointer;
@@ -337,7 +355,16 @@ button {
   gap: 28px;
 }
 
-.vault-item { padding: 0; border: 0; }
+/* ===== NEW: vault items clickable ===== */
+.vault-item {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--btn);
+  text-transform: lowercase;
+}
+button.vault-item:hover { text-decoration: underline; }
 
 /* MINI POPUP (codes only, no mapping) */
 .mini-overlay {
@@ -498,6 +525,9 @@ video {
     <!-- appears only after first wrong attempt -->
     <button class="vault-q" id="vaultQ" type="button">?</button>
   </div>
+
+  <!-- NEW: add to home page -->
+  <button class="add-home-btn" id="addHomeBtn" type="button">add to home page</button>
 </div>
 
 <!-- CHEAT ENTRY OVERLAY (opens FIRST from ?) -->
@@ -530,7 +560,6 @@ video {
     <div class="unlock-flash" id="unlockFlash"></div>
 
     <div class="cheat-info-wrap">
-      <!-- changed from "cheatcodes" to "?" in same location -->
       <button class="cheat-info-q" id="cheatInfo" type="button">?</button>
     </div>
 
@@ -570,6 +599,25 @@ video {
       <span class="code-line">a b a b</span>
     </div>
     <button class="linkish" id="miniClose" type="button">close</button>
+  </div>
+</div>
+
+<!-- NEW: Add-to-Home instructions overlay -->
+<div class="overlay" id="homeOverlay" aria-hidden="true">
+  <div class="panel" role="dialog" aria-modal="true" aria-label="add to home page">
+    <div class="panel-title">add to home page</div>
+    <div class="panel-sub" id="homeHow"></div>
+
+    <div style="font-size:18px; text-transform: lowercase; line-height: 1.4;">
+      <div id="homeSteps"></div>
+    </div>
+
+    <div class="panel-footer">
+      <div></div>
+      <div class="footer-right">
+        <button class="linkish" id="homeClose" type="button">close</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -622,6 +670,13 @@ const vaultClose = document.getElementById("vaultClose");
 const miniOverlay = document.getElementById("miniOverlay");
 const miniClose = document.getElementById("miniClose");
 
+/* NEW: add to home */
+const addHomeBtn = document.getElementById("addHomeBtn");
+const homeOverlay = document.getElementById("homeOverlay");
+const homeClose = document.getElementById("homeClose");
+const homeHow = document.getElementById("homeHow");
+const homeSteps = document.getElementById("homeSteps");
+
 let currentAction = null;
 let endedListener = null;
 
@@ -629,12 +684,12 @@ let endedListener = null;
  * Unlockables via cheat codes:
  * - home
  * - bag
- * - wasted (NEW)
+ * - wasted
  */
 const actions = {
   "donovan": { src: "videos/video.mp4" },
   "gambosi": { src: "videos/skud.mp4" },
-  "wasted": { src: "videos/litty.mp4" },   // unlocked by vault, but always enterable
+  "wasted": { src: "videos/litty.mp4" },
 
   "tinny": { redirect: "scale/scale.html", sameTab: true },
   "bag": { redirect: "game/boom.html", sameTab: true },
@@ -683,12 +738,6 @@ let hasWrongAttempt = false;
 function revealQ() { vaultQ.classList.add("show"); }
 function hideQ() { vaultQ.classList.remove("show"); }
 
-/* isLocked remains unused; keeping for safety (no functionality impact) */
-function isLocked(code, action) {
-  if (!action || action.locked !== true) return false;
-  return !unlocked.has(code);
-}
-
 // ===== overlays =====
 function hideUnlockFlash() {
   unlockFlash.textContent = "";
@@ -713,6 +762,9 @@ function closeAllOverlays() {
 
   miniOverlay.style.display = "none";
   miniOverlay.setAttribute("aria-hidden", "true");
+
+  homeOverlay.style.display = "none";
+  homeOverlay.setAttribute("aria-hidden", "true");
 
   hideUnlockFlash();
   requestAnimationFrame(() => passwordInput.focus());
@@ -742,6 +794,36 @@ function closeMini() {
   miniOverlay.setAttribute("aria-hidden", "true");
 }
 
+/* NEW: add-to-home overlay */
+function openHomeOverlay() {
+  // basic device sniffing (kept simple)
+  const ua = navigator.userAgent || "";
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+
+  homeHow.textContent = isIOS ? "ios safari" : isAndroid ? "android chrome" : "desktop";
+  if (isIOS) {
+    homeSteps.innerHTML = [
+      "1) tap the share button (square with arrow up)",
+      "2) scroll and tap “add to home screen”",
+      "3) tap “add”"
+    ].map(s => `<div>${s}</div>`).join("");
+  } else if (isAndroid) {
+    homeSteps.innerHTML = [
+      "1) tap the ⋮ menu in the top right",
+      "2) tap “add to home screen” (or “install app”)",
+      "3) confirm"
+    ].map(s => `<div>${s}</div>`).join("");
+  } else {
+    homeSteps.innerHTML = [
+      "open this page on your phone to add it to your home screen."
+    ].map(s => `<div>${s}</div>`).join("");
+  }
+
+  homeOverlay.style.display = "flex";
+  homeOverlay.setAttribute("aria-hidden", "false");
+}
+
 // close when clicking outside panels
 cheatOverlay.addEventListener("pointerdown", (e) => {
   if (e.target === cheatOverlay) closeAllOverlays();
@@ -752,8 +834,65 @@ vaultOverlay.addEventListener("pointerdown", (e) => {
 miniOverlay.addEventListener("pointerdown", (e) => {
   if (e.target === miniOverlay) closeMini();
 });
+homeOverlay.addEventListener("pointerdown", (e) => {
+  if (e.target === homeOverlay) closeAllOverlays();
+});
 
-// ===== vault render (spaced evenly) =====
+// ===== NEW: single place that performs the same action as entering a password =====
+function runActionByKey(keyRaw) {
+  const key = (keyRaw || "").toLowerCase().trim();
+  const action = actions[key];
+  if (!action) return;
+
+  // mimic tryPassword() behavior
+  passwordInput.disabled = true;
+  enterButton.classList.remove("show");
+
+  // close overlays so it feels like "entering" it
+  closeAllOverlays();
+
+  if (action.redirect) {
+    const sameTab = action.sameTab !== false;
+    passwordInput.disabled = false;
+    passwordInput.value = "";
+
+    if (sameTab) window.location.href = action.redirect;
+    else window.open(action.redirect, "_blank");
+    return;
+  }
+
+  currentAction = action;
+
+  passwordScreen.style.opacity = 0;
+  setTimeout(() => passwordScreen.style.display = "none", 400);
+
+  contentPage.style.display = "block";
+  playButton.classList.add("show");
+
+  playButton.onclick = () => {
+    playButton.classList.remove("show");
+
+    videoWrapper.style.display = "block";
+    videoWrapper.style.opacity = 0;
+    backButton.classList.add("show");
+
+    if (currentAction.mobileFill) videoWrapper.classList.add("mobile-fill");
+    else videoWrapper.classList.remove("mobile-fill");
+
+    video.src = currentAction.src + "?v=" + Date.now();
+    video.currentTime = 0;
+
+    requestAnimationFrame(() => {
+      videoWrapper.style.opacity = 1;
+      video.play().catch(() => {});
+    });
+
+    endedListener = resetToPassword;
+    video.addEventListener("ended", endedListener, { once: true });
+  };
+}
+
+// ===== vault render (spaced evenly + clickable) =====
 function renderVault() {
   const unlockables = ["bag", "home", "wasted"];
   const unlockedNow = unlockables.filter(c => unlocked.has(c));
@@ -768,10 +907,12 @@ function renderVault() {
   vaultList.innerHTML = "";
 
   for (const code of unlockedNow) {
-    const el = document.createElement("div");
-    el.className = "vault-item";
-    el.textContent = code;
-    vaultList.appendChild(el);
+    const btn = document.createElement("button");
+    btn.className = "vault-item";
+    btn.type = "button";
+    btn.textContent = code;
+    btn.addEventListener("click", () => runActionByKey(code));
+    vaultList.appendChild(btn);
   }
 }
 
@@ -866,48 +1007,8 @@ function tryPassword() {
     return;
   }
 
-  passwordInput.disabled = true;
-  enterButton.classList.remove("show");
-
-  if (action.redirect) {
-    const sameTab = action.sameTab !== false;
-    passwordInput.disabled = false;
-    passwordInput.value = "";
-
-    if (sameTab) window.location.href = action.redirect;
-    else window.open(action.redirect, "_blank");
-    return;
-  }
-
-  currentAction = action;
-
-  passwordScreen.style.opacity = 0;
-  setTimeout(() => passwordScreen.style.display = "none", 400);
-
-  contentPage.style.display = "block";
-  playButton.classList.add("show");
-
-  playButton.onclick = () => {
-    playButton.classList.remove("show");
-
-    videoWrapper.style.display = "block";
-    videoWrapper.style.opacity = 0;
-    backButton.classList.add("show");
-
-    if (currentAction.mobileFill) videoWrapper.classList.add("mobile-fill");
-    else videoWrapper.classList.remove("mobile-fill");
-
-    video.src = currentAction.src + "?v=" + Date.now();
-    video.currentTime = 0;
-
-    requestAnimationFrame(() => {
-      videoWrapper.style.opacity = 1;
-      video.play().catch(() => {});
-    });
-
-    endedListener = resetToPassword;
-    video.addEventListener("ended", endedListener, { once: true });
-  };
+  // use shared runner (keeps identical behavior between typed + vault click)
+  runActionByKey(key);
 }
 
 // ==== Enter button visibility (more robust for iOS) ====
@@ -937,7 +1038,8 @@ passwordInput.addEventListener("keydown", (e) => {
 
 // OPTIONAL UX: tapping outside after typing submits
 passwordScreen.addEventListener("pointerdown", (e) => {
-  if (e.target === passwordInput || e.target === enterButton || e.target === vaultQ) return;
+  // don't auto-submit if tapping the new home button
+  if (e.target === passwordInput || e.target === enterButton || e.target === vaultQ || e.target === addHomeBtn) return;
   if (!passwordInput.disabled && passwordInput.value.trim().length > 0) {
     tryPassword();
   }
@@ -964,6 +1066,10 @@ vaultBack.addEventListener("click", () => {
 });
 
 vaultClose.addEventListener("click", () => closeAllOverlays());
+
+// ===== NEW: add-to-home wiring =====
+addHomeBtn.addEventListener("click", () => openHomeOverlay());
+homeClose.addEventListener("click", () => closeAllOverlays());
 
 // ===== cheat entry mechanics =====
 let cheatTokens = [];
