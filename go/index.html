@@ -861,12 +861,18 @@ function isEnterButton(btn) {
   return btn && btn.id === "enterButton";
 }
 
+function isCheatPadButton(btn) {
+  return btn && btn.classList && btn.classList.contains("cheat-btn");
+}
+
+
 let lastTouchStamp = 0;
 
 document.addEventListener("touchstart", (e) => {
   const btn = e.target.closest("button");
   if (!btn || btn.disabled) return;
-  if (isEnterButton(btn)) return;
+  if (isEnterButton(btn) || isCheatPadButton(btn)) return;
+
 
   lastTouchStamp = Date.now();
   SFX.unlockNow();        // within gesture
@@ -879,7 +885,7 @@ document.addEventListener("pointerdown", (e) => {
 
   const btn = e.target.closest("button");
   if (!btn || btn.disabled) return;
-  if (isEnterButton(btn)) return;
+  if (isEnterButton(btn) || isCheatPadButton(btn)) return;
 
   SFX.unlockNow();
   SFX.play("click");
@@ -1273,7 +1279,6 @@ function tryPassword() {
 
   runActionByKey(key);
 }
-
 
 passwordInput.addEventListener("input", () => { if (!enterLock) setButtonsForInputState(); });
 passwordInput.addEventListener("keyup", () => { if (!enterLock) setButtonsForInputState(); });
