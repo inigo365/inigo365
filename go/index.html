@@ -948,7 +948,7 @@ const actions = {
  * Tokens: U D L R A B
  */
 const cheatUnlocks = {
-  "U U D D L R L R B A": ["gambosi"],
+  "U U D D L R L R B A": ["1millionfrogs"],
   "U D U D A B": ["bag"],
   "A B A B": ["home"]
 };
@@ -1130,7 +1130,7 @@ function runActionByKey(keyRaw) {
 
 // ===== vault render (clickable) =====
 function renderVault() {
-  const unlockables = ["bag", "home", "gambosi"];
+  const unlockables = ["bag", "home", "1millionfrogs"];
   const unlockedNow = unlockables.filter(c => unlocked.has(c));
 
   if (unlockedNow.length === 0) {
@@ -1405,7 +1405,7 @@ function submitCheat() {
   const beforeSize = unlocked.size;
 
   for (const code of unlockList) {
-    if (code === "home" || code === "bag" || code === "gambosi") unlocked.add(code);
+    if (code === "home" || code === "bag" || code === "1millionfrogs") unlocked.add(code);
   }
   saveUnlockedSet(unlocked);
 
