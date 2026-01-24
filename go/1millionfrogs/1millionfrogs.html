@@ -212,8 +212,8 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   <div class="panel">
     <div class="panel-title">1millionfrogs</div>
     <div class="panel-sub">
-      keep finger down to steer (ios smooth)<br>
-      boost: space (desktop) • two fingers (mobile)
+      keep finger down to steer<br>
+      boost: click / two fingers 
     </div>
     <div class="row">
       <button class="linkish" id="resetBtn" type="button">reset</button>
@@ -223,7 +223,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 </div>
 
 <div class="leaderboard" id="leaderboard">
-  <div class="lb-title">leaderboard (length)</div>
+  <div class="lb-title">leaderboard</div>
   <div id="lbList"></div>
 </div>
 
@@ -1182,7 +1182,7 @@ function drawLeaderArrow(leader){
   ctx.fillStyle = "black";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(`#1`, 0, 12);
+  ctx.fillText(``, 0, 12);
 
   ctx.restore();
 }
