@@ -108,44 +108,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   flex-wrap:wrap;
 }
 
-/* ===== Leaderboard (under left side of the panel, behind frogs, above bg) =====
-   - sits under the panel
-   - black text
-   - z-index puts it above the background but below the canvas frogs (canvas is drawn later)
-*/
-.leaderboard{
-  position:fixed;
-  left:8px;
-  top:0; /* computed in JS so it always sits under the panel */
-  z-index:5;              /* < canvas frogs (drawn on canvas), > background */
-  pointer-events:none;
-
-  color:#000;
-  text-transform:lowercase;
-  font-variant-numeric: tabular-nums;
-
-  width: min(560px, calc(100vw - 16px));
-}
-
-.lb-title{
-  font-size: clamp(14px, 3.4vw, 18px);
-  margin-bottom:6px;
-  opacity:0.95;
-}
-
-.lb-row{
-  font-size: clamp(13px, 3.2vw, 16px);
-  line-height:1.15;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.lb-row.you{
-  font-weight:700;
-  text-decoration:underline;
-}
-.lb-sep{ height:6px; }
-
 /* ===== Name overlay ===== */
 .overlay{
   position:fixed; inset:0;
@@ -227,9 +189,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
     align-items:flex-start;
     gap:8px;
   }
-  .leaderboard{
-    width: min(560px, calc(100vw - 16px));
-  }
 }
 </style>
 </head>
@@ -253,12 +212,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
       </div>
     </div>
   </div>
-</div>
-
-<!-- NOTE: this sits under the play panel via JS (so it always lines up perfectly) -->
-<div class="leaderboard" id="leaderboard">
-  <div class="lb-title">leaderboard</div>
-  <div id="lbList"></div>
 </div>
 
 <div class="overlay" id="nameOverlay" aria-hidden="false">
@@ -286,20 +239,7 @@ const c = document.getElementById("c");
 const ctx = c.getContext("2d", { alpha:false });
 
 const statsEl = document.getElementById("stats");
-const lbList = document.getElementById("lbList");
-
 document.getElementById("backBtn").addEventListener("click", () => history.back());
-
-/* position leaderboard under the play panel (left aligned) */
-const leaderboardEl = document.getElementById("leaderboard");
-const playPanelEl = document.getElementById("playPanel");
-function layoutLeaderboard(){
-  const r = playPanelEl.getBoundingClientRect();
-  leaderboardEl.style.top = (r.bottom + 8) + "px";
-  leaderboardEl.style.left = (r.left) + "px";
-  leaderboardEl.style.width = r.width + "px";
-}
-window.addEventListener("resize", layoutLeaderboard);
 
 /* =========================================================
    ASSETS (relative to THIS HTML file)
@@ -308,8 +248,6 @@ window.addEventListener("resize", layoutLeaderboard);
 const BG_SRC = "assets/realm1.jpg";
 const TOYOTA_SRC = "assets/mask.png";
 const MUSIC_SRC = "assets/1millionfrogs.mp3";
-
-const COLOR_ACCENT = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#2d93ea";
 
 /* =========================================================
    SETTINGS
@@ -345,7 +283,6 @@ function resize(){
   c.style.width = W+"px";
   c.style.height = H+"px";
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  layoutLeaderboard();
 }
 addEventListener("resize", resize);
 resize();
@@ -478,7 +415,6 @@ function makeFrogSprite(size, variant){
     g.stroke();
     g.restore();
   }
-
   return s;
 }
 
@@ -601,11 +537,6 @@ function normAngle(a){
   while(a > Math.PI) a -= Math.PI*2;
   while(a < -Math.PI) a += Math.PI*2;
   return a;
-}
-function escapeHtml(str){
-  return String(str)
-    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 
 /* =========================================================
@@ -1060,8 +991,50 @@ function setNumberOneState(on){
 }
 
 /* =========================================================
+   LEADERBOARD LINES (top 5 always + you)
+   - text format: "1) name- 1000"
+========================================================= */
+let leader = null;
+let lbTimer = 0;
+let _lbLines = [];
+
+function makeLine(rank, s){
+  return `${rank}) ${s.name}- ${Math.round(s.length)}`;
+}
+function updateLeaderboard(dt){
+  lbTimer -= dt;
+  if(lbTimer > 0) return;
+  lbTimer = 0.25;
+
+  const alive = snakes.filter(s=>s.alive).slice();
+  alive.sort((a,b)=> b.length - a.length);
+
+  leader = alive[0] || null;
+
+  if(player && player.alive && leader) setNumberOneState(leader === player);
+  else setNumberOneState(false);
+
+  _lbLines = [];
+  for(let i=0;i<5;i++){
+    const s = alive[i];
+    if(s) _lbLines.push(makeLine(i+1, s));
+    else _lbLines.push(`${i+1}) —`);
+  }
+
+  if(player && player.alive){
+    const idx = alive.indexOf(player);
+    const rank = idx >= 0 ? idx + 1 : null;
+    if(rank && rank > 5){
+      _lbLines.push(""); // spacer
+      _lbLines.push(makeLine(rank, player));
+    }
+  }
+}
+
+/* =========================================================
    DRAW
 ========================================================= */
+const playPanelEl = document.getElementById("playPanel");
 function drawPinnedBackground(){
   ctx.fillStyle="white";
   ctx.fillRect(0,0,W,H);
@@ -1081,25 +1054,57 @@ function drawPinnedBackground(){
   ctx.fillRect(0,0,W,H);
 }
 
+/* Leaderboard placement:
+   - default: directly under playPanel, aligned left
+   - if not enough space below, pin above music button (still left aligned)
+*/
+function getLeaderboardAnchor(fontSize, lineH, linesCount){
+  const r = playPanelEl.getBoundingClientRect();
+  const margin = 8;
+  const x = Math.max(margin, Math.min(W - margin, r.left));
+  const neededH = (lineH * (linesCount + 1)) + 4; // + title
+  const belowY = r.bottom + 8;
+
+  // if would run off bottom, pin above the music button
+  const musicRect = musicBtn.getBoundingClientRect();
+  const maxBottom = Math.min(H - margin, musicRect.top - 10);
+  if(belowY + neededH <= maxBottom){
+    return { x, y: belowY, maxBottom };
+  }
+  const yPinned = Math.max(margin, maxBottom - neededH);
+  return { x, y: yPinned, maxBottom };
+}
+
 function drawLeaderboardLayer(){
   // draw text onto canvas AFTER background but BEFORE frogs
+  if(!_lbLines || _lbLines.length === 0) return;
+
+  const fontSize = Math.round(clamp(13, W/70, 16));
+  const lineH = Math.round(fontSize * 1.25);
+
+  const anchor = getLeaderboardAnchor(fontSize, lineH, _lbLines.length);
+  let x = anchor.x;
+  let y = anchor.y;
+
+  // keep inside screen a bit
+  const margin = 8;
+  x = clamp(x, margin, W - margin);
+
   ctx.save();
-  ctx.font = `${clamp(13, W/50, 16)}px "RuneScape UF", Arial, sans-serif`;
+  ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillStyle = "rgba(0,0,0,0.92)";
 
-  const r = leaderboardEl.getBoundingClientRect();
-  const x = r.left;
-  let y = r.top;
-
   ctx.fillText("leaderboard", x, y);
-  y += 20;
+  y += lineH;
 
-  // each row already composed as plain text in updateLeaderboard -> we store lines
   for(let i=0;i<_lbLines.length;i++){
-    ctx.fillText(_lbLines[i], x, y);
-    y += 18;
+    const line = _lbLines[i];
+    if(!line){ y += Math.round(lineH*0.55); continue; } // spacer
+    ctx.fillText(line, x, y);
+    y += lineH;
+    if(y > anchor.maxBottom) break; // safety
   }
 
   ctx.restore();
@@ -1151,7 +1156,6 @@ function drawWorld(){
         ctx.font = `18px "RuneScape UF", Arial, sans-serif`;
         ctx.textAlign="center";
         ctx.textBaseline="bottom";
-
         ctx.fillStyle = "black";
         ctx.fillText(s.name, sx, sy - spr.height*0.55);
 
@@ -1165,13 +1169,13 @@ function drawWorld(){
 }
 
 /* arrow pointing to #1 frog (hide when you have crown) */
-function drawLeaderArrow(leader){
-  if(!player || !leader) return;
-  if(leader === player) return;
-  if(!player.alive || !leader.alive) return;
+function drawLeaderArrow(leaderSnake){
+  if(!player || !leaderSnake) return;
+  if(leaderSnake === player) return;
+  if(!player.alive || !leaderSnake.alive) return;
 
-  const dx = leader.x - player.x;
-  const dy = leader.y - player.y;
+  const dx = leaderSnake.x - player.x;
+  const dy = leaderSnake.y - player.y;
   const dist = Math.hypot(dx,dy);
   if(dist < 80) return;
 
@@ -1214,7 +1218,6 @@ function drawYarisFlash(){
   const now=performance.now();
   const t=now - yarisStartMs;
   const total=YARIS_FADE_IN_MS + YARIS_HOLD_MS + YARIS_FADE_OUT_MS;
-
   if(t >= total){ yarisActive=false; return; }
 
   let a=0;
@@ -1243,52 +1246,6 @@ function drawYarisFlash(){
   ctx.globalAlpha = 0.95*a;
   ctx.drawImage(toyotaImg, x, y, dw, dh);
   ctx.restore();
-}
-
-/* =========================================================
-   LEADERBOARD (top 5 always + you)
-   - text format: "1) name- 1000"
-   - shown UNDER panel, drawn onto canvas (behind frogs)
-========================================================= */
-let leader = null;
-let lbTimer = 0;
-let _lbLines = [];
-
-function makeLine(rank, s){
-  return `${rank}) ${s.name}- ${Math.round(s.length)}`;
-}
-
-function updateLeaderboard(dt){
-  lbTimer -= dt;
-  if(lbTimer > 0) return;
-  lbTimer = 0.25;
-
-  const alive = snakes.filter(s=>s.alive).slice();
-  alive.sort((a,b)=> b.length - a.length);
-
-  leader = alive[0] || null;
-
-  if(player && player.alive && leader) setNumberOneState(leader === player);
-  else setNumberOneState(false);
-
-  _lbLines = [];
-  for(let i=0;i<5;i++){
-    const s = alive[i];
-    if(s) _lbLines.push(makeLine(i+1, s));
-    else _lbLines.push(`${i+1}) —`);
-  }
-
-  if(player && player.alive){
-    const idx = alive.indexOf(player);
-    const rank = idx >= 0 ? idx + 1 : null;
-    if(rank && rank > 5){
-      _lbLines.push(""); // spacer
-      _lbLines.push(makeLine(rank, player));
-    }
-  }
-
-  // keep the DOM list empty (we draw it on canvas instead)
-  lbList.innerHTML = "";
 }
 
 /* =========================================================
@@ -1357,23 +1314,6 @@ function tick(now){
 }
 
 /* =========================================================
-   BODY GRID
-========================================================= */
-function rebuildBodyGrid(){
-  bodyGrid.clear();
-  for(let si=0; si<snakes.length; si++){
-    const s=snakes[si];
-    if(!s.alive) continue;
-    const b=s.body;
-    const start = Math.min(6, b.length);
-    for(let i=start;i<b.length;i++){
-      const pt=b[i];
-      bodyGrid.add(pt.x, pt.y, { x:pt.x, y:pt.y, sid:s.id });
-    }
-  }
-}
-
-/* =========================================================
    START / RESET
 ========================================================= */
 const nameOverlay = document.getElementById("nameOverlay");
@@ -1403,8 +1343,6 @@ function startGame(){
 
   nameOverlay.style.display = "none";
   nameOverlay.setAttribute("aria-hidden","true");
-
-  layoutLeaderboard();
 
   last = performance.now();
   requestAnimationFrame(tick);
