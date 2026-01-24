@@ -13,7 +13,6 @@
       url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
-/* keep iOS bounce white */
 html{ background:#fff; height:100%; }
 body{ background:#fff; min-height:100%; }
 
@@ -34,7 +33,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 
 #c{ position:fixed; inset:0; display:block; }
 
-/* UI */
 .topbar{
   position:fixed; top:8px; left:8px; right:8px;
   display:flex; align-items:flex-start; justify-content:space-between;
@@ -71,7 +69,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 .linkish:hover{ text-decoration:underline; }
 .stat{ font-size:18px; text-transform:lowercase; font-variant-numeric:tabular-nums; }
 
-/* Right-side leaderboard */
 .leaderboard{
   pointer-events:none;
   position:fixed;
@@ -80,7 +77,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   border:2px solid #000;
   background:#fff;
   padding:10px 12px;
-  width:min(240px, calc(100vw - 16px));
+  width:min(280px, calc(100vw - 16px));
   z-index:19;
   display:none;
 }
@@ -98,10 +95,13 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  max-width:150px;
+  max-width:175px;
+}
+.lb-row.you{
+  font-weight:700;
+  text-decoration:underline;
 }
 
-/* Name overlay */
 .overlay{
   position:fixed; inset:0;
   background: rgba(255,255,255,0.98);
@@ -160,23 +160,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   opacity:0.9;
 }
 
-/* Tiny toast */
-.toast{
-  position:fixed;
-  left:50%;
-  bottom:10px;
-  transform:translateX(-50%);
-  border:2px solid #000;
-  background:#fff;
-  padding:8px 12px;
-  font-size:18px;
-  text-transform:lowercase;
-  z-index:30;
-  display:none;
-}
-.toast.show{ display:block; }
-
-/* Music toggle (bottom-left) */
 .music-toggle{
   position:fixed;
   left:8px;
@@ -221,7 +204,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 <div class="overlay" id="nameOverlay" aria-hidden="false">
   <div class="panel2" role="dialog" aria-modal="true" aria-label="name entry">
     <div class="panel2-title">enter name</div>
-    <div class="panel2-sub">eat frogs • avoid bigger bodies • become huge</div>
+    <div class="panel2-sub">there are big frogs out there already. catch them.</div>
     <div class="name-row">
       <input id="nameInput" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="name">
       <button class="boxbtn" id="startBtn" type="button">start</button>
@@ -231,8 +214,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 </div>
 
 <button class="music-toggle" id="musicBtn" type="button">music: on</button>
-
-<div class="toast" id="toast">toyota yaris</div>
 
 <script>
 /* iOS pinch prevention */
@@ -247,7 +228,6 @@ const ctx = c.getContext("2d", { alpha:false });
 const statsEl = document.getElementById("stats");
 const lbWrap = document.getElementById("leaderboard");
 const lbList = document.getElementById("lbList");
-const toast = document.getElementById("toast");
 
 document.getElementById("backBtn").addEventListener("click", () => history.back());
 
@@ -264,10 +244,11 @@ const TOYOTA_SRC = "assets/mask.png";
 const MUSIC_SRC = "assets/1millionfrogs.mp3";
 
 /* =========================================================
-   PERFORMANCE-FIRST SETTINGS
+   SETTINGS
 ========================================================= */
 const SETTINGS = {
   bots: 6,
+  starterGiants: 3,
   pelletTarget: 650,
 
   segSpacing: 12,
@@ -281,10 +262,12 @@ const SETTINGS = {
   boostDropEvery: 0.13,
 
   headBodyHitMul: 0.85,
-
   cellSize: 110,
 };
 
+/* =========================================================
+   CANVAS
+========================================================= */
 let dpr=1, W=0, H=0;
 function resize(){
   dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -310,7 +293,7 @@ toyotaImg.decoding = "async";
 toyotaImg.src = TOYOTA_SRC;
 
 /* =========================================================
-   MUSIC (loops; starts on first tap/click/keydown; toggle)
+   MUSIC
 ========================================================= */
 const musicBtn = document.getElementById("musicBtn");
 const music = new Audio(MUSIC_SRC);
@@ -324,51 +307,64 @@ let musicUnlocked = false;
 function updateMusicButton(){
   musicBtn.textContent = musicOn ? "music: on" : "music: off";
 }
-
 async function tryStartMusic(){
   if(!musicOn) return;
   try{
     const p = music.play();
     if(p && typeof p.then === "function") await p;
     musicUnlocked = true;
-  }catch{
-    // autoplay blocked until gesture; we try again on next gesture
-  }
+  }catch{}
 }
-
 function unlockAudio(){
-  // called inside a user gesture
   if(musicUnlocked) return;
   tryStartMusic();
 }
-
 function setMusic(on){
   musicOn = !!on;
   updateMusicButton();
-
   if(!musicOn){
     try{ music.pause(); }catch{}
-    return;
+  } else {
+    tryStartMusic();
   }
-  // on: attempt play
-  tryStartMusic();
 }
-
 musicBtn.addEventListener("pointerdown", (e)=>{
   e.preventDefault();
   unlockAudio();
   setMusic(!musicOn);
 });
-
-const primeAudio = () => unlockAudio();
-window.addEventListener("pointerdown", primeAudio, { capture:true, once:false });
-window.addEventListener("touchstart", primeAudio, { capture:true, passive:true, once:false });
-window.addEventListener("keydown", primeAudio, { capture:true, once:false });
-
+window.addEventListener("pointerdown", unlockAudio, { capture:true });
+window.addEventListener("touchstart", unlockAudio, { capture:true, passive:true });
+window.addEventListener("keydown", unlockAudio, { capture:true });
 updateMusicButton();
 
 /* =========================================================
-   SPRITES (cached — fast)
+   COOL BOT NAMES (no numbers)
+========================================================= */
+const FROG_NAMES = [
+  "sir croaks-a-lot","lady lily","moss wizard","pond prophet","bog baron",
+  "tadpole tycoon","ribbit mcgee","hops mcgloats","toadstool oracle","lilypad duchess",
+  "swamp prince","mud maven","marshmallow toad","feral frogling","croak noir",
+  "mr blorbo","slime saint","kermit\'s cousin","the damp one","frog of war",
+  "bloop pope","green accountant","soggy knight","mystic gunk","hollow croak",
+  "fizz bishop","the lilypad librarian","glorp champion","gumbo ghost","muck angel",
+  "frognald","pondwraith","bog gossiper","the croak whisperer","moss boss",
+  "lily sniper","wet prophet","springleaf","dungeon tad","the polite toad",
+  "swamp couture","ribbit rex","mild menace","the drippy duke","marsh mirage",
+  "chonk toad","slurp wizard","frogbeard","moss monopoly","inkblot frog"
+];
+
+function pickName(used){
+  // try a few times to avoid duplicates, but it’s fine if repeats happen.
+  for(let i=0;i<12;i++){
+    const n = FROG_NAMES[(Math.random()*FROG_NAMES.length)|0];
+    if(!used.has(n)) return n;
+  }
+  return FROG_NAMES[(Math.random()*FROG_NAMES.length)|0];
+}
+
+/* =========================================================
+   SPRITES (cached)
 ========================================================= */
 function makeFrogSprite(size, variant){
   const s = document.createElement("canvas");
@@ -410,7 +406,6 @@ function makeFrogSprite(size, variant){
   g.lineWidth = Math.max(2, size*0.03);
   g.stroke();
 
-  // sparkle for gold
   if(variant === "gold"){
     g.save();
     g.globalAlpha = 0.9;
@@ -433,7 +428,6 @@ function makeCrownSprite(size){
   const g = s.getContext("2d");
   g.clearRect(0,0,size,size);
 
-  // simple crown
   const pad = size*0.14;
   const left = pad, right = size - pad;
   const top = size*0.20;
@@ -456,14 +450,12 @@ function makeCrownSprite(size){
   g.fill();
   g.stroke();
 
-  // base band
   g.beginPath();
   g.roundRect(left, baseY - size*0.16, right-left, size*0.18, size*0.05);
   g.fillStyle = "rgba(255, 200, 0, 0.95)";
   g.fill();
   g.stroke();
 
-  // gems
   g.fillStyle = "rgba(45, 147, 234, 0.9)";
   const gemR = size*0.05;
   g.beginPath();
@@ -511,11 +503,8 @@ document.addEventListener("keyup", (e)=>{
 /* =========================================================
    WORLD + RNG
 ========================================================= */
-const WORLD = {
-  seed: 1337,
-  pellets: [],
-};
-let golden = null; // {x,y,r}
+const WORLD = { seed: 1337, pellets: [] };
+let golden = null;
 
 function rand01(n){
   let x = (n ^ WORLD.seed) >>> 0;
@@ -540,15 +529,11 @@ function escapeHtml(str){
 }
 
 /* =========================================================
-   SPATIAL GRID (fast nearby queries)
+   SPATIAL GRID
 ========================================================= */
 function cellKey(cx, cy){ return (cx<<16) ^ (cy & 0xffff); }
-
 class Grid {
-  constructor(cellSize){
-    this.cs = cellSize;
-    this.map = new Map();
-  }
+  constructor(cellSize){ this.cs = cellSize; this.map = new Map(); }
   clear(){ this.map.clear(); }
   _bucket(cx, cy){
     const k = cellKey(cx, cy);
@@ -575,12 +560,11 @@ class Grid {
     }
   }
 }
-
 const pelletGrid = new Grid(SETTINGS.cellSize);
 const bodyGrid = new Grid(SETTINGS.cellSize);
 
 /* =========================================================
-   SNAKES (optimized body)
+   SNAKES
 ========================================================= */
 function makeSnake(opts){
   return {
@@ -597,7 +581,7 @@ function makeSnake(opts){
     baseSpeed: SETTINGS.baseSpeed * (opts.speedMul ?? 1),
     speed: SETTINGS.baseSpeed,
 
-    eaten: 0,
+    eaten: opts.eaten || 0,
     length: opts.length || 120,
     radius: 10,
 
@@ -636,27 +620,60 @@ function spawnPlayer(name){
   player = s;
   snakes.push(s);
 }
-function spawnBots(){
-  const names = ["bog","lily","tad","moss","pond","croak","murk","dusk","slug","mist"];
-  for(let i=0; i<SETTINGS.bots; i++){
-    const id = 100+i;
+
+function seedBody(s){
+  const points = Math.min(SETTINGS.maxSegPoints, Math.floor(s.length / SETTINGS.segSpacing));
+  const x = s.x, y = s.y;
+
+  s.body = [];
+  let px = x, py = y;
+  let ang = rand01(s.id*99) * Math.PI*2;
+
+  for(let k=0; k<points; k++){
+    s.body.push({ x: px, y: py });
+    ang += (rand01(s.id*123 + k*9)-0.5) * 0.35;
+    px -= Math.cos(ang) * SETTINGS.segSpacing;
+    py -= Math.sin(ang) * SETTINGS.segSpacing;
+  }
+  s.body[0] = { x, y };
+  s.lastSegX = x;
+  s.lastSegY = y;
+}
+
+function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, usedNames){
+  for(let i=0; i<count; i++){
+    const id = baseId + i;
     const a = rand01(id*17) * Math.PI*2;
-    const r = 700 + rand01(id*23)*1100;
+    const r = 650 + rand01(id*23)*1200;
     const x = Math.cos(a)*r;
     const y = Math.sin(a)*r;
-    const len = 120 + rand01(id*31) * 260;
-    const speedMul = 0.92 + rand01(id*41)*0.20;
 
-    const s = makeSnake({
-      id,
-      name: names[i % names.length] + "-" + Math.floor(rand01(id*7)*999),
-      x, y,
-      length: len,
-      speedMul
-    });
+    const len = lengthMin + rand01(id*31) * (lengthMax - lengthMin);
+    const speedMul = speedMin + rand01(id*41) * (speedMax - speedMin);
+
+    const nm = pickName(usedNames);
+    usedNames.add(nm);
+
+    const s = makeSnake({ id, name: nm, x, y, length: len, speedMul });
+
+    // scoreboard spice: eaten roughly tracks size
+    s.eaten = Math.floor(len / 8);
+
     updateRadius(s);
+    seedBody(s);
     snakes.push(s);
   }
+}
+
+function spawnWorldSnakes(){
+  const used = new Set();
+  used.add(player.name);
+
+  // starter giants (big targets)
+  spawnBots(SETTINGS.starterGiants, 200, 980, 1450, 0.92, 1.02, used);
+
+  // normal bots
+  spawnBots(SETTINGS.bots, 100, 140, 420, 0.92, 1.12, used);
 }
 
 /* =========================================================
@@ -680,7 +697,6 @@ function ensurePellets(camX, camY){
     WORLD.pellets.push({ x, y, r: 16 });
   }
 
-  // cull far
   const maxD = radius * 1.35;
   const maxD2 = maxD*maxD;
   WORLD.pellets = WORLD.pellets.filter(p=>{
@@ -719,19 +735,9 @@ function addBodyPointIfNeeded(s){
     s.body.length = SETTINGS.maxSegPoints;
   }
 }
-
 function trimBodyToLength(s){
   const b = s.body;
   const target = s.length;
-
-  // compute total (cheap because b capped)
-  let total = 0;
-  for(let i=0;i<b.length-1;i++){
-    const p=b[i], q=b[i+1];
-    total += Math.hypot(p.x-q.x, p.y-q.y);
-    if(total > target + SETTINGS.segSpacing*2) break;
-  }
-
   while(b.length > 2){
     let t = 0;
     for(let i=0;i<b.length-1;i++){
@@ -745,7 +751,7 @@ function trimBodyToLength(s){
 }
 
 /* =========================================================
-   MOVEMENT + BOOST
+   MOVEMENT
 ========================================================= */
 function updateMovement(s, dt){
   if(!s.alive) return;
@@ -753,9 +759,7 @@ function updateMovement(s, dt){
   let da = normAngle(s.targetAngle - s.angle);
   s.angle += da * Math.min(1, dt * SETTINGS.turnSmooth);
 
-  if(s.isPlayer){
-    s.boost = boostHeld && s.length > 110;
-  }
+  if(s.isPlayer) s.boost = boostHeld && s.length > 110;
 
   const speedMul = s.boost ? SETTINGS.boostSpeedMul : 1.0;
   s.speed = s.baseSpeed * speedMul;
@@ -785,8 +789,8 @@ function aiUpdate(s, dt){
   if(s.ai.t <= 0){
     s.ai.t = 0.25 + Math.random()*0.55;
 
-    let tx = s.x + Math.cos(s.ai.wanderA)*400;
-    let ty = s.y + Math.sin(s.ai.wanderA)*400;
+    let tx = s.x + Math.cos(s.ai.wanderA)*420;
+    let ty = s.y + Math.sin(s.ai.wanderA)*420;
     s.ai.wanderA += (Math.random()-0.5)*0.9;
 
     const n = WORLD.pellets.length;
@@ -820,7 +824,6 @@ function aiUpdate(s, dt){
     s.boost = (s.length > 260 && Math.random() > 0.985);
   }
 
-  // avoid bigger heads (cheap)
   let ax = 0, ay = 0;
   for(let i=0;i<snakes.length;i++){
     const o = snakes[i];
@@ -841,7 +844,7 @@ function aiUpdate(s, dt){
 }
 
 /* =========================================================
-   EATING (grid)
+   EATING
 ========================================================= */
 const tmpNear = [];
 function eatCheck(s){
@@ -870,7 +873,6 @@ function eatCheck(s){
     updateRadius(s);
   }
 }
-
 function compactPellets(){
   const arr = WORLD.pellets;
   let w = 0;
@@ -883,7 +885,7 @@ function compactPellets(){
 }
 
 /* =========================================================
-   COLLISION (grid)
+   COLLISION
 ========================================================= */
 function rebuildBodyGrid(){
   bodyGrid.clear();
@@ -903,7 +905,6 @@ const tmpBodies = [];
 function checkPop(s){
   if(!s.alive) return;
 
-  // head-to-head
   for(let i=0;i<snakes.length;i++){
     const o = snakes[i];
     if(o===s || !o.alive) continue;
@@ -915,7 +916,6 @@ function checkPop(s){
     }
   }
 
-  // head vs body points nearby
   tmpBodies.length = 0;
   bodyGrid.query(s.x, s.y, 80 + s.radius, tmpBodies);
 
@@ -936,16 +936,13 @@ function popSnake(s){
   if(!s.alive) return;
   s.alive = false;
 
-  // drop pellets
   const b = s.body;
   for(let i=0;i<b.length; i+=2){
     const pt = b[i];
     WORLD.pellets.push({ x: pt.x, y: pt.y, r: 16 });
   }
-
   respawnSnake(s);
 }
-
 function respawnSnake(s){
   const baseX = player ? player.x : 0;
   const baseY = player ? player.y : 0;
@@ -981,24 +978,28 @@ function updateCamera(dt){
 }
 
 /* =========================================================
-   #1 REVEAL: yaris + golden chain + crown
+   #1 MOMENT: one-time yaris flash + golden chain + crown
 ========================================================= */
 let isNumberOne = false;
-let toyotaSpawned = false;
-let toyotaSpawnAtMs = 0;
+let yarisShownOnce = false;
+let yarisActive = false;
+let yarisStartMs = 0;
+
+const YARIS_FADE_IN_MS  = 700;
+const YARIS_HOLD_MS     = 220;
+const YARIS_FADE_OUT_MS = 650;
 
 function setNumberOneState(on){
   const next = !!on;
-  if(next === isNumberOne) return;
 
-  isNumberOne = next;
-
-  if(isNumberOne && !toyotaSpawned){
-    toyotaSpawned = true;
-    toyotaSpawnAtMs = performance.now();
-    toast.classList.add("show");
-    setTimeout(()=> toast.classList.remove("show"), 2200);
+  if(next && !isNumberOne){
+    if(!yarisShownOnce){
+      yarisShownOnce = true;
+      yarisActive = true;
+      yarisStartMs = performance.now();
+    }
   }
+  isNumberOne = next;
 }
 
 /* =========================================================
@@ -1028,7 +1029,6 @@ function drawWorld(){
   const ox = W/2 - cam.x;
   const oy = H/2 - cam.y;
 
-  // pellets
   for(let i=0;i<WORLD.pellets.length;i++){
     const p = WORLD.pellets[i];
     const sx = p.x + ox, sy = p.y + oy;
@@ -1038,7 +1038,6 @@ function drawWorld(){
     ctx.drawImage(spr, sx - spr.width/2, sy - spr.height/2);
   }
 
-  // golden pellet
   if(golden){
     const sx = golden.x + ox, sy = golden.y + oy;
     if(!(sx < -80 || sx > W+80 || sy < -80 || sy > H+80)){
@@ -1050,17 +1049,16 @@ function drawWorld(){
     }
   }
 
-  // snakes
   for(let si=0; si<snakes.length; si++){
     const s = snakes[si];
     if(!s.alive) continue;
 
     const b = s.body;
-
     const big = (s.radius > 22);
-    const isPlayerGold = (s.isPlayer && isNumberOne);
+    const playerGold = (s.isPlayer && isNumberOne);
+
     const spr =
-      isPlayerGold
+      playerGold
         ? (big ? SPRITES.snakeGoldBig : SPRITES.snakeGold)
         : (big ? SPRITES.snakeBig : SPRITES.snake);
 
@@ -1071,15 +1069,13 @@ function drawWorld(){
       ctx.drawImage(spr, sx - spr.width/2, sy - spr.height/2);
 
       if(i === 0){
-        // name
         ctx.font = `18px "RuneScape UF", Arial, sans-serif`;
         ctx.fillStyle = "black";
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
         ctx.fillText(s.name, sx, sy - spr.height*0.55);
 
-        // crown (only #1 player)
-        if(isPlayerGold){
+        if(playerGold){
           const crown = SPRITES.crown;
           ctx.drawImage(crown, sx - crown.width/2, sy - spr.height*0.95 - crown.height/2);
         }
@@ -1088,9 +1084,31 @@ function drawWorld(){
   }
 }
 
-function drawToyotaCenter(){
-  if(!toyotaSpawned) return;
+function drawYarisFlash(){
+  if(!yarisActive) return;
   if(!toyotaImg || !toyotaImg.complete || toyotaImg.naturalWidth <= 0) return;
+
+  const now = performance.now();
+  const t = now - yarisStartMs;
+
+  const total = YARIS_FADE_IN_MS + YARIS_HOLD_MS + YARIS_FADE_OUT_MS;
+  if(t >= total){
+    yarisActive = false;
+    return;
+  }
+
+  let a = 0;
+  if(t < YARIS_FADE_IN_MS){
+    const x = t / YARIS_FADE_IN_MS;
+    a = x*x*(3-2*x);
+  } else if(t < YARIS_FADE_IN_MS + YARIS_HOLD_MS){
+    a = 1;
+  } else {
+    const u = (t - (YARIS_FADE_IN_MS + YARIS_HOLD_MS)) / YARIS_FADE_OUT_MS;
+    const x = clamp(u, 0, 1);
+    const s = x*x*(3-2*x);
+    a = 1 - s;
+  }
 
   const iw = toyotaImg.naturalWidth;
   const ih = toyotaImg.naturalHeight;
@@ -1103,9 +1121,6 @@ function drawToyotaCenter(){
   const dw = iw*scale, dh = ih*scale;
   const dx = (W - dw)/2, dy = (H - dh)/2;
 
-  const t = Math.min(1, (performance.now() - toyotaSpawnAtMs) / 900);
-  const a = t*t*(3-2*t);
-
   ctx.save();
   ctx.globalAlpha = 0.95 * a;
   ctx.drawImage(toyotaImg, dx, dy, dw, dh);
@@ -1113,9 +1128,23 @@ function drawToyotaCenter(){
 }
 
 /* =========================================================
-   LEADERBOARD + #1 DETECT
+   LEADERBOARD: top 5 + you (with your rank)
+   - shows length
+   - always shows top 5
+   - then shows you and your place if you're not already in top 5
 ========================================================= */
 let lbTimer = 0;
+
+function renderLBRow(rank, s, you){
+  const row = document.createElement("div");
+  row.className = "lb-row" + (you ? " you" : "");
+  row.innerHTML = `
+    <div class="name">${rank}) ${escapeHtml(s.name)}</div>
+    <div>${Math.round(s.length)}</div>
+  `;
+  return row;
+}
+
 function updateLeaderboardAndRank(dt){
   lbTimer -= dt;
   if(lbTimer > 0) return;
@@ -1123,9 +1152,8 @@ function updateLeaderboardAndRank(dt){
 
   const alive = snakes.slice().filter(s=>s.alive);
   alive.sort((a,b)=> b.length - a.length);
-  const top = alive.slice(0, 8);
 
-  // #1 check (player must exist + alive)
+  // #1 check
   if(player && player.alive && alive.length > 0){
     setNumberOneState(alive[0] === player);
   } else {
@@ -1133,18 +1161,49 @@ function updateLeaderboardAndRank(dt){
   }
 
   lbList.innerHTML = "";
+
+  const top = alive.slice(0, 5);
   for(let i=0;i<top.length;i++){
     const s = top[i];
-    const row = document.createElement("div");
-    row.className = "lb-row";
-    row.innerHTML = `<div class="name">${i+1}) ${escapeHtml(s.name)}</div><div>${Math.round(s.length)}</div>`;
-    lbList.appendChild(row);
+    lbList.appendChild(renderLBRow(i+1, s, (player && s === player)));
   }
+
+  // find player's rank
+  if(player && player.alive){
+    const idx = alive.indexOf(player);
+    const rank = idx >= 0 ? (idx + 1) : null;
+
+    // if you're not already in top 5, add a separator-ish gap then you
+    if(rank && rank > 5){
+      const spacer = document.createElement("div");
+      spacer.style.height = "6px";
+      lbList.appendChild(spacer);
+      lbList.appendChild(renderLBRow(rank, player, true));
+    }
+  }
+
   lbWrap.classList.add("show");
 }
 
 /* =========================================================
-   LOOP
+   PELLET GRIDS / COLLISION GRIDS
+========================================================= */
+function rebuildBodyGrid(){
+  bodyGrid.clear();
+  for(let si=0; si<snakes.length; si++){
+    const s = snakes[si];
+    if(!s.alive) continue;
+    const b = s.body;
+    const start = Math.min(6, b.length);
+    for(let i=start; i<b.length; i++){
+      const pt = b[i];
+      bodyGrid.add(pt.x, pt.y, { x: pt.x, y: pt.y, sid: s.id });
+    }
+  }
+}
+
+/* =========================================================
+   GAME LOOP
 ========================================================= */
 let last = performance.now();
 
@@ -1176,12 +1235,14 @@ function tick(now){
     trimBodyToLength(s);
   }
 
-  // camera & pellets
+  // camera
   updateCamera(dt);
-  ensurePellets(cam.x, cam.y);
 
-  // grids
+  // pellets
+  ensurePellets(cam.x, cam.y);
   rebuildPelletGrid();
+
+  // bodies grid
   rebuildBodyGrid();
 
   // eating
@@ -1199,15 +1260,15 @@ function tick(now){
     checkPop(s);
   }
 
-  // leaderboard & #1 logic
+  // leaderboard + #1
   updateLeaderboardAndRank(dt);
 
   // draw
   drawPinnedBackground();
   drawWorld();
-  drawToyotaCenter();
+  drawYarisFlash();
 
-  // UI
+  // ui
   if(player){
     const b = player.boost ? "on" : "off";
     statsEl.textContent = `length: ${Math.round(player.length)} • eaten: ${player.eaten.toLocaleString()} • boost: ${b}`;
@@ -1217,6 +1278,20 @@ function tick(now){
 }
 
 /* =========================================================
+   CAMERA IMPLEMENTATION (kept simple)
+========================================================= */
+function updateCamera(dt){
+  if(!player) return;
+  cam.x += (player.x - cam.x) * (1 - Math.pow(0.001, dt));
+  cam.y += (player.y - cam.y) * (1 - Math.pow(0.001, dt));
+}
+
+/* =========================================================
+   AI / EATING / COLLISION helpers (already defined above)
+========================================================= */
+/* (no-op here, just keeping section titles readable) */
+
+/* =========================================================
    START / RESET
 ========================================================= */
 const nameOverlay = document.getElementById("nameOverlay");
@@ -1224,8 +1299,8 @@ const nameInput = document.getElementById("nameInput");
 const startBtn = document.getElementById("startBtn");
 
 function startGame(){
-  // start music on start click too (counts as gesture)
   unlockAudio();
+  tryStartMusic();
 
   WORLD.seed = (WORLD.seed + ((Math.random()*1e9)|0)) >>> 0;
 
@@ -1234,12 +1309,13 @@ function startGame(){
   golden = null;
 
   isNumberOne = false;
-  toyotaSpawned = false;
-  toyotaSpawnAtMs = 0;
-  toast.classList.remove("show");
+  yarisShownOnce = false;
+  yarisActive = false;
+  yarisStartMs = 0;
 
-  spawnPlayer((nameInput.value || "frog").toLowerCase().trim() || "frog");
-  spawnBots();
+  const nm = (nameInput.value || "frog").toLowerCase().trim().slice(0,18) || "frog";
+  spawnPlayer(nm);
+  spawnWorldSnakes();
 
   cam.x = player.x;
   cam.y = player.y;
@@ -1249,9 +1325,6 @@ function startGame(){
 
   last = performance.now();
   requestAnimationFrame(tick);
-
-  // attempt music (autoplay-safe)
-  tryStartMusic();
 }
 
 startBtn.addEventListener("click", startGame);
@@ -1266,9 +1339,13 @@ document.getElementById("resetBtn").addEventListener("click", ()=>{
 requestAnimationFrame(()=>{ try{ nameInput.focus(); }catch{} });
 
 /* =========================================================
-   BACKGROUND ALWAYS VISIBLE NOTE
-   (canvas is fixed + background is drawn each frame, so it
-    can never be "scrolled off" on any device)
+   BACKGROUND ALWAYS VISIBLE
+   canvas is fixed, we redraw every frame
+========================================================= */
+
+/* =========================================================
+   NOTE: functions used by the loop were declared above
+   (aiUpdate, eatCheck, checkPop, etc.)
 ========================================================= */
 </script>
 </body>
