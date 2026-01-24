@@ -29,12 +29,15 @@ html,body{
 html, body { cursor: url("../../images/cursor/cursor.png"), auto; }
 button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 
-:root{ --accent:#2d93ea; --btn:#000; }
+:root{
+  --accent:#2d93ea;  /* your blue */
+  --btn:#000;
+  --gold: rgba(255, 215, 0, 0.95);
+}
 
 #c{
   position:fixed; inset:0; display:block;
-  /* IMPORTANT for iOS: gives smoother continuous finger control */
-  touch-action:none;
+  touch-action:none; /* iOS smooth steering */
 }
 
 /* ===== UI ===== */
@@ -43,6 +46,17 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   display:flex; align-items:flex-start; justify-content:flex-start;
   gap:10px; z-index:20; pointer-events:none;
 }
+
+/* scale system for UI (works across devices) */
+.ui{
+  pointer-events:auto;
+  /* clamp keeps it sane: small phones -> smaller UI, desktop -> comfy */
+  --uiScale: clamp(0.72, (100vw / 520), 1);
+  transform: scale(var(--uiScale));
+  transform-origin: top left;
+}
+
+/* because we scale, we keep layout in "design pixels" */
 .back-button{
   pointer-events:auto;
   font-size:28px; background:transparent; border:none;
@@ -54,9 +68,12 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 
 .panel{
   pointer-events:auto;
-  border:2px solid #000; background:#fff;
+  border:2px solid #000;
+  background:#fff;
   padding:10px 12px;
-  width:min(560px, calc(100vw - 120px));
+  width:560px; /* design width; scales down via .ui */
+  max-width:560px;
+  box-sizing:border-box;
 }
 .panel-title{ font-size:26px; text-transform:lowercase; margin-bottom:6px; }
 .panel-sub{ font-size:18px; text-transform:lowercase; line-height:1.25; }
@@ -74,40 +91,51 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 .linkish:hover{ text-decoration:underline; }
 .stat{ font-size:18px; text-transform:lowercase; font-variant-numeric:tabular-nums; }
 
-/* ===== Leaderboard (always show top 5 + you if outside) ===== */
+/* ===== Leaderboard (transparent, no box) ===== */
 .leaderboard{
-  pointer-events:none;
   position:fixed;
-  top:8px;
-  right:8px;
-  border:2px solid #000;
-  background:#fff;
-  padding:10px 12px;
-  width:min(280px, calc(100vw - 16px));
+  top:10px;
+  right:10px;
   z-index:19;
+  pointer-events:none;
+
+  color: var(--accent);
+  text-transform:lowercase;
+  font-variant-numeric: tabular-nums;
+
+  /* independent scaling so it never eats the screen */
+  --lbScale: clamp(0.74, (100vw / 620), 1);
+  transform: scale(var(--lbScale));
+  transform-origin: top right;
 }
-.lb-title{ font-size:22px; text-transform:lowercase; margin-bottom:6px; }
+
+.lb-title{
+  font-size:20px;
+  margin-bottom:6px;
+  opacity:0.95;
+}
+
 .lb-row{
   display:flex;
   justify-content:space-between;
-  gap:10px;
+  gap:12px;
   font-size:18px;
-  text-transform:lowercase;
   line-height:1.25;
+  white-space:nowrap;
 }
 .lb-row .name{
   overflow:hidden;
   text-overflow:ellipsis;
-  white-space:nowrap;
-  max-width:175px;
+  max-width:210px;
 }
 .lb-row.you{
   font-weight:700;
   text-decoration:underline;
 }
-.lb-sep{
-  height:6px;
+.lb-row.top3{
+  color: var(--gold);
 }
+.lb-sep{ height:6px; }
 
 /* ===== Name overlay ===== */
 .overlay{
@@ -181,24 +209,18 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   background:#fff;
   text-transform:lowercase;
   color:var(--btn);
+
+  --mScale: clamp(0.78, (100vw / 520), 1);
+  transform: scale(var(--mScale));
+  transform-origin: bottom left;
 }
 .music-toggle:hover{ text-decoration:underline; }
 
-/* ===== Mobile layout fixes (prevents panels stacking/overlapping) ===== */
+/* mobile: stack UI nicely without overlap */
 @media (max-width: 760px){
-  .topbar{
-    flex-direction:column;
-    align-items:flex-start;
-    right:8px;
-  }
-  .panel{
-    width: calc(100vw - 16px);
-  }
-  .leaderboard{
-    top: 148px;     /* sits under the main panel instead of overlaying it */
-    right:8px;
-    width: calc(100vw - 16px);
-  }
+  .topbar{ flex-direction:column; }
+  .panel{ width: 420px; max-width: 420px; }
+  .leaderboard{ top: 116px; } /* under the main panel */
 }
 </style>
 </head>
@@ -207,17 +229,19 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 <canvas id="c"></canvas>
 
 <div class="topbar">
-  <button class="back-button" id="backBtn">← back</button>
+  <div class="ui">
+    <button class="back-button" id="backBtn">← back</button>
 
-  <div class="panel">
-    <div class="panel-title">1millionfrogs</div>
-    <div class="panel-sub">
-      keep finger down to steer<br>
-      boost: click / two fingers 
-    </div>
-    <div class="row">
-      <button class="linkish" id="resetBtn" type="button">reset</button>
-      <div class="stat" id="stats">length: 0 • eaten: 0 • boost: off</div>
+    <div class="panel">
+      <div class="panel-title">1millionfrogs</div>
+      <div class="panel-sub">
+        keep finger down to steer<br>
+        boost: space (desktop) • two fingers (mobile)
+      </div>
+      <div class="row">
+        <button class="linkish" id="resetBtn" type="button">reset</button>
+        <div class="stat" id="stats">length: 0 • eaten: 0 • boost: off</div>
+      </div>
     </div>
   </div>
 </div>
@@ -258,18 +282,16 @@ document.getElementById("backBtn").addEventListener("click", () => history.back(
 
 /* =========================================================
    ASSETS (relative to THIS HTML file)
-
-   Put these here:
-     inigo365/go/1millionfrogs/assets/realm1.jpg
-     inigo365/go/1millionfrogs/assets/mask.png
-     inigo365/go/1millionfrogs/assets/1millionfrogs.mp3
+   inigo365/go/1millionfrogs/assets/...
 ========================================================= */
 const BG_SRC = "assets/realm1.jpg";
 const TOYOTA_SRC = "assets/mask.png";
 const MUSIC_SRC = "assets/1millionfrogs.mp3";
 
+const COLOR_ACCENT = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#2d93ea";
+
 /* =========================================================
-   SETTINGS (kept lean for performance)
+   SETTINGS
 ========================================================= */
 const SETTINGS = {
   bots: 6,
@@ -318,7 +340,7 @@ toyotaImg.decoding = "async";
 toyotaImg.src = TOYOTA_SRC;
 
 /* =========================================================
-   MUSIC (loops; starts on first gesture; toggle)
+   MUSIC
 ========================================================= */
 const musicBtn = document.getElementById("musicBtn");
 const music = new Audio(MUSIC_SRC);
@@ -330,7 +352,6 @@ let musicOn = true;
 let musicUnlocked = false;
 
 function updateMusicButton(){ musicBtn.textContent = musicOn ? "music: on" : "music: off"; }
-
 async function tryStartMusic(){
   if(!musicOn) return;
   try{
@@ -339,33 +360,24 @@ async function tryStartMusic(){
     musicUnlocked = true;
   }catch{}
 }
-
 function unlockAudio(){
   if(musicUnlocked) return;
   tryStartMusic();
 }
-
 function setMusic(on){
   musicOn = !!on;
   updateMusicButton();
-  if(!musicOn){
-    try{ music.pause(); }catch{}
-  } else {
-    tryStartMusic();
-  }
+  if(!musicOn){ try{ music.pause(); }catch{} }
+  else { tryStartMusic(); }
 }
-
 musicBtn.addEventListener("pointerdown", (e)=>{
   e.preventDefault();
   unlockAudio();
   setMusic(!musicOn);
 });
-
-// keep trying until iOS allows it
 window.addEventListener("pointerdown", unlockAudio, { capture:true });
 window.addEventListener("touchstart", unlockAudio, { capture:true, passive:true });
 window.addEventListener("keydown", unlockAudio, { capture:true });
-
 updateMusicButton();
 
 /* =========================================================
@@ -501,44 +513,39 @@ const SPRITES = {
 };
 
 /* =========================================================
-   INPUT (smooth iOS: first finger steers; 2 fingers boosts)
+   INPUT (smooth iOS: 1 finger steers; 2 fingers boosts)
 ========================================================= */
 let pointer = { x: W/2, y: H/2 };
 let boostHeld = false;
-let hasTouchSteer = false;
 
-// Touch path (best on iOS)
 c.addEventListener("touchstart", (e)=>{
   e.preventDefault();
   const t = e.touches[0];
-  if(t){ pointer.x = t.clientX; pointer.y = t.clientY; hasTouchSteer = true; }
+  if(t){ pointer.x = t.clientX; pointer.y = t.clientY; }
   boostHeld = e.touches.length >= 2;
 }, { passive:false });
 
 c.addEventListener("touchmove", (e)=>{
   e.preventDefault();
   const t = e.touches[0];
-  if(t){ pointer.x = t.clientX; pointer.y = t.clientY; hasTouchSteer = true; }
+  if(t){ pointer.x = t.clientX; pointer.y = t.clientY; }
   boostHeld = e.touches.length >= 2;
 }, { passive:false });
 
 c.addEventListener("touchend", (e)=>{
   e.preventDefault();
   boostHeld = e.touches.length >= 2;
-  if(e.touches.length === 0) hasTouchSteer = false;
 }, { passive:false });
 
 c.addEventListener("touchcancel", (e)=>{
   e.preventDefault();
   boostHeld = false;
-  hasTouchSteer = false;
 }, { passive:false });
 
-// Mouse/pen fallback
+// mouse/pen fallback
 c.addEventListener("pointerdown", (e)=>{
-  if(e.pointerType === "touch") return; // touch uses touch events above
+  if(e.pointerType === "touch") return;
   pointer.x = e.clientX; pointer.y = e.clientY;
-  // mouse button held = boost (keeps previous behaviour)
   boostHeld = true;
 });
 c.addEventListener("pointermove", (e)=>{
@@ -550,7 +557,7 @@ c.addEventListener("pointerup", (e)=>{
   boostHeld = false;
 });
 
-// Keyboard boost
+// keyboard boost
 document.addEventListener("keydown", (e)=>{ if(e.key === " "){ boostHeld = true; e.preventDefault(); } });
 document.addEventListener("keyup",   (e)=>{ if(e.key === " "){ boostHeld = false; e.preventDefault(); } });
 
@@ -580,7 +587,7 @@ function escapeHtml(str){
 }
 
 /* =========================================================
-   SPATIAL GRID
+   GRID
 ========================================================= */
 function cellKey(cx, cy){ return (cx<<16) ^ (cy & 0xffff); }
 class Grid {
@@ -711,11 +718,7 @@ function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, used
 
 function spawnWorldSnakes(){
   const used = new Set([player.name]);
-
-  // big targets
   spawnBots(SETTINGS.starterGiants, 200, 980, 1450, 0.92, 1.02, used);
-
-  // normal bots
   spawnBots(SETTINGS.bots, 100, 140, 420, 0.92, 1.12, used);
 }
 
@@ -743,7 +746,6 @@ function ensurePellets(camX, camY){
   const maxD = radius * 1.35;
   const maxD2 = maxD*maxD;
 
-  // cull far
   let w=0;
   for(let i=0;i<WORLD.pellets.length;i++){
     const p = WORLD.pellets[i];
@@ -770,22 +772,16 @@ function rebuildPelletGrid(){
    BODY
 ========================================================= */
 function addBodyPointIfNeeded(s){
-  const dx = s.x - s.lastSegX;
-  const dy = s.y - s.lastSegY;
+  const dx=s.x-s.lastSegX, dy=s.y-s.lastSegY;
   if(Math.hypot(dx,dy) < SETTINGS.segSpacing) return;
-
-  s.lastSegX = s.x;
-  s.lastSegY = s.y;
+  s.lastSegX=s.x; s.lastSegY=s.y;
   s.body.unshift({x:s.x,y:s.y});
   if(s.body.length > SETTINGS.maxSegPoints) s.body.length = SETTINGS.maxSegPoints;
 }
-
 function trimBodyToLength(s){
-  const b = s.body;
-  const target = s.length;
-
+  const b=s.body, target=s.length;
   while(b.length > 2){
-    let t = 0;
+    let t=0;
     for(let i=0;i<b.length-1;i++){
       const p=b[i], q=b[i+1];
       t += Math.hypot(p.x-q.x, p.y-q.y);
@@ -805,10 +801,7 @@ function updateMovement(s, dt){
   let da = normAngle(s.targetAngle - s.angle);
   s.angle += da * Math.min(1, dt * SETTINGS.turnSmooth);
 
-  if(s.isPlayer){
-    // boost is: space (desktop) OR 2-finger touch OR mouse-held
-    s.boost = boostHeld && s.length > 110;
-  }
+  if(s.isPlayer) s.boost = boostHeld && s.length > 110;
 
   const speedMul = s.boost ? SETTINGS.boostSpeedMul : 1.0;
   s.speed = s.baseSpeed * speedMul;
@@ -818,7 +811,6 @@ function updateMovement(s, dt){
 
   if(s.boost){
     s.length = Math.max(70, s.length - SETTINGS.boostDrainPerSec * dt);
-
     s.boostDropT -= dt;
     if(s.boostDropT <= 0){
       s.boostDropT = SETTINGS.boostDropEvery;
@@ -872,7 +864,6 @@ function aiUpdate(s, dt){
     s.boost = (s.length > 260 && Math.random() > 0.985);
   }
 
-  // avoid bigger heads
   let ax=0, ay=0;
   for(let i=0;i<snakes.length;i++){
     const o=snakes[i];
@@ -881,7 +872,7 @@ function aiUpdate(s, dt){
     const dx=s.x-o.x, dy=s.y-o.y;
     const d2=dx*dx+dy*dy;
     if(d2 < 520*520){
-      const inv = 1/Math.max(1, Math.sqrt(d2));
+      const inv=1/Math.max(1, Math.sqrt(d2));
       ax += dx*inv;
       ay += dy*inv;
     }
@@ -903,7 +894,7 @@ function eatCheck(s){
   pelletGrid.query(s.x, s.y, 80 + s.radius, tmpNear);
 
   for(let i=tmpNear.length-1;i>=0;i--){
-    const p = tmpNear[i];
+    const p=tmpNear[i];
     const dx=p.x-s.x, dy=p.y-s.y;
     const rr=(s.radius + (p.r||18))*0.85;
     if(dx*dx+dy*dy > rr*rr) continue;
@@ -922,16 +913,15 @@ function eatCheck(s){
     updateRadius(s);
   }
 }
-
 function compactPellets(){
-  const arr = WORLD.pellets;
+  const arr=WORLD.pellets;
   let w=0;
   for(let i=0;i<arr.length;i++){
     const p=arr[i];
     if(p._dead){ p._dead=false; continue; }
     arr[w++] = p;
   }
-  arr.length = w;
+  arr.length=w;
 }
 
 /* =========================================================
@@ -955,7 +945,6 @@ const tmpBodies = [];
 function checkPop(s){
   if(!s.alive) return;
 
-  // head-to-head
   for(let i=0;i<snakes.length;i++){
     const o=snakes[i];
     if(o===s || !o.alive) continue;
@@ -967,15 +956,14 @@ function checkPop(s){
     }
   }
 
-  // head vs body points
-  tmpBodies.length = 0;
+  tmpBodies.length=0;
   bodyGrid.query(s.x, s.y, 80 + s.radius, tmpBodies);
 
   const hitR = s.radius * SETTINGS.headBodyHitMul;
   const hitR2 = hitR*hitR;
 
   for(let i=0;i<tmpBodies.length;i++){
-    const pt = tmpBodies[i];
+    const pt=tmpBodies[i];
     if(pt.sid === s.id) continue;
     const dx=pt.x-s.x, dy=pt.y-s.y;
     if(dx*dx+dy*dy < hitR2) return popSnake(s);
@@ -984,7 +972,7 @@ function checkPop(s){
 
 function popSnake(s){
   if(!s.alive) return;
-  s.alive = false;
+  s.alive=false;
 
   const b=s.body;
   for(let i=0;i<b.length;i+=2){
@@ -1009,15 +997,15 @@ function respawnSnake(s){
   updateRadius(s);
   seedBody(s);
 
-  s.boost = false;
-  s.boostDropT = 0;
-  s.alive = true;
+  s.boost=false;
+  s.boostDropT=0;
+  s.alive=true;
 }
 
 /* =========================================================
    CAMERA
 ========================================================= */
-let cam = { x: 0, y: 0 };
+let cam = { x:0, y:0 };
 function updateCamera(dt){
   if(!player) return;
   cam.x += (player.x - cam.x) * (1 - Math.pow(0.001, dt));
@@ -1027,11 +1015,11 @@ function updateCamera(dt){
 /* =========================================================
    #1 MOMENT: one-time yaris flash + golden chain + crown
 ========================================================= */
-let isNumberOne = false;
+let isNumberOne=false;
 
-let yarisShownOnce = false;
-let yarisActive = false;
-let yarisStartMs = 0;
+let yarisShownOnce=false;
+let yarisActive=false;
+let yarisStartMs=0;
 
 const YARIS_FADE_IN_MS  = 700;
 const YARIS_HOLD_MS     = 220;
@@ -1053,22 +1041,21 @@ function setNumberOneState(on){
    DRAW
 ========================================================= */
 function drawPinnedBackground(){
-  ctx.fillStyle = "white";
+  ctx.fillStyle="white";
   ctx.fillRect(0,0,W,H);
 
-  if(bgImg.complete && bgImg.naturalWidth > 0){
-    const iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
-    const scale = Math.max(W/iw, H/ih);
-    const dw = iw*scale, dh = ih*scale;
-    const dx = (W - dw)/2;
-    const dy = (H - dh)/2;
+  if(bgImg.complete && bgImg.naturalWidth>0){
+    const iw=bgImg.naturalWidth, ih=bgImg.naturalHeight;
+    const scale=Math.max(W/iw, H/ih);
+    const dw=iw*scale, dh=ih*scale;
+    const dx=(W-dw)/2, dy=(H-dh)/2;
     ctx.drawImage(bgImg, dx, dy, dw, dh);
   }
 
-  const g = ctx.createRadialGradient(W*0.5, H*0.42, 60, W*0.5, H*0.5, Math.max(W,H));
+  const g=ctx.createRadialGradient(W*0.5, H*0.42, 60, W*0.5, H*0.5, Math.max(W,H));
   g.addColorStop(0, "rgba(45, 147, 234, 0.07)");
   g.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = g;
+  ctx.fillStyle=g;
   ctx.fillRect(0,0,W,H);
 }
 
@@ -1076,20 +1063,18 @@ function drawWorld(){
   const ox = W/2 - cam.x;
   const oy = H/2 - cam.y;
 
-  // pellets
   for(let i=0;i<WORLD.pellets.length;i++){
     const p=WORLD.pellets[i];
     const sx=p.x+ox, sy=p.y+oy;
     if(sx<-40||sx>W+40||sy<-40||sy>H+40) continue;
-    const spr = (p.r <= 14) ? SPRITES.pelletSmall : SPRITES.pellet;
+    const spr = (p.r<=14) ? SPRITES.pelletSmall : SPRITES.pellet;
     ctx.drawImage(spr, sx - spr.width/2, sy - spr.height/2);
   }
 
-  // golden
   if(golden){
     const sx=golden.x+ox, sy=golden.y+oy;
     if(!(sx<-80||sx>W+80||sy<-80||sy>H+80)){
-      const pulse = 0.55 + 0.45 * Math.sin(performance.now()*0.006);
+      const pulse = 0.55 + 0.45*Math.sin(performance.now()*0.006);
       ctx.save();
       ctx.globalAlpha = 0.75 + pulse*0.25;
       ctx.drawImage(SPRITES.gold, sx - SPRITES.gold.width/2, sy - SPRITES.gold.height/2);
@@ -1097,7 +1082,6 @@ function drawWorld(){
     }
   }
 
-  // snakes
   for(let si=0; si<snakes.length; si++){
     const s=snakes[si];
     if(!s.alive) continue;
@@ -1105,6 +1089,7 @@ function drawWorld(){
     const b=s.body;
     const big = (s.radius > 22);
     const playerGold = (s.isPlayer && isNumberOne);
+
     const spr = playerGold
       ? (big ? SPRITES.snakeGoldBig : SPRITES.snakeGold)
       : (big ? SPRITES.snakeBig : SPRITES.snake);
@@ -1118,13 +1103,15 @@ function drawWorld(){
 
       if(i===0){
         ctx.font = `18px "RuneScape UF", Arial, sans-serif`;
-        ctx.fillStyle = "black";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
+        ctx.textAlign="center";
+        ctx.textBaseline="bottom";
+
+        // ONLY player name is blue, others are black
+        ctx.fillStyle = s.isPlayer ? COLOR_ACCENT : "black";
         ctx.fillText(s.name, sx, sy - spr.height*0.55);
 
         if(playerGold){
-          const crown = SPRITES.crown;
+          const crown=SPRITES.crown;
           ctx.drawImage(crown, sx - crown.width/2, sy - spr.height*0.95 - crown.height/2);
         }
       }
@@ -1135,25 +1122,22 @@ function drawWorld(){
 /* arrow pointing to #1 frog (hide when you have crown) */
 function drawLeaderArrow(leader){
   if(!player || !leader) return;
-  if(leader === player) return;     // crown = no arrow
+  if(leader === player) return;
   if(!player.alive || !leader.alive) return;
 
   const dx = leader.x - player.x;
   const dy = leader.y - player.y;
   const dist = Math.hypot(dx,dy);
-  if(dist < 60) return;
+  if(dist < 80) return;
 
   const ang = Math.atan2(dy,dx);
 
-  // draw arrow near edge but inside UI margins
-  const margin = 24;
+  const margin = 26;
   const cx = W/2, cy = H/2;
-
-  // place at a radius from center, then clamp inside screen bounds
   const r = Math.min(W,H) * 0.38;
+
   let ax = cx + Math.cos(ang)*r;
   let ay = cy + Math.sin(ang)*r;
-
   ax = clamp(ax, margin, W-margin);
   ay = clamp(ay, margin, H-margin);
 
@@ -1161,7 +1145,6 @@ function drawLeaderArrow(leader){
   ctx.translate(ax, ay);
   ctx.rotate(ang);
 
-  // arrow body
   ctx.globalAlpha = 0.95;
   ctx.fillStyle = "rgba(45, 147, 234, 0.95)";
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
@@ -1176,79 +1159,68 @@ function drawLeaderArrow(leader){
   ctx.fill();
   ctx.stroke();
 
-  // tiny distance hint
-  ctx.rotate(-ang);
-  ctx.font = `16px "RuneScape UF", Arial, sans-serif`;
-  ctx.fillStyle = "black";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText(``, 0, 12);
-
   ctx.restore();
 }
 
 function drawYarisFlash(){
   if(!yarisActive) return;
-  if(!toyotaImg.complete || toyotaImg.naturalWidth <= 0) return;
+  if(!toyotaImg.complete || toyotaImg.naturalWidth<=0) return;
 
-  const now = performance.now();
-  const t = now - yarisStartMs;
-  const total = YARIS_FADE_IN_MS + YARIS_HOLD_MS + YARIS_FADE_OUT_MS;
+  const now=performance.now();
+  const t=now - yarisStartMs;
+  const total=YARIS_FADE_IN_MS + YARIS_HOLD_MS + YARIS_FADE_OUT_MS;
 
-  if(t >= total){
-    yarisActive = false;
-    return;
-  }
+  if(t >= total){ yarisActive=false; return; }
 
-  let a = 0;
+  let a=0;
   if(t < YARIS_FADE_IN_MS){
-    const x = t / YARIS_FADE_IN_MS;
+    const x=t / YARIS_FADE_IN_MS;
     a = x*x*(3-2*x);
-  } else if(t < YARIS_FADE_IN_MS + YARIS_HOLD_MS){
+  }else if(t < YARIS_FADE_IN_MS + YARIS_HOLD_MS){
     a = 1;
-  } else {
-    const u = (t - (YARIS_FADE_IN_MS + YARIS_HOLD_MS)) / YARIS_FADE_OUT_MS;
-    const x = clamp(u, 0, 1);
-    const s = x*x*(3-2*x);
+  }else{
+    const u=(t - (YARIS_FADE_IN_MS + YARIS_HOLD_MS)) / YARIS_FADE_OUT_MS;
+    const x=clamp(u,0,1);
+    const s=x*x*(3-2*x);
     a = 1 - s;
   }
 
-  const iw = toyotaImg.naturalWidth;
-  const ih = toyotaImg.naturalHeight;
+  const iw=toyotaImg.naturalWidth, ih=toyotaImg.naturalHeight;
+  const pad=110;
+  const maxW=Math.max(240, W - pad*2);
+  const maxH=Math.max(240, H - pad*2);
+  const scale=Math.min(maxW/iw, maxH/ih);
 
-  const pad = 110;
-  const maxW = Math.max(240, W - pad*2);
-  const maxH = Math.max(240, H - pad*2);
-  const scale = Math.min(maxW/iw, maxH/ih);
-
-  const dw = iw*scale, dh = ih*scale;
-  const x = (W - dw)/2, y = (H - dh)/2;
+  const dw=iw*scale, dh=ih*scale;
+  const x=(W-dw)/2, y=(H-dh)/2;
 
   ctx.save();
-  ctx.globalAlpha = 0.95 * a;
+  ctx.globalAlpha = 0.95*a;
   ctx.drawImage(toyotaImg, x, y, dw, dh);
   ctx.restore();
 }
 
 /* =========================================================
-   LEADERBOARD: ALWAYS show top 5, plus "you" if outside top 5
+   LEADERBOARD (top 5 always + you)
+   - transparent
+   - blue text
+   - top 3 names gold
 ========================================================= */
 let leader = null;
 let lbTimer = 0;
 
 function renderLBRow(rank, s, isYou){
   const row = document.createElement("div");
-  row.className = "lb-row" + (isYou ? " you" : "");
+  row.className = "lb-row" + (isYou ? " you" : "") + (rank <= 3 ? " top3" : "");
   row.innerHTML = `
     <div class="name">${rank}) ${escapeHtml(s.name)}</div>
     <div>${Math.round(s.length)}</div>
   `;
   return row;
 }
-
 function renderPlaceholderRow(rank){
   const row = document.createElement("div");
-  row.className = "lb-row";
+  row.className = "lb-row" + (rank <= 3 ? " top3" : "");
   row.innerHTML = `<div class="name">${rank}) —</div><div>—</div>`;
   return row;
 }
@@ -1263,23 +1235,17 @@ function updateLeaderboard(dt){
 
   leader = alive[0] || null;
 
-  // #1 state (for crown / yaris)
-  if(player && player.alive && leader){
-    setNumberOneState(leader === player);
-  } else {
-    setNumberOneState(false);
-  }
+  if(player && player.alive && leader) setNumberOneState(leader === player);
+  else setNumberOneState(false);
 
   lbList.innerHTML = "";
 
-  // top 5 ALWAYS (fill with placeholders if needed)
   for(let i=0;i<5;i++){
     const s = alive[i];
     if(s) lbList.appendChild(renderLBRow(i+1, s, (player && s === player)));
     else lbList.appendChild(renderPlaceholderRow(i+1));
   }
 
-  // add you if outside top 5
   if(player && player.alive){
     const idx = alive.indexOf(player);
     const rank = idx >= 0 ? idx + 1 : null;
@@ -1301,23 +1267,18 @@ function tick(now){
   const dt = Math.min(0.033, (now - last)/1000);
   last = now;
 
-  // steering:
-  // - on touch: frog moves toward where finger is on screen (continuous)
-  // - on desktop: frog moves toward pointer location
   if(player && player.alive){
     const dx = pointer.x - W/2;
     const dy = pointer.y - H/2;
     player.targetAngle = Math.atan2(dy, dx);
   }
 
-  // AI
   for(let i=0;i<snakes.length;i++){
     const s=snakes[i];
     if(!s.alive) continue;
     if(!s.isPlayer) aiUpdate(s, dt);
   }
 
-  // move + body
   for(let i=0;i<snakes.length;i++){
     const s=snakes[i];
     if(!s.alive) continue;
@@ -1326,15 +1287,12 @@ function tick(now){
     trimBodyToLength(s);
   }
 
-  // camera
   updateCamera(dt);
 
-  // pellets + grids
   ensurePellets(cam.x, cam.y);
   rebuildPelletGrid();
   rebuildBodyGrid();
 
-  // eating
   for(let i=0;i<snakes.length;i++){
     const s=snakes[i];
     if(!s.alive) continue;
@@ -1342,29 +1300,64 @@ function tick(now){
   }
   compactPellets();
 
-  // collisions
   for(let i=0;i<snakes.length;i++){
     const s=snakes[i];
     if(!s.alive) continue;
     checkPop(s);
   }
 
-  // leaderboard + leader ref
   updateLeaderboard(dt);
 
-  // draw
   drawPinnedBackground();
   drawWorld();
   drawLeaderArrow(leader);
   drawYarisFlash();
 
-  // ui
   if(player){
     const b = player.boost ? "on" : "off";
     statsEl.textContent = `length: ${Math.round(player.length)} • eaten: ${player.eaten.toLocaleString()} • boost: ${b}`;
   }
 
   requestAnimationFrame(tick);
+}
+
+/* =========================================================
+   DRAW BACKGROUND
+========================================================= */
+function drawPinnedBackground(){
+  ctx.fillStyle="white";
+  ctx.fillRect(0,0,W,H);
+
+  if(bgImg.complete && bgImg.naturalWidth>0){
+    const iw=bgImg.naturalWidth, ih=bgImg.naturalHeight;
+    const scale=Math.max(W/iw, H/ih);
+    const dw=iw*scale, dh=ih*scale;
+    const dx=(W-dw)/2, dy=(H-dh)/2;
+    ctx.drawImage(bgImg, dx, dy, dw, dh);
+  }
+
+  const g=ctx.createRadialGradient(W*0.5, H*0.42, 60, W*0.5, H*0.5, Math.max(W,H));
+  g.addColorStop(0, "rgba(45, 147, 234, 0.07)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,W,H);
+}
+
+/* =========================================================
+   BODY GRID (declared earlier but used in loop)
+========================================================= */
+function rebuildBodyGrid(){
+  bodyGrid.clear();
+  for(let si=0; si<snakes.length; si++){
+    const s=snakes[si];
+    if(!s.alive) continue;
+    const b=s.body;
+    const start = Math.min(6, b.length);
+    for(let i=start;i<b.length;i++){
+      const pt=b[i];
+      bodyGrid.add(pt.x, pt.y, { x:pt.x, y:pt.y, sid:s.id });
+    }
+  }
 }
 
 /* =========================================================
