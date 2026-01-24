@@ -30,33 +30,27 @@ html, body { cursor: url("../../images/cursor/cursor.png"), auto; }
 button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 
 :root{
-  --accent:#2d93ea;  /* your blue */
+  --accent:#2d93ea;
   --btn:#000;
   --gold: rgba(255, 215, 0, 0.95);
 }
 
 #c{
   position:fixed; inset:0; display:block;
-  touch-action:none; /* iOS smooth steering */
+  touch-action:none;
 }
 
 /* ===== UI ===== */
 .topbar{
   position:fixed; top:8px; left:8px; right:8px;
   display:flex; align-items:flex-start; justify-content:flex-start;
-  gap:10px; z-index:20; pointer-events:none;
+  gap:10px;
+  z-index:30;            /* always above frogs */
+  pointer-events:none;
 }
 
-/* scale system for UI (works across devices) */
-.ui{
-  pointer-events:auto;
-  /* clamp keeps it sane: small phones -> smaller UI, desktop -> comfy */
-  --uiScale: clamp(0.72, (100vw / 520), 1);
-  transform: scale(var(--uiScale));
-  transform-origin: top left;
-}
+.ui{ pointer-events:auto; }
 
-/* because we scale, we keep layout in "design pixels" */
 .back-button{
   pointer-events:auto;
   font-size:28px; background:transparent; border:none;
@@ -71,69 +65,84 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   border:2px solid #000;
   background:#fff;
   padding:10px 12px;
-  width:560px; /* design width; scales down via .ui */
-  max-width:560px;
   box-sizing:border-box;
+  width: min(560px, calc(100vw - 16px));
 }
-.panel-title{ font-size:26px; text-transform:lowercase; margin-bottom:6px; }
-.panel-sub{ font-size:18px; text-transform:lowercase; line-height:1.25; }
+
+.panel-title{
+  font-size: clamp(20px, 4.5vw, 26px);
+  text-transform:lowercase;
+  margin-bottom:6px;
+}
+
+.panel-sub{
+  font-size: clamp(14px, 3.6vw, 18px);
+  text-transform:lowercase;
+  line-height:1.25;
+}
+
+/* restore your original "linkish" style (used for reset) */
+.linkish{
+  font-family:"RuneScape UF", Arial, sans-serif;
+  background:transparent;
+  border:none;
+  color:var(--btn);
+  font-size: clamp(18px, 4vw, 22px);
+  padding:0;
+  text-transform:lowercase;
+}
+.linkish:hover{ text-decoration:underline; }
+
+.stat{
+  font-size: clamp(14px, 3.6vw, 18px);
+  text-transform:lowercase;
+  font-variant-numeric: tabular-nums;
+}
 
 .row{
   margin-top:8px;
-  display:flex; align-items:center; justify-content:space-between;
-  gap:10px; flex-wrap:wrap;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
 }
-.linkish{
-  font-family:"RuneScape UF", Arial, sans-serif;
-  background:transparent; border:none; color:var(--btn);
-  font-size:22px; padding:0; text-transform:lowercase;
-}
-.linkish:hover{ text-decoration:underline; }
-.stat{ font-size:18px; text-transform:lowercase; font-variant-numeric:tabular-nums; }
 
-/* ===== Leaderboard (transparent, no box) ===== */
+/* ===== Leaderboard (under left side of the panel, behind frogs, above bg) =====
+   - sits under the panel
+   - black text
+   - z-index puts it above the background but below the canvas frogs (canvas is drawn later)
+*/
 .leaderboard{
   position:fixed;
-  top:10px;
-  right:10px;
-  z-index:19;
+  left:8px;
+  top:0; /* computed in JS so it always sits under the panel */
+  z-index:5;              /* < canvas frogs (drawn on canvas), > background */
   pointer-events:none;
 
-  color: var(--accent);
+  color:#000;
   text-transform:lowercase;
   font-variant-numeric: tabular-nums;
 
-  /* independent scaling so it never eats the screen */
-  --lbScale: clamp(0.74, (100vw / 620), 1);
-  transform: scale(var(--lbScale));
-  transform-origin: top right;
+  width: min(560px, calc(100vw - 16px));
 }
 
 .lb-title{
-  font-size:20px;
+  font-size: clamp(14px, 3.4vw, 18px);
   margin-bottom:6px;
   opacity:0.95;
 }
 
 .lb-row{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  font-size:18px;
-  line-height:1.25;
+  font-size: clamp(13px, 3.2vw, 16px);
+  line-height:1.15;
   white-space:nowrap;
-}
-.lb-row .name{
   overflow:hidden;
   text-overflow:ellipsis;
-  max-width:210px;
 }
 .lb-row.you{
   font-weight:700;
   text-decoration:underline;
-}
-.lb-row.top3{
-  color: var(--gold);
 }
 .lb-sep{ height:6px; }
 
@@ -201,7 +210,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   position:fixed;
   left:8px;
   bottom:8px;
-  z-index:25;
+  z-index:35;
   font-family:"RuneScape UF", Arial, sans-serif;
   font-size:20px;
   padding:6px 10px;
@@ -209,18 +218,18 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   background:#fff;
   text-transform:lowercase;
   color:var(--btn);
-
-  --mScale: clamp(0.78, (100vw / 520), 1);
-  transform: scale(var(--mScale));
-  transform-origin: bottom left;
 }
 .music-toggle:hover{ text-decoration:underline; }
 
-/* mobile: stack UI nicely without overlap */
 @media (max-width: 760px){
-  .topbar{ flex-direction:column; }
-  .panel{ width: 420px; max-width: 420px; }
-  .leaderboard{ top: 116px; } /* under the main panel */
+  .topbar{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+  }
+  .leaderboard{
+    width: min(560px, calc(100vw - 16px));
+  }
 }
 </style>
 </head>
@@ -228,11 +237,11 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 <body>
 <canvas id="c"></canvas>
 
-<div class="topbar">
+<div class="topbar" id="topbar">
   <div class="ui">
     <button class="back-button" id="backBtn">← back</button>
 
-    <div class="panel">
+    <div class="panel" id="playPanel">
       <div class="panel-title">1millionfrogs</div>
       <div class="panel-sub">
         keep finger down to steer<br>
@@ -246,6 +255,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   </div>
 </div>
 
+<!-- NOTE: this sits under the play panel via JS (so it always lines up perfectly) -->
 <div class="leaderboard" id="leaderboard">
   <div class="lb-title">leaderboard</div>
   <div id="lbList"></div>
@@ -279,6 +289,17 @@ const statsEl = document.getElementById("stats");
 const lbList = document.getElementById("lbList");
 
 document.getElementById("backBtn").addEventListener("click", () => history.back());
+
+/* position leaderboard under the play panel (left aligned) */
+const leaderboardEl = document.getElementById("leaderboard");
+const playPanelEl = document.getElementById("playPanel");
+function layoutLeaderboard(){
+  const r = playPanelEl.getBoundingClientRect();
+  leaderboardEl.style.top = (r.bottom + 8) + "px";
+  leaderboardEl.style.left = (r.left) + "px";
+  leaderboardEl.style.width = r.width + "px";
+}
+window.addEventListener("resize", layoutLeaderboard);
 
 /* =========================================================
    ASSETS (relative to THIS HTML file)
@@ -324,6 +345,7 @@ function resize(){
   c.style.width = W+"px";
   c.style.height = H+"px";
   ctx.setTransform(dpr,0,0,dpr,0,0);
+  layoutLeaderboard();
 }
 addEventListener("resize", resize);
 resize();
@@ -1059,6 +1081,30 @@ function drawPinnedBackground(){
   ctx.fillRect(0,0,W,H);
 }
 
+function drawLeaderboardLayer(){
+  // draw text onto canvas AFTER background but BEFORE frogs
+  ctx.save();
+  ctx.font = `${clamp(13, W/50, 16)}px "RuneScape UF", Arial, sans-serif`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "rgba(0,0,0,0.92)";
+
+  const r = leaderboardEl.getBoundingClientRect();
+  const x = r.left;
+  let y = r.top;
+
+  ctx.fillText("leaderboard", x, y);
+  y += 20;
+
+  // each row already composed as plain text in updateLeaderboard -> we store lines
+  for(let i=0;i<_lbLines.length;i++){
+    ctx.fillText(_lbLines[i], x, y);
+    y += 18;
+  }
+
+  ctx.restore();
+}
+
 function drawWorld(){
   const ox = W/2 - cam.x;
   const oy = H/2 - cam.y;
@@ -1106,8 +1152,7 @@ function drawWorld(){
         ctx.textAlign="center";
         ctx.textBaseline="bottom";
 
-        // ONLY player name is blue, others are black
-        ctx.fillStyle = s.isPlayer ? COLOR_ACCENT : "black";
+        ctx.fillStyle = "black";
         ctx.fillText(s.name, sx, sy - spr.height*0.55);
 
         if(playerGold){
@@ -1202,27 +1247,15 @@ function drawYarisFlash(){
 
 /* =========================================================
    LEADERBOARD (top 5 always + you)
-   - transparent
-   - blue text
-   - top 3 names gold
+   - text format: "1) name- 1000"
+   - shown UNDER panel, drawn onto canvas (behind frogs)
 ========================================================= */
 let leader = null;
 let lbTimer = 0;
+let _lbLines = [];
 
-function renderLBRow(rank, s, isYou){
-  const row = document.createElement("div");
-  row.className = "lb-row" + (isYou ? " you" : "") + (rank <= 3 ? " top3" : "");
-  row.innerHTML = `
-    <div class="name">${rank}) ${escapeHtml(s.name)}</div>
-    <div>${Math.round(s.length)}</div>
-  `;
-  return row;
-}
-function renderPlaceholderRow(rank){
-  const row = document.createElement("div");
-  row.className = "lb-row" + (rank <= 3 ? " top3" : "");
-  row.innerHTML = `<div class="name">${rank}) —</div><div>—</div>`;
-  return row;
+function makeLine(rank, s){
+  return `${rank}) ${s.name}- ${Math.round(s.length)}`;
 }
 
 function updateLeaderboard(dt){
@@ -1238,24 +1271,24 @@ function updateLeaderboard(dt){
   if(player && player.alive && leader) setNumberOneState(leader === player);
   else setNumberOneState(false);
 
-  lbList.innerHTML = "";
-
+  _lbLines = [];
   for(let i=0;i<5;i++){
     const s = alive[i];
-    if(s) lbList.appendChild(renderLBRow(i+1, s, (player && s === player)));
-    else lbList.appendChild(renderPlaceholderRow(i+1));
+    if(s) _lbLines.push(makeLine(i+1, s));
+    else _lbLines.push(`${i+1}) —`);
   }
 
   if(player && player.alive){
     const idx = alive.indexOf(player);
     const rank = idx >= 0 ? idx + 1 : null;
     if(rank && rank > 5){
-      const sep = document.createElement("div");
-      sep.className = "lb-sep";
-      lbList.appendChild(sep);
-      lbList.appendChild(renderLBRow(rank, player, true));
+      _lbLines.push(""); // spacer
+      _lbLines.push(makeLine(rank, player));
     }
   }
+
+  // keep the DOM list empty (we draw it on canvas instead)
+  lbList.innerHTML = "";
 }
 
 /* =========================================================
@@ -1308,7 +1341,9 @@ function tick(now){
 
   updateLeaderboard(dt);
 
+  // draw order: background -> leaderboard text -> world frogs -> arrow/yaris
   drawPinnedBackground();
+  drawLeaderboardLayer();
   drawWorld();
   drawLeaderArrow(leader);
   drawYarisFlash();
@@ -1322,29 +1357,7 @@ function tick(now){
 }
 
 /* =========================================================
-   DRAW BACKGROUND
-========================================================= */
-function drawPinnedBackground(){
-  ctx.fillStyle="white";
-  ctx.fillRect(0,0,W,H);
-
-  if(bgImg.complete && bgImg.naturalWidth>0){
-    const iw=bgImg.naturalWidth, ih=bgImg.naturalHeight;
-    const scale=Math.max(W/iw, H/ih);
-    const dw=iw*scale, dh=ih*scale;
-    const dx=(W-dw)/2, dy=(H-dh)/2;
-    ctx.drawImage(bgImg, dx, dy, dw, dh);
-  }
-
-  const g=ctx.createRadialGradient(W*0.5, H*0.42, 60, W*0.5, H*0.5, Math.max(W,H));
-  g.addColorStop(0, "rgba(45, 147, 234, 0.07)");
-  g.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle=g;
-  ctx.fillRect(0,0,W,H);
-}
-
-/* =========================================================
-   BODY GRID (declared earlier but used in loop)
+   BODY GRID
 ========================================================= */
 function rebuildBodyGrid(){
   bodyGrid.clear();
@@ -1390,6 +1403,8 @@ function startGame(){
 
   nameOverlay.style.display = "none";
   nameOverlay.setAttribute("aria-hidden","true");
+
+  layoutLeaderboard();
 
   last = performance.now();
   requestAnimationFrame(tick);
