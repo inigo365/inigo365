@@ -854,7 +854,7 @@ function aiUpdate(s, dt){
   const d2 = dx*dx + dy*dy;
 
   // if bot is meaningfully bigger, it hunts you and tries to "cut you off"
-  if(s.length > player.length * 1.12 && d2 < 1400*1400){
+  if(s.length > player.length * 1.25 && d2 < 1600*1600){
     const d = Math.sqrt(d2);
 
     // lead target in front of player (cutoff)
@@ -1026,15 +1026,28 @@ function checkPop(s){
   if(!s.alive) return;
 
   for(let i=0;i<snakes.length;i++){
-    const o=snakes[i];
-    if(o===s || !o.alive) continue;
-    const dx=o.x-s.x, dy=o.y-s.y;
-    const rr=(o.radius+s.radius)*0.85;
-    if(dx*dx+dy*dy < rr*rr){
-      if(s.length < o.length*0.98) return popSnake(s);
-      if(o.length < s.length*0.98) popSnake(o);
-    }
+  const o = snakes[i];
+  if(o === s || !o.alive) continue;
+
+  const dx = o.x - s.x, dy = o.y - s.y;
+
+  // tighter head-to-head radius: fewer "ghost passes"
+  const rr = (o.radius + s.radius) * 0.92;
+  if(dx*dx + dy*dy < rr*rr){
+
+    // decisive winner: smaller dies (no "must be extremely head-on")
+    // small epsilon avoids flip-flops when basically identical
+    const eps = 18;
+
+    if(s.length + eps < o.length) return popSnake(s);
+    if(o.length + eps < s.length) return popSnake(o);
+
+    // near-tie: both pop (slither-ish fairness)
+    popSnake(o);
+    return popSnake(s);
   }
+}
+
 
   tmpBodies.length=0;
   bodyGrid.query(s.x, s.y, 80 + s.radius, tmpBodies);
@@ -1376,7 +1389,6 @@ function drawWorld(){
   }
 }
 
-/* NEW: arrow pointing to #1 frog WITH crown behind it */
 function drawLeaderArrow(leaderSnake){
   if(!player || !leaderSnake) return;
   if(leaderSnake === player) return;
@@ -1400,14 +1412,6 @@ function drawLeaderArrow(leaderSnake){
 
   ctx.save();
   ctx.translate(ax, ay);
-
-  // crown BEHIND arrow (not rotated)
-  const crown = SPRITES.crown;
-  const crownSize = 34;
-  ctx.globalAlpha = 0.45;
-  ctx.drawImage(crown, -crownSize/2, -crownSize/2, crownSize, crownSize);
-
-  // arrow on top (rotated)
   ctx.rotate(ang);
 
   ctx.globalAlpha = 0.95;
@@ -1426,6 +1430,7 @@ function drawLeaderArrow(leaderSnake){
 
   ctx.restore();
 }
+
 
 function drawYarisFlash(){
   if(!yarisActive) return;
