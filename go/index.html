@@ -61,6 +61,28 @@ button {
   --accent: #2d93ea;  /* blue for nav/play/back */
   --btn: #000000;     /* black for UI buttons */
 }
+/* input + always-visible help button (does NOT affect centering) */
+.input-wrap {
+  position: relative;
+  display: inline-block; /* keeps same centering behavior as before */
+}
+
+.help-side {
+  position: absolute;
+  left: calc(100% + 12px); /* sits to the right of the input */
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--btn);
+  line-height: 1;
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+  z-index: 5;
+}
+.help-side:hover { text-decoration: underline; }
 
 /* PASSWORD SCREEN */
 .password-screen {
@@ -169,10 +191,6 @@ button {
 
 /* ENTER button (ONLY submits, never opens cheats) */
 .enter-button { z-index: 2; }
-
-/* HELP "?" button (ONLY opens cheats) */
-.help-button { z-index: 1; }
-.help-button.show { z-index: 3; } /* help above enter when help is shown */
 
 /* Crisp "nope" flash */
 .enter-button.flash {
@@ -536,20 +554,23 @@ video {
       <label>enter password:</label>
 
       <form id="passwordForm" autocomplete="off">
-        <input
-          type="password"
-          id="passwordInput"
-          autocomplete="off"
-          autocapitalize="none"
-          autocorrect="off"
-          spellcheck="false"
-          enterkeyhint="go"
-        >
+        <div class="input-wrap">
+      <input
+        type="password"
+        id="passwordInput"
+        autocomplete="off"
+        autocapitalize="none"
+        autocorrect="off"
+        spellcheck="false"
+        enterkeyhint="go"
+      >
+      <button type="button" class="help-side" id="helpButton" aria-label="help">?</button>
+    </div>
 
-        <div class="action-row">
-          <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
-          <button type="button" class="switch-btn help-button" id="helpButton" aria-label="help">?</button>
-        </div>
+    <div class="action-row">
+      <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
+    </div>
+
       </form>
     </div>
   </div>
@@ -933,13 +954,13 @@ const actions = {
   "wasted":  { src: "videos/litty.mp4" },
 
   "tinny": { redirect: "scale/scale.html", sameTab: true },
-  "bag":   { redirect: "game/boom.html", sameTab: true },
-  "home":  { redirect: "../home.html", sameTab: true },
+  "bag":   { redirect: "game/boom.html", sameTab: true, useGate: false },
+  "home":  { redirect: "../home.html", sameTab: true, useGate: false },
   "rick":  { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", sameTab: false },
   "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true },
   "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true },
 
-  "1millionfrogs": { redirect: "1millionfrogs/1millionfrogs.html", sameTab: true },
+  "1millionfrogs": { redirect: "1millionfrogs/1millionfrogs.html", sameTab: true, useGate: false },
   "heavychest": { src: "videos/andre.mp4", mobileFill: true }
 };
 
@@ -1008,8 +1029,6 @@ function closeAllOverlays() {
 }
 
 function openCheatOverlay() {
-  if (!hasWrongAttempt) return;
-
   // close keyboard on mobile
   try { passwordInput.blur(); } catch {}
 
@@ -1081,36 +1100,60 @@ homeOverlay.addEventListener("pointerdown", (e) => { if (e.target === homeOverla
 function runActionByKey(keyRaw) {
   const key = (keyRaw || "").toLowerCase().trim();
   const action = actions[key];
+  // ===== STRAIGHT REDIRECT (no play screen) =====
+if (action.redirect && action.useGate === false) {
+  const sameTab = action.sameTab !== false;
+
+  if (sameTab) {
+    window.location.href = action.redirect;
+  } else {
+    window.open(action.redirect, "_blank");
+  }
+  return;
+}
+
   if (!action) return;
 
   passwordInput.disabled = true;
   closeAllOverlays();
 
-  if (action.redirect) {
-    const sameTab = action.sameTab !== false;
-    passwordInput.disabled = false;
-    passwordInput.value = "";
-    setButtonsForInputState();
-
-    if (sameTab) window.location.href = action.redirect;
-    else window.open(action.redirect, "_blank");
-    return;
-  }
-
   currentAction = action;
 
+  // fade out password screen (same as videos)
   passwordScreen.style.opacity = 0;
-  setTimeout(() => passwordScreen.style.display = "none", 400);
+  setTimeout(() => (passwordScreen.style.display = "none"), 400);
 
+  // show experience page for ALL actions
   contentPage.style.display = "block";
-  playButton.classList.add("show");
+  backButton.classList.add("show");
 
+  // for redirects, we don't need the video UI
+  videoWrapper.style.display = "none";
+  videoWrapper.style.opacity = 0;
+  videoWrapper.classList.remove("mobile-fill");
+
+  playButton.classList.add("show");
   playButton.onclick = () => {
     playButton.classList.remove("show");
 
+    // === REDIRECT ACTION ===
+    if (currentAction.redirect) {
+      const sameTab = currentAction.sameTab !== false;
+
+      if (sameTab) {
+        // same-tab navigation AFTER play
+        window.location.href = currentAction.redirect;
+      } else {
+        // new tab, then return to password UI
+        window.open(currentAction.redirect, "_blank");
+        resetToPassword();
+      }
+      return;
+    }
+
+    // === VIDEO ACTION (existing behavior) ===
     videoWrapper.style.display = "block";
     videoWrapper.style.opacity = 0;
-    backButton.classList.add("show");
 
     if (currentAction.mobileFill) videoWrapper.classList.add("mobile-fill");
     else videoWrapper.classList.remove("mobile-fill");
@@ -1127,6 +1170,7 @@ function runActionByKey(keyRaw) {
     video.addEventListener("ended", endedListener, { once: true });
   };
 }
+
 
 // ===== vault render (clickable) =====
 function renderVault() {
@@ -1230,20 +1274,8 @@ function setButtonsForInputState() {
 
   if (hasText) {
     enterButton.classList.add("show");
-    helpButton.classList.remove("show");
-    addHomeBtn.style.display = "none";
-    return;
-  }
-
-  // empty
-  enterButton.classList.remove("show");
-
-  if (hasWrongAttempt) {
-    helpButton.classList.add("show");
-    addHomeBtn.style.display = "";
   } else {
-    helpButton.classList.remove("show");
-    addHomeBtn.style.display = "none";
+    enterButton.classList.remove("show");
   }
 }
 
@@ -1255,11 +1287,9 @@ function flashNope(ms = 520) {
   clearTimeout(enterFlashTimer);
   enterLock = true;
 
-  helpButton.classList.remove("show");
   enterButton.textContent = "nope";
   enterButton.classList.add("show");
   enterButton.classList.add("flash");
-  addHomeBtn.style.display = "none";
 
   enterFlashTimer = setTimeout(() => {
     enterButton.classList.remove("flash");
@@ -1269,13 +1299,9 @@ function flashNope(ms = 520) {
   }, ms);
 }
 function shouldPlayCorrectForAction(action) {
-  if (!action) return false;
-  if (action.redirect) {
-    const sameTab = action.sameTab !== false; // default true
-    if (sameTab) return false;                // same-tab nav cuts audio
-  }
-  return true; // videos + new-tab redirects are fine
+  return !!action; // always allow; navigation happens after Play now
 }
+
 
 function tryPassword() {
   const key = passwordInput.value.toLowerCase().trim();
@@ -1470,7 +1496,6 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("contextmenu", e => e.preventDefault());
 
 // init
-addHomeBtn.style.display = "none";
 setButtonsForInputState();
 </script>
 
