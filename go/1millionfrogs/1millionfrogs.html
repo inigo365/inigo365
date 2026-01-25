@@ -322,6 +322,17 @@ music.volume = 0.9;
 
 let musicOn = true;
 let musicUnlocked = false;
+function stopMusic(){
+  try{
+    music.pause();
+    music.currentTime = 0;
+  }catch{}
+}
+window.addEventListener("pagehide", stopMusic);
+window.addEventListener("beforeunload", stopMusic);
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden) stopMusic();
+});
 
 function updateMusicButton(){ musicBtn.textContent = musicOn ? "music: on" : "music: off"; }
 async function tryStartMusic(){
