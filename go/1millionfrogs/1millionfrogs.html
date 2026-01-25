@@ -616,6 +616,9 @@ function makeSnake(opts){
     name: opts.name,
     isPlayer: !!opts.isPlayer,
     alive: true,
+    respawnT: 0,
+    respawnLen: opts.respawnLen ?? (opts.isPlayer ? (opts.length || 140) : 160),
+
 
     x: opts.x || 0,
     y: opts.y || 0,
@@ -906,6 +909,35 @@ if(player && player.alive && player !== s && player.length > s.length * 1.05){
       ay += dy*inv;
     }
   }
+// NEW: strong danger override (prevents dumb suicides)
+let danger = 0;
+
+// avoid bodies of larger snakes more aggressively
+if(tmpBodies && tmpBodies.length){
+  // (we already queried tmpBodies elsewhere only in collision; here we’ll do a cheap local check)
+}
+
+// avoid nearby bigger heads (this is the main suicide cause)
+for(let i=0;i<snakes.length;i++){
+  const o = snakes[i];
+  if(o === s || !o.alive) continue;
+  if(o.length <= s.length * 1.05) continue;
+
+  const dx = o.x - s.x, dy = o.y - s.y;
+  const d2 = dx*dx + dy*dy;
+
+  if(d2 < 520*520){
+    danger = Math.max(danger, 1);
+    const inv = 1 / Math.max(1, Math.sqrt(d2));
+    ax += (s.x - o.x) * inv * 2.2;
+    ay += (s.y - o.y) * inv * 2.2;
+  }
+}
+
+// if in danger, do NOT boost (boosting causes accidental deaths)
+if(danger){
+  s.boost = false;
+}
 
   const vx = (s.ai.targetX - s.x) + ax*420;
   const vy = (s.ai.targetY - s.y) + ay*420;
@@ -1020,15 +1052,21 @@ function checkPop(s){
 
 function popSnake(s){
   if(!s.alive) return;
-  s.alive=false;
 
-  const b=s.body;
+  // mark dead
+  s.alive = false;
+
+  // drop pellets from body
+  const b = s.body;
   for(let i=0;i<b.length;i+=2){
-    const pt=b[i];
-    WORLD.pellets.push({ x:pt.x, y:pt.y, r:16 });
+    const pt = b[i];
+    WORLD.pellets.push({ x: pt.x, y: pt.y, r: 16 });
   }
-  respawnSnake(s);
+
+  // NEW: wait a bit before respawn so pellets actually matter
+  s.respawnT = 1.2 + Math.random() * 1.1; // 1.2–2.3s
 }
+
 
 function respawnSnake(s){
   const baseX = player ? player.x : 0;
@@ -1041,9 +1079,10 @@ function respawnSnake(s){
   s.angle = Math.random()*Math.PI*2;
   s.targetAngle = s.angle;
 
-  /* NEW: reset length on death (no keeping mass) */
-  s.length = s.spawnLength;
-  s.eaten = s.isPlayer ? 0 : Math.floor(s.spawnLength / 8);
+  // respawn small (bots), normal (player)
+  s.length = s.respawnLen;
+  s.eaten = 0;
+
 
   updateRadius(s);
   seedBody(s);
@@ -1453,6 +1492,17 @@ function tick(now){
     addBodyPointIfNeeded(s);
     trimBodyToLength(s);
   }
+// NEW: handle delayed respawns
+for(let i=0;i<snakes.length;i++){
+  const s = snakes[i];
+  if(s.alive) continue;
+  if(s.respawnT > 0){
+    s.respawnT -= dt;
+    if(s.respawnT <= 0){
+      respawnSnake(s);
+    }
+  }
+}
 
   updateCamera(dt);
 
