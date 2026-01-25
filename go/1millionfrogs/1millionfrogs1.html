@@ -266,11 +266,11 @@ const MUSIC_SRC = "assets/1millionfrogs.mp3";
    SETTINGS
 ========================================================= */
 const SETTINGS = {
-  bots: 5,
-  starterGiants: 2,
+  bots: 6,
+  starterGiants: 3,
   pelletTarget: 650,
 
-  segSpacing: 14,
+  segSpacing: 12,
   maxSegPoints: 220,
 
   baseSpeed: 175,
@@ -666,7 +666,7 @@ function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, used
   for(let i=0;i<count;i++){
     const id = baseId + i;
     const a  = rand01(id*17) * Math.PI*2;
-    const r  = 1400 + rand01(id*23)*2600;   // ~1400–4000
+    const r  = 650 + rand01(id*23)*1200;
     const x  = Math.cos(a)*r;
     const y  = Math.sin(a)*r;
 
@@ -700,7 +700,7 @@ function spawnWorldSnakes(){
 ========================================================= */
 function ensurePellets(camX, camY){
   const target = SETTINGS.pelletTarget;
-  const radius = 2600;
+  const radius = 1750;
 
   while(WORLD.pellets.length < target){
     const i = WORLD.pellets.length + ((Math.random()*1e9)|0);
@@ -824,33 +824,13 @@ function aiUpdate(s, dt){
       if(dx*dx+dy*dy < 1300*1300){ tx=golden.x; ty=golden.y; }
     }
 
-   if(player && player.alive){
-  const dx = player.x - s.x, dy = player.y - s.y;
-  const d2 = dx*dx + dy*dy;
-
-  // if bot is meaningfully bigger, it hunts you and tries to "cut you off"
-  if(s.length > player.length * 1.12 && d2 < 1400*1400){
-    const d = Math.sqrt(d2);
-
-    // lead target in front of player (cutoff)
-    const lead = clamp(220 + d*0.18, 220, 520);
-    const px = player.x + Math.cos(player.angle) * lead;
-    const py = player.y + Math.sin(player.angle) * lead;
-
-    // tiny sideways bias so it's not always head-on
-    const side = (rand01((s.id*9999) | 0) < 0.5 ? -1 : 1);
-    const off  = clamp(110 + d*0.06, 110, 260);
-    const ox = -Math.sin(player.angle) * off * side;
-    const oy =  Math.cos(player.angle) * off * side;
-
-    tx = px + ox;
-    ty = py + oy;
-
-    // boost more often when attacking (still cheap)
-    s.boost = (s.length > 320 && d < 1100 && Math.random() > 0.88);
-  }
-}
-
+    if(player && player.alive){
+      const dx=player.x-s.x, dy=player.y-s.y;
+      const d2=dx*dx+dy*dy;
+      if(s.length > player.length*1.18 && d2 < 900*900 && Math.random() > 0.5){
+        tx=player.x; ty=player.y;
+      }
+    }
 
     s.ai.targetX = tx;
     s.ai.targetY = ty;
@@ -860,20 +840,6 @@ function aiUpdate(s, dt){
   let ax=0, ay=0;
   for(let i=0;i<snakes.length;i++){
     const o=snakes[i];
-    // extra: avoid the PLAYER head if the player is bigger (prevents dumb head-ons)
-if(player && player.alive && player !== s && player.length > s.length * 1.05){
-  const dx = s.x - player.x, dy = s.y - player.y;
-  const d2 = dx*dx + dy*dy;
-  if(d2 < 520*520){
-    const inv = 1 / Math.max(1, Math.sqrt(d2));
-    ax += dx * inv * 1.35;
-    ay += dy * inv * 1.35;
-
-    // if it gets too close, stop boosting to reduce suicide
-    if(d2 < 280*280) s.boost = false;
-  }
-}
-
     if(o===s || !o.alive) continue;
     if(o.length < s.length*1.20) continue;
     const dx=s.x-o.x, dy=s.y-o.y;
@@ -993,7 +959,7 @@ function respawnSnake(s){
   const baseX = player ? player.x : 0;
   const baseY = player ? player.y : 0;
   const a = Math.random()*Math.PI*2;
-  const r = 1200 + Math.random()*2200; 
+  const r = 420 + Math.random()*900;
 
   s.x = baseX + Math.cos(a)*r;
   s.y = baseY + Math.sin(a)*r;
@@ -1212,12 +1178,11 @@ function drawWorld(){
 
     const b=s.body;
     const big = (s.radius > 22);
-    const isLeader = (leader && s === leader);
+    const playerGold = (s.isPlayer && isNumberOne);
 
-    const spr = isLeader
+    const spr = playerGold
       ? (big ? SPRITES.snakeGoldBig : SPRITES.snakeGold)
       : (big ? SPRITES.snakeBig : SPRITES.snake);
-
 
     for(let i=b.length-1;i>=0;i--){
       const pt=b[i];
@@ -1233,22 +1198,10 @@ function drawWorld(){
         ctx.fillStyle = "black";
         ctx.fillText(s.name, sx, sy - spr.height*0.55);
 
-       if(isLeader){
-        const crown = SPRITES.crown;
-        ctx.drawImage(crown, sx - crown.width/2, sy - spr.height*0.95 - crown.height/2);
-
-        // OPTIONAL: tiny glow pulse (cheap + slither vibe)
-        // comment out if you want zero extra effects
-        const pulse = 0.45 + 0.35 * Math.sin(performance.now() * 0.006);
-        ctx.save();
-        ctx.globalAlpha = pulse * 0.35;
-        ctx.beginPath();
-        ctx.arc(sx, sy, spr.width * 0.62, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 215, 0, 1)";
-        ctx.fill();
-        ctx.restore();
-      }
-
+        if(playerGold){
+          const crown=SPRITES.crown;
+          ctx.drawImage(crown, sx - crown.width/2, sy - spr.height*0.95 - crown.height/2);
+        }
       }
     }
   }
@@ -1397,6 +1350,7 @@ function tick(now){
   drawLeaderboardLayer();
   drawWorld();
   drawLeaderArrow(leader);
+  drawYarisFlash();
 
   if(player){
     const b = player.boost ? "on" : "off";
