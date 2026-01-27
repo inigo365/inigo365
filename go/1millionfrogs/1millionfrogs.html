@@ -256,6 +256,8 @@ document.getElementById("backBtnOverlay").addEventListener("click", () => histor
 ========================================================= */
 const BG_SRC    = "assets/realm1.jpg";
 const MUSIC_SRC = "assets/1millionfrogs.mp3";
+const SFX_DIE_SRC  = "assets/sfx_die.mp3";
+const SFX_GOLD_SRC = "assets/sfx_gold.mp3";
 
 /* =========================================================
    SETTINGS
@@ -350,9 +352,49 @@ async function tryStartMusic(){
     musicUnlocked = true;
   }catch{}
 }
+/* =========================================================
+   SFX (simple + iOS-safe)
+========================================================= */
+let sfxOn = true;
+
+// small helper that allows overlapping sounds
+function makeSfx(src, vol = 0.9){
+  const a = new Audio(src);
+  a.preload = "auto";
+  a.volume = vol;
+
+  return {
+    base: a,
+    play(){
+      if(!sfxOn) return;
+      try{
+        // clone so the sound can overlap with itself
+        const b = a.cloneNode();
+        b.volume = a.volume;
+        b.play().catch(()=>{});
+      }catch{}
+    }
+  };
+}
+
+const SFX = {
+  die:  makeSfx(SFX_DIE_SRC, 0.95),
+  gold: makeSfx(SFX_GOLD_SRC, 0.85),
+};
+
+// unlock audio on first interaction (pairs with your existing unlockAudio)
+function unlockSfx(){
+  try{
+    // “prime” the audio pipeline on iOS
+    SFX.die.base.play().then(()=>{ SFX.die.base.pause(); SFX.die.base.currentTime = 0; }).catch(()=>{});
+    SFX.gold.base.play().then(()=>{ SFX.gold.base.pause(); SFX.gold.base.currentTime = 0; }).catch(()=>{});
+  }catch{}
+}
+
 function unlockAudio(){
   if(musicUnlocked) return;
   tryStartMusic();
+  unlockSfx();
 }
 function setMusic(on){
   musicOn = !!on;
@@ -1088,7 +1130,8 @@ function eatCheck(s){
 
     const gi = golden.indexOf(p);
 if(gi !== -1){
-  golden.splice(gi, 1);     // remove THIS golden pellet
+  golden.splice(gi, 1);
+  if(s.isPlayer) SFX.gold.play();
   s.eaten += 8;             // your tuned reward
   s.length += 60;
   updateRadius(s);
@@ -1166,6 +1209,7 @@ function checkPop(s){
 
 function popSnake(s){
   if(!s.alive) return;
+  if(s.isPlayer) SFX.die.play();
 
   s.alive = false;
 
