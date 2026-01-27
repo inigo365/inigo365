@@ -665,6 +665,108 @@ button{
 
 .music-toggle:focus, .pause-toggle:focus, .boost-btn:focus{ outline:none !important; }
 
+/* ============================
+   PNG ARCADE CONTROLS (FINAL)
+   ============================ */
+
+/* paths (relative to this html file which already uses assets/realm1.jpg etc) */
+:root{--joy-base:url("assets/joy_base.png");--joy-stem:url("assets/joy_stem.png");--joy-ball:url("assets/joy_ball.png");--boost-btn:url("assets/button.png");}
+
+/* force pixel rendering */
+.joy,.joy *, .boost-btn, .boost-btn *{image-rendering:pixelated;image-rendering:crisp-edges;-ms-interpolation-mode:nearest-neighbor;}
+
+/* container size (scale of your art on-screen) */
+.joy{width:140px;height:120px;left:50%;bottom:10px;transform:translateX(-50%);pointer-events:auto;touch-action:none;}
+
+/* JOYSTICK BASE = single PNG, no shadows/gradients */
+.joy-base{inset:0;background:transparent!important;border:0!important;box-shadow:none!important;background-image:var(--joy-base)!important;background-size:100% 100%!important;background-repeat:no-repeat!important;}
+.joy-base::before{content:none!important;}
+.joy-plate,.joy-hole{display:none!important;} /* your base art includes these now */
+
+/* handle anchor: keep same so your math still “feels” right */
+.joy-handle{position:absolute;left:50%;bottom:26px;width:0;height:0;transform:translateX(-50%);z-index:3;}
+
+/* STEM = PNG that rotates/squashes/extends using your existing CSS vars */
+.joy-stem{
+  position:absolute;
+  left:50%;
+  bottom:-2px;
+  width:32px;                          /* display size on screen */
+  height:calc(92px + var(--stem-ext,0px));
+  transform:
+    translateX(calc(-50% + var(--stem-x,0px)))
+    rotate(var(--stem-rot,0deg))
+    scaleY(var(--stem-sy,1));
+  transform-origin:50% 100%;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  background-image:var(--joy-stem)!important;
+  background-size:100% 100%!important;
+  background-repeat:no-repeat!important;
+  z-index:1;
+}
+
+/* BALL = PNG that moves with --joy-dx/--joy-dy */
+.joy-ball{
+  position:absolute;
+  left:50%;
+  bottom:42px;
+  width:48px;
+  height:48px;
+  aspect-ratio:1/1;
+  transform:translate(calc(-50% + var(--joy-dx,0px)), calc(var(--joy-dy,0px)));
+  border:0!important;
+  border-radius:0!important;           /* IMPORTANT: let the PNG define the circle */
+  overflow:visible!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  background-image:var(--joy-ball)!important;
+  background-size:100% 100%!important;
+  background-repeat:no-repeat!important;
+  z-index:2;
+}
+.joy-ball::after{content:none!important;}
+
+/* BOOST BUTTON = single PNG */
+.boost-btn{
+  position:fixed;
+  left:10px;
+  bottom:64px;
+  z-index:36;
+  pointer-events:auto;
+  width:120px;                         /* display size on screen */
+  height:120px;
+  padding:0;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  display:block;
+  touch-action:none;
+}
+.boost-btn::before,.boost-btn::after{content:none!important;} /* remove old rim/base layers */
+
+/* put the PNG on the button itself */
+.boost-btn{
+  background-image:var(--boost-btn)!important;
+  background-size:100% 100%!important;
+  background-repeat:no-repeat!important;
+}
+
+/* label styling (optional) */
+.boost-btn span{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  font-size:18px;
+  color:#000;
+  pointer-events:none;
+  text-transform:lowercase;
+}
+.boost-btn:active{transform:translateY(2px);}
+
+/* IMPORTANT: don’t pixelate your text buttons unless you want that */
 
 </style>
 
