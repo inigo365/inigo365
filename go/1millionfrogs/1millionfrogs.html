@@ -238,7 +238,15 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   left: 8px;
   z-index: 10000;
 }
-/* ===== Mobile controls (joystick + boost) ===== */
+/* ============================
+   MOBILE CONTROLS (PIXEL ARCADE)
+   - everything feels pixelated
+   - smaller beige base like classic arcade
+   - joystick stem leans (no 360 spin)
+   - boost button rim dark red + pixel circle edges
+   ============================ */
+
+/* container */
 .mobile-controls{
   position:fixed;
   left:0; right:0; bottom:8px;
@@ -250,18 +258,115 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   .mobile-controls{ display:block; }
 }
 
+/* ============================
+   PIXEL SHAPES (stepped edges)
+   ============================ */
+
+/* Pixel circle mask (stepped edges like a pencil-tool circle) */
+.px-circle{
+  -webkit-clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+  clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+}
+
+/* Pixel rounded-rectangle (stepped corners) */
+.px-roundrect{
+  -webkit-clip-path: polygon(
+    8% 0%, 92% 0%,
+    96% 4%, 100% 8%,
+    100% 92%,
+    96% 96%, 92% 100%,
+    8% 100%,
+    4% 96%, 0% 92%,
+    0% 8%,
+    4% 4%
+  );
+  clip-path: polygon(
+    8% 0%, 92% 0%,
+    96% 4%, 100% 8%,
+    100% 92%,
+    96% 96%, 92% 100%,
+    8% 100%,
+    4% 96%, 0% 92%,
+    0% 8%,
+    4% 4%
+  );
+}
+
+/* ============================
+   JOYSTICK
+   ============================ */
+
+/* smaller base, more like the reference */
 .joy{
   position:fixed;
   left:50%;
   bottom:10px;
   transform:translateX(-50%);
-  width:148px;
-  height:132px;
+  width:132px;      /* smaller */
+  height:112px;     /* smaller */
   pointer-events:auto;
   touch-action:none;
 }
 
-/* arcade housing (rounded, not square) */
+/* beige housing (pixel rounded corners) */
 .joy-base{
   position:absolute;
   inset:0;
@@ -269,103 +374,248 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   border:4px solid #000;
   box-sizing:border-box;
 
-  /* rounded like plastic housing */
-  border-radius:18px;
+  /* pixel corners */
+  border-radius:0;
+  -webkit-clip-path: inherit;
+  clip-path: inherit;
 
-  /* chunky “pixel” depth (no blur) */
+  /* chunky cabinet shadow (no blur) */
   box-shadow:
     4px 4px 0 rgba(0,0,0,0.22),
     8px 8px 0 rgba(0,0,0,0.10);
 }
 
-/* inner bevel to make it feel like molded plastic */
+/* apply pixel-rounded rect mask to the base */
+.joy-base.px-roundrect{
+  -webkit-clip-path: polygon(
+    8% 0%, 92% 0%,
+    96% 4%, 100% 8%,
+    100% 92%,
+    96% 96%, 92% 100%,
+    8% 100%,
+    4% 96%, 0% 92%,
+    0% 8%,
+    4% 4%
+  );
+  clip-path: polygon(
+    8% 0%, 92% 0%,
+    96% 4%, 100% 8%,
+    100% 92%,
+    96% 96%, 92% 100%,
+    8% 100%,
+    4% 96%, 0% 92%,
+    0% 8%,
+    4% 4%
+  );
+}
+
+/* inner bevel (pixel-ish) */
 .joy-base::before{
   content:"";
   position:absolute;
   inset:8px;
-  border-radius:14px;
+  border:4px solid rgba(0,0,0,0.18);
+  box-sizing:border-box;
+
+  /* keep corners stepped */
+  -webkit-clip-path: polygon(
+    10% 0%, 90% 0%,
+    95% 5%, 100% 10%,
+    100% 90%,
+    95% 95%, 90% 100%,
+    10% 100%,
+    5% 95%, 0% 90%,
+    0% 10%,
+    5% 5%
+  );
+  clip-path: polygon(
+    10% 0%, 90% 0%,
+    95% 5%, 100% 10%,
+    100% 90%,
+    95% 95%, 90% 100%,
+    10% 100%,
+    5% 95%, 0% 90%,
+    0% 10%,
+    5% 5%
+  );
+
   box-shadow:
-    inset 4px 4px 0 rgba(255,255,255,0.35),
+    inset 4px 4px 0 rgba(255,255,255,0.30),
     inset -4px -4px 0 rgba(0,0,0,0.14);
+
   pointer-events:none;
+  opacity:0.9;
 }
 
-/* the “panel plate” area */
+/* plate area */
 .joy-plate{
   position:absolute;
-  left:16px; right:16px;
-  bottom:14px;
-  height:42px;
+  left:14px; right:14px;
+  bottom:10px;
+  height:36px;
 
   background:#f5f1e5;
   border:4px solid #000;
   box-sizing:border-box;
-  border-radius:14px;
+
+  /* stepped corners */
+  border-radius:0;
+  -webkit-clip-path: polygon(
+    10% 0%, 90% 0%,
+    95% 8%, 100% 14%,
+    100% 86%,
+    95% 92%, 90% 100%,
+    10% 100%,
+    5% 92%, 0% 86%,
+    0% 14%,
+    5% 8%
+  );
+  clip-path: polygon(
+    10% 0%, 90% 0%,
+    95% 8%, 100% 14%,
+    100% 86%,
+    95% 92%, 90% 100%,
+    10% 100%,
+    5% 92%, 0% 86%,
+    0% 14%,
+    5% 8%
+  );
 
   z-index:4;
   overflow:hidden;
 
   box-shadow:
-    inset 4px 4px 0 rgba(255,255,255,0.28),
+    inset 4px 4px 0 rgba(255,255,255,0.22),
     inset -4px -4px 0 rgba(0,0,0,0.14);
 }
 
-/* rubber grommet / hole */
+/* grommet / hole (pixel circle) */
 .joy-hole{
   position:absolute;
   left:50%;
-  bottom:38px;
-  width:56px;
-  height:28px;
+  bottom:34px;
+  width:54px;
+  height:26px;
   transform:translateX(-50%);
+
   background:#2a2a2a;
   border:4px solid #000;
-  border-radius:999px;
+  box-sizing:border-box;
+
+  /* pixel oval-ish using circle mask + scale */
+  border-radius:0;
+  -webkit-clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+  clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+
   z-index:2;
+
   box-shadow:
     inset 4px 4px 0 rgba(255,255,255,0.08),
     inset -4px -4px 0 rgba(0,0,0,0.35);
 }
 
-/* anchor for stem/ball */
+/* anchor point */
 .joy-handle{
   position:absolute;
   left:50%;
-  bottom:30px;
+  bottom:26px;
   width:0;
   height:0;
   transform:translateX(-50%);
   z-index:3;
 }
 
-/* stem */
+/* stem: lean left/right under the ball (no 360 spin) */
 .joy-stem{
   position:absolute;
   left:50%;
   bottom:-8px;
   width:14px;
-  height:54px;
+  height:50px;
 
-  transform:translateX(-50%) rotate(var(--stem-rot, 0deg));
+  transform:
+    translateX(calc(-50% + var(--stem-x, 0px)))
+    rotate(var(--stem-rot, 0deg))
+    scaleY(var(--stem-sy, 1));
   transform-origin: 50% 100%;
 
   background:#3b3b3b;
   border:4px solid #000;
   box-sizing:border-box;
-  border-radius:10px;
+
+  /* keep edges chunky */
+  border-radius:0;
 
   box-shadow:
     inset 4px 4px 0 rgba(255,255,255,0.10),
     inset -4px -4px 0 rgba(0,0,0,0.25);
 }
 
-/* red ball top (round, with chunky highlight) */
+/* ball top: true pixel-circle edge */
 .joy-ball{
   position:absolute;
   left:50%;
-  bottom:46px;
-  width:46px;
-  height:46px;
+  bottom:42px;
+  width:44px;
+  height:44px;
 
   transform:translate(
     calc(-50% + var(--joy-dx, 0px)),
@@ -375,30 +625,98 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   background:#d63a3a;
   border:4px solid #000;
   box-sizing:border-box;
-  border-radius:999px;
 
-  /* hard “16-bit” shading */
+  border-radius:0;
+  -webkit-clip-path: inherit;
+  clip-path: inherit;
+
   box-shadow:
     inset -10px -10px 0 rgba(0,0,0,0.18),
     inset  8px  8px 0 rgba(255,255,255,0.16),
     4px 4px 0 rgba(0,0,0,0.22);
 }
 
-/* little bright specular dot (pixel highlight) */
+/* apply pixel-circle mask to the ball when you add .px-circle */
+.joy-ball.px-circle{
+  -webkit-clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+  clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+}
+
+/* pixel highlight on ball */
 .joy-ball::after{
   content:"";
   position:absolute;
-  left:10px;
+  left:12px;
   top:10px;
   width:10px;
   height:10px;
-  border-radius:999px;
   background:rgba(255,255,255,0.45);
-  box-shadow:
-    2px 2px 0 rgba(0,0,0,0.10);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.12);
+  border-radius:0;
 }
 
-/* --- boost button: arcade rim + cap --- */
+/* ============================
+   BOOST BUTTON (PIXEL ARCADE)
+   ============================ */
+
 .boost-btn{
   position:fixed;
   left:10px;
@@ -409,16 +727,18 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   width:86px;
   height:86px;
 
-  /* outer rim */
-  background:#2a2a2a;
+  /* rim is dark red */
+  background:#8b1f1f;
   border:4px solid #000;
-  border-radius:999px;
+  box-sizing:border-box;
+
+  border-radius:0;
 
   box-shadow:
     4px 4px 0 rgba(0,0,0,0.22),
     8px 8px 0 rgba(0,0,0,0.10),
     inset 4px 4px 0 rgba(255,255,255,0.10),
-    inset -4px -4px 0 rgba(0,0,0,0.35);
+    inset -4px -4px 0 rgba(0,0,0,0.30);
 
   display:flex;
   align-items:center;
@@ -434,23 +754,152 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   touch-action:none;
 }
 
+/* pixel-circle mask on the rim */
+.boost-btn.px-circle{
+  -webkit-clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+  clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+}
+
 /* red cap */
 .boost-btn::before{
   content:"";
   width:62px;
   height:62px;
-  border-radius:999px;
 
   background:#d63a3a;
   border:4px solid #000;
   box-sizing:border-box;
+
+  border-radius:0;
 
   box-shadow:
     inset -10px -10px 0 rgba(0,0,0,0.18),
     inset  8px  8px 0 rgba(255,255,255,0.16);
 }
 
-/* label sits on top */
+/* pixel-circle mask on cap too */
+.boost-btn.px-circle::before{
+  -webkit-clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+  clip-path: polygon(
+    50% 0%,
+    62% 2%,
+    72% 6%,
+    80% 12%,
+    86% 20%,
+    92% 30%,
+    96% 40%,
+    100% 50%,
+    96% 60%,
+    92% 70%,
+    86% 80%,
+    80% 88%,
+    72% 94%,
+    62% 98%,
+    50% 100%,
+    38% 98%,
+    28% 94%,
+    20% 88%,
+    14% 80%,
+    8% 70%,
+    4% 60%,
+    0% 50%,
+    4% 40%,
+    8% 30%,
+    14% 20%,
+    20% 12%,
+    28% 6%,
+    38% 2%
+  );
+}
+
+/* label */
 .boost-btn span{
   position:absolute;
   pointer-events:none;
@@ -508,17 +957,14 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 <button class="music-toggle" id="musicBtn" type="button">music: on</button>
 <button class="pause-toggle" id="pauseBtn" type="button">pause game</button>
 <div class="mobile-controls" id="mobileControls" aria-hidden="true">
-  <button class="boost-btn" id="boostBtn" type="button"><span>boost</span></button>
-
+<button class="boost-btn px-circle" id="boostBtn" ...>
  <div class="joy" id="joy">
-  <div class="joy-base"></div>
-  <div class="joy-plate"></div>
+<div class="joy-base px-roundrect"></div>  <div class="joy-plate"></div>
   <div class="joy-hole"></div>
 
   <div class="joy-handle">
     <div class="joy-stem" id="joyStem"></div>
-    <div class="joy-ball" id="joyBall"></div>
-  </div>
+<div class="joy-ball px-circle" id="joyBall"></div>  </div>
 </div>
 </div> <!-- ✅ CLOSE mobile-controls -->
 
@@ -969,26 +1415,25 @@ function snapPx(v){
 
 function setJoyVisual(nx, ny){
   // ellipse travel
-  let px = nx * JOY_RAD_X;
-  let py = ny * JOY_RAD_Y;
+  let px = snapPx(nx * JOY_RAD_X);
+  let py = snapPx(ny * JOY_RAD_Y);
 
-  // snap = chunky/pixel movement
-  px = snapPx(px);
-  py = snapPx(py);
-
-  // ✅ move knob via CSS vars (does NOT overwrite centering)
+  // knob movement
   joyBall.style.setProperty("--joy-dx", `${px}px`);
   joyBall.style.setProperty("--joy-dy", `${py}px`);
 
-  // stem leans toward knob (small degrees)
-  const ang = Math.atan2(py, px);              // radians
-  const deg = ang * 180 / Math.PI;
+  // ✅ stem should NOT rotate freely based on atan2 (causes flip/jitter)
+  // make it lean mostly based on X (left/right), like a real front-on joystick
+  const t = clamp(px / JOY_RAD_X, -1, 1);
 
-  const mag = Math.min(1, Math.hypot(px, py) / Math.max(JOY_RAD_X, JOY_RAD_Y));
-  const lean = 10 + mag * 10;                  // 10–20 degrees-ish
+  // max lean angle
+  const rot = t * 14;                 // degrees, left/right only
+  const stemX = snapPx(px * 0.28);    // top of stem shifts toward ball
+  const stemSY = 1 - Math.min(0.10, Math.abs(py) / (JOY_RAD_Y || 1) * 0.10); // subtle squash
 
-  // rotate toward direction, but keep it “physical”
-  joyStem.style.setProperty("--stem-rot", `${deg * (lean/20)}deg`);
+  joyStem.style.setProperty("--stem-rot", `${rot}deg`);
+  joyStem.style.setProperty("--stem-x", `${stemX}px`);
+  joyStem.style.setProperty("--stem-sy", `${stemSY}`);
 }
 
 function resetJoy(){
@@ -999,8 +1444,12 @@ function resetJoy(){
 
   joyBall.style.setProperty("--joy-dx", `0px`);
   joyBall.style.setProperty("--joy-dy", `0px`);
+
   joyStem.style.setProperty("--stem-rot", `0deg`);
+  joyStem.style.setProperty("--stem-x", `0px`);
+  joyStem.style.setProperty("--stem-sy", `1`);
 }
+
 
 if(IS_MOBILE){
   // show container for accessibility state
