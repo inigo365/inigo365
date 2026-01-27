@@ -261,7 +261,7 @@ const MUSIC_SRC = "assets/1millionfrogs.mp3";
    SETTINGS
 ========================================================= */
 const SETTINGS = {
-  bots: 9,
+  bots: 11,
 
   pelletTarget: 650,
   segSpacing: 14,
@@ -278,13 +278,13 @@ const SETTINGS = {
   cellSize: 110,
 
   // spawning feel (middle ground)
-  botSpawnMinR: 2200,
-  botSpawnRandR: 7000,
+  botSpawnMinR: 1200,
+  botSpawnRandR: 9000,
 
   respawnMinR: 2200,
   respawnRandR: 7000,
 
-  midGiants: 5,
+  midGiants: 3,
   midLenMin: 3000,
   midLenMax: 8000,
 
@@ -294,6 +294,8 @@ const SETTINGS = {
   giantLenMax: 20000,
 };
 
+const MAX_HUNTERS = 1; // try 1–3
+let huntersNow = 0;
 /* =========================================================
    CANVAS
 ========================================================= */
@@ -406,7 +408,11 @@ function pickName(used){
 ========================================================= */
 const WORLD = { seed: 1337, pellets: [] };
 let golden = [];                 // can hold multiple gold pellets
-const GOLDEN_MAX = 3;            // try 2–5 (3 is a nice middle)
+// keep at least this many gold pellets in the "active" area around the camera
+const GOLDEN_ONSCREEN_TARGET = 3;
+
+// hard cap (safety)
+const GOLDEN_MAX = 10;         // try 2–5 (3 is a nice middle)
 
 /* =========================================================
    HELPERS
@@ -666,7 +672,8 @@ function makeSnake(opts){
       t: 0,
       targetX: 0,
       targetY: 0,
-      wanderA: rand01(opts.id*999+11)*Math.PI*2
+      wanderA: rand01(opts.id*999+11)*Math.PI*2,
+      huntT: 0
     }
   };
 }
@@ -712,7 +719,8 @@ function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, used
   for(let i=0;i<count;i++){
     const id = baseId + i;
     const a  = rand01(id*17) * Math.PI*2;
-    const r  = SETTINGS.botSpawnMinR + rand01(id*23)*SETTINGS.botSpawnRandR;
+    const u  = rand01(id*23);                 // 0..1
+    const r  = SETTINGS.botSpawnMinR + Math.pow(u, 0.65) * SETTINGS.botSpawnRandR;
     const x  = Math.cos(a)*r;
     const y  = Math.sin(a)*r;
 
@@ -752,6 +760,19 @@ function spawnWorldSnakes(){
 /* =========================================================
    PELLETS
 ========================================================= */
+function spawnGoldenNear(camX, camY, radius){
+  // try a few attempts to find a spot
+  for(let t=0; t<12; t++){
+    const a = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * radius * 0.95; // bias toward closer
+    const x = camX + Math.cos(a)*r;
+    const y = camY + Math.sin(a)*r;
+    golden.push({ x, y, r: 26 });
+    return true;
+  }
+  return false;
+}
+
 function ensurePellets(camX, camY){
   const target = SETTINGS.pelletTarget;
   const radius = 2600;
@@ -799,6 +820,11 @@ function ensurePellets(camX, camY){
     const dx=g0.x-camX, dy=g0.y-camY;
     if(dx*dx+dy*dy > maxD2) golden.splice(i, 1);
   }
+  // guarantee at least 1 golden in the active area most of the time
+while(golden.length < GOLDEN_ONSCREEN_TARGET && golden.length < GOLDEN_MAX){
+  spawnGoldenNear(camX, camY, radius);
+}
+
 }
 
 function rebuildPelletGrid(){
@@ -868,14 +894,22 @@ function updateMovement(s, dt){
 ========================================================= */
 const tmpAvoidBodies = [];
 function aiUpdate(s, dt){
+  if(typeof s.ai.huntT !== "number") s.ai.huntT = 0;
   s.ai.t -= dt;
+
+  // keep an active hunt going even between "decision ticks"
+  if(s.ai.huntT > 0) s.ai.huntT = Math.max(0, s.ai.huntT - dt);
+
+  // defaults (carry forward last target until next decision)
+  let tx = s.ai.targetX;
+  let ty = s.ai.targetY;
 
   if(s.ai.t <= 0){
     s.ai.t = 0.25 + Math.random()*0.55;
 
     // wander baseline
-    let tx = s.x + Math.cos(s.ai.wanderA)*420;
-    let ty = s.y + Math.sin(s.ai.wanderA)*420;
+    tx = s.x + Math.cos(s.ai.wanderA)*420;
+    ty = s.y + Math.sin(s.ai.wanderA)*420;
     s.ai.wanderA += (Math.random()-0.5)*0.9;
 
     // seek pellets
@@ -891,58 +925,75 @@ function aiUpdate(s, dt){
       if(best){ tx=best.x; ty=best.y; }
     }
 
-    // seek golden if near-ish
     // seek nearest golden (if any)
-if(golden.length){
-  let bestG = null, bestD2 = Infinity;
-  for(let i=0;i<golden.length;i++){
-    const g0 = golden[i];
-    const dx=g0.x-s.x, dy=g0.y-s.y;
-    const d2=dx*dx+dy*dy;
-    if(d2 < bestD2){ bestD2=d2; bestG=g0; }
-  }
-  if(bestG && bestD2 < 1300*1300){
-    tx = bestG.x; ty = bestG.y;
-  }
-}
-
-
-    // hunt player with cutoff behavior if clearly bigger
-    if(player && player.alive){
-      const dx = player.x - s.x, dy = player.y - s.y;
-      const d2 = dx*dx + dy*dy;
-
-      if(s.length > player.length * 1.25 && d2 < 1600*1600){
-        const d = Math.sqrt(d2);
-        const lead = clamp(220 + d*0.18, 220, 520);
-        const px = player.x + Math.cos(player.angle) * lead;
-        const py = player.y + Math.sin(player.angle) * lead;
-
-        const side = (rand01((s.id*9999)|0) < 0.5 ? -1 : 1);
-        const off  = clamp(110 + d*0.06, 110, 260);
-        const ox = -Math.sin(player.angle) * off * side;
-        const oy =  Math.cos(player.angle) * off * side;
-
-        tx = px + ox;
-        ty = py + oy;
-
-        // commit more when attacking
-        s.boost = (s.length > 320 && d < 1100 && Math.random() > 0.88);
+    if(golden && golden.length){
+      let bestG=null, bestGD2=Infinity;
+      for(let i=0;i<golden.length;i++){
+        const g0 = golden[i];
+        const dx=g0.x-s.x, dy=g0.y-s.y;
+        const d2=dx*dx+dy*dy;
+        if(d2 < bestGD2){ bestGD2=d2; bestG=g0; }
+      }
+      if(bestG && bestGD2 < 1300*1300){
+        tx = bestG.x;
+        ty = bestG.y;
       }
     }
 
+    // decide whether to START hunting the player (but only sometimes)
+    if(player && player.alive && !s.isPlayer){
+      const dx = player.x - s.x, dy = player.y - s.y;
+      const d2 = dx*dx + dy*dy;
+
+      // stricter + random gate so you don't get surrounded
+      if(s.length > player.length * 1.45 && d2 < 1200*1200 && Math.random() < 0.35){
+        s.ai.huntT = 3.5; // chase for ~3.5 seconds, then stop
+      }
+    }
+
+    // store target for in-between frames
     s.ai.targetX = tx;
     s.ai.targetY = ty;
 
-    // occasional boost elsewhere
+    // occasional boost elsewhere (kept subtle)
     if(!s.boost) s.boost = (s.length > 260 && Math.random() > 0.985);
+  }
+
+  // if currently hunting, override tx/ty to a "cutoff" target near the player
+  if(player && player.alive && s.ai.huntT > 0){
+    const dx = player.x - s.x, dy = player.y - s.y;
+    const d2 = dx*dx + dy*dy;
+    const d  = Math.sqrt(d2);
+
+    const lead = clamp(220 + d*0.18, 220, 520);
+    const px = player.x + Math.cos(player.angle) * lead;
+    const py = player.y + Math.sin(player.angle) * lead;
+
+    const side = (Math.random() < 0.5 ? -1 : 1);
+    const off  = clamp(110 + d*0.06, 110, 260);
+    const ox = -Math.sin(player.angle) * off * side;
+    const oy =  Math.cos(player.angle) * off * side;
+
+    tx = px + ox;
+    ty = py + oy;
+
+    // hunting should feel pressuring but not suicide-y
+    s.boost = false;
+
+    // also keep stored target in sync
+    s.ai.targetX = tx;
+    s.ai.targetY = ty;
+  }else{
+    // not hunting: use stored targets
+    tx = s.ai.targetX;
+    ty = s.ai.targetY;
   }
 
   // avoidance steering
   let ax=0, ay=0;
-  let danger = 0;
+  let danger=0;
 
-  // avoid player head once (prevents dumb head-ons)
+  // avoid player head (prevents dumb head-ons)
   if(player && player.alive && player !== s && player.length > s.length * 1.05){
     const dx = s.x - player.x, dy = s.y - player.y;
     const d2 = dx*dx + dy*dy;
@@ -974,25 +1025,24 @@ if(golden.length){
   // avoid nearby bodies (cheap grid query)
   tmpAvoidBodies.length = 0;
   bodyGrid.query(s.x, s.y, 140 + s.radius, tmpAvoidBodies);
-  if(tmpAvoidBodies.length){
-    for(let i=0;i<tmpAvoidBodies.length;i++){
-      const pt = tmpAvoidBodies[i];
-      if(pt.sid === s.id) continue;
-      const dx = s.x - pt.x, dy = s.y - pt.y;
-      const d2 = dx*dx + dy*dy;
-      if(d2 < (150*150)){
-        danger = 1;
-        const inv = 1 / Math.max(1, Math.sqrt(d2));
-        ax += dx * inv * 1.1;
-        ay += dy * inv * 1.1;
-      }
+  for(let i=0;i<tmpAvoidBodies.length;i++){
+    const pt = tmpAvoidBodies[i];
+    if(pt.sid === s.id) continue;
+    const dx = s.x - pt.x, dy = s.y - pt.y;
+    const d2 = dx*dx + dy*dy;
+    if(d2 < 150*150){
+      danger = 1;
+      const inv = 1 / Math.max(1, Math.sqrt(d2));
+      ax += dx * inv * 1.1;
+      ay += dy * inv * 1.1;
     }
   }
 
   if(danger) s.boost = false;
 
-  const vx = (s.ai.targetX - s.x) + ax*420;
-  const vy = (s.ai.targetY - s.y) + ay*420;
+  // combine goal + avoidance
+  const vx = (tx - s.x) + ax*420;
+  const vy = (ty - s.y) + ay*420;
 
   s.targetAngle = Math.atan2(vy, vx);
 
@@ -1000,6 +1050,7 @@ if(golden.length){
   const wiggleAmt = 0.18 * clamp(1 - (s.length / 16000), 0.20, 1);
   s.targetAngle += Math.sin(performance.now()*0.0018 + s.id*13.37) * wiggleAmt;
 }
+
 
 /* =========================================================
    EATING
@@ -1133,6 +1184,7 @@ function respawnSnake(s){
   s.boost=false;
   s.boostDropT=0;
   s.ai.t = 0;
+  s.ai.huntT = 0;
 
   s.alive=true;
 }
@@ -1419,6 +1471,7 @@ let last = performance.now();
 function tick(now){
   const dt = Math.min(0.033, (now - last)/1000);
   last = now;
+  huntersNow = 0;
 
   if(player && player.alive){
     const dx = pointer.x - W/2;
