@@ -247,54 +247,76 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   pointer-events:none;        /* children will enable */
 }
 
-/* joystick centered between music/pause */
 .joy{
   position:fixed;
   left:50%;
   bottom:8px;
   transform:translateX(-50%);
-  width:86px;
-  height:86px;
+  width:94px;
+  height:94px;
   pointer-events:auto;
   touch-action:none;
 }
 
-.joy-base{
-  position:absolute; inset:0;
+/* base plate */
+.joy-plate{
+  position:absolute;
+  left:6px; right:6px;
+  bottom:10px;
+  height:28px;
   background:#fff;
   border:2px solid #000;
   box-sizing:border-box;
+
+  /* chunky “pixel” shadow */
+  box-shadow:
+    2px 2px 0 rgba(0,0,0,0.25),
+    4px 4px 0 rgba(0,0,0,0.12);
 }
 
-.joy-base:before{
-  content:"";
-  position:absolute; inset:10px;
-  border:2px dashed rgba(0,0,0,0.35);
-  box-sizing:border-box;
-}
-
-/* stick is a chunky 8-bit-ish square */
-.joy-stick{
+/* the moving handle group */
+.joy-handle{
   position:absolute;
-  left:50%; top:50%;
-  width:34px; height:34px;
-  transform:translate(-50%,-50%);
+  left:50%;
+  bottom:18px;               /* sits on plate */
+  width:0; height:0;
+  transform:translate(-50%, 0);
+  will-change: transform;
+}
+
+/* stem */
+.joy-stem{
+  position:absolute;
+  left:50%;
+  bottom:10px;
+  width:10px;
+  height:34px;
+  transform:translateX(-50%);
   background:#fff;
   border:2px solid #000;
   box-sizing:border-box;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
 }
 
-/* tiny “pixel corners” vibe */
-.joy-stick:before,
-.joy-stick:after{
-  content:"";
+/* red ball top */
+.joy-ball{
   position:absolute;
-  width:6px; height:6px;
-  background:#000;
-  opacity:0.25;
+  left:50%;
+  bottom:36px;
+  width:34px;
+  height:34px;
+  transform:translateX(-50%);
+  background:#d63a3a;
+  border:2px solid #000;
+  box-sizing:border-box;
+  border-radius: 10px;       /* “pixel” rounded */
+
+  /* simple highlight like your ref */
+  box-shadow:
+    inset -6px -6px 0 rgba(0,0,0,0.12),
+    inset  6px  6px 0 rgba(255,255,255,0.18),
+    2px 2px 0 rgba(0,0,0,0.20);
 }
-.joy-stick:before{ left:-2px; top:-2px; }
-.joy-stick:after{ right:-2px; bottom:-2px; }
 
 /* boost button above music toggle */
 .boost-btn{
@@ -371,12 +393,14 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   <button class="boost-btn" id="boostBtn" type="button">boost</button>
 
   <div class="joy" id="joy">
-    <div class="joy-base"></div>
-    <div class="joy-stick" id="joyStick"></div>
+  <div class="joy-plate"></div>
+
+  <!-- this whole group moves -->
+  <div class="joy-handle" id="joyStick">
+    <div class="joy-stem"></div>
+    <div class="joy-ball"></div>
   </div>
 </div>
-
-
 <script>
 /* iOS pinch prevention + no context menu */
 document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive:false });
@@ -814,18 +838,21 @@ let joyVec = { x: 0, y: 0 }; // -1..1
 const JOY_RADIUS = 24;       // pixels the stick can move (feel free: 20-30)
 
 function setJoyVisual(nx, ny){
-  // move stick in pixels
   const px = nx * JOY_RADIUS;
   const py = ny * JOY_RADIUS;
-  joyStick.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+
+  // handle group is anchored at (50%, bottom) already, so just offset it
+  joyStick.style.transform = `translate(${px}px, ${py}px)`;
 }
+
 
 function resetJoy(){
   joyVec.x = 0; joyVec.y = 0;
   joyActive = false;
   joyId = null;
-  setJoyVisual(0,0);
+  joyStick.style.transform = `translate(0px, 0px)`;
 }
+
 if(IS_MOBILE){
   // show container for accessibility state
   mobileControls.setAttribute("aria-hidden", "false");
