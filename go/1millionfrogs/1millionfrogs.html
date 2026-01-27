@@ -477,6 +477,150 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   transform: translateY(2px);
 }
 
+/* =========================================
+   FIXES / POLISH PASS (NO BLACK OUTLINES)
+   - remove black borders on controller UI
+   - bigger boost red cap (label unchanged)
+   - beige base behind music + pause buttons
+   - joystick ball rounder + spherical shading
+   - stem always connected to ball
+   ========================================= */
+
+/* 1) REMOVE ALL BLACK OUTLINE BOXES (controller only) */
+.joy-base,
+.joy-base::before,
+.joy-plate,
+.joy-hole,
+.joy-stem,
+.joy-ball,
+.boost-btn,
+.boost-btn::before{
+  border: none !important;
+}
+
+/* keep the chunky “arcade” feel via shadows only (no black box border) */
+.joy-base{
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.22),
+    8px 8px 0 rgba(0,0,0,0.10);
+}
+.joy-plate{
+  box-shadow:
+    inset 4px 4px 0 rgba(255,255,255,0.18),
+    inset -4px -4px 0 rgba(0,0,0,0.12);
+}
+.joy-hole{
+  box-shadow:
+    inset 4px 4px 0 rgba(255,255,255,0.08),
+    inset -4px -4px 0 rgba(0,0,0,0.32);
+}
+.joy-stem{
+  box-shadow:
+    inset 4px 4px 0 rgba(255,255,255,0.10),
+    inset -4px -4px 0 rgba(0,0,0,0.25);
+}
+.boost-btn{
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.22),
+    8px 8px 0 rgba(0,0,0,0.10);
+}
+
+/* 2) BOOST BUTTON: make the RED CAP bigger, keep label same size */
+.boost-btn{
+  width: 86px;
+  height: 86px;
+  font-size: 18px; /* label unchanged */
+}
+
+/* bigger inner red cap */
+.boost-btn::before{
+  width: 68px;   /* was 62 */
+  height: 68px;  /* was 62 */
+}
+
+/* 3) MUSIC + PAUSE: beige arcade “base” behind them */
+.music-toggle,
+.pause-toggle{
+  /* match the beige controller style */
+  background-image: var(--px-base);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  border: none;
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.18),
+    8px 8px 0 rgba(0,0,0,0.08);
+
+  /* give a bit more “cabinet” padding */
+  padding: 10px 14px;
+}
+
+/* optional: slightly inset bevel like the joystick base */
+.music-toggle::before,
+.pause-toggle::before{
+  content:"";
+  position:absolute;
+  inset: 8px;
+  background-image: var(--px-base-inset);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  opacity: 0.55;
+  pointer-events:none;
+}
+
+/* ensure pseudo-element sits behind the text */
+.music-toggle,
+.pause-toggle{
+  position: fixed; /* you already have fixed, but we need it for ::before positioning */
+  isolation: isolate;
+}
+.music-toggle::before,
+.pause-toggle::before{ z-index: -1; }
+
+/* 4) JOYSTICK BALL: rounder pixel circle + spherical shading (SVG swap)
+   - replaces --pxcircle-red with a rounder silhouette + shaded “sphere”
+*/
+:root{
+  --pxcircle-red: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'><rect width='32' height='32' fill='none'/><g><g fill='%23d63a3a'><rect x='13' y='2' width='6' height='1'/><rect x='11' y='3' width='10' height='1'/><rect x='9' y='4' width='14' height='2'/><rect x='7' y='6' width='18' height='2'/><rect x='6' y='8' width='20' height='16'/><rect x='7' y='24' width='18' height='2'/><rect x='9' y='26' width='14' height='2'/><rect x='11' y='28' width='10' height='1'/><rect x='13' y='29' width='6' height='1'/></g><g fill='%23b12b2b'><rect x='18' y='10' width='6' height='1'/><rect x='19' y='11' width='6' height='1'/><rect x='19' y='12' width='7' height='2'/><rect x='20' y='14' width='6' height='2'/><rect x='20' y='16' width='5' height='2'/><rect x='19' y='18' width='5' height='2'/><rect x='18' y='20' width='5' height='2'/></g><g fill='%23ffffff' opacity='0.32'><rect x='10' y='9' width='2' height='2'/><rect x='11' y='8' width='2' height='2'/><rect x='12' y='7' width='2' height='2'/><rect x='13' y='7' width='2' height='1'/></g></g></svg>");
+}
+
+/* make the joystick ball read more like a sphere (extra shading via CSS too) */
+.joy-ball{
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.18),
+    inset -10px -10px 0 rgba(0,0,0,0.18),
+    inset  8px  8px 0 rgba(255,255,255,0.14);
+}
+
+/* your old square highlight was making it look blocky — soften it */
+.joy-ball::after{
+  width: 8px;
+  height: 8px;
+  left: 12px;
+  top: 10px;
+  opacity: 0.28;
+}
+
+/* 5) STEM ALWAYS CONNECTS TO BALL
+   We force overlap by adjusting the baseline geometry:
+   - stem is taller + sits higher
+   - ball sits slightly lower
+   - they overlap by design so it never “disconnects”
+*/
+.joy-stem{
+  height: 58px;     /* was ~50 */
+  bottom: -2px;     /* lifts stem up toward ball */
+}
+
+/* move ball down a touch so stem visually touches it at rest + during movement */
+.joy-ball{
+  bottom: 40px;     /* was 42 */
+}
+
+/* also make the stem sit behind the ball, like a real joystick */
+.joy-stem{ z-index: 1; }
+.joy-ball{ z-index: 2; }
+
+
 </style>
 </head>
 
