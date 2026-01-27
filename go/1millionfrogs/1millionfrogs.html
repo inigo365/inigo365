@@ -248,8 +248,20 @@ const c = document.getElementById("c");
 const ctx = c.getContext("2d", { alpha:false });
 
 const statsEl = document.getElementById("stats");
-document.getElementById("backBtn").addEventListener("click", () => history.back());
-document.getElementById("backBtnOverlay").addEventListener("click", () => history.back());
+const backBtn = document.getElementById("backBtn");
+const backBtnOverlay = document.getElementById("backBtnOverlay");
+const nameOverlay = document.getElementById("nameOverlay");
+
+// in-game back = open name screen
+backBtn.addEventListener("click", ()=>{
+  nameOverlay.style.display = "flex";
+  nameOverlay.setAttribute("aria-hidden","false");
+  try{ nameInput.focus(); }catch{}
+});
+
+// overlay back = go back to /go
+backBtnOverlay.addEventListener("click", ()=> history.back());
+
 
 /* =========================================================
    ASSETS
@@ -291,7 +303,7 @@ const SETTINGS = {
   midLenMax: 8000,
 
   // big “starter giants”
-  starterGiants: 5,
+  starterGiants: 4,
   giantLenMin: 10000,
   giantLenMax: 20000,
 };
@@ -352,12 +364,14 @@ async function tryStartMusic(){
     musicUnlocked = true;
   }catch{}
 }
+
 /* =========================================================
    SFX (simple + iOS-safe)
 ========================================================= */
 let sfxOn = true;
+let sfxUnlocked = false;
 
-// small helper that allows overlapping sounds
+// overlap-safe (clone) + iOS gate
 function makeSfx(src, vol = 0.9){
   const a = new Audio(src);
   a.preload = "auto";
@@ -366,9 +380,8 @@ function makeSfx(src, vol = 0.9){
   return {
     base: a,
     play(){
-      if(!sfxOn) return;
+      if(!sfxOn || !sfxUnlocked) return;
       try{
-        // clone so the sound can overlap with itself
         const b = a.cloneNode();
         b.volume = a.volume;
         b.play().catch(()=>{});
@@ -382,20 +395,40 @@ const SFX = {
   gold: makeSfx(SFX_GOLD_SRC, 0.85),
 };
 
-// unlock audio on first interaction (pairs with your existing unlockAudio)
+// unlock WITHOUT audible blips
 function unlockSfx(){
+  if(sfxUnlocked) return;
+  sfxUnlocked = true;
+
+  // iOS sometimes needs one user-gesture play; do it silently
   try{
-    // “prime” the audio pipeline on iOS
-    SFX.die.base.play().then(()=>{ SFX.die.base.pause(); SFX.die.base.currentTime = 0; }).catch(()=>{});
-    SFX.gold.base.play().then(()=>{ SFX.gold.base.pause(); SFX.gold.base.currentTime = 0; }).catch(()=>{});
+    const a = SFX.gold.base;
+    const oldVol = a.volume;
+    a.volume = 0;
+
+    const p = a.play();
+    if(p && typeof p.then === "function"){
+      p.then(()=>{
+        a.pause();
+        a.currentTime = 0;
+        a.volume = oldVol;
+      }).catch(()=>{
+        a.volume = oldVol;
+      });
+    }else{
+      a.pause();
+      a.currentTime = 0;
+      a.volume = oldVol;
+    }
   }catch{}
 }
 
+
 function unlockAudio(){
-  if(musicUnlocked) return;
-  tryStartMusic();
-  unlockSfx();
+  unlockSfx();     // always try to unlock sfx on first gesture
+  tryStartMusic(); // music may or may not be on
 }
+
 function setMusic(on){
   musicOn = !!on;
   updateMusicButton();
@@ -450,8 +483,8 @@ function pickName(used){
 ========================================================= */
 const WORLD = { seed: 1337, pellets: [] };
 let golden = [];                 // can hold multiple gold pellets
-const GOLDEN_MAX = 6;          // total gold pellets allowed in the active area (try 4–10)
-const GOLDEN_CHANCE = 0.018;   // ~1.2% of spawned pellets become gold (try 0.008–0.02)
+const GOLDEN_MAX = 10;          // total gold pellets allowed in the active area (try 4–10)
+const GOLDEN_CHANCE = 0.028;   // ~1.2% of spawned pellets become gold (try 0.008–0.02)
 
 /* =========================================================
    HELPERS
@@ -1595,7 +1628,6 @@ function tick(now){
 /* =========================================================
    START / RESET
 ========================================================= */
-const nameOverlay = document.getElementById("nameOverlay");
 const nameInput = document.getElementById("nameInput");
 const startBtn = document.getElementById("startBtn");
 
