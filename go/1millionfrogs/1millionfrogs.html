@@ -1119,7 +1119,7 @@ const GOLDEN_MAX = 10;          // total gold pellets allowed in the active area
 const GOLDEN_CHANCE = 0.028;   // ~1.2% of spawned pellets become gold (try 0.008–0.02)
 const GOLD_LEN_BONUS = 85;       // was 60, "slightly more"
 const GOLD_EAT_BONUS = 10;       // was 8, optional (keeps scoreboard feel)
-const GOLD_MAGNET_T = 1.0;       // seconds
+const GOLD_MAGNET_T = 2.0;       // seconds
 const GOLD_MAGNET_RADIUS = 220;  // extra attraction range (px)
 const GOLD_SPEED_MUL = 1.12;     // slight speed boost (12%)
 
@@ -1873,17 +1873,24 @@ function aiUpdate(s, dt){
   let ax=0, ay=0;
   let danger=0;
 
-  // avoid player head if player is bigger (stops dumb head-ons)
-  if(player && player.alive && player !== s && player.length > s.length * 1.05){
-    const dx = s.x - player.x, dy = s.y - player.y;
-    const d2 = dx*dx + dy*dy;
-    if(d2 < 560*560){
-      danger = 1;
-      const inv = 1 / Math.max(1, Math.sqrt(d2));
-      ax += dx * inv * 1.25;
-      ay += dy * inv * 1.25;
-    }
+ // avoid player head if player is bigger, BUT smaller bots shouldn't be perfect at it
+if(player && player.alive && player !== s && player.length > s.length * 1.05){
+  const dx = s.x - player.x, dy = s.y - player.y;
+  const d2 = dx*dx + dy*dy;
+
+  const ratio = player.length / Math.max(1, s.length); // >1 when player bigger
+  const sloppy = clamp((ratio - 1.05) / 0.60, 0, 1);   // 0..1 as player gets much bigger
+
+  const range = 560 - sloppy * 160;   // smaller range when player is way bigger
+  const weight = 1.25 - sloppy * 0.55; // weaker avoidance when player is way bigger
+
+  if(d2 < range*range){
+    danger = 1;
+    const inv = 1 / Math.max(1, Math.sqrt(d2));
+    ax += dx * inv * weight;
+    ay += dy * inv * weight;
   }
+}
 
   // avoid bigger heads
   for(let i=0;i<snakes.length;i++){
@@ -1909,12 +1916,16 @@ function aiUpdate(s, dt){
     if(pt.sid === s.id) continue;
     const dx = s.x - pt.x, dy = s.y - pt.y;
     const d2 = dx*dx + dy*dy;
+    const smart = (player && player.alive) ? clamp((s.length / player.length - 1.0) / 0.60, 0, 1) : 0;
+    const avoidW = 1.15 + smart * 0.65; // up to 1.8 when bot is much bigger
+
     if(d2 < 165*165){
       danger = 1;
       const inv = 1 / Math.max(1, Math.sqrt(d2));
-      ax += dx * inv * 1.15;
-      ay += dy * inv * 1.15;
+      ax += dx * inv * avoidW;
+      ay += dy * inv * avoidW;
     }
+
   }
 
   if(danger) s.boost = false;
@@ -2007,11 +2018,18 @@ function checkPop(s){
     const dx = o.x - s.x, dy = o.y - s.y;
     const rr = (o.radius + s.radius) * 0.92;
     if(dx*dx + dy*dy < rr*rr){
-      const eps = 18;
-      if(s.length + eps < o.length) return popSnake(s);
-      if(o.length + eps < s.length) return popSnake(o);
+      // head-to-head: bigger should usually win, ties still trade
+      const a = s.length;
+      const b = o.length;
+
+      const biggerWinsRatio = 1.05; // 5% bigger = reliable win (tweak 1.03–1.08)
+      if(a > b * biggerWinsRatio) return popSnake(o);
+      if(b > a * biggerWinsRatio) return popSnake(s);
+
+      // near-equal: trade
       popSnake(o);
       return popSnake(s);
+
     }
   }
 
