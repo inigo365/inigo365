@@ -238,6 +238,88 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   left: 8px;
   z-index: 10000;
 }
+/* ===== Mobile controls (joystick + boost) ===== */
+.mobile-controls{
+  position:fixed;
+  left:0; right:0; bottom:8px;
+  z-index:36;
+  display:none;               /* only show on mobile via JS */
+  pointer-events:none;        /* children will enable */
+}
+
+/* joystick centered between music/pause */
+.joy{
+  position:fixed;
+  left:50%;
+  bottom:8px;
+  transform:translateX(-50%);
+  width:86px;
+  height:86px;
+  pointer-events:auto;
+  touch-action:none;
+}
+
+.joy-base{
+  position:absolute; inset:0;
+  background:#fff;
+  border:2px solid #000;
+  box-sizing:border-box;
+}
+
+.joy-base:before{
+  content:"";
+  position:absolute; inset:10px;
+  border:2px dashed rgba(0,0,0,0.35);
+  box-sizing:border-box;
+}
+
+/* stick is a chunky 8-bit-ish square */
+.joy-stick{
+  position:absolute;
+  left:50%; top:50%;
+  width:34px; height:34px;
+  transform:translate(-50%,-50%);
+  background:#fff;
+  border:2px solid #000;
+  box-sizing:border-box;
+}
+
+/* tiny “pixel corners” vibe */
+.joy-stick:before,
+.joy-stick:after{
+  content:"";
+  position:absolute;
+  width:6px; height:6px;
+  background:#000;
+  opacity:0.25;
+}
+.joy-stick:before{ left:-2px; top:-2px; }
+.joy-stick:after{ right:-2px; bottom:-2px; }
+
+/* boost button above music toggle */
+.boost-btn{
+  position:fixed;
+  left:8px;
+  bottom:56px;               /* sits above music */
+  z-index:36;
+  pointer-events:auto;
+
+  font-family:"RuneScape UF", Arial, sans-serif;
+  font-size:20px;
+  padding:6px 10px;
+  border:2px solid #000;
+  background:#fff;
+  text-transform:lowercase;
+  color:var(--btn);
+}
+.boost-btn:hover{ text-decoration:underline; }
+.boost-btn:active{ transform: translateY(1px); }
+
+/* only show on touch/coarse pointer */
+@media (pointer: coarse){
+  .mobile-controls{ display:block; }
+}
+
 </style>
 </head>
 
@@ -284,6 +366,16 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 
 <button class="music-toggle" id="musicBtn" type="button">music: on</button>
 <button class="pause-toggle" id="pauseBtn" type="button">pause game</button>
+<!-- mobile controls -->
+<div class="mobile-controls" id="mobileControls" aria-hidden="true">
+  <button class="boost-btn" id="boostBtn" type="button">boost</button>
+
+  <div class="joy" id="joy">
+    <div class="joy-base"></div>
+    <div class="joy-stick" id="joyStick"></div>
+  </div>
+</div>
+
 
 <script>
 /* iOS pinch prevention + no context menu */
@@ -304,6 +396,11 @@ const startBtn  = document.getElementById("startBtn");
 const resetBtn  = document.getElementById("resetBtn");
 const pauseBtn  = document.getElementById("pauseBtn");
 const pauseOverlay = document.getElementById("pauseOverlay");
+const mobileControls = document.getElementById("mobileControls");
+const joy = document.getElementById("joy");
+const joyStick = document.getElementById("joyStick");
+const boostBtn = document.getElementById("boostBtn");
+
 pauseOverlay.addEventListener("pointerdown", (e)=>{
   e.preventDefault();
   if(paused) setPaused(false);
@@ -707,26 +804,136 @@ const SPRITES = {
 /* =========================================================
    INPUT (smooth iOS: 1 finger steers; 2 fingers boosts)
 ========================================================= */
+// mobile detection (keeps desktop unchanged)
+const IS_MOBILE = matchMedia("(pointer: coarse)").matches || ("ontouchstart" in window);
+
+// joystick state
+let joyActive = false;
+let joyId = null;
+let joyVec = { x: 0, y: 0 }; // -1..1
+const JOY_RADIUS = 24;       // pixels the stick can move (feel free: 20-30)
+
+function setJoyVisual(nx, ny){
+  // move stick in pixels
+  const px = nx * JOY_RADIUS;
+  const py = ny * JOY_RADIUS;
+  joyStick.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+}
+
+function resetJoy(){
+  joyVec.x = 0; joyVec.y = 0;
+  joyActive = false;
+  joyId = null;
+  setJoyVisual(0,0);
+}
+if(IS_MOBILE){
+  // show container for accessibility state
+  mobileControls.setAttribute("aria-hidden", "false");
+
+  joy.addEventListener("pointerdown", (e)=>{
+    if(paused) return;
+    e.preventDefault();
+    joyActive = true;
+    joyId = e.pointerId;
+    joy.setPointerCapture(joyId);
+
+    const r = joy.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+
+    const len = Math.hypot(dx,dy) || 1;
+    const max = JOY_RADIUS;
+    const k = Math.min(1, len / max);
+
+    const nx = (dx / len) * k;
+    const ny = (dy / len) * k;
+
+    joyVec.x = nx;
+    joyVec.y = ny;
+    setJoyVisual(nx, ny);
+  }, { passive:false });
+
+  joy.addEventListener("pointermove", (e)=>{
+    if(!joyActive || e.pointerId !== joyId) return;
+    if(paused) return;
+    e.preventDefault();
+
+    const r = joy.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+
+    const len = Math.hypot(dx,dy) || 1;
+    const max = JOY_RADIUS;
+    const k = Math.min(1, len / max);
+
+    const nx = (dx / len) * k;
+    const ny = (dy / len) * k;
+
+    joyVec.x = nx;
+    joyVec.y = ny;
+    setJoyVisual(nx, ny);
+  }, { passive:false });
+
+  joy.addEventListener("pointerup", (e)=>{
+    if(e.pointerId !== joyId) return;
+    e.preventDefault();
+    resetJoy();
+  }, { passive:false });
+
+  joy.addEventListener("pointercancel", (e)=>{
+    if(e.pointerId !== joyId) return;
+    e.preventDefault();
+    resetJoy();
+  }, { passive:false });
+}
+if(IS_MOBILE){
+  boostBtn.addEventListener("pointerdown", (e)=>{
+    if(paused) return;
+    e.preventDefault();
+    boostHeld = true;
+  }, { passive:false });
+
+  boostBtn.addEventListener("pointerup", (e)=>{
+    e.preventDefault();
+    boostHeld = false;
+  }, { passive:false });
+
+  boostBtn.addEventListener("pointercancel", (e)=>{
+    e.preventDefault();
+    boostHeld = false;
+  }, { passive:false });
+}
+
 let pointer = { x: W/2, y: H/2 };
 let boostHeld = false;
 
 c.addEventListener("touchstart", (e)=>{
   e.preventDefault();
+  if(!IS_MOBILE){
   const t = e.touches[0];
   if(t){ pointer.x = t.clientX; pointer.y = t.clientY; }
-  boostHeld = e.touches.length >= 2;
+}
+  if(!IS_MOBILE) boostHeld = e.touches.length >= 2;
 }, { passive:false });
 
 c.addEventListener("touchmove", (e)=>{
   e.preventDefault();
+  if(!IS_MOBILE){
   const t = e.touches[0];
   if(t){ pointer.x = t.clientX; pointer.y = t.clientY; }
-  boostHeld = e.touches.length >= 2;
+}
+  if(!IS_MOBILE) boostHeld = e.touches.length >= 2;
 }, { passive:false });
 
 c.addEventListener("touchend", (e)=>{
   e.preventDefault();
-  boostHeld = e.touches.length >= 2;
+  if(!IS_MOBILE) boostHeld = e.touches.length >= 2;
 }, { passive:false });
 
 c.addEventListener("touchcancel", (e)=>{
@@ -1685,10 +1892,23 @@ function tick(now){
   huntersNow = 0;
 
   if(player && player.alive){
+  if(IS_MOBILE){
+    // joystick vector steers relative to screen center
+    const dx = joyVec.x;
+    const dy = joyVec.y;
+
+    // if stick is near center, don't force direction changes
+    const m2 = dx*dx + dy*dy;
+    if(m2 > 0.0004){
+      player.targetAngle = Math.atan2(dy, dx);
+    }
+  }else{
     const dx = pointer.x - W/2;
     const dy = pointer.y - H/2;
     player.targetAngle = Math.atan2(dy, dx);
   }
+}
+
 
   // AI
   for(let i=0;i<snakes.length;i++){
