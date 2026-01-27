@@ -243,100 +243,150 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   position:fixed;
   left:0; right:0; bottom:8px;
   z-index:36;
-  display:none;               /* only show on mobile via JS */
-  pointer-events:none;        /* children will enable */
+  display:none;               /* only show on mobile via CSS media */
+  pointer-events:none;
 }
 
+/* only show on touch/coarse pointer */
+@media (pointer: coarse){
+  .mobile-controls{ display:block; }
+}
+
+/* --- joystick container --- */
 .joy{
   position:fixed;
   left:50%;
-  bottom:8px;
+  bottom:10px;
   transform:translateX(-50%);
-  width:110px;
-  height:110px;
+  width:132px;
+  height:132px;
   pointer-events:auto;
   touch-action:none;
 }
 
-.joy-plate{
+/* beige base like arcade housing */
+.joy-base{
   position:absolute;
-  left:10px; right:10px;
-  bottom:10px;
-  height:32px;
-  background:#fff;
-  border:3px solid #000;
+  inset:0;
+  background:#e9e2c9;
+  border:4px solid #000;
   box-sizing:border-box;
-  z-index:3;                 /* plate is on top */
-  overflow:hidden;           /* hides anything “inside” it */
+  /* chunky/pixel vibe */
+  border-radius:0;
   box-shadow:
-    3px 3px 0 rgba(0,0,0,0.25),
-    6px 6px 0 rgba(0,0,0,0.10);
+    4px 4px 0 rgba(0,0,0,0.22),
+    8px 8px 0 rgba(0,0,0,0.10);
 }
 
-/* anchor point */
+/* “plate” the stem comes out of */
+.joy-plate{
+  position:absolute;
+  left:18px; right:18px;
+  bottom:18px;
+  height:34px;
+  background:#f5f1e5;
+  border:4px solid #000;
+  box-sizing:border-box;
+  z-index:4;
+  overflow:hidden;
+  box-shadow:
+    inset 4px 4px 0 rgba(255,255,255,0.25),
+    inset -4px -4px 0 rgba(0,0,0,0.12);
+}
+
+/* anchor point for stem/ball */
 .joy-handle{
   position:absolute;
   left:50%;
-  bottom:26px;               /* where the stem emerges */
-  width:0; height:0;
+  bottom:26px;          /* where stem emerges */
+  width:0;
+  height:0;
   transform:translateX(-50%);
-  z-index:2;                 /* under the plate */
+  z-index:3;
 }
 
-/* stem stays anchored; we rotate it slightly */
+/* stem: anchored, only LEANS */
 .joy-stem{
   position:absolute;
   left:50%;
-  bottom:-6px;               /* tuck into the plate */
-  width:12px;
-  height:42px;
-  transform:translateX(-50%);
+  bottom:-10px;         /* tuck into plate */
+  width:14px;
+  height:50px;
+  transform:translateX(-50%) rotate(var(--stem-rot, 0deg));
   transform-origin: 50% 100%;
-  background:#fff;
-  border:3px solid #000;
+  background:#d9d9d9;
+  border:4px solid #000;
   box-sizing:border-box;
   box-shadow:
-    3px 3px 0 rgba(0,0,0,0.15);
+    inset 4px 4px 0 rgba(255,255,255,0.18),
+    inset -4px -4px 0 rgba(0,0,0,0.12);
 }
 
-/* ball moves “on top” and feels pixel */
+/* knob: moves in an ellipse, stays centered via calc(-50% + dx) */
 .joy-ball{
   position:absolute;
   left:50%;
-  bottom:34px;
-  width:40px;
-  height:40px;
-  transform:translateX(-50%);
+  bottom:42px;
+  width:44px;
+  height:44px;
+
+  /* ✅ this keeps the original centering AND adds joystick movement */
+  transform:translate(
+    calc(-50% + var(--joy-dx, 0px)),
+    calc(var(--joy-dy, 0px))
+  );
+
   background:#d63a3a;
-  border:3px solid #000;
+  border:4px solid #000;
   box-sizing:border-box;
-  border-radius: 6px;        /* less smooth */
+
+  /* pixel feel: no smooth rounding */
+  border-radius:0;
   image-rendering: pixelated;
 
   box-shadow:
-    inset -8px -8px 0 rgba(0,0,0,0.14),
-    inset  6px  6px 0 rgba(255,255,255,0.18),
-    3px 3px 0 rgba(0,0,0,0.20);
+    inset -8px -8px 0 rgba(0,0,0,0.18),
+    inset  6px  6px 0 rgba(255,255,255,0.16),
+    4px 4px 0 rgba(0,0,0,0.20);
 }
 
-/* boost button above music toggle */
+/* --- boost button: arcade red button --- */
 .boost-btn{
   position:fixed;
-  left:8px;
-  bottom:56px;               /* sits above music */
+  left:10px;
+  bottom:64px;
   z-index:36;
   pointer-events:auto;
 
+  width:78px;
+  height:78px;
+
+  border:4px solid #000;
+  background:#d63a3a;
+  color:#000;
+
   font-family:"RuneScape UF", Arial, sans-serif;
   font-size:20px;
-  padding:6px 10px;
-  border:2px solid #000;
-  background:#fff;
   text-transform:lowercase;
-  color:var(--btn);
+
+  border-radius:0;
+  box-shadow:
+    inset -8px -8px 0 rgba(0,0,0,0.18),
+    inset  6px  6px 0 rgba(255,255,255,0.16),
+    4px 4px 0 rgba(0,0,0,0.22),
+    8px 8px 0 rgba(0,0,0,0.10);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+  touch-action:none;
 }
-.boost-btn:hover{ text-decoration:underline; }
-.boost-btn:active{ transform: translateY(1px); }
+.boost-btn:active{
+  transform: translateY(2px);
+}
 
 /* only show on touch/coarse pointer */
 @media (pointer: coarse){
@@ -389,17 +439,19 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 
 <button class="music-toggle" id="musicBtn" type="button">music: on</button>
 <button class="pause-toggle" id="pauseBtn" type="button">pause game</button>
-<!-- mobile controls -->
 <div class="mobile-controls" id="mobileControls" aria-hidden="true">
   <button class="boost-btn" id="boostBtn" type="button">boost</button>
 
   <div class="joy" id="joy">
-  <div class="joy-plate"></div>
-  <div class="joy-handle">
-    <div class="joy-stem" id="joyStem"></div>
-    <div class="joy-ball" id="joyBall"></div>
+    <div class="joy-base"></div>
+    <div class="joy-plate"></div>
+
+    <div class="joy-handle">
+      <div class="joy-stem" id="joyStem"></div>
+      <div class="joy-ball" id="joyBall"></div>
+    </div>
   </div>
-</div>
+</div> <!-- ✅ CLOSE mobile-controls -->
 
 <script>
 /* iOS pinch prevention + no context menu */
@@ -422,7 +474,6 @@ const pauseBtn  = document.getElementById("pauseBtn");
 const pauseOverlay = document.getElementById("pauseOverlay");
 const mobileControls = document.getElementById("mobileControls");
 const joy = document.getElementById("joy");
-const joyStick = document.getElementById("joyStick");
 const joyStem = document.getElementById("joyStem");
 const joyBall = document.getElementById("joyBall");
 const boostBtn = document.getElementById("boostBtn");
@@ -839,9 +890,9 @@ let joyId = null;
 let joyVec = { x: 0, y: 0 }; // -1..1
 const JOY_RADIUS = 24;       // pixels the stick can move (feel free: 20-30)
 
-const JOY_RAD_X = 22;   // ellipse radii
-const JOY_RAD_Y = 16;
-const PIXEL_STEP = 2;  // snap to 2px grid for pixel feel
+const JOY_RAD_X = 26;   // ellipse travel (feel free: 22–30)
+const JOY_RAD_Y = 18;
+const PIXEL_STEP = 2;   // snap to grid for chunky movement
 
 function snapPx(v){
   return Math.round(v / PIXEL_STEP) * PIXEL_STEP;
@@ -856,23 +907,31 @@ function setJoyVisual(nx, ny){
   px = snapPx(px);
   py = snapPx(py);
 
-  // move ball only
-  joyBall.style.transform = `translate(${px}px, ${py}px)`;
+  // ✅ move knob via CSS vars (does NOT overwrite centering)
+  joyBall.style.setProperty("--joy-dx", `${px}px`);
+  joyBall.style.setProperty("--joy-dy", `${py}px`);
 
-  // lean the stem toward ball (small angle)
-  const ang = Math.atan2(py, px);
-  const lean = Math.min(14, Math.hypot(px, py) * 0.6); // degrees
-  joyStem.style.transform = `translateX(-50%) rotate(${(ang * 180/Math.PI)}deg) rotate(${lean}deg)`;
+  // stem leans toward knob (small degrees)
+  const ang = Math.atan2(py, px);              // radians
+  const deg = ang * 180 / Math.PI;
+
+  const mag = Math.min(1, Math.hypot(px, py) / Math.max(JOY_RAD_X, JOY_RAD_Y));
+  const lean = 10 + mag * 10;                  // 10–20 degrees-ish
+
+  // rotate toward direction, but keep it “physical”
+  joyStem.style.setProperty("--stem-rot", `${deg * (lean/20)}deg`);
 }
 
 function resetJoy(){
-  joyVec.x = 0; joyVec.y = 0;
+  joyVec.x = 0;
+  joyVec.y = 0;
   joyActive = false;
   joyId = null;
-  joyBall.style.transform = `translate(0px, 0px)`;
-  joyStem.style.transform = `translateX(-50%) rotate(0deg)`;
-}
 
+  joyBall.style.setProperty("--joy-dx", `0px`);
+  joyBall.style.setProperty("--joy-dy", `0px`);
+  joyStem.style.setProperty("--stem-rot", `0deg`);
+}
 
 if(IS_MOBILE){
   // show container for accessibility state
