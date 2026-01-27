@@ -243,94 +243,130 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   position:fixed;
   left:0; right:0; bottom:8px;
   z-index:36;
-  display:none;               /* only show on mobile via CSS media */
+  display:none;
   pointer-events:none;
 }
-
-/* only show on touch/coarse pointer */
 @media (pointer: coarse){
   .mobile-controls{ display:block; }
 }
 
-/* --- joystick container --- */
 .joy{
   position:fixed;
   left:50%;
   bottom:10px;
   transform:translateX(-50%);
-  width:132px;
+  width:148px;
   height:132px;
   pointer-events:auto;
   touch-action:none;
 }
 
-/* beige base like arcade housing */
+/* arcade housing (rounded, not square) */
 .joy-base{
   position:absolute;
   inset:0;
   background:#e9e2c9;
   border:4px solid #000;
   box-sizing:border-box;
-  /* chunky/pixel vibe */
-  border-radius:0;
+
+  /* rounded like plastic housing */
+  border-radius:18px;
+
+  /* chunky “pixel” depth (no blur) */
   box-shadow:
     4px 4px 0 rgba(0,0,0,0.22),
     8px 8px 0 rgba(0,0,0,0.10);
 }
 
-/* “plate” the stem comes out of */
+/* inner bevel to make it feel like molded plastic */
+.joy-base::before{
+  content:"";
+  position:absolute;
+  inset:8px;
+  border-radius:14px;
+  box-shadow:
+    inset 4px 4px 0 rgba(255,255,255,0.35),
+    inset -4px -4px 0 rgba(0,0,0,0.14);
+  pointer-events:none;
+}
+
+/* the “panel plate” area */
 .joy-plate{
   position:absolute;
-  left:18px; right:18px;
-  bottom:18px;
-  height:34px;
+  left:16px; right:16px;
+  bottom:14px;
+  height:42px;
+
   background:#f5f1e5;
   border:4px solid #000;
   box-sizing:border-box;
+  border-radius:14px;
+
   z-index:4;
   overflow:hidden;
+
   box-shadow:
-    inset 4px 4px 0 rgba(255,255,255,0.25),
-    inset -4px -4px 0 rgba(0,0,0,0.12);
+    inset 4px 4px 0 rgba(255,255,255,0.28),
+    inset -4px -4px 0 rgba(0,0,0,0.14);
 }
 
-/* anchor point for stem/ball */
+/* rubber grommet / hole */
+.joy-hole{
+  position:absolute;
+  left:50%;
+  bottom:38px;
+  width:56px;
+  height:28px;
+  transform:translateX(-50%);
+  background:#2a2a2a;
+  border:4px solid #000;
+  border-radius:999px;
+  z-index:2;
+  box-shadow:
+    inset 4px 4px 0 rgba(255,255,255,0.08),
+    inset -4px -4px 0 rgba(0,0,0,0.35);
+}
+
+/* anchor for stem/ball */
 .joy-handle{
   position:absolute;
   left:50%;
-  bottom:26px;          /* where stem emerges */
+  bottom:30px;
   width:0;
   height:0;
   transform:translateX(-50%);
   z-index:3;
 }
 
-/* stem: anchored, only LEANS */
+/* stem */
 .joy-stem{
   position:absolute;
   left:50%;
-  bottom:-10px;         /* tuck into plate */
+  bottom:-8px;
   width:14px;
-  height:50px;
+  height:54px;
+
   transform:translateX(-50%) rotate(var(--stem-rot, 0deg));
   transform-origin: 50% 100%;
-  background:#d9d9d9;
+
+  background:#3b3b3b;
   border:4px solid #000;
   box-sizing:border-box;
+  border-radius:10px;
+
   box-shadow:
-    inset 4px 4px 0 rgba(255,255,255,0.18),
-    inset -4px -4px 0 rgba(0,0,0,0.12);
+    inset 4px 4px 0 rgba(255,255,255,0.10),
+    inset -4px -4px 0 rgba(0,0,0,0.25);
 }
 
-/* knob: moves in an ellipse, stays centered via calc(-50% + dx) */
+/* red ball top (round, with chunky highlight) */
 .joy-ball{
   position:absolute;
   left:50%;
-  bottom:42px;
-  width:44px;
-  height:44px;
+  bottom:46px;
+  width:46px;
+  height:46px;
 
-  /* ✅ this keeps the original centering AND adds joystick movement */
   transform:translate(
     calc(-50% + var(--joy-dx, 0px)),
     calc(var(--joy-dy, 0px))
@@ -339,18 +375,30 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   background:#d63a3a;
   border:4px solid #000;
   box-sizing:border-box;
+  border-radius:999px;
 
-  /* pixel feel: no smooth rounding */
-  border-radius:0;
-  image-rendering: pixelated;
-
+  /* hard “16-bit” shading */
   box-shadow:
-    inset -8px -8px 0 rgba(0,0,0,0.18),
-    inset  6px  6px 0 rgba(255,255,255,0.16),
-    4px 4px 0 rgba(0,0,0,0.20);
+    inset -10px -10px 0 rgba(0,0,0,0.18),
+    inset  8px  8px 0 rgba(255,255,255,0.16),
+    4px 4px 0 rgba(0,0,0,0.22);
 }
 
-/* --- boost button: arcade red button --- */
+/* little bright specular dot (pixel highlight) */
+.joy-ball::after{
+  content:"";
+  position:absolute;
+  left:10px;
+  top:10px;
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.45);
+  box-shadow:
+    2px 2px 0 rgba(0,0,0,0.10);
+}
+
+/* --- boost button: arcade rim + cap --- */
 .boost-btn{
   position:fixed;
   left:10px;
@@ -358,39 +406,59 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   z-index:36;
   pointer-events:auto;
 
-  width:78px;
-  height:78px;
+  width:86px;
+  height:86px;
 
+  /* outer rim */
+  background:#2a2a2a;
   border:4px solid #000;
-  background:#d63a3a;
-  color:#000;
+  border-radius:999px;
 
-  font-family:"RuneScape UF", Arial, sans-serif;
-  font-size:20px;
-  text-transform:lowercase;
-
-  border-radius:0;
   box-shadow:
-    inset -8px -8px 0 rgba(0,0,0,0.18),
-    inset  6px  6px 0 rgba(255,255,255,0.16),
     4px 4px 0 rgba(0,0,0,0.22),
-    8px 8px 0 rgba(0,0,0,0.10);
+    8px 8px 0 rgba(0,0,0,0.10),
+    inset 4px 4px 0 rgba(255,255,255,0.10),
+    inset -4px -4px 0 rgba(0,0,0,0.35);
 
   display:flex;
   align-items:center;
   justify-content:center;
 
+  font-family:"RuneScape UF", Arial, sans-serif;
+  font-size:18px;
+  text-transform:lowercase;
+  color:#000;
+
   -webkit-tap-highlight-color:transparent;
   user-select:none;
   touch-action:none;
 }
-.boost-btn:active{
-  transform: translateY(2px);
+
+/* red cap */
+.boost-btn::before{
+  content:"";
+  width:62px;
+  height:62px;
+  border-radius:999px;
+
+  background:#d63a3a;
+  border:4px solid #000;
+  box-sizing:border-box;
+
+  box-shadow:
+    inset -10px -10px 0 rgba(0,0,0,0.18),
+    inset  8px  8px 0 rgba(255,255,255,0.16);
 }
 
-/* only show on touch/coarse pointer */
-@media (pointer: coarse){
-  .mobile-controls{ display:block; }
+/* label sits on top */
+.boost-btn span{
+  position:absolute;
+  pointer-events:none;
+}
+
+/* pressed */
+.boost-btn:active{
+  transform: translateY(2px);
 }
 
 </style>
@@ -440,17 +508,18 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 <button class="music-toggle" id="musicBtn" type="button">music: on</button>
 <button class="pause-toggle" id="pauseBtn" type="button">pause game</button>
 <div class="mobile-controls" id="mobileControls" aria-hidden="true">
-  <button class="boost-btn" id="boostBtn" type="button">boost</button>
+  <button class="boost-btn" id="boostBtn" type="button"><span>boost</span></button>
 
-  <div class="joy" id="joy">
-    <div class="joy-base"></div>
-    <div class="joy-plate"></div>
+ <div class="joy" id="joy">
+  <div class="joy-base"></div>
+  <div class="joy-plate"></div>
+  <div class="joy-hole"></div>
 
-    <div class="joy-handle">
-      <div class="joy-stem" id="joyStem"></div>
-      <div class="joy-ball" id="joyBall"></div>
-    </div>
+  <div class="joy-handle">
+    <div class="joy-stem" id="joyStem"></div>
+    <div class="joy-ball" id="joyBall"></div>
   </div>
+</div>
 </div> <!-- ✅ CLOSE mobile-controls -->
 
 <script>
