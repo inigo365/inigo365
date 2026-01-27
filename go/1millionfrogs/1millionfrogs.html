@@ -189,6 +189,47 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
     gap:8px;
   }
 }
+.pause-overlay{
+  position:fixed; inset:0;
+  background: rgba(255,255,255,0.70);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9000; /* above game, below name overlay (9999) */
+  pointer-events:auto;
+}
+
+.pause-box{
+  border:2px solid #000;
+  background:#fff;
+  padding:14px 18px;
+  font-family:"RuneScape UF", Arial, sans-serif;
+  font-size:28px;
+  text-transform:lowercase;
+  text-align:center;
+}
+
+.pause-sub{
+  display:block;
+  margin-top:6px;
+  font-size:16px;
+  opacity:0.85;
+}
+
+.pause-toggle{
+  position:fixed;
+  right:8px;
+  bottom:8px;
+  z-index:35;
+  font-family:"RuneScape UF", Arial, sans-serif;
+  font-size:20px;
+  padding:6px 10px;
+  border:2px solid #000;
+  background:#fff;
+  text-transform:lowercase;
+  color:var(--btn);
+}
+.pause-toggle:hover{ text-decoration:underline; }
 
 /* ===== overlay back button ===== */
 .overlay-back{
@@ -234,8 +275,15 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
     <div class="hint">tip: boosting sheds mass behind you</div>
   </div>
 </div>
+<div class="pause-overlay" id="pauseOverlay" aria-hidden="true">
+  <div class="pause-box">
+    paused<br>
+    <span class="pause-sub">tap to resume</span>
+  </div>
+</div>
 
 <button class="music-toggle" id="musicBtn" type="button">music: on</button>
+<button class="pause-toggle" id="pauseBtn" type="button">pause game</button>
 
 <script>
 /* iOS pinch prevention + no context menu */
@@ -254,10 +302,15 @@ const nameOverlay = document.getElementById("nameOverlay");
 const nameInput = document.getElementById("nameInput");
 const startBtn  = document.getElementById("startBtn");
 const resetBtn  = document.getElementById("resetBtn");
+const pauseBtn  = document.getElementById("pauseBtn");
+const pauseOverlay = document.getElementById("pauseOverlay");
+pauseOverlay.addEventListener("pointerdown", (e)=>{
+  e.preventDefault();
+  if(paused) setPaused(false);
+}, { passive:false });
 
-
-// in-game back = open name screen
 backBtn.addEventListener("click", ()=>{
+  setPaused(true);
   nameOverlay.style.display = "flex";
   nameOverlay.setAttribute("aria-hidden","false");
   try{ nameInput.focus(); }catch{}
@@ -377,6 +430,7 @@ let sfxOn = true;
 let audioCtx = null;
 let sfxBuffers = { die:null, gold:null };
 let sfxReady = false;
+
 
 function getAudioCtx(){
   if(!audioCtx){
@@ -1578,8 +1632,54 @@ function drawLeaderArrow(leaderSnake){
    LOOP
 ========================================================= */
 let last = performance.now();
+let rafId = null;
+let paused = false;
+let gameRunning = false;
+
+function updatePauseUI(){
+  // pauseBtn always says "pause game"
+  pauseOverlay.style.display = paused ? "flex" : "none";
+  pauseOverlay.setAttribute("aria-hidden", paused ? "false" : "true");
+}
+
+function stopLoop(){
+  if(rafId !== null){
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+}
+
+function startLoop(){
+  stopLoop();                 // prevents stacked loops
+  last = performance.now();    // reset timing so dt doesn't jump
+  rafId = requestAnimationFrame(tick);
+}
+
+function setPaused(on){
+  paused = !!on;
+
+  // If game isn't running yet (still on name screen before first start),
+  // just update UI and don't start/stop loops.
+  if(!gameRunning){
+    updatePauseUI();
+    return;
+  }
+
+  if(paused){
+    boostHeld = false;   // stop boost immediately
+    stopLoop();          // hard freeze
+  }else{
+    startLoop();         // resume cleanly
+  }
+
+  updatePauseUI();
+}
 
 function tick(now){
+  if(paused || !gameRunning){
+    rafId = null;
+    return; // DO NOT schedule another frame
+  }
   const dt = Math.min(0.033, (now - last)/1000);
   last = now;
   huntersNow = 0;
@@ -1680,14 +1780,20 @@ function startGame(){
   nameOverlay.style.display = "none";
   nameOverlay.setAttribute("aria-hidden","true");
 
-  last = performance.now();
-  requestAnimationFrame(tick);
+  gameRunning = true;
+  paused = false;
+  updatePauseUI();
+  startLoop();
 }
 
 startBtn.addEventListener("click", startGame);
 nameInput.addEventListener("keydown", (e)=>{ if(e.key === "Enter") startGame(); });
+pauseBtn.addEventListener("click", ()=>{
+  setPaused(true);
+});
 
 resetBtn.addEventListener("click", ()=>{
+  setPaused(true);
   nameOverlay.style.display = "flex";
   nameOverlay.setAttribute("aria-hidden","false");
   try{ nameInput.focus(); }catch{}
