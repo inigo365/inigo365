@@ -770,26 +770,6 @@ function isWorldPointOnScreen(wx, wy, pad = 80){
   return (sx >= -pad && sx <= W + pad && sy >= -pad && sy <= H + pad);
 }
 
-function countGoldenOnScreen(){
-  let n = 0;
-  for(let i=0;i<golden.length;i++){
-    if(isWorldPointOnScreen(golden[i].x, golden[i].y, GOLDEN_SPAWN_PAD)) n++;
-  }
-  return n;
-}
-
-function spawnGoldenNear(camX, camY){
-  // spawn inside (or near) current view in world coords
-  const z = cam.z;
-  const halfW = (W * 0.55) / z;
-  const halfH = (H * 0.55) / z;
-
-  const x = camX + (Math.random()*2 - 1) * halfW;
-  const y = camY + (Math.random()*2 - 1) * halfH;
-
-  golden.push({ x, y, r: 26 });
-}
-
 function ensurePellets(camX, camY){
   const target = SETTINGS.pelletTarget;
   const radius = 2600;
@@ -839,13 +819,6 @@ function ensurePellets(camX, camY){
     if(dx*dx+dy*dy > maxD2) golden.splice(i, 1);
   }
 
-  // guarantee ~1 golden in/near view most of the time
-  const onScreenGold = countGoldenOnScreen();
-  if(onScreenGold < GOLDEN_ONSCREEN_TARGET && golden.length < GOLDEN_MAX){
-    // spawn just enough to reach target
-    const need = Math.min(GOLDEN_ONSCREEN_TARGET - onScreenGold, GOLDEN_MAX - golden.length);
-    for(let n=0;n<need;n++) spawnGoldenNear(camX, camY);
-  }
 }
 
 function rebuildPelletGrid(){
