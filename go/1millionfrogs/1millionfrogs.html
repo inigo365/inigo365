@@ -1095,13 +1095,12 @@ const FROG_NAMES = [
 ];
 
 const FROG_COLORS = [
-  "#37b45a",
-  "#4aa8ff",
-  "#ff6b6b",
-  "#ffd93d",
-  "#9b59b6",
-  "#1abc9c",
-  "#e67e22",
+  "#4aa8ff",   // blue
+  "#ff6b6b",   // red
+  "#ffd93d",   // yellow
+  "#9b59b6",   // purple
+  "#1abc9c",   // teal (optional — remove too if you want *no* greenish tones)
+  "#e67e22",   // orange
 ];
 
 function pickName(used){
@@ -1118,6 +1117,12 @@ const WORLD = { seed: 1337, pellets: [] };
 let golden = [];                 // can hold multiple gold pellets
 const GOLDEN_MAX = 10;          // total gold pellets allowed in the active area (try 4–10)
 const GOLDEN_CHANCE = 0.028;   // ~1.2% of spawned pellets become gold (try 0.008–0.02)
+const GOLD_LEN_BONUS = 85;       // was 60, "slightly more"
+const GOLD_EAT_BONUS = 10;       // was 8, optional (keeps scoreboard feel)
+const GOLD_MAGNET_T = 1.0;       // seconds
+const GOLD_MAGNET_RADIUS = 220;  // extra attraction range (px)
+const GOLD_SPEED_MUL = 1.12;     // slight speed boost (12%)
+
 
 /* =========================================================
    HELPERS
@@ -1401,6 +1406,7 @@ if(IS_MOBILE){
 
 let pointer = { x: W/2, y: H/2 };
 let boostHeld = false;
+let goldPowerT = 0;
 
 c.addEventListener("touchstart", (e)=>{
   e.preventDefault();
@@ -1717,7 +1723,8 @@ function updateMovement(s, dt){
 
   if(s.isPlayer) s.boost = boostHeld && s.length > 110;
 
-  const speedMul = s.boost ? SETTINGS.boostSpeedMul : 1.0;
+  const goldMul = (s.isPlayer && goldPowerT > 0) ? GOLD_SPEED_MUL : 1.0;
+  const speedMul = (s.boost ? SETTINGS.boostSpeedMul : 1.0) * goldMul;
   s.speed = s.baseSpeed * speedMul;
 
   s.x += Math.cos(s.angle) * s.speed * dt;
@@ -1930,9 +1937,9 @@ function eatCheck(s){
   if(!s.alive) return;
 
   tmpNear.length = 0;
-  const magnet = s.boost ? 60 : 0;
+  const goldMagnet = (s.isPlayer && goldPowerT > 0) ? GOLD_MAGNET_RADIUS : 0;
+  const magnet = (s.boost ? 60 : 0) + goldMagnet;
   pelletGrid.query(s.x, s.y, 80 + s.radius + magnet, tmpNear);
-
   for(let i=tmpNear.length-1;i>=0;i--){
     const p=tmpNear[i];
     const dx=p.x-s.x, dy=p.y-s.y;
@@ -1943,9 +1950,14 @@ function eatCheck(s){
 if(gi !== -1){
   golden.splice(gi, 1);
   if(s.isPlayer) SFX.gold();
-  s.eaten += 8;             // your tuned reward
-  s.length += 60;
+
+  s.eaten += GOLD_EAT_BONUS;
+  s.length += GOLD_LEN_BONUS;
   updateRadius(s);
+
+  if(s.isPlayer){
+    goldPowerT = GOLD_MAGNET_T; // refresh duration on every gold pickup
+  }
   continue;
 }
 
@@ -2379,6 +2391,7 @@ function tick(now){
   const dt = Math.min(0.033, (now - last)/1000);
   last = now;
   huntersNow = 0;
+  if(goldPowerT > 0) goldPowerT = Math.max(0, goldPowerT - dt);
 
   if(player && player.alive){
   if(IS_MOBILE){
