@@ -240,16 +240,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 }
 /* ============================
    MOBILE CONTROLS (PIXEL ARCADE)
-   - everything feels pixelated
-   - smaller beige base like classic arcade
-   - joystick stem leans (no 360 spin)
-   - boost button rim dark red + pixel circle edges
-   ============================ */
-
-/* ============================
-   MOBILE CONTROLS (PIXEL ARCADE)
-   - pixelated look everywhere
-   - SVG pixel-shapes for button + base
    ============================ */
 
 .mobile-controls{
@@ -278,7 +268,9 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
    ============================ */
 
 :root{
-  --pxcircle-red: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'><rect width='32' height='32' fill='none'/><g fill='%23d63a3a'><rect x='12' y='2' width='8' height='1'/><rect x='10' y='3' width='12' height='1'/><rect x='8' y='4' width='16' height='2'/><rect x='6' y='6' width='20' height='2'/><rect x='5' y='8' width='22' height='16'/><rect x='6' y='24' width='20' height='2'/><rect x='8' y='26' width='16' height='2'/><rect x='10' y='28' width='12' height='1'/><rect x='12' y='29' width='8' height='1'/></g></svg>");
+  /* UPDATED: rounder circle silhouette (reads more like a true ball) */
+  --pxcircle-red: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'><rect width='32' height='32' fill='none'/><g fill='%23d63a3a'><rect x='14' y='1' width='4' height='1'/><rect x='12' y='2' width='8' height='1'/><rect x='10' y='3' width='12' height='2'/><rect x='8' y='5' width='16' height='2'/><rect x='7' y='7' width='18' height='18'/><rect x='8' y='25' width='16' height='2'/><rect x='10' y='27' width='12' height='2'/><rect x='12' y='29' width='8' height='1'/><rect x='14' y='30' width='4' height='1'/></g></svg>");
+
   --pxcircle-rim: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'><rect width='32' height='32' fill='none'/><g fill='%238b1f1f'><rect x='12' y='2' width='8' height='1'/><rect x='10' y='3' width='12' height='1'/><rect x='8' y='4' width='16' height='2'/><rect x='6' y='6' width='20' height='2'/><rect x='5' y='8' width='22' height='16'/><rect x='6' y='24' width='20' height='2'/><rect x='8' y='26' width='16' height='2'/><rect x='10' y='28' width='12' height='1'/><rect x='12' y='29' width='8' height='1'/></g></svg>");
 
   --px-base: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='56' shape-rendering='crispEdges'><rect width='64' height='56' fill='none'/><g fill='%23e9e2c9'><rect x='6' y='0' width='52' height='1'/><rect x='4' y='1' width='56' height='1'/><rect x='3' y='2' width='58' height='1'/><rect x='2' y='3' width='60' height='2'/><rect x='1' y='5' width='62' height='46'/><rect x='2' y='51' width='60' height='2'/><rect x='3' y='53' width='58' height='1'/><rect x='4' y='54' width='56' height='1'/><rect x='6' y='55' width='52' height='1'/></g></svg>");
@@ -289,7 +281,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 }
 
 /* ============================
-   JOYSTICK (smaller beige base)
+   JOYSTICK
    ============================ */
 
 .joy{
@@ -299,7 +291,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   transform: translateX(-50%);
   width: 124px;
   height: 108px;
-  pointer-events: auto; /* joystick receives touches */
+  pointer-events: auto;
   touch-action: none;
 }
 
@@ -423,7 +415,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 }
 
 /* ============================
-   BOOST BUTTON (pixel circle)
+   BOOST BUTTON
    ============================ */
 
 .boost-btn{
@@ -431,7 +423,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   left: 10px;
   bottom: 64px;
   z-index: 36;
-  pointer-events: auto; /* button receives touches */
+  pointer-events: auto;
   width: 86px;
   height: 86px;
   background-image: var(--pxcircle-rim);
@@ -479,17 +471,17 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 
 /* =========================================
    ROUND + CLEAN CONTROLLER PASS (PATCH)
-   - force true circles (no ellipse)
-   - remove square highlight “patch”
-   - unify bottom buttons style (no white boxes)
-   - stem always connects (with tiny JS var)
+   - force true circles
+   - make joystick ball spherical again
+   - music/pause fill their beige base
+   - boost gets its own beige base
    ========================================= */
 
 /* Make sure these UI pieces can’t get squashed into ovals */
 .boost-btn,
 .boost-btn::before,
 .joy-ball{
-  aspect-ratio: 1 / 1;         /* hard locks circles */
+  aspect-ratio: 1 / 1;
 }
 
 /* ---- BOOST: true circular rim + cap ---- */
@@ -502,14 +494,16 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
 
-  /* keep it clean + consistent, not “double shadowy” */
   box-shadow:
     4px 4px 0 rgba(0,0,0,0.18),
     8px 8px 0 rgba(0,0,0,0.08);
+
+  /* needed for the beige base pseudo-element */
+  isolation: isolate;
 }
 
 .boost-btn::before{
-  width: 70px;   /* bigger red cap */
+  width: 70px;
   height: 70px;
   border: none !important;
   background-color: transparent !important;
@@ -517,18 +511,24 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
 
-  /* subtle “sphere” feel without adding weird rings */
   box-shadow:
     inset -10px -10px 0 rgba(0,0,0,0.16),
     inset  8px  8px 0 rgba(255,255,255,0.12);
 }
 
-/* keep label size exactly as-is */
-.boost-btn span{
-  font-size: 18px;
+/* BOOST beige base behind the red button */
+.boost-btn::after{
+  content:"";
+  position:absolute;
+  inset:-12px;
+  z-index:-1;
+  background-image: var(--px-base);
+  background-size: 100% 100%;
+  background-repeat:no-repeat;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.18);
 }
 
-/* ---- JOYSTICK BALL: force circle, remove square overlay, make it spherical ---- */
+/* ---- JOYSTICK BALL: true circle + spherical shading + circular highlight ---- */
 .joy-ball{
   width: 48px;
   height: 48px;
@@ -539,37 +539,43 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
 
-  /* sphere-ish shading */
   box-shadow:
-    4px 4px 0 rgba(0,0,0,0.16),
     inset -10px -10px 0 rgba(0,0,0,0.18),
-    inset  8px  8px 0 rgba(255,255,255,0.12);
+    inset  6px  6px 0 rgba(255,255,255,0.22),
+    4px 4px 0 rgba(0,0,0,0.18);
 }
 
-/* THIS is the “square overlapping the top” — kill it */
+/* overwrite the old square-ish highlight with a circular one */
 .joy-ball::after{
-  content: none !important;
+  content:"" !important;
+  position:absolute !important;
+  left:9px !important;
+  top:9px !important;
+  width:8px !important;
+  height:8px !important;
+  border-radius:50% !important;
+  background:rgba(255,255,255,0.35) !important;
+  box-shadow: none !important;
 }
 
-/* ---- JOYSTICK STEM: remove outline + enable dynamic extension ---- */
+/* ---- JOYSTICK STEM: remove outline + keep your dynamic extension ---- */
 .joy-stem{
   border: none !important;
 
-  /* base height + JS-driven extension so it never disconnects */
   height: calc(58px + var(--stem-ext, 0px));
-  bottom: -2px;  /* sits closer to ball at rest */
+  bottom: -2px;
 
   box-shadow:
     inset 4px 4px 0 rgba(255,255,255,0.10),
     inset -4px -4px 0 rgba(0,0,0,0.25);
 }
 
-/* Ensure stem sits behind the ball (real joystick layering) */
+/* Ensure stem sits behind the ball */
 .joy-handle{ position: absolute; }
 .joy-stem{ z-index: 1; }
 .joy-ball{ z-index: 2; }
 
-/* ---- JOYSTICK BASE/PLATE/HOLE: remove black borders (already requested) ---- */
+/* ---- JOYSTICK BASE/PLATE/HOLE: remove black borders ---- */
 .joy-base,
 .joy-base::before,
 .joy-plate,
@@ -577,26 +583,30 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   border: none !important;
 }
 
-/* ---- MUSIC + PAUSE: remove “white box” look; match joystick edges + cleanliness ---- */
+/* ---- MUSIC + PAUSE: fill the beige base (no floating text) ---- */
 .music-toggle,
 .pause-toggle{
   border: none !important;
   background-color: transparent !important;
 
-  /* Use SAME arcade base art as joystick */
   background-image: var(--px-base) !important;
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
 
-  /* keep shadows consistent with the rest (cleaner, less clash) */
-  box-shadow:
-    4px 4px 0 rgba(0,0,0,0.16),
-    8px 8px 0 rgba(0,0,0,0.07);
+  /* KEY FIX: give the base an actual size, then center text */
+  width: 96px;
+  height: 42px;
+  padding: 0 !important;
 
-  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.16);
 }
 
-/* Remove the extra inset pseudo box we added before (it’s what reads “square in white box”) */
+/* remove any leftover inset pseudo box */
 .music-toggle::before,
 .pause-toggle::before{
   content: none !important;
