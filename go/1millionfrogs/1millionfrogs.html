@@ -251,6 +251,10 @@ const statsEl = document.getElementById("stats");
 const backBtn = document.getElementById("backBtn");
 const backBtnOverlay = document.getElementById("backBtnOverlay");
 const nameOverlay = document.getElementById("nameOverlay");
+const nameInput = document.getElementById("nameInput");
+const startBtn  = document.getElementById("startBtn");
+const resetBtn  = document.getElementById("resetBtn");
+
 
 // in-game back = open name screen
 backBtn.addEventListener("click", ()=>{
@@ -366,68 +370,86 @@ async function tryStartMusic(){
 }
 
 /* =========================================================
-   SFX (simple + iOS-safe)
+   SFX (WebAudio - iOS reliable)
 ========================================================= */
 let sfxOn = true;
-let sfxUnlocked = false;
 
-// overlap-safe (clone) + iOS gate
-function makeSfx(src, vol = 0.9){
-  const a = new Audio(src);
-  a.preload = "auto";
-  a.volume = vol;
+let audioCtx = null;
+let sfxBuffers = { die:null, gold:null };
+let sfxReady = false;
 
-  return {
-    base: a,
-    play(){
-      if(!sfxOn || !sfxUnlocked) return;
-      try{
-        const b = a.cloneNode();
-        b.volume = a.volume;
-        b.play().catch(()=>{});
-      }catch{}
-    }
-  };
+function getAudioCtx(){
+  if(!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AC();
+  }
+  return audioCtx;
+}
+
+async function loadSfxBuffer(url){
+  const ctx = getAudioCtx();
+  const res = await fetch(url);
+  const arr = await res.arrayBuffer();
+  return await ctx.decodeAudioData(arr);
+}
+
+async function initSfx(){
+  if(sfxReady) return;
+  try{
+    // load + decode once
+    const [dieBuf, goldBuf] = await Promise.all([
+      loadSfxBuffer(SFX_DIE_SRC),
+      loadSfxBuffer(SFX_GOLD_SRC)
+    ]);
+    sfxBuffers.die = dieBuf;
+    sfxBuffers.gold = goldBuf;
+    sfxReady = true;
+  }catch(e){
+    // if this fails, SFX just won’t play (but game keeps running)
+    console.warn("SFX init failed:", e);
+  }
+}
+
+// MUST be called from a real user gesture (pointerdown/touchstart/click/keydown)
+async function unlockAudio(){
+  // resume audio context
+  const ctx = getAudioCtx();
+  if(ctx.state !== "running"){
+    try{ await ctx.resume(); }catch(e){}
+  }
+
+  // start music (your existing behavior)
+  tryStartMusic();
+
+  // load sfx (can happen after resume)
+  initSfx();
+}
+
+function playSfx(name, vol = 1){
+  if(!sfxOn) return;
+  const ctx = getAudioCtx();
+  if(ctx.state !== "running") return;     // not unlocked yet
+  const buf = sfxBuffers[name];
+  if(!buf) return;                        // not loaded yet
+
+  try{
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+
+    const gain = ctx.createGain();
+    gain.gain.value = vol;
+
+    src.connect(gain);
+    gain.connect(ctx.destination);
+
+    src.start(0);
+  }catch(e){}
 }
 
 const SFX = {
-  die:  makeSfx(SFX_DIE_SRC, 0.95),
-  gold: makeSfx(SFX_GOLD_SRC, 0.85),
+  die(){  playSfx("die", 0.95); },
+  gold(){ playSfx("gold", 0.85); },
 };
-
-// unlock WITHOUT audible blips
-function unlockSfx(){
-  if(sfxUnlocked) return;
-  sfxUnlocked = true;
-
-  // iOS sometimes needs one user-gesture play; do it silently
-  try{
-    const a = SFX.gold.base;
-    const oldVol = a.volume;
-    a.volume = 0;
-
-    const p = a.play();
-    if(p && typeof p.then === "function"){
-      p.then(()=>{
-        a.pause();
-        a.currentTime = 0;
-        a.volume = oldVol;
-      }).catch(()=>{
-        a.volume = oldVol;
-      });
-    }else{
-      a.pause();
-      a.currentTime = 0;
-      a.volume = oldVol;
-    }
-  }catch{}
-}
-
-
-function unlockAudio(){
-  unlockSfx();     // always try to unlock sfx on first gesture
-  tryStartMusic(); // music may or may not be on
-}
 
 function setMusic(on){
   musicOn = !!on;
@@ -440,9 +462,15 @@ musicBtn.addEventListener("pointerdown", (e)=>{
   unlockAudio();
   setMusic(!musicOn);
 });
+// unlock on first interaction anywhere
 window.addEventListener("pointerdown", unlockAudio, { capture:true });
 window.addEventListener("touchstart", unlockAudio, { capture:true, passive:true });
 window.addEventListener("keydown", unlockAudio, { capture:true });
+
+// ALSO unlock when they press Start (super reliable)
+startBtn.addEventListener("pointerdown", unlockAudio, { capture:true });
+startBtn.addEventListener("touchstart", unlockAudio, { capture:true, passive:true });
+
 updateMusicButton();
 
 /* =========================================================
@@ -1164,7 +1192,7 @@ function eatCheck(s){
     const gi = golden.indexOf(p);
 if(gi !== -1){
   golden.splice(gi, 1);
-  if(s.isPlayer) SFX.gold.play();
+  if(s.isPlayer) SFX.gold();
   s.eaten += 8;             // your tuned reward
   s.length += 60;
   updateRadius(s);
@@ -1242,7 +1270,7 @@ function checkPop(s){
 
 function popSnake(s){
   if(!s.alive) return;
-  if(s.isPlayer) SFX.die.play();
+  if(s.isPlayer) SFX.die();
 
   s.alive = false;
 
@@ -1628,8 +1656,6 @@ function tick(now){
 /* =========================================================
    START / RESET
 ========================================================= */
-const nameInput = document.getElementById("nameInput");
-const startBtn = document.getElementById("startBtn");
 
 function startGame(){
   unlockAudio();
@@ -1661,7 +1687,7 @@ function startGame(){
 startBtn.addEventListener("click", startGame);
 nameInput.addEventListener("keydown", (e)=>{ if(e.key === "Enter") startGame(); });
 
-document.getElementById("resetBtn").addEventListener("click", ()=>{
+resetBtn.addEventListener("click", ()=>{
   nameOverlay.style.display = "flex";
   nameOverlay.setAttribute("aria-hidden","false");
   try{ nameInput.focus(); }catch{}
