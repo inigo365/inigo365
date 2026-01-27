@@ -45,7 +45,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   position:fixed; top:8px; left:8px; right:8px;
   display:flex; align-items:flex-start; justify-content:flex-start;
   gap:10px;
-  z-index:30;            /* always above frogs */
+  z-index:30;
   pointer-events:none;
 }
 
@@ -81,7 +81,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   line-height:1.25;
 }
 
-/* restore your original "linkish" style (used for reset) */
 .linkish{
   font-family:"RuneScape UF", Arial, sans-serif;
   background:transparent;
@@ -191,7 +190,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
   }
 }
 
-/* ===== overlay back button (NEW) ===== */
+/* ===== overlay back button ===== */
 .overlay-back{
   position: fixed;
   top: 8px;
@@ -223,7 +222,6 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 </div>
 
 <div class="overlay" id="nameOverlay" aria-hidden="false">
-  <!-- NEW: back button on overlay -->
   <button class="back-button overlay-back" id="backBtnOverlay">← back</button>
 
   <div class="panel2" role="dialog" aria-modal="true" aria-label="name entry">
@@ -251,25 +249,21 @@ const ctx = c.getContext("2d", { alpha:false });
 
 const statsEl = document.getElementById("stats");
 document.getElementById("backBtn").addEventListener("click", () => history.back());
-/* NEW: overlay back button handler */
 document.getElementById("backBtnOverlay").addEventListener("click", () => history.back());
 
 /* =========================================================
-   ASSETS (relative to THIS HTML file)
-   inigo365/go/1millionfrogs/assets/...
+   ASSETS
 ========================================================= */
-const BG_SRC = "assets/realm1.jpg";
-const TOYOTA_SRC = "assets/mask.png";
+const BG_SRC    = "assets/realm1.jpg";
 const MUSIC_SRC = "assets/1millionfrogs.mp3";
 
 /* =========================================================
    SETTINGS
 ========================================================= */
 const SETTINGS = {
-  bots: 5,
-  starterGiants: 2,
-  pelletTarget: 650,
+  bots: 9,
 
+  pelletTarget: 650,
   segSpacing: 14,
   maxSegPoints: 220,
 
@@ -282,6 +276,22 @@ const SETTINGS = {
 
   headBodyHitMul: 0.85,
   cellSize: 110,
+
+  // spawning feel (middle ground)
+  botSpawnMinR: 2200,
+  botSpawnRandR: 7000,
+
+  respawnMinR: 2200,
+  respawnRandR: 7000,
+
+  midGiants: 5,
+  midLenMin: 3000,
+  midLenMax: 8000,
+
+  // big “starter giants”
+  starterGiants: 5,
+  giantLenMin: 10000,
+  giantLenMax: 20000,
 };
 
 /* =========================================================
@@ -307,10 +317,6 @@ const bgImg = new Image();
 bgImg.decoding = "async";
 bgImg.src = BG_SRC;
 
-const toyotaImg = new Image();
-toyotaImg.decoding = "async";
-toyotaImg.src = TOYOTA_SRC;
-
 /* =========================================================
    MUSIC
 ========================================================= */
@@ -322,6 +328,7 @@ music.volume = 0.9;
 
 let musicOn = true;
 let musicUnlocked = false;
+
 function stopMusic(){
   try{
     music.pause();
@@ -330,9 +337,7 @@ function stopMusic(){
 }
 window.addEventListener("pagehide", stopMusic);
 window.addEventListener("beforeunload", stopMusic);
-document.addEventListener("visibilitychange", ()=>{
-  if(document.hidden) stopMusic();
-});
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) stopMusic(); });
 
 function updateMusicButton(){ musicBtn.textContent = musicOn ? "music: on" : "music: off"; }
 async function tryStartMusic(){
@@ -364,7 +369,7 @@ window.addEventListener("keydown", unlockAudio, { capture:true });
 updateMusicButton();
 
 /* =========================================================
-   BOT NAMES (no numbers)
+   BOT NAMES + COLORS
 ========================================================= */
 const FROG_NAMES = [
   "sir croaks-a-lot","lady lily","moss wizard","pond prophet","bog baron",
@@ -378,14 +383,15 @@ const FROG_NAMES = [
   "mild menace","drippy duke","marsh mirage","chonk toad","slurp wizard",
   "frogbeard","inkblot frog","silt emperor","mire cherub","glitter toad"
 ];
+
 const FROG_COLORS = [
-  "#37b45a", // green
-  "#4aa8ff", // blue
-  "#ff6b6b", // red
-  "#ffd93d", // yellow
-  "#9b59b6", // purple
-  "#1abc9c", // teal
-  "#e67e22", // orange
+  "#37b45a",
+  "#4aa8ff",
+  "#ff6b6b",
+  "#ffd93d",
+  "#9b59b6",
+  "#1abc9c",
+  "#e67e22",
 ];
 
 function pickName(used){
@@ -394,6 +400,30 @@ function pickName(used){
     if(!used.has(n)) return n;
   }
   return FROG_NAMES[(Math.random()*FROG_NAMES.length)|0];
+}
+/* =========================================================
+   WORLD + RNG
+========================================================= */
+const WORLD = { seed: 1337, pellets: [] };
+let golden = [];                 // can hold multiple gold pellets
+const GOLDEN_MAX = 3;            // try 2–5 (3 is a nice middle)
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function rand01(n){
+  let x = (n ^ WORLD.seed) >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 2246822507);
+  x = Math.imul(x ^ (x >>> 13), 3266489909);
+  x = (x ^ (x >>> 16)) >>> 0;
+  return x / 4294967296;
+}
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function normAngle(a){
+  while(a > Math.PI) a -= Math.PI*2;
+  while(a < -Math.PI) a += Math.PI*2;
+  return a;
 }
 
 /* =========================================================
@@ -496,13 +526,13 @@ function makeCrownSprite(size){
 
   return s;
 }
-const SPRITE_CACHE = new Map();
 
+const SPRITE_CACHE = new Map();
 function getSnakeSprite(size, color, gold){
   const key = `${size}_${color}_${gold}`;
-  if(SPRITE_CACHE.has(key)) return SPRITE_CACHE.get(key);
-
-  const spr = makeFrogSprite(size, gold ? "gold" : "normal", color);
+  let spr = SPRITE_CACHE.get(key);
+  if(spr) return spr;
+  spr = makeFrogSprite(size, gold ? "gold" : "normal", color);
   SPRITE_CACHE.set(key, spr);
   return spr;
 }
@@ -513,7 +543,6 @@ const SPRITES = {
   gold: makeFrogSprite(56, "gold"),
   crown: makeCrownSprite(56),
 };
-
 
 /* =========================================================
    INPUT (smooth iOS: 1 finger steers; 2 fingers boosts)
@@ -565,26 +594,6 @@ document.addEventListener("keydown", (e)=>{ if(e.key === " "){ boostHeld = true;
 document.addEventListener("keyup",   (e)=>{ if(e.key === " "){ boostHeld = false; e.preventDefault(); } });
 
 /* =========================================================
-   WORLD + RNG
-========================================================= */
-const WORLD = { seed: 1337, pellets: [] };
-let golden = null;
-
-function rand01(n){
-  let x = (n ^ WORLD.seed) >>> 0;
-  x = Math.imul(x ^ (x >>> 16), 2246822507);
-  x = Math.imul(x ^ (x >>> 13), 3266489909);
-  x = (x ^ (x >>> 16)) >>> 0;
-  return x / 4294967296;
-}
-function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-function normAngle(a){
-  while(a > Math.PI) a -= Math.PI*2;
-  while(a < -Math.PI) a += Math.PI*2;
-  return a;
-}
-
-/* =========================================================
    GRID
 ========================================================= */
 function cellKey(cx, cy){ return (cx<<16) ^ (cy & 0xffff); }
@@ -622,28 +631,28 @@ const bodyGrid   = new Grid(SETTINGS.cellSize);
    SNAKES
 ========================================================= */
 function makeSnake(opts){
+  const baseLen = opts.length || 120;
   return {
     id: opts.id,
     name: opts.name,
     isPlayer: !!opts.isPlayer,
+
     alive: true,
     respawnT: 0,
-    respawnLen: opts.respawnLen ?? (opts.isPlayer ? (opts.length || 140) : 160),
-
+    respawnLen: opts.respawnLen ?? (opts.isPlayer ? baseLen : 160),
 
     x: opts.x || 0,
     y: opts.y || 0,
     angle: 0,
     targetAngle: 0,
+
     color: opts.color || FROG_COLORS[(Math.random() * FROG_COLORS.length) | 0],
 
     baseSpeed: SETTINGS.baseSpeed * (opts.speedMul ?? 1),
     speed: SETTINGS.baseSpeed,
 
     eaten: opts.eaten || 0,
-    length: opts.length || 120,
-    /* NEW: store original spawn length */
-    spawnLength: opts.length || 120,
+    length: baseLen,
     radius: 10,
 
     body: [{x: opts.x || 0, y: opts.y || 0}],
@@ -690,7 +699,8 @@ function spawnPlayer(name){
     isPlayer: true,
     x: 0, y: 0,
     length: 140,
-    speedMul: 1.0
+    speedMul: 1.0,
+    respawnLen: 140
   });
   updateRadius(s);
   seedBody(s);
@@ -702,7 +712,7 @@ function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, used
   for(let i=0;i<count;i++){
     const id = baseId + i;
     const a  = rand01(id*17) * Math.PI*2;
-    const r  = 1400 + rand01(id*23)*2600;   // ~1400–4000
+    const r  = SETTINGS.botSpawnMinR + rand01(id*23)*SETTINGS.botSpawnRandR;
     const x  = Math.cos(a)*r;
     const y  = Math.sin(a)*r;
 
@@ -711,7 +721,14 @@ function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, used
 
     const nm = pickName(usedNames); usedNames.add(nm);
 
-    const s = makeSnake({ id, name:nm, x, y, length:len, speedMul });
+    const s = makeSnake({
+      id,
+      name: nm,
+      x, y,
+      length: len,
+      speedMul,
+      respawnLen: 160
+    });
     s.eaten = Math.floor(len / 8);
 
     updateRadius(s);
@@ -723,13 +740,14 @@ function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, used
 function spawnWorldSnakes(){
   const used = new Set([player.name]);
 
-  // BIG slither-style giants: ensures #1 starts huge (10k–20k)
-  spawnBots(6, 200, 10000, 20000, 0.90, 1.05, used);
+  // starter giants
+  spawnBots(SETTINGS.starterGiants, 200, SETTINGS.giantLenMin, SETTINGS.giantLenMax, 0.90, 1.05, used);
+
+  spawnBots(SETTINGS.midGiants, 260, SETTINGS.midLenMin, SETTINGS.midLenMax, 0.92, 1.08, used);
 
   // regular bots
   spawnBots(SETTINGS.bots, 100, 180, 650, 0.92, 1.12, used);
 }
-
 
 /* =========================================================
    PELLETS
@@ -739,22 +757,34 @@ function ensurePellets(camX, camY){
   const radius = 2600;
 
   while(WORLD.pellets.length < target){
-    const i = WORLD.pellets.length + ((Math.random()*1e9)|0);
-    const a = rand01(i+10) * Math.PI*2;
-    const r = Math.sqrt(rand01(i+20)) * radius;
-    const x = camX + Math.cos(a)*r + (rand01(i+30)-0.5)*180;
-    const y = camY + Math.sin(a)*r + (rand01(i+40)-0.5)*180;
+    const j = WORLD.pellets.length + ((Math.random()*1e9)|0);
+    const a = rand01(j+10) * Math.PI*2;
+    const r = Math.sqrt(rand01(j+20)) * radius;
+    const x = camX + Math.cos(a)*r + (rand01(j+30)-0.5)*180;
+    const y = camY + Math.sin(a)*r + (rand01(j+40)-0.5)*180;
 
-    if(!golden && rand01(i+50) > 0.9995){
-      golden = { x, y, r: 26 };
+    // MULTI golden spawn (simple + capped)
+    if(golden.length < GOLDEN_MAX && rand01(j+50) > 0.9965){
+      golden.push({ x, y, r: 26 });
       continue;
     }
+
     WORLD.pellets.push({ x, y, r: 16 });
+
+    // your “cluster” burst (unchanged vibe)
+    if(rand01(j+60) > 0.997){
+      for(let k=0;k<5;k++){
+        const aa = rand01(j+70+k)*Math.PI*2;
+        const rr = 30 + rand01(j+80+k)*90;
+        WORLD.pellets.push({ x: x + Math.cos(aa)*rr, y: y + Math.sin(aa)*rr, r: 16 });
+      }
+    }
   }
 
   const maxD = radius * 1.35;
   const maxD2 = maxD*maxD;
 
+  // cull regular pellets
   let w=0;
   for(let i=0;i<WORLD.pellets.length;i++){
     const p = WORLD.pellets[i];
@@ -763,9 +793,11 @@ function ensurePellets(camX, camY){
   }
   WORLD.pellets.length = w;
 
-  if(golden){
-    const dx=golden.x-camX, dy=golden.y-camY;
-    if(dx*dx+dy*dy > maxD2) golden = null;
+  // cull golden pellets
+  for(let i=golden.length-1;i>=0;i--){
+    const g0 = golden[i];
+    const dx=g0.x-camX, dy=g0.y-camY;
+    if(dx*dx+dy*dy > maxD2) golden.splice(i, 1);
   }
 }
 
@@ -774,7 +806,7 @@ function rebuildPelletGrid(){
   for(let i=0;i<WORLD.pellets.length;i++){
     pelletGrid.add(WORLD.pellets[i].x, WORLD.pellets[i].y, WORLD.pellets[i]);
   }
-  if(golden) pelletGrid.add(golden.x, golden.y, golden);
+  for(const g of golden) pelletGrid.add(g.x, g.y, g);
 }
 
 /* =========================================================
@@ -834,15 +866,19 @@ function updateMovement(s, dt){
 /* =========================================================
    AI
 ========================================================= */
+const tmpAvoidBodies = [];
 function aiUpdate(s, dt){
   s.ai.t -= dt;
+
   if(s.ai.t <= 0){
     s.ai.t = 0.25 + Math.random()*0.55;
 
+    // wander baseline
     let tx = s.x + Math.cos(s.ai.wanderA)*420;
     let ty = s.y + Math.sin(s.ai.wanderA)*420;
     s.ai.wanderA += (Math.random()-0.5)*0.9;
 
+    // seek pellets
     const n = WORLD.pellets.length;
     if(n > 0){
       let best=null, bestD2=Infinity;
@@ -855,123 +891,114 @@ function aiUpdate(s, dt){
       if(best){ tx=best.x; ty=best.y; }
     }
 
-    if(golden){
-      const dx=golden.x-s.x, dy=golden.y-s.y;
-      if(dx*dx+dy*dy < 1300*1300){ tx=golden.x; ty=golden.y; }
-    }
-
-   if(player && player.alive){
-  const dx = player.x - s.x, dy = player.y - s.y;
-  const d2 = dx*dx + dy*dy;
-
-  // if bot is meaningfully bigger, it hunts you and tries to "cut you off"
-  if(s.length > player.length * 1.25 && d2 < 1600*1600){
-    const d = Math.sqrt(d2);
-
-    // lead target in front of player (cutoff)
-    const lead = clamp(220 + d*0.18, 220, 520);
-    const px = player.x + Math.cos(player.angle) * lead;
-    const py = player.y + Math.sin(player.angle) * lead;
-
-    // tiny sideways bias so it's not always head-on
-    const side = (rand01((s.id*9999) | 0) < 0.5 ? -1 : 1);
-    const off  = clamp(110 + d*0.06, 110, 260);
-    const ox = -Math.sin(player.angle) * off * side;
-    const oy =  Math.cos(player.angle) * off * side;
-
-    tx = px + ox;
-    ty = py + oy;
-
-    // boost more often when attacking (still cheap)
-    s.boost = (s.length > 320 && d < 1100 && Math.random() > 0.88);
+    // seek golden if near-ish
+    // seek nearest golden (if any)
+if(golden.length){
+  let bestG = null, bestD2 = Infinity;
+  for(let i=0;i<golden.length;i++){
+    const g0 = golden[i];
+    const dx=g0.x-s.x, dy=g0.y-s.y;
+    const d2=dx*dx+dy*dy;
+    if(d2 < bestD2){ bestD2=d2; bestG=g0; }
+  }
+  if(bestG && bestD2 < 1300*1300){
+    tx = bestG.x; ty = bestG.y;
   }
 }
 
+
+    // hunt player with cutoff behavior if clearly bigger
+    if(player && player.alive){
+      const dx = player.x - s.x, dy = player.y - s.y;
+      const d2 = dx*dx + dy*dy;
+
+      if(s.length > player.length * 1.25 && d2 < 1600*1600){
+        const d = Math.sqrt(d2);
+        const lead = clamp(220 + d*0.18, 220, 520);
+        const px = player.x + Math.cos(player.angle) * lead;
+        const py = player.y + Math.sin(player.angle) * lead;
+
+        const side = (rand01((s.id*9999)|0) < 0.5 ? -1 : 1);
+        const off  = clamp(110 + d*0.06, 110, 260);
+        const ox = -Math.sin(player.angle) * off * side;
+        const oy =  Math.cos(player.angle) * off * side;
+
+        tx = px + ox;
+        ty = py + oy;
+
+        // commit more when attacking
+        s.boost = (s.length > 320 && d < 1100 && Math.random() > 0.88);
+      }
+    }
 
     s.ai.targetX = tx;
     s.ai.targetY = ty;
-    s.boost = (s.length > 260 && Math.random() > 0.985);
+
+    // occasional boost elsewhere
+    if(!s.boost) s.boost = (s.length > 260 && Math.random() > 0.985);
   }
 
+  // avoidance steering
   let ax=0, ay=0;
-  for(let i=0;i<snakes.length;i++){
-    const o=snakes[i];
-    // extra: avoid the PLAYER head if the player is bigger (prevents dumb head-ons)
-if(player && player.alive && player !== s && player.length > s.length * 1.05){
-  const dx = s.x - player.x, dy = s.y - player.y;
-  const d2 = dx*dx + dy*dy;
-  if(d2 < 520*520){
-    const inv = 1 / Math.max(1, Math.sqrt(d2));
-    ax += dx * inv * 1.35;
-    ay += dy * inv * 1.35;
+  let danger = 0;
 
-    // if it gets too close, stop boosting to reduce suicide
-    if(d2 < 280*280) s.boost = false;
-  }
-}
-
-    if(o===s || !o.alive) continue;
-    if(o.length < s.length*1.20) continue;
-    const dx=s.x-o.x, dy=s.y-o.y;
-    const d2=dx*dx+dy*dy;
+  // avoid player head once (prevents dumb head-ons)
+  if(player && player.alive && player !== s && player.length > s.length * 1.05){
+    const dx = s.x - player.x, dy = s.y - player.y;
+    const d2 = dx*dx + dy*dy;
     if(d2 < 520*520){
-      const inv=1/Math.max(1, Math.sqrt(d2));
-      ax += dx*inv;
-      ay += dy*inv;
+      danger = 1;
+      const inv = 1 / Math.max(1, Math.sqrt(d2));
+      ax += dx * inv * 1.35;
+      ay += dy * inv * 1.35;
+      if(d2 < 280*280) s.boost = false;
     }
   }
-// NEW: strong danger override (prevents dumb suicides)
-let danger = 0;
 
-// avoid bodies of larger snakes more aggressively
-if(tmpBodies && tmpBodies.length){
-  // (we already queried tmpBodies elsewhere only in collision; here we’ll do a cheap local check)
-}
+  // avoid bigger heads
+  for(let i=0;i<snakes.length;i++){
+    const o = snakes[i];
+    if(o===s || !o.alive) continue;
+    if(o.length <= s.length * 1.05) continue;
 
-// avoid nearby bigger heads (this is the main suicide cause)
-for(let i=0;i<snakes.length;i++){
-  const o = snakes[i];
-  if(o === s || !o.alive) continue;
-  if(o.length <= s.length * 1.05) continue;
-
-  const dx = o.x - s.x, dy = o.y - s.y;
-  const d2 = dx*dx + dy*dy;
-
-  if(d2 < 520*520){
-    danger = Math.max(danger, 1);
-    const inv = 1 / Math.max(1, Math.sqrt(d2));
-    ax += (s.x - o.x) * inv * 2.2;
-    ay += (s.y - o.y) * inv * 2.2;
+    const dx = s.x - o.x, dy = s.y - o.y;
+    const d2 = dx*dx + dy*dy;
+    if(d2 < 520*520){
+      danger = 1;
+      const inv = 1 / Math.max(1, Math.sqrt(d2));
+      ax += dx * inv * 2.0;
+      ay += dy * inv * 2.0;
+    }
   }
-}
 
-// if in danger, do NOT boost (boosting causes accidental deaths)
-if(danger){
-  s.boost = false;
-}
+  // avoid nearby bodies (cheap grid query)
+  tmpAvoidBodies.length = 0;
+  bodyGrid.query(s.x, s.y, 140 + s.radius, tmpAvoidBodies);
+  if(tmpAvoidBodies.length){
+    for(let i=0;i<tmpAvoidBodies.length;i++){
+      const pt = tmpAvoidBodies[i];
+      if(pt.sid === s.id) continue;
+      const dx = s.x - pt.x, dy = s.y - pt.y;
+      const d2 = dx*dx + dy*dy;
+      if(d2 < (150*150)){
+        danger = 1;
+        const inv = 1 / Math.max(1, Math.sqrt(d2));
+        ax += dx * inv * 1.1;
+        ay += dy * inv * 1.1;
+      }
+    }
+  }
+
+  if(danger) s.boost = false;
 
   const vx = (s.ai.targetX - s.x) + ax*420;
   const vy = (s.ai.targetY - s.y) + ay*420;
-  // aggressive tuning: big bots commit harder when hunting
-if(player && player.alive){
-  const dx = player.x - s.x;
-  const dy = player.y - s.y;
-  const d2 = dx*dx + dy*dy;
-
-  if(s.length > player.length * 1.15 && d2 < 1600*1600){
-    // tighter turning + more boost = slither-style pressure
-    s.targetAngle = Math.atan2(vy, vx);
-    if(d2 < 1100*1100) s.boost = true;
-  }
-}
 
   s.targetAngle = Math.atan2(vy, vx);
 
-// subtle organic wiggle (bots feel less robotic)
-// less wiggle for huge snakes
-const wiggleAmt = 0.18 * clamp(1 - (s.length / 16000), 0.20, 1);
-s.targetAngle += Math.sin(performance.now()*0.0018 + s.id*13.37) * wiggleAmt;
-
+  // subtle organic wiggle (less for huge snakes)
+  const wiggleAmt = 0.18 * clamp(1 - (s.length / 16000), 0.20, 1);
+  s.targetAngle += Math.sin(performance.now()*0.0018 + s.id*13.37) * wiggleAmt;
 }
 
 /* =========================================================
@@ -982,7 +1009,8 @@ function eatCheck(s){
   if(!s.alive) return;
 
   tmpNear.length = 0;
-  pelletGrid.query(s.x, s.y, 80 + s.radius, tmpNear);
+  const magnet = s.boost ? 60 : 0;
+  pelletGrid.query(s.x, s.y, 80 + s.radius + magnet, tmpNear);
 
   for(let i=tmpNear.length-1;i>=0;i--){
     const p=tmpNear[i];
@@ -990,13 +1018,14 @@ function eatCheck(s){
     const rr=(s.radius + (p.r||18))*0.85;
     if(dx*dx+dy*dy > rr*rr) continue;
 
-    if(golden && p === golden){
-      golden = null;
-      s.eaten += 25;
-      s.length += 240;
-      updateRadius(s);
-      continue;
-    }
+    const gi = golden.indexOf(p);
+if(gi !== -1){
+  golden.splice(gi, 1);     // remove THIS golden pellet
+  s.eaten += 8;             // your tuned reward
+  s.length += 110;
+  updateRadius(s);
+  continue;
+}
 
     p._dead = true;
     s.eaten++;
@@ -1036,30 +1065,23 @@ const tmpBodies = [];
 function checkPop(s){
   if(!s.alive) return;
 
+  // head-to-head (tighter + decisive)
   for(let i=0;i<snakes.length;i++){
-  const o = snakes[i];
-  if(o === s || !o.alive) continue;
+    const o = snakes[i];
+    if(o === s || !o.alive) continue;
 
-  const dx = o.x - s.x, dy = o.y - s.y;
-
-  // tighter head-to-head radius: fewer "ghost passes"
-  const rr = (o.radius + s.radius) * 0.92;
-  if(dx*dx + dy*dy < rr*rr){
-
-    // decisive winner: smaller dies (no "must be extremely head-on")
-    // small epsilon avoids flip-flops when basically identical
-    const eps = 18;
-
-    if(s.length + eps < o.length) return popSnake(s);
-    if(o.length + eps < s.length) return popSnake(o);
-
-    // near-tie: both pop (slither-ish fairness)
-    popSnake(o);
-    return popSnake(s);
+    const dx = o.x - s.x, dy = o.y - s.y;
+    const rr = (o.radius + s.radius) * 0.92;
+    if(dx*dx + dy*dy < rr*rr){
+      const eps = 18;
+      if(s.length + eps < o.length) return popSnake(s);
+      if(o.length + eps < s.length) return popSnake(o);
+      popSnake(o);
+      return popSnake(s);
+    }
   }
-}
 
-
+  // head-to-body
   tmpBodies.length=0;
   bodyGrid.query(s.x, s.y, 80 + s.radius, tmpBodies);
 
@@ -1077,42 +1099,41 @@ function checkPop(s){
 function popSnake(s){
   if(!s.alive) return;
 
-  // mark dead
   s.alive = false;
 
-  // drop pellets from body
+  // drop pellets
   const b = s.body;
   for(let i=0;i<b.length;i+=2){
     const pt = b[i];
     WORLD.pellets.push({ x: pt.x, y: pt.y, r: 16 });
   }
 
-  // NEW: wait a bit before respawn so pellets actually matter
-  s.respawnT = 1.2 + Math.random() * 1.1; // 1.2–2.3s
+  // delayed respawn
+  s.respawnT = 1.2 + Math.random() * 1.1;
 }
-
 
 function respawnSnake(s){
   const baseX = player ? player.x : 0;
   const baseY = player ? player.y : 0;
+
   const a = Math.random()*Math.PI*2;
-  const r = 1200 + Math.random()*2200; 
+  const r = SETTINGS.respawnMinR + Math.random()*SETTINGS.respawnRandR;
 
   s.x = baseX + Math.cos(a)*r;
   s.y = baseY + Math.sin(a)*r;
   s.angle = Math.random()*Math.PI*2;
   s.targetAngle = s.angle;
 
-  // respawn small (bots), normal (player)
   s.length = s.respawnLen;
   s.eaten = 0;
-
 
   updateRadius(s);
   seedBody(s);
 
   s.boost=false;
   s.boostDropT=0;
+  s.ai.t = 0;
+
   s.alive=true;
 }
 
@@ -1124,45 +1145,15 @@ let cam = { x:0, y:0, z: 1 };
 function updateCamera(dt){
   if(!player) return;
 
-  // position smoothing (unchanged)
   cam.x += (player.x - cam.x) * (1 - Math.pow(0.001, dt));
   cam.y += (player.y - cam.y) * (1 - Math.pow(0.001, dt));
 
-  // zoom out as you grow (slither-ish)
-  // tweak numbers to taste:
   const targetZ = clamp(1.08 - (player.length / 22000), 0.72, 1.08);
   cam.z += (targetZ - cam.z) * (1 - Math.pow(0.001, dt));
 }
 
-
 /* =========================================================
-   #1 MOMENT: one-time yaris flash + golden chain + crown
-========================================================= */
-let isNumberOne=false;
-
-let yarisShownOnce=false;
-let yarisActive=false;
-let yarisStartMs=0;
-
-const YARIS_FADE_IN_MS  = 700;
-const YARIS_HOLD_MS     = 220;
-const YARIS_FADE_OUT_MS = 650;
-
-function setNumberOneState(on){
-  const next = !!on;
-  if(next && !isNumberOne){
-    if(!yarisShownOnce){
-      yarisShownOnce = true;
-      yarisActive = true;
-      yarisStartMs = performance.now();
-    }
-  }
-  isNumberOne = next;
-}
-
-/* =========================================================
-   LEADERBOARD LINES (top 5 always + you)
-   - text format: "1) name- 1000"
+   LEADERBOARD
 ========================================================= */
 let leader = null;
 let lbTimer = 0;
@@ -1178,11 +1169,7 @@ function updateLeaderboard(dt){
 
   const alive = snakes.filter(s=>s.alive).slice();
   alive.sort((a,b)=> b.length - a.length);
-
   leader = alive[0] || null;
-
-  if(player && player.alive && leader) setNumberOneState(leader === player);
-  else setNumberOneState(false);
 
   _lbLines = [];
   for(let i=0;i<5;i++){
@@ -1195,7 +1182,7 @@ function updateLeaderboard(dt){
     const idx = alive.indexOf(player);
     const rank = idx >= 0 ? idx + 1 : null;
     if(rank && rank > 5){
-      _lbLines.push(""); // spacer
+      _lbLines.push("");
       _lbLines.push(makeLine(rank, player));
     }
   }
@@ -1205,6 +1192,7 @@ function updateLeaderboard(dt){
    DRAW
 ========================================================= */
 const playPanelEl = document.getElementById("playPanel");
+
 function drawPinnedBackground(){
   ctx.fillStyle="white";
   ctx.fillRect(0,0,W,H);
@@ -1224,20 +1212,16 @@ function drawPinnedBackground(){
   ctx.fillRect(0,0,W,H);
 }
 
-/* Leaderboard placement:
-   - default: directly under playPanel, aligned left
-   - if not enough space below, pin above music button (still left aligned)
-*/
 function getLeaderboardAnchor(fontSize, lineH, linesCount){
   const r = playPanelEl.getBoundingClientRect();
   const margin = 8;
   const x = Math.max(margin, Math.min(W - margin, r.left));
-  const neededH = (lineH * (linesCount + 1)) + 4; // + title
+  const neededH = (lineH * (linesCount + 1)) + 4;
   const belowY = r.bottom + 8;
 
-  // if would run off bottom, pin above the music button
   const musicRect = musicBtn.getBoundingClientRect();
   const maxBottom = Math.min(H - margin, musicRect.top - 10);
+
   if(belowY + neededH <= maxBottom){
     return { x, y: belowY, maxBottom };
   }
@@ -1246,19 +1230,14 @@ function getLeaderboardAnchor(fontSize, lineH, linesCount){
 }
 
 function drawLeaderboardLayer(){
-  // draw text onto canvas AFTER background but BEFORE frogs
   if(!_lbLines || _lbLines.length === 0) return;
 
   const fontSize = Math.round(clamp(13, W/70, 16));
   const lineH = Math.round(fontSize * 1.25);
 
   const anchor = getLeaderboardAnchor(fontSize, lineH, _lbLines.length);
-  let x = anchor.x;
+  let x = clamp(anchor.x, 8, W - 8);
   let y = anchor.y;
-
-  // keep inside screen a bit
-  const margin = 8;
-  x = clamp(x, margin, W - margin);
 
   ctx.save();
   ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
@@ -1271,17 +1250,15 @@ function drawLeaderboardLayer(){
 
   for(let i=0;i<_lbLines.length;i++){
     const line = _lbLines[i];
-    if(!line){ y += Math.round(lineH*0.55); continue; } // spacer
+    if(!line){ y += Math.round(lineH*0.55); continue; }
 
-    /* NEW: crown next to #1 line */
+    // crown next to #1 line
     if(i === 0 && leader){
       const crown = SPRITES.crown;
       const size = Math.round(lineH * 1.05);
       const textW = ctx.measureText(line).width;
-
       let cx = x + textW + 8;
       cx = clamp(cx, 8, W - size - 8);
-
       ctx.save();
       ctx.globalAlpha = 0.95;
       ctx.drawImage(crown, cx, y - 2, size, size);
@@ -1290,54 +1267,48 @@ function drawLeaderboardLayer(){
 
     ctx.fillText(line, x, y);
     y += lineH;
-    if(y > anchor.maxBottom) break; // safety
+    if(y > anchor.maxBottom) break;
   }
 
   ctx.restore();
 }
 
 function drawWorld(){
-  const z = cam.z;
+  const z  = cam.z;
+  const ox = W*0.5 - cam.x * z;
+  const oy = H*0.5 - cam.y * z;
 
-  // world -> screen helpers (fast, no allocations)
-  const toSX = (wx) => (wx - cam.x) * z + W/2;
-  const toSY = (wy) => (wy - cam.y) * z + H/2;
-
-
+  // pellets
   for(let i=0;i<WORLD.pellets.length;i++){
     const p=WORLD.pellets[i];
-    const sx = toSX(p.x), sy = toSY(p.y);
+    const sx = p.x*z + ox, sy = p.y*z + oy;
     if(sx<-40||sx>W+40||sy<-40||sy>H+40) continue;
+
     const spr = (p.r<=14) ? SPRITES.pelletSmall : SPRITES.pellet;
-    ctx.drawImage(
-  spr,
-  sx - (spr.width*z)/2,
-  sy - (spr.height*z)/2,
-  spr.width*z,
-  spr.height*z
-);
+    const dw = spr.width*z, dh = spr.height*z;
 
+    ctx.drawImage(spr, sx - dw*0.5, sy - dh*0.5, dw, dh);
   }
 
-  if(golden){
-    const sx = toSX(golden.x), sy = toSY(golden.y);
+  for(const g0 of golden){
+  const sx = g0.x*cam.z + ox;
+  const sy = g0.y*cam.z + oy;
 
-    if(!(sx<-80||sx>W+80||sy<-80||sy>H+80)){
-      const pulse = 0.55 + 0.45*Math.sin(performance.now()*0.006);
-      ctx.save();
-      ctx.globalAlpha = 0.75 + pulse*0.25;
-      ctx.drawImage(
-  SPRITES.gold,
-  sx - (SPRITES.gold.width*z)/2,
-  sy - (SPRITES.gold.height*z)/2,
-  SPRITES.gold.width*z,
-  SPRITES.gold.height*z
-);
+  if(sx<-80||sx>W+80||sy<-80||sy>H+80) continue;
 
-      ctx.restore();
-    }
-  }
+  const pulse = 0.55 + 0.45*Math.sin(performance.now()*0.006);
+  ctx.save();
+  ctx.globalAlpha = 0.75 + pulse*0.25;
 
+  const dw = SPRITES.gold.width*cam.z;
+  const dh = SPRITES.gold.height*cam.z;
+  ctx.drawImage(SPRITES.gold, sx - dw*0.5, sy - dh*0.5, dw, dh);
+
+  ctx.restore();
+}
+
+
+  // snakes
   for(let si=0; si<snakes.length; si++){
     const s=snakes[si];
     if(!s.alive) continue;
@@ -1348,53 +1319,37 @@ function drawWorld(){
 
     const size = big ? 58 : 46;
     const spr = getSnakeSprite(size, s.color, isLeader);
+    const dw = spr.width*z, dh = spr.height*z;
 
     for(let i=b.length-1;i>=0;i--){
       const pt=b[i];
-      const sx = toSX(pt.x), sy = toSY(pt.y);
-
+      const sx = pt.x*z + ox, sy = pt.y*z + oy;
       if(sx<-90||sx>W+90||sy<-90||sy>H+90) continue;
 
-      ctx.drawImage(
-  spr,
-  sx - (spr.width*z)/2,
-  sy - (spr.height*z)/2,
-  spr.width*z,
-  spr.height*z
-);
-
+      ctx.drawImage(spr, sx - dw*0.5, sy - dh*0.5, dw, dh);
 
       if(i===0){
         ctx.font = `18px "RuneScape UF", Arial, sans-serif`;
         ctx.textAlign="center";
         ctx.textBaseline="bottom";
         ctx.fillStyle = "black";
-        ctx.fillText(s.name, sx, sy - (spr.height*z)*0.55);
+        ctx.fillText(s.name, sx, sy - dh*0.55);
 
+        if(isLeader){
+          const crown = SPRITES.crown;
+          const cw = crown.width*z, ch = crown.height*z;
+          ctx.drawImage(crown, sx - cw*0.5, sy - dh*0.95 - ch*0.5, cw, ch);
 
-       if(isLeader){
-        const crown = SPRITES.crown;
-        ctx.drawImage(
-  crown,
-  sx - (crown.width*z)/2,
-  sy - (spr.height*z)*0.95 - (crown.height*z)/2,
-  crown.width*z,
-  crown.height*z
-);
-
-
-        // OPTIONAL: tiny glow pulse (cheap + slither vibe)
-        // comment out if you want zero extra effects
-        const pulse = 0.45 + 0.35 * Math.sin(performance.now() * 0.006);
-        ctx.save();
-        ctx.globalAlpha = pulse * 0.35;
-        ctx.beginPath();
-        ctx.arc(sx, sy, spr.width * 0.62, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 215, 0, 1)";
-        ctx.fill();
-        ctx.restore();
-      }
-
+          // tiny glow pulse (already used in your current set)
+          const pulse = 0.45 + 0.35 * Math.sin(performance.now() * 0.006);
+          ctx.save();
+          ctx.globalAlpha = pulse * 0.35;
+          ctx.beginPath();
+          ctx.arc(sx, sy, spr.width * 0.62, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255, 215, 0, 1)";
+          ctx.fill();
+          ctx.restore();
+        }
       }
     }
   }
@@ -1404,6 +1359,9 @@ function drawLeaderArrow(leaderSnake){
   if(!player || !leaderSnake) return;
   if(leaderSnake === player) return;
   if(!player.alive || !leaderSnake.alive) return;
+
+  // NEW: hide arrow if #1 is on screen
+  if(isWorldPointOnScreen(leaderSnake.x, leaderSnake.y, 120)) return;
 
   const dx = leaderSnake.x - player.x;
   const dy = leaderSnake.y - player.y;
@@ -1442,42 +1400,15 @@ function drawLeaderArrow(leaderSnake){
   ctx.restore();
 }
 
+function isWorldPointOnScreen(wx, wy, pad = 80){
+  const z  = cam.z;
+  const ox = W*0.5 - cam.x * z;
+  const oy = H*0.5 - cam.y * z;
 
-function drawYarisFlash(){
-  if(!yarisActive) return;
-  if(!toyotaImg.complete || toyotaImg.naturalWidth<=0) return;
+  const sx = wx * z + ox;
+  const sy = wy * z + oy;
 
-  const now=performance.now();
-  const t=now - yarisStartMs;
-  const total=YARIS_FADE_IN_MS + YARIS_HOLD_MS + YARIS_FADE_OUT_MS;
-  if(t >= total){ yarisActive=false; return; }
-
-  let a=0;
-  if(t < YARIS_FADE_IN_MS){
-    const x=t / YARIS_FADE_IN_MS;
-    a = x*x*(3-2*x);
-  }else if(t < YARIS_FADE_IN_MS + YARIS_HOLD_MS){
-    a = 1;
-  }else{
-    const u=(t - (YARIS_FADE_IN_MS + YARIS_HOLD_MS)) / YARIS_FADE_OUT_MS;
-    const x=clamp(u,0,1);
-    const s=x*x*(3-2*x);
-    a = 1 - s;
-  }
-
-  const iw=toyotaImg.naturalWidth, ih=toyotaImg.naturalHeight;
-  const pad=110;
-  const maxW=Math.max(240, W - pad*2);
-  const maxH=Math.max(240, H - pad*2);
-  const scale=Math.min(maxW/iw, maxH/ih);
-
-  const dw=iw*scale, dh=ih*scale;
-  const x=(W-dw)/2, y=(H-dh)/2;
-
-  ctx.save();
-  ctx.globalAlpha = 0.95*a;
-  ctx.drawImage(toyotaImg, x, y, dw, dh);
-  ctx.restore();
+  return (sx >= -pad && sx <= W + pad && sy >= -pad && sy <= H + pad);
 }
 
 /* =========================================================
@@ -1495,12 +1426,14 @@ function tick(now){
     player.targetAngle = Math.atan2(dy, dx);
   }
 
+  // AI
   for(let i=0;i<snakes.length;i++){
     const s=snakes[i];
     if(!s.alive) continue;
     if(!s.isPlayer) aiUpdate(s, dt);
   }
 
+  // movement
   for(let i=0;i<snakes.length;i++){
     const s=snakes[i];
     if(!s.alive) continue;
@@ -1508,17 +1441,16 @@ function tick(now){
     addBodyPointIfNeeded(s);
     trimBodyToLength(s);
   }
-// NEW: handle delayed respawns
-for(let i=0;i<snakes.length;i++){
-  const s = snakes[i];
-  if(s.alive) continue;
-  if(s.respawnT > 0){
-    s.respawnT -= dt;
-    if(s.respawnT <= 0){
-      respawnSnake(s);
+
+  // delayed respawns
+  for(let i=0;i<snakes.length;i++){
+    const s = snakes[i];
+    if(s.alive) continue;
+    if(s.respawnT > 0){
+      s.respawnT -= dt;
+      if(s.respawnT <= 0) respawnSnake(s);
     }
   }
-}
 
   updateCamera(dt);
 
@@ -1526,6 +1458,7 @@ for(let i=0;i<snakes.length;i++){
   rebuildPelletGrid();
   rebuildBodyGrid();
 
+  // eating
   for(let i=0;i<snakes.length;i++){
     const s=snakes[i];
     if(!s.alive) continue;
@@ -1533,6 +1466,7 @@ for(let i=0;i<snakes.length;i++){
   }
   compactPellets();
 
+  // collisions
   for(let i=0;i<snakes.length;i++){
     const s=snakes[i];
     if(!s.alive) continue;
@@ -1541,7 +1475,7 @@ for(let i=0;i<snakes.length;i++){
 
   updateLeaderboard(dt);
 
-  // draw order: background -> leaderboard text -> world frogs -> arrow/yaris
+  // draw order
   drawPinnedBackground();
   drawLeaderboardLayer();
   drawWorld();
@@ -1570,11 +1504,9 @@ function startGame(){
 
   snakes.length = 0;
   WORLD.pellets.length = 0;
-  golden = null;
-
-  isNumberOne = false;
-  yarisShownOnce = false;
-  yarisActive = false;
+  golden = [];
+  leader = null;
+  _lbLines = [];
 
   const nm = (nameInput.value || "frog").toLowerCase().trim().slice(0,18) || "frog";
   spawnPlayer(nm);
@@ -1582,6 +1514,7 @@ function startGame(){
 
   cam.x = player.x;
   cam.y = player.y;
+  cam.z = 1;
 
   nameOverlay.style.display = "none";
   nameOverlay.setAttribute("aria-hidden","true");
@@ -1603,4 +1536,3 @@ requestAnimationFrame(()=>{ try{ nameInput.focus(); }catch{} });
 </script>
 </body>
 </html>
-
