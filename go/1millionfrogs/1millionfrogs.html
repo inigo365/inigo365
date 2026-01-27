@@ -532,6 +532,142 @@ button{
 .boost-btn:focus{
   outline: none;
 }
+/* =========================================================
+   FINAL PIXEL UI FIX (paste at END of <style>)
+   - NO gradients (keeps 8-bit look)
+   - true circles (square + aspect-ratio)
+   - remove translucent overlay square
+   - beige bases behind boost / music / pause using px SVGs
+   ========================================================= */
+
+/* 1) STRONG pixel rendering for these UI pieces */
+.joy, .joy *, .boost-btn, .boost-btn::before, .boost-btn::after,
+.music-toggle, .pause-toggle{
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* 2) Replace the red circle SVG with a rounder + shaded PIXEL sphere */
+:root{
+  /* rounder silhouette + built-in pixel highlight + darker shading */
+  --pxcircle-red-sphere: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'><rect width='32' height='32' fill='none'/><g><g fill='%23d63a3a'><rect x='13' y='2' width='6' height='1'/><rect x='11' y='3' width='10' height='1'/><rect x='9' y='4' width='14' height='2'/><rect x='7' y='6' width='18' height='2'/><rect x='6' y='8' width='20' height='16'/><rect x='7' y='24' width='18' height='2'/><rect x='9' y='26' width='14' height='2'/><rect x='11' y='28' width='10' height='1'/><rect x='13' y='29' width='6' height='1'/></g><g fill='%23b12b2b'><rect x='18' y='10' width='7' height='1'/><rect x='19' y='11' width='7' height='1'/><rect x='19' y='12' width='8' height='2'/><rect x='20' y='14' width='7' height='2'/><rect x='20' y='16' width='6' height='2'/><rect x='19' y='18' width='6' height='2'/><rect x='18' y='20' width='6' height='2'/></g><g fill='%23ffffff' opacity='0.35'><rect x='10' y='9' width='2' height='2'/><rect x='11' y='8' width='2' height='2'/><rect x='12' y='7' width='2' height='2'/><rect x='13' y='7' width='2' height='1'/></g></g></svg>");
+}
+
+/* 3) JOYSTICK BALL: force true circle + use pixel sphere SVG + remove any overlay square */
+.joy-ball{
+  width: 48px !important;
+  height: 48px !important;
+  aspect-ratio: 1 / 1;
+  border: 0 !important;
+
+  background-image: var(--pxcircle-red-sphere) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+
+  /* keep your chunky shadow (pixel vibe) */
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.18) !important;
+}
+
+/* kill the “translucent square on top” completely */
+.joy-ball::after{ content:none !important; }
+
+/* 4) BOOST: put it back to pixel style (NO gradients), add beige base behind it */
+.boost-btn{
+  width: 88px !important;
+  height: 88px !important;
+  aspect-ratio: 1 / 1;
+
+  border: 0 !important;
+  background-color: transparent !important;
+  background-image: var(--pxcircle-rim) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.18),
+    8px 8px 0 rgba(0,0,0,0.08) !important;
+
+  position: fixed;
+  isolation: isolate;
+}
+
+/* beige base behind boost (same as joystick base art) */
+.boost-btn::after{
+  content:"";
+  position:absolute;
+  inset:-18px;              /* how big the beige “plate” is */
+  background-image: var(--px-base);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  z-index:-2;
+  /* subtle cabinet shadow */
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.14);
+}
+
+/* inner red cap = pixel sphere SVG */
+.boost-btn::before{
+  content:"";
+  width: 70px !important;
+  height: 70px !important;
+  aspect-ratio: 1/1;
+  border: 0 !important;
+
+  background-image: var(--pxcircle-red-sphere) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+
+  box-shadow: none !important;
+}
+
+/* keep label readable and unchanged size */
+.boost-btn span{
+  font-size: 18px !important;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* 5) MUSIC + PAUSE: make them ACTUALLY occupy the beige plates */
+.music-toggle,
+.pause-toggle{
+  border: 0 !important;
+  background: transparent !important;
+
+  /* beige plate */
+  background-image: var(--px-base) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+
+  /* important: give them a real plate size instead of “floating text” */
+  width: 170px;             /* adjust if you want wider */
+  height: 66px;
+
+  display: grid;
+  place-items: center;
+
+  padding: 0 !important;    /* so the plate, not padding, defines size */
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.14),
+    8px 8px 0 rgba(0,0,0,0.06) !important;
+
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* ensure they stay pinned exactly where you already set them */
+.music-toggle{ left: 8px; bottom: 8px; }
+.pause-toggle{ right: 8px; bottom: 8px; }
+
+/* optional: slightly smaller plates on very small screens */
+@media (max-width: 420px){
+  .music-toggle, .pause-toggle{
+    width: 150px;
+    height: 62px;
+    font-size: 18px;
+  }
+}
+
 </style>
 
 </head>
