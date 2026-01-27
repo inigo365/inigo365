@@ -619,7 +619,130 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 /* also make the stem sit behind the ball, like a real joystick */
 .joy-stem{ z-index: 1; }
 .joy-ball{ z-index: 2; }
+/* =========================================
+   ROUND + CLEAN CONTROLLER PASS (PATCH)
+   - force true circles (no ellipse)
+   - remove square highlight “patch”
+   - unify bottom buttons style (no white boxes)
+   - stem always connects (with tiny JS var)
+   ========================================= */
 
+/* Make sure these UI pieces can’t get squashed into ovals */
+.boost-btn,
+.boost-btn::before,
+.joy-ball{
+  aspect-ratio: 1 / 1;         /* hard locks circles */
+}
+
+/* ---- BOOST: true circular rim + cap ---- */
+.boost-btn{
+  width: 88px;
+  height: 88px;
+  border: none !important;
+  background-color: transparent !important;
+  background-image: var(--pxcircle-rim) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+
+  /* keep it clean + consistent, not “double shadowy” */
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.18),
+    8px 8px 0 rgba(0,0,0,0.08);
+}
+
+.boost-btn::before{
+  width: 70px;   /* bigger red cap */
+  height: 70px;
+  border: none !important;
+  background-color: transparent !important;
+  background-image: var(--pxcircle-red) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+
+  /* subtle “sphere” feel without adding weird rings */
+  box-shadow:
+    inset -10px -10px 0 rgba(0,0,0,0.16),
+    inset  8px  8px 0 rgba(255,255,255,0.12);
+}
+
+/* keep label size exactly as-is */
+.boost-btn span{
+  font-size: 18px;
+}
+
+/* ---- JOYSTICK BALL: force circle, remove square overlay, make it spherical ---- */
+.joy-ball{
+  width: 48px;
+  height: 48px;
+  border: none !important;
+
+  background-color: transparent !important;
+  background-image: var(--pxcircle-red) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+
+  /* sphere-ish shading */
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.16),
+    inset -10px -10px 0 rgba(0,0,0,0.18),
+    inset  8px  8px 0 rgba(255,255,255,0.12);
+}
+
+/* THIS is the “square overlapping the top” — kill it */
+.joy-ball::after{
+  content: none !important;
+}
+
+/* ---- JOYSTICK STEM: remove outline + enable dynamic extension ---- */
+.joy-stem{
+  border: none !important;
+
+  /* base height + JS-driven extension so it never disconnects */
+  height: calc(58px + var(--stem-ext, 0px));
+  bottom: -2px;  /* sits closer to ball at rest */
+
+  box-shadow:
+    inset 4px 4px 0 rgba(255,255,255,0.10),
+    inset -4px -4px 0 rgba(0,0,0,0.25);
+}
+
+/* Ensure stem sits behind the ball (real joystick layering) */
+.joy-handle{ position: absolute; }
+.joy-stem{ z-index: 1; }
+.joy-ball{ z-index: 2; }
+
+/* ---- JOYSTICK BASE/PLATE/HOLE: remove black borders (already requested) ---- */
+.joy-base,
+.joy-base::before,
+.joy-plate,
+.joy-hole{
+  border: none !important;
+}
+
+/* ---- MUSIC + PAUSE: remove “white box” look; match joystick edges + cleanliness ---- */
+.music-toggle,
+.pause-toggle{
+  border: none !important;
+  background-color: transparent !important;
+
+  /* Use SAME arcade base art as joystick */
+  background-image: var(--px-base) !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+
+  /* keep shadows consistent with the rest (cleaner, less clash) */
+  box-shadow:
+    4px 4px 0 rgba(0,0,0,0.16),
+    8px 8px 0 rgba(0,0,0,0.07);
+
+  padding: 10px 14px;
+}
+
+/* Remove the extra inset pseudo box we added before (it’s what reads “square in white box”) */
+.music-toggle::before,
+.pause-toggle::before{
+  content: none !important;
+}
 
 </style>
 </head>
@@ -1148,6 +1271,8 @@ function setJoyVisual(nx, ny){
   joyStem.style.setProperty("--stem-rot", `${rot}deg`);
   joyStem.style.setProperty("--stem-x", `${stemX}px`);
   joyStem.style.setProperty("--stem-sy", `${stemSY}`);
+  const ext = Math.max(0, -py);
+  joyStem.style.setProperty("--stem-ext", `${ext}px`);
 }
 
 function resetJoy(){
