@@ -263,7 +263,7 @@ const MUSIC_SRC = "assets/1millionfrogs.mp3";
 const SETTINGS = {
   bots: 11,
 
-  pelletTarget: 650,
+  pelletTarget: 1000,
   segSpacing: 14,
   maxSegPoints: 220,
 
@@ -408,11 +408,8 @@ function pickName(used){
 ========================================================= */
 const WORLD = { seed: 1337, pellets: [] };
 let golden = [];                 // can hold multiple gold pellets
-// keep at least this many gold pellets in the "active" area around the camera
-const GOLDEN_ONSCREEN_TARGET = 3;
-
-// hard cap (safety)
-const GOLDEN_MAX = 10;         // try 2–5 (3 is a nice middle)
+const GOLDEN_MAX = 6;          // total gold pellets allowed in the active area (try 4–10)
+const GOLDEN_CHANCE = 0.018;   // ~1.2% of spawned pellets become gold (try 0.008–0.02)
 
 /* =========================================================
    HELPERS
@@ -668,13 +665,15 @@ function makeSnake(opts){
     boost: false,
     boostDropT: 0,
 
-    ai: {
-      t: 0,
-      targetX: 0,
-      targetY: 0,
-      wanderA: rand01(opts.id*999+11)*Math.PI*2,
-      huntT: 0
-    }
+   ai: {
+    t: 0,
+    targetX: 0,
+    targetY: 0,
+    wanderA: rand01(opts.id*999+11)*Math.PI*2,
+    huntT: 0,
+    huntCooldownT: 0
+  }
+
   };
 }
 function updateRadius(s){ s.radius = clamp(10 + s.length / 190, 10, 34); }
@@ -760,17 +759,35 @@ function spawnWorldSnakes(){
 /* =========================================================
    PELLETS
 ========================================================= */
-function spawnGoldenNear(camX, camY, radius){
-  // try a few attempts to find a spot
-  for(let t=0; t<12; t++){
-    const a = Math.random() * Math.PI * 2;
-    const r = Math.sqrt(Math.random()) * radius * 0.95; // bias toward closer
-    const x = camX + Math.cos(a)*r;
-    const y = camY + Math.sin(a)*r;
-    golden.push({ x, y, r: 26 });
-    return true;
+function isWorldPointOnScreen(wx, wy, pad = 80){
+  const z  = cam.z;
+  const ox = W*0.5 - cam.x * z;
+  const oy = H*0.5 - cam.y * z;
+
+  const sx = wx * z + ox;
+  const sy = wy * z + oy;
+
+  return (sx >= -pad && sx <= W + pad && sy >= -pad && sy <= H + pad);
+}
+
+function countGoldenOnScreen(){
+  let n = 0;
+  for(let i=0;i<golden.length;i++){
+    if(isWorldPointOnScreen(golden[i].x, golden[i].y, GOLDEN_SPAWN_PAD)) n++;
   }
-  return false;
+  return n;
+}
+
+function spawnGoldenNear(camX, camY){
+  // spawn inside (or near) current view in world coords
+  const z = cam.z;
+  const halfW = (W * 0.55) / z;
+  const halfH = (H * 0.55) / z;
+
+  const x = camX + (Math.random()*2 - 1) * halfW;
+  const y = camY + (Math.random()*2 - 1) * halfH;
+
+  golden.push({ x, y, r: 26 });
 }
 
 function ensurePellets(camX, camY){
@@ -784,11 +801,12 @@ function ensurePellets(camX, camY){
     const x = camX + Math.cos(a)*r + (rand01(j+30)-0.5)*180;
     const y = camY + Math.sin(a)*r + (rand01(j+40)-0.5)*180;
 
-    // MULTI golden spawn (simple + capped)
-    if(golden.length < GOLDEN_MAX && rand01(j+50) > 0.9965){
-      golden.push({ x, y, r: 26 });
-      continue;
-    }
+    // gold pellets spawn exactly like normal pellets, just rarer (and capped)
+  if(golden.length < GOLDEN_MAX && Math.random() < GOLDEN_CHANCE){
+    golden.push({ x, y, r: 26 });
+    continue;
+  }
+
 
     WORLD.pellets.push({ x, y, r: 16 });
 
@@ -820,11 +838,14 @@ function ensurePellets(camX, camY){
     const dx=g0.x-camX, dy=g0.y-camY;
     if(dx*dx+dy*dy > maxD2) golden.splice(i, 1);
   }
-  // guarantee at least 1 golden in the active area most of the time
-while(golden.length < GOLDEN_ONSCREEN_TARGET && golden.length < GOLDEN_MAX){
-  spawnGoldenNear(camX, camY, radius);
-}
 
+  // guarantee ~1 golden in/near view most of the time
+  const onScreenGold = countGoldenOnScreen();
+  if(onScreenGold < GOLDEN_ONSCREEN_TARGET && golden.length < GOLDEN_MAX){
+    // spawn just enough to reach target
+    const need = Math.min(GOLDEN_ONSCREEN_TARGET - onScreenGold, GOLDEN_MAX - golden.length);
+    for(let n=0;n<need;n++) spawnGoldenNear(camX, camY);
+  }
 }
 
 function rebuildPelletGrid(){
@@ -893,39 +914,47 @@ function updateMovement(s, dt){
    AI
 ========================================================= */
 const tmpAvoidBodies = [];
+
 function aiUpdate(s, dt){
+  // safety for older snakes
   if(typeof s.ai.huntT !== "number") s.ai.huntT = 0;
+  if(typeof s.ai.huntCooldownT !== "number") s.ai.huntCooldownT = 0;
+
   s.ai.t -= dt;
-
-  // keep an active hunt going even between "decision ticks"
   if(s.ai.huntT > 0) s.ai.huntT = Math.max(0, s.ai.huntT - dt);
+  if(s.ai.huntCooldownT > 0) s.ai.huntCooldownT = Math.max(0, s.ai.huntCooldownT - dt);
 
-  // defaults (carry forward last target until next decision)
+  // carry forward last target between decision ticks
   let tx = s.ai.targetX;
   let ty = s.ai.targetY;
 
+  // === DECISION TICK (every ~0.25–0.8s) ===
   if(s.ai.t <= 0){
     s.ai.t = 0.25 + Math.random()*0.55;
 
-    // wander baseline
-    tx = s.x + Math.cos(s.ai.wanderA)*420;
-    ty = s.y + Math.sin(s.ai.wanderA)*420;
-    s.ai.wanderA += (Math.random()-0.5)*0.9;
+    // wander baseline (keeps movement organic)
+    tx = s.x + Math.cos(s.ai.wanderA) * 520;
+    ty = s.y + Math.sin(s.ai.wanderA) * 520;
+    s.ai.wanderA += (Math.random()-0.5) * 0.8;
 
-    // seek pellets
+    // seek pellets (soft preference)
     const n = WORLD.pellets.length;
     if(n > 0){
       let best=null, bestD2=Infinity;
-      for(let i=0;i<18;i++){
+      for(let i=0;i<14;i++){
         const p = WORLD.pellets[(Math.random()*n)|0];
         const dx=p.x-s.x, dy=p.y-s.y;
         const d2=dx*dx+dy*dy;
         if(d2 < bestD2){ bestD2=d2; best=p; }
       }
-      if(best){ tx=best.x; ty=best.y; }
+      if(best){
+        // don't laser lock perfectly; bias toward it
+        tx = tx*0.25 + best.x*0.75;
+        ty = ty*0.25 + best.y*0.75;
+      }
     }
 
-    // seek nearest golden (if any)
+    // seek nearest golden (if any) - stronger preference than normal pellets
     if(golden && golden.length){
       let bestG=null, bestGD2=Infinity;
       for(let i=0;i<golden.length;i++){
@@ -934,75 +963,92 @@ function aiUpdate(s, dt){
         const d2=dx*dx+dy*dy;
         if(d2 < bestGD2){ bestGD2=d2; bestG=g0; }
       }
-      if(bestG && bestGD2 < 1300*1300){
+      if(bestG && bestGD2 < 1800*1800){
         tx = bestG.x;
         ty = bestG.y;
       }
     }
 
-    // decide whether to START hunting the player (but only sometimes)
-    if(player && player.alive && !s.isPlayer){
+    // Decide whether to START hunting player (limited + not constant)
+    if(player && player.alive && !s.isPlayer && s.ai.huntT <= 0 && s.ai.huntCooldownT <= 0){
       const dx = player.x - s.x, dy = player.y - s.y;
       const d2 = dx*dx + dy*dy;
 
-      // stricter + random gate so you don't get surrounded
-      if(s.length > player.length * 1.45 && d2 < 1200*1200 && Math.random() < 0.35){
-        s.ai.huntT = 3.5; // chase for ~3.5 seconds, then stop
+      const bigger = (s.length > player.length * 1.25);
+      const closeEnough = (d2 < 1500*1500);
+
+      // only some bots, some of the time
+      // (also uses global huntersNow/MAX_HUNTERS you already have)
+      if(bigger && closeEnough && huntersNow < MAX_HUNTERS && Math.random() < 0.22){
+        huntersNow++;
+
+        // hunt lasts a short time, then they break off
+        s.ai.huntT = 2.2 + Math.random()*1.6;      // ~2.2–3.8s
+        s.ai.huntCooldownT = 3.5 + Math.random()*3.5; // ~3.5–7s (prevents constant trapping)
       }
     }
 
-    // store target for in-between frames
+    // store targets
     s.ai.targetX = tx;
     s.ai.targetY = ty;
 
-    // occasional boost elsewhere (kept subtle)
-    if(!s.boost) s.boost = (s.length > 260 && Math.random() > 0.985);
+    // occasional boost (rare)
+    if(!s.boost) s.boost = (s.length > 320 && Math.random() > 0.992);
   }
 
-  // if currently hunting, override tx/ty to a "cutoff" target near the player
+  // === HUNT OVERRIDE (more human: cutoff + orbit, then disengage) ===
   if(player && player.alive && s.ai.huntT > 0){
     const dx = player.x - s.x, dy = player.y - s.y;
     const d2 = dx*dx + dy*dy;
     const d  = Math.sqrt(d2);
 
-    const lead = clamp(220 + d*0.18, 220, 520);
-    const px = player.x + Math.cos(player.angle) * lead;
-    const py = player.y + Math.sin(player.angle) * lead;
+    // if player is far, stop hunting early (reduces "endless same direction")
+    if(d > 1900){
+      s.ai.huntT = 0;
+    }else{
+      // cutoff target (lead ahead of player)
+      const lead = clamp(220 + d*0.16, 220, 520);
+      let px = player.x + Math.cos(player.angle) * lead;
+      let py = player.y + Math.sin(player.angle) * lead;
 
-    const side = (Math.random() < 0.5 ? -1 : 1);
-    const off  = clamp(110 + d*0.06, 110, 260);
-    const ox = -Math.sin(player.angle) * off * side;
-    const oy =  Math.cos(player.angle) * off * side;
+      // orbit bias so it feels like real players passing / wrapping
+      // (each bot keeps a consistent side during this hunt)
+      const side = (rand01((s.id*7777)|0) < 0.5 ? -1 : 1);
+      const off  = clamp(120 + d*0.05, 120, 260);
+      px += -Math.sin(player.angle) * off * side;
+      py +=  Math.cos(player.angle) * off * side;
 
-    tx = px + ox;
-    ty = py + oy;
+      // add some imperfection so it's killable
+      px += (Math.random()-0.5) * 120;
+      py += (Math.random()-0.5) * 120;
 
-    // hunting should feel pressuring but not suicide-y
-    s.boost = false;
+      tx = px; ty = py;
 
-    // also keep stored target in sync
-    s.ai.targetX = tx;
-    s.ai.targetY = ty;
+      // hunting shouldn’t be boost-suicide
+      s.boost = false;
+
+      // keep stored target in sync
+      s.ai.targetX = tx;
+      s.ai.targetY = ty;
+    }
   }else{
-    // not hunting: use stored targets
     tx = s.ai.targetX;
     ty = s.ai.targetY;
   }
 
-  // avoidance steering
+  // === AVOIDANCE STEERING ===
   let ax=0, ay=0;
   let danger=0;
 
-  // avoid player head (prevents dumb head-ons)
+  // avoid player head if player is bigger (stops dumb head-ons)
   if(player && player.alive && player !== s && player.length > s.length * 1.05){
     const dx = s.x - player.x, dy = s.y - player.y;
     const d2 = dx*dx + dy*dy;
-    if(d2 < 520*520){
+    if(d2 < 560*560){
       danger = 1;
       const inv = 1 / Math.max(1, Math.sqrt(d2));
-      ax += dx * inv * 1.35;
-      ay += dy * inv * 1.35;
-      if(d2 < 280*280) s.boost = false;
+      ax += dx * inv * 1.25;
+      ay += dy * inv * 1.25;
     }
   }
 
@@ -1010,48 +1056,46 @@ function aiUpdate(s, dt){
   for(let i=0;i<snakes.length;i++){
     const o = snakes[i];
     if(o===s || !o.alive) continue;
-    if(o.length <= s.length * 1.05) continue;
+    if(o.length <= s.length * 1.08) continue;
 
     const dx = s.x - o.x, dy = s.y - o.y;
     const d2 = dx*dx + dy*dy;
-    if(d2 < 520*520){
+    if(d2 < 560*560){
       danger = 1;
       const inv = 1 / Math.max(1, Math.sqrt(d2));
-      ax += dx * inv * 2.0;
-      ay += dy * inv * 2.0;
+      ax += dx * inv * 1.8;
+      ay += dy * inv * 1.8;
     }
   }
 
-  // avoid nearby bodies (cheap grid query)
+  // avoid nearby bodies
   tmpAvoidBodies.length = 0;
-  bodyGrid.query(s.x, s.y, 140 + s.radius, tmpAvoidBodies);
+  bodyGrid.query(s.x, s.y, 160 + s.radius, tmpAvoidBodies);
   for(let i=0;i<tmpAvoidBodies.length;i++){
     const pt = tmpAvoidBodies[i];
     if(pt.sid === s.id) continue;
     const dx = s.x - pt.x, dy = s.y - pt.y;
     const d2 = dx*dx + dy*dy;
-    if(d2 < 150*150){
+    if(d2 < 165*165){
       danger = 1;
       const inv = 1 / Math.max(1, Math.sqrt(d2));
-      ax += dx * inv * 1.1;
-      ay += dy * inv * 1.1;
+      ax += dx * inv * 1.15;
+      ay += dy * inv * 1.15;
     }
   }
 
   if(danger) s.boost = false;
 
-  // combine goal + avoidance
+  // === COMBINE GOAL + AVOIDANCE ===
   const vx = (tx - s.x) + ax*420;
   const vy = (ty - s.y) + ay*420;
 
   s.targetAngle = Math.atan2(vy, vx);
 
   // subtle organic wiggle (less for huge snakes)
-  const wiggleAmt = 0.18 * clamp(1 - (s.length / 16000), 0.20, 1);
-  s.targetAngle += Math.sin(performance.now()*0.0018 + s.id*13.37) * wiggleAmt;
+  const wiggleAmt = 0.16 * clamp(1 - (s.length / 16000), 0.18, 1);
+  s.targetAngle += Math.sin(performance.now()*0.0016 + s.id*13.37) * wiggleAmt;
 }
-
-
 /* =========================================================
    EATING
 ========================================================= */
@@ -1073,7 +1117,7 @@ function eatCheck(s){
 if(gi !== -1){
   golden.splice(gi, 1);     // remove THIS golden pellet
   s.eaten += 8;             // your tuned reward
-  s.length += 110;
+  s.length += 60;
   updateRadius(s);
   continue;
 }
@@ -1450,17 +1494,6 @@ function drawLeaderArrow(leaderSnake){
   ctx.stroke();
 
   ctx.restore();
-}
-
-function isWorldPointOnScreen(wx, wy, pad = 80){
-  const z  = cam.z;
-  const ox = W*0.5 - cam.x * z;
-  const oy = H*0.5 - cam.y * z;
-
-  const sx = wx * z + ox;
-  const sy = wy * z + oy;
-
-  return (sx >= -pad && sx <= W + pad && sy >= -pad && sy <= H + pad);
 }
 
 /* =========================================================
