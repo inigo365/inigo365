@@ -2525,6 +2525,26 @@ function startGame(){
   updatePauseUI();
   startLoop();
 }
+/* =========================================================
+   AUTO-PAUSE WHEN TAB / APP LOSES FOCUS
+========================================================= */
+
+function autoPause(){
+  if(gameRunning && !paused && nameOverlay.style.display === "none"){
+    setPaused(true);
+  }
+}
+
+// tab becomes hidden (most reliable)
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden) autoPause();
+});
+
+// window loses focus (desktop alt-tab)
+window.addEventListener("blur", autoPause);
+
+// iOS / mobile app backgrounding
+window.addEventListener("pagehide", autoPause);
 
 startBtn.addEventListener("click", startGame);
 nameInput.addEventListener("keydown", (e)=>{ if(e.key === "Enter") startGame(); });
