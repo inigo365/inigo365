@@ -782,9 +782,9 @@ button{
     <div class="panel" id="playPanel">
       <div class="panel-title">1millionfrogs</div>
       <div class="panel-sub">
-        keep finger down to steer<br>
-        boost: space (desktop) • two fingers (mobile)
-      </div>
+      mobile: joystick to move • tap/hold anywhere to boost<br>
+      desktop: follow mouse • click/hold to boost
+    </div>
       <div class="row">
         <button class="linkish" id="resetBtn" type="button">reset</button>
         <div class="stat" id="stats">length: 0 • eaten: 0 • boost: off</div>
@@ -798,7 +798,13 @@ button{
 
   <div class="panel2" role="dialog" aria-modal="true" aria-label="name entry">
     <div class="panel2-title">enter name</div>
-    <div class="panel2-sub">there are big frogs out there already. catch them.</div>
+    <div class="panel2-sub">
+  mobile: use the joystick to move • tap/hold boost button to boost<br>
+  desktop: follow your mouse • click/hold to boost<br><br>
+  collect pellets to grow.<br>
+  if you run into another frog, you die.<br>
+  if a frog runs into you, they die.
+</div>
     <div class="name-row">
       <input id="nameInput" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="name">
       <button class="boxbtn" id="startBtn" type="button">start</button>
