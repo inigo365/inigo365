@@ -823,8 +823,6 @@ button{
 <button class="music-toggle" id="musicBtn" type="button">music: on</button>
 <button class="pause-toggle" id="pauseBtn" type="button">pause game</button>
 <div class="mobile-controls" id="mobileControls" aria-hidden="true">
-  <button class="boost-btn" id="boostBtn" type="button"></button>
-
   <div class="joy" id="joy">
     <div class="joy-base"></div>
     <div class="joy-plate"></div>
@@ -1398,27 +1396,45 @@ if(IS_MOBILE){
     resetJoy();
   }, { passive:false });
 }
-if(IS_MOBILE){
-  boostBtn.addEventListener("pointerdown", (e)=>{
-    if(paused) return;
-    e.preventDefault();
-    boostHeld = true;
-  }, { passive:false });
-
-  boostBtn.addEventListener("pointerup", (e)=>{
-    e.preventDefault();
-    boostHeld = false;
-  }, { passive:false });
-
-  boostBtn.addEventListener("pointercancel", (e)=>{
-    e.preventDefault();
-    boostHeld = false;
-  }, { passive:false });
-}
 
 let pointer = { x: W/2, y: H/2 };
 let boostHeld = false;
 let goldPowerT = 0;
+function isGameplayTapTarget(el){
+  // if you tapped ANY UI/control element, do NOT boost
+  return !(
+    el.closest(".topbar") ||
+    el.closest(".overlay") ||
+    el.closest(".pause-overlay") ||
+    el.closest(".mobile-controls") ||  // includes joystick (and boost btn if still present)
+    el.closest("button") ||
+    el.closest("input")
+  );
+}
+
+if(IS_MOBILE){
+  // tap/hold anywhere on the canvas to boost
+  c.addEventListener("pointerdown", (e)=>{
+    if(e.pointerType !== "touch") return;
+    if(paused) return;
+
+    // don't boost if they tapped on UI
+    if(!isGameplayTapTarget(e.target)) return;
+
+    e.preventDefault();
+    boostHeld = true;
+  }, { passive:false });
+
+  c.addEventListener("pointerup", (e)=>{
+    if(e.pointerType !== "touch") return;
+    boostHeld = false;
+  }, { passive:false });
+
+  c.addEventListener("pointercancel", (e)=>{
+    if(e.pointerType !== "touch") return;
+    boostHeld = false;
+  }, { passive:false });
+}
 
 c.addEventListener("touchstart", (e)=>{
   e.preventDefault();
