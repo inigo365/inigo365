@@ -610,43 +610,40 @@ video {
 
 <body>
 
-<div class="password-screen" id="passwordScreen">
-  <div class="password-row">
-    <div class="password-box">
-      <label>enter password:</label>
+<div class="password-box">
+  <label>enter password:</label>
 
-      <form id="passwordForm" autocomplete="off">
-       <div class="input-wrap">
-  <input
-    type="password"
-    id="passwordInput"
-    autocomplete="off"
-    autocapitalize="none"
-    autocorrect="off"
-    spellcheck="false"
-    enterkeyhint="go"
-  >
-</div>
-
-   <div class="action-row">
-  <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
-  <button type="button" class="switch-btn help-under" id="helpButton" aria-label="help">?</button>
-</div>
-
-      </form>
-      <div class="portal-dock" id="portalDock" aria-label="quick portal links">
-  <!-- buttons injected by JS -->
-</div>
-
-<div class="portal-hint" id="portalHint">
-  tip: type a password for secret rooms ✶
-</div>
-
-    </div>
+  <!-- TILES FIRST -->
+  <div class="portal-dock" id="portalDock" aria-label="quick portal links"></div>
+  <div class="portal-hint" id="portalHint">
+    tip: type a password for secret rooms ✶
   </div>
 
-  <button class="add-home-btn" id="addHomeBtn" type="button">add to home page</button>
+  <!-- PASSWORD BOX LAST -->
+  <form id="passwordForm" autocomplete="off">
+    <div class="input-wrap">
+      <input
+        type="password"
+        id="passwordInput"
+        autocomplete="off"
+        autocapitalize="none"
+        autocorrect="off"
+        spellcheck="false"
+        enterkeyhint="go"
+      >
+    </div>
+
+    <div class="action-row">
+      <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">
+        enter ↵
+      </button>
+      <button type="button" class="switch-btn help-under" id="helpButton" aria-label="help">
+        ?
+      </button>
+    </div>
+  </form>
 </div>
+
 
 <!-- CHEAT ENTRY OVERLAY -->
 <div class="overlay" id="cheatOverlay" aria-hidden="true">
@@ -678,7 +675,7 @@ video {
     <div class="unlock-flash" id="unlockFlash"></div>
 
     <div class="cheat-info-wrap">
-      <button class="cheat-info-q" id="cheatInfo" type="button">?</button>
+      <button class="cheat-info-q" id="cheatInfo" type="button">cheatcodes</button>
     </div>
 
     <div class="panel-footer">
@@ -1078,9 +1075,9 @@ renderPortalDock();
  * Tokens: U D L R A B
  */
 const cheatUnlocks = {
-  "U U D D L R L R B A": ["1millionfrogs"],
-  "U D U D A B": ["bag"],
-  "A B A B": ["home"]
+  "U U D D L R L R B A": ["heavychest"],
+  "U D U D A B": ["wasted"],
+  "A B A B": ["gambosi"]
 };
 
 // ===== unlock storage =====
@@ -1617,6 +1614,26 @@ document.addEventListener("contextmenu", e => e.preventDefault());
 
 // init
 setButtonsForInputState();
+function helpIsVisible() {
+  return helpButton.classList.contains("show");
+}
+
+/* Help only opens cheats when help is actually visible */
+helpButton.addEventListener("pointerdown", (e) => {
+  if (!helpIsVisible()) return; // <- key line
+  e.preventDefault();
+  SFX.unlockNow();
+  try { passwordInput.blur(); } catch {}
+  openCheatOverlay();
+});
+
+helpButton.addEventListener("click", (e) => {
+  if (!helpIsVisible()) return; // <- key line
+  e.preventDefault();
+  try { passwordInput.blur(); } catch {}
+  openCheatOverlay();
+});
+
 </script>
 
 </body>
