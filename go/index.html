@@ -734,17 +734,31 @@ body{
   text-align: initial;
 }
 
-/* FORM becomes the layout engine */
+/* DESKTOP: hard-lock placement */
 #passwordForm{
   width: 100%;
   display: grid;
-  justify-content: center;
   align-items: center;
   column-gap: 18px;
   row-gap: 10px;
 
-  /* Desktop default: label | input | action (enter) */
   grid-template-columns: max-content minmax(0, 520px) 140px;
+  grid-template-areas:
+    "label input action"
+    "hint  hint  hint";
+
+  justify-content: center;
+}
+
+#passwordForm label { grid-area: label; }
+#passwordInput      { grid-area: input;  min-width: 0; }
+.action-row         { grid-area: action; justify-self: end; }
+#passwordForm .hint-row {
+  grid-area: hint;
+  width: 100%;          /* IMPORTANT: don't give it a competing fixed width */
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
 }
 
 /* label */
@@ -755,6 +769,7 @@ body{
   text-align: right;
   white-space: nowrap;
 }
+
 
 /* input fills its grid column */
 #passwordInput{
