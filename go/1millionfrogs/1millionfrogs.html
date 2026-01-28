@@ -121,7 +121,9 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 /* ===== Name overlay ===== */
 .overlay{
   position:fixed; inset:0;
-  background: rgba(255,255,255,0.98);
+  background: rgba(255,255,255,0.55); /* lets the background show through */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -767,6 +769,36 @@ button{
 .boost-btn:active{transform:translateY(2px);}
 
 /* IMPORTANT: don’t pixelate your text buttons unless you want that */
+/* keep game page clean */
+html, body { background: #fff; }
+
+/* overlay gets the background ONLY while it's shown */
+#nameOverlay{
+  background: transparent; /* so our ::before is visible */
+}
+
+#nameOverlay::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image: url("../images/background.png"); /* <-- same image as go/index.html */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  z-index:-1;              /* sits behind the overlay content */
+}
+
+/* optional: on mobile, fixed backgrounds can be janky */
+@media (max-width: 768px){
+  #nameOverlay::before{ background-attachment: scroll; }
+}
+
+/* make sure overlay can host the pseudo-element */
+#nameOverlay{
+  position: fixed; /* you already have this in .overlay, but this is fine */
+  overflow: hidden;
+}
 
 </style>
 
