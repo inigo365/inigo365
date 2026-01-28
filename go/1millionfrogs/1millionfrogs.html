@@ -692,7 +692,7 @@ button{
 .joy-stem{
   position:absolute;
   left:50%;
-  bottom:23px;
+  bottom:27px;
   width:32px;                          /* display size on screen */
   height:calc(92px + var(--stem-ext,0px));
   transform:
@@ -713,7 +713,7 @@ button{
 .joy-ball{
   position:absolute;
   left:50%;
-  bottom:48px;
+  bottom:54px;
   width:48px;
   height:48px;
   aspect-ratio:1/1;
@@ -1315,7 +1315,7 @@ let joyVec = { x: 0, y: 0 }; // -1..1
 const JOY_RADIUS = 24;       // pixels the stick can move (feel free: 20-30)
 
 const JOY_RAD_X = 24;   // ellipse travel (feel free: 22–30)
-const JOY_RAD_Y = 13;
+const JOY_RAD_Y = 12;
 const PIXEL_STEP = 2;   // snap to grid for chunky movement
 
 function snapPx(v){
