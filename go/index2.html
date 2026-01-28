@@ -677,7 +677,6 @@ video {
 
         <div class="action-row">
           <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
-          <button type="button" class="switch-btn help-under" id="helpButton" aria-label="help">?</button>
         </div>
       </form>
 
@@ -797,8 +796,6 @@ document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: fa
 const passwordInput = document.getElementById("passwordInput");
 const passwordForm = document.getElementById("passwordForm");
 const enterButton = document.getElementById("enterButton");
-const helpButton = document.getElementById("helpButton");
-
 const passwordScreen = document.getElementById("passwordScreen");
 const contentPage = document.getElementById("contentPage");
 const playButton = document.getElementById("playButton");
@@ -1509,25 +1506,6 @@ enterButton.addEventListener("pointerdown", (e) => {
   e.stopPropagation();
   SFX.unlockNow(); // keep within gesture
   tryPassword();
-});
-function helpIsVisible() {
-  return helpButton.classList.contains("show");
-}
-
-/* Help only opens cheats (and only after wrong attempt) */
-helpButton.addEventListener("pointerdown", (e) => {
-  if (!helpIsVisible()) return;
-  e.preventDefault();
-  SFX.unlockNow();
-  try { passwordInput.blur(); } catch {}
-  openCheatOverlay();
-});
-
-helpButton.addEventListener("click", (e) => {
-  if (!helpIsVisible()) return;
-  e.preventDefault();
-  try { passwordInput.blur(); } catch {}
-  openCheatOverlay();
 });
 
 

@@ -32,10 +32,10 @@ html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-
-  height: 100vh;
-  height: 100svh;
-  height: 100dvh;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;          /* no scrollbars */
+  overscroll-behavior: none;
 
   font-family: "RuneScape UF", Arial, sans-serif;
 
@@ -50,6 +50,20 @@ html, body {
 
 html, body { cursor: url("../images/cursor/cursor.png"), auto; }
 button, input { cursor: url("../images/cursor/cursor-hover.png"), pointer; }
+/* never allow sideways scroll/pan */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* safety: any child cannot exceed viewport width */
+.password-screen, .password-row, .password-box, #passwordForm {
+  max-width: 100%;
+}
 
 button {
   -webkit-appearance: none;
@@ -87,7 +101,7 @@ button {
 .password-screen{
   width: 100%;
   min-height: 100vh;
-  background: white;
+  background: transparent;
   transition: opacity 0.4s ease;
   position: relative;
 
@@ -141,13 +155,6 @@ button {
   gap: 14px; /* consistent vertical rhythm */
 }
 
-.password-box label {
-  font-size: 32px;
-  margin-bottom: 12px;
-  display: block;
-  cursor: url("../images/cursor/cursor.png"), auto;
-}
-
 .password-box input {
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 24px;
@@ -160,14 +167,6 @@ button {
   border-radius: 0;
   -webkit-appearance: none;
   appearance: none;
-}
-
-/* form + buttons */
-#passwordForm {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
 }
 
 /* fixed slot so nothing shifts */
@@ -640,11 +639,316 @@ video {
   margin-top: 6px;
   margin-bottom: 6px;
 }
+/* =========================
+   BACKGROUND IMAGE
+   Put the file at: images/background.jpg
+   ========================= */
+html, body { background: transparent; }
+
+body{
+  background-image: url("images/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+@media (max-width: 768px){
+  body{ background-attachment: scroll; }
+}
+
+/* =========================
+   TRANSLUCENT UI SURFACES
+   ========================= */
+.portal-tile,
+#passwordInput,
+.panel,
+.boxbtn,
+.cheat-seq,
+.vault-list,
+.mini-panel{
+  background: rgba(255,255,255,0.74);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Keep borders crisp */
+.portal-tile,
+#passwordInput,
+.panel,
+.boxbtn,
+.cheat-seq,
+.vault-list,
+.mini-panel{
+  border-color: #000;
+}
+
+/* =========================
+   TILES: ALWAYS LEFT ALIGN TEXT
+   ========================= */
+.portal-left{
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+}
+.portal-title,
+.portal-sub{
+  width: 100%;
+  text-align: left;
+}
+
+/* =========================
+   TILES LAYOUT:
+   Desktop = 3 fixed columns like your mock
+   Mobile  = stacked
+   ========================= */
+.portal-dock{
+  width: min(980px, 100%);
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 769px){
+  .portal-dock{
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px){
+  .portal-dock{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   PASSWORD + INPUT + ENTER LAYOUT
+   (matches your Photoshop mocks)
+   ========================= */
+
+/* Stop the whole box forcing center text (we’ll control it locally) */
+.password-box{
+  text-align: initial;
+}
+
+/* FORM becomes the layout engine */
+#passwordForm{
+  width: 100%;
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  column-gap: 18px;
+  row-gap: 10px;
+
+  /* Desktop default: label | input | action (enter) */
+  grid-template-columns: auto minmax(320px, 520px) auto;
+}
+
+/* label */
+#passwordForm label{
+  margin: 0;
+  font-size: 32px;
+  text-transform: lowercase;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* input fills its grid column */
+#passwordInput{
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+}
+
+/* action sits to the right on desktop */
+.action-row{
+  width: 140px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  position: relative;
+}
+
+/* HINT ROW */
+.hint-row{
+  width: min(980px, 100%);
+  display: grid;
+  align-items: center;
+  margin-top: 14px;
+
+  /* desktop: center tip, ? pinned right but INSIDE the 980px box */
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.portal-hint{
+  grid-column: 2;
+  margin: 0;
+  text-align: center;
+}
+
+/* right-side ? */
+.hint-help{
+  grid-column: 3;
+  justify-self: end;
+
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--btn);
+  line-height: 1;
+
+  opacity: 0;
+  pointer-events: none;
+}
+.hint-help.show{
+  opacity: 1;
+  pointer-events: auto;
+}
+.hint-help:hover{ text-decoration: underline; }
+/* =========================
+   MOBILE — NEAT + NEVER OVERFLOW
+   ========================= */
+@media (max-width: 768px){
+
+  .password-screen{
+    align-items: flex-start;
+    padding-top: 44px;
+  }
+
+  .password-box{
+    width: 100%;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .portal-dock{
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    grid-template-columns: 1fr;
+  }
+
+  /* 2x2 grid:
+     row1: label | input
+     row2: hint  | action
+  */
+  #passwordForm{
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    grid-template-areas:
+      "label input"
+      "hint  action";
+
+    column-gap: 8px;
+    row-gap: 10px;
+
+    justify-content: stretch;
+    align-items: center;
+  }
+   #passwordForm .hint-row{
+    grid-area: hint;
+    margin: 0;
+    display: block;
+  }
+
+  #passwordForm .portal-hint{
+    text-align: left;
+    white-space: nowrap;       /* keep it one line so height never changes */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 1.2em;         /* stable height */
+  }
+
+  /* smaller label = same feel as portal tile headings */
+  #passwordForm label{
+    grid-area: label;
+
+    font-size: 24px;         /* match .portal-title */
+    line-height: 1;
+    text-align: left;
+
+    white-space: normal;     /* allow wrap */
+    max-width: 9ch;          /* forces "enter" + "password:" stack neatly */
+    margin: 0;
+  }
+
+  /* input MUST NEVER exceed viewport */
+  #passwordInput{
+    grid-area: input;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;            /* IMPORTANT for grid overflow */
+    box-sizing: border-box;  /* IMPORTANT for overflow */
+
+    font-size: 24px;
+    padding: 12px 12px;
+    text-align: center;
+  }
+
+  /* hint sits directly under, left side */
+  .hint-row{
+    grid-area: hint;
+    margin: 0;
+    align-self: center;
+  }
+
+  .portal-hint{
+    margin: 0;
+    text-align: left;
+    font-size: 18px;
+  }
+
+  /* action sits directly under, right side */
+  .action-row{
+    grid-area: action;
+    transform: translateY(6px);
+
+    justify-self: end;
+    margin: 0;
+
+    width: 140px;
+    height: 28px;
+    line-height: 28px;
+  }
+}
+/* Hint row is INSIDE the form now — desktop: centered */
+#passwordForm .hint-row{
+  grid-column: 1 / -1;        /* span all columns on desktop */
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;     /* center the hint row */
+}
+
+/* desktop hint: centered */
+#passwordForm .portal-hint{
+  text-align: center;
+  line-height: 1.2;
+  min-height: 1.2em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* mobile override: keep it left */
+@media (max-width: 768px){
+  #passwordForm .hint-row{
+    justify-content: flex-start; /* left-align the row */
+  }
+  #passwordForm .portal-hint{
+    text-align: left;
+  }
+}
+
 
 </style>
 </head>
-
-<body>
 
 <body>
 
@@ -652,33 +956,29 @@ video {
   <div class="password-row">
     <div class="password-box">
 
-      <!-- TILES FIRST -->
       <div class="portal-dock" id="portalDock" aria-label="quick portal links"></div>
 
-      <div class="portal-hint" id="portalHint">
-        tip: type a password for secret rooms ✶
-      </div>
-
-      <!-- PASSWORD UI BELOW -->
-      <label>enter password:</label>
-
+      <!-- PASSWORD + INPUT + ENTER -->
       <form id="passwordForm" autocomplete="off">
-        <div class="input-wrap">
-          <input
-            type="password"
-            id="passwordInput"
-            autocomplete="off"
-            autocapitalize="none"
-            autocorrect="off"
-            spellcheck="false"
-            enterkeyhint="go"
-          >
-        </div>
+        <label for="passwordInput">enter password:</label>
+
+        <input
+          type="password"
+          id="passwordInput"
+          autocomplete="off"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+          enterkeyhint="go"
+        >
 
         <div class="action-row">
           <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
-          <button type="button" class="switch-btn help-under" id="helpButton" aria-label="help">?</button>
+          <button type="button" class="switch-btn help-under" id="hintHelp" aria-label="help">?</button>
         </div>
+         <div class="hint-row">
+    <div class="portal-hint" id="portalHint">hint: ? opens the code console</div>
+  </div>
       </form>
 
     </div>
@@ -797,15 +1097,13 @@ document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: fa
 const passwordInput = document.getElementById("passwordInput");
 const passwordForm = document.getElementById("passwordForm");
 const enterButton = document.getElementById("enterButton");
-const helpButton = document.getElementById("helpButton");
-
+const hintHelp = document.getElementById("hintHelp");
 const passwordScreen = document.getElementById("passwordScreen");
 const contentPage = document.getElementById("contentPage");
 const playButton = document.getElementById("playButton");
 const videoWrapper = document.getElementById("videoWrapper");
 const video = document.getElementById("videoElement");
 const backButton = document.getElementById("backButton");
-
 const cheatOverlay = document.getElementById("cheatOverlay");
 const cheatSequenceEl = document.getElementById("cheatSequence");
 const cheatClear = document.getElementById("cheatClear");
@@ -1036,17 +1334,17 @@ const SFX = (() => {
 })();
 
 
-// keyboard activates buttons too (space/enter on focused button)
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Enter" && e.key !== " ") return;
   const el = document.activeElement;
   if (!el || el.tagName !== "BUTTON") return;
   if (el.disabled) return;
-  if (isEnterButton(el)) return;
+  if (el.id === "enterButton") return;
 
   SFX.unlockNow();
   SFX.play("click");
 }, true);
+
 
 /* =========================== */
 
@@ -1414,24 +1712,36 @@ window.addEventListener("pagehide", () => { passwordInput.disabled = false; });
 
 backButton.onclick = resetToPassword;
 
-// ===== Button visibility rules =====
-// - typing => show ENTER
-// - empty + before first wrong => show nothing
-// - empty + after first wrong => show ?
 function setButtonsForInputState() {
   const hasText = passwordInput.value.length > 0;
 
-  // ENTER shows only when there is text AND we're not in a locked "nope" flash
-  if (hasText && !enterLock) {
-    enterButton.classList.add("show");
-  } else {
-    enterButton.classList.remove("show");
-  }
+  if (hasText && !enterLock) enterButton.classList.add("show");
+  else enterButton.classList.remove("show");
 
-  // HELP shows only when input is empty AND enter/nope is not showing (i.e. not flashing)
-  const helpShouldShow = !hasText && !enterLock && !enterButton.classList.contains("show");
-  if (helpShouldShow) helpButton.classList.add("show");
-  else helpButton.classList.remove("show");
+  // Show cheat "?" ONLY after first wrong attempt and only when input is empty
+  const cheatShouldShow = !hasText && !enterLock && hasWrongAttempt;
+
+  if (hintHelp) {
+    if (cheatShouldShow) hintHelp.classList.add("show");
+    else hintHelp.classList.remove("show");
+  }
+}
+
+if (hintHelp) {
+  hintHelp.addEventListener("pointerdown", (e) => {
+    if (!hintHelp.classList.contains("show")) return;
+    e.preventDefault();
+    SFX.unlockNow();
+    try { passwordInput.blur(); } catch {}
+    openCheatOverlay();
+  });
+
+  hintHelp.addEventListener("click", (e) => {
+    if (!hintHelp.classList.contains("show")) return;
+    e.preventDefault();
+    try { passwordInput.blur(); } catch {}
+    openCheatOverlay();
+  });
 }
 
 
@@ -1510,34 +1820,20 @@ enterButton.addEventListener("pointerdown", (e) => {
   SFX.unlockNow(); // keep within gesture
   tryPassword();
 });
-function helpIsVisible() {
-  return helpButton.classList.contains("show");
-}
 
-/* Help only opens cheats (and only after wrong attempt) */
-helpButton.addEventListener("pointerdown", (e) => {
-  if (!helpIsVisible()) return;
-  e.preventDefault();
-  SFX.unlockNow();
-  try { passwordInput.blur(); } catch {}
-  openCheatOverlay();
-});
-
-helpButton.addEventListener("click", (e) => {
-  if (!helpIsVisible()) return;
-  e.preventDefault();
-  try { passwordInput.blur(); } catch {}
-  openCheatOverlay();
-});
-
-
-/* Tap outside after typing submits */
 passwordScreen.addEventListener("pointerdown", (e) => {
-  if (e.target === passwordInput || e.target === enterButton || e.target === helpButton || e.target === addHomeBtn) return;
+  if (
+    e.target === passwordInput ||
+    e.target === enterButton ||
+    e.target === hintHelp ||
+    e.target === addHomeBtn
+  ) return;
+
   if (!passwordInput.disabled && passwordInput.value.trim().length > 0) {
     tryPassword();
   }
 });
+
 
 // ===== navigation =====
 cheatToVault.addEventListener("click", () => {
