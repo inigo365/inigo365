@@ -883,7 +883,7 @@ const SFX_GOLD_SRC = "assets/sfx_gold.mp3";
    SETTINGS
 ========================================================= */
 const SETTINGS = {
-  bots: 10,
+  bots: 15,
 
   pelletTarget: 1200,
   segSpacing: 14,
@@ -906,14 +906,18 @@ const SETTINGS = {
   respawnMinR: 2200,
   respawnRandR: 7000,
 
-  midGiants: 9,
-  midLenMin: 1000,
-  midLenMax: 3000,
+  midGiants: 7,
+  midLenMin: 2000,
+  midLenMax: 6000,
+
+  bigs: 2,
+  bigLenMin: 6000,
+  bigLenMax: 9000,
 
   // big “starter giants”
   starterGiants: 1,
-  giantLenMin: 8000,
-  giantLenMax: 10000,
+  giantLenMin: 9500,
+  giantLenMax: 11000,
 };
 
 const MAX_HUNTERS = 1; // try 1–3
@@ -1118,7 +1122,7 @@ let golden = [];                 // can hold multiple gold pellets
 const GOLDEN_MAX = 18;          // total gold pellets allowed in the active area (try 4–10)
 const GOLDEN_CHANCE = 0.06;   // ~1.2% of spawned pellets become gold (try 0.008–0.02)
 const GOLDEN_MIN = 4;   
-const GOLD_LEN_BONUS = 85;       // was 60, "slightly more"
+const GOLD_LEN_BONUS = 50;       // was 60, "slightly more"
 const GOLD_EAT_BONUS = 10;       // was 8, optional (keeps scoreboard feel)
 const GOLD_MAGNET_T = 2.0;       // seconds
 const GOLD_MAGNET_RADIUS = 220;  // extra attraction range (px)
@@ -1607,14 +1611,19 @@ function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, used
 function spawnWorldSnakes(){
   const used = new Set([player.name]);
 
-  // starter giants
-  spawnBots(SETTINGS.starterGiants, 200, SETTINGS.giantLenMin, SETTINGS.giantLenMax, 0.90, 1.05, used);
+  // 1 boss around ~10k
+  spawnBots(SETTINGS.starterGiants, 200, SETTINGS.giantLenMin, SETTINGS.giantLenMax, 0.90, 1.02, used);
 
-  spawnBots(SETTINGS.midGiants, 260, SETTINGS.midLenMin, SETTINGS.midLenMax, 0.92, 1.08, used);
-  // regular bots
-  spawnBots(SETTINGS.bots, 100, 160, 900, 0.92, 1.14, used);
+  // 2 big contenders (6k–9k)
+  spawnBots(SETTINGS.bigs, 240, SETTINGS.bigLenMin, SETTINGS.bigLenMax, 0.92, 1.05, used);
 
+  // 6 mids (2.5k–6k) = most of your “top ten”
+  spawnBots(SETTINGS.mids, 280, SETTINGS.midLenMin, SETTINGS.midLenMax, 0.94, 1.10, used);
+
+  // 11 smalls (200–2000) = constant food + chaos
+  spawnBots(SETTINGS.bots, 100, 220, 2000, 0.96, 1.16, used);
 }
+
 
 /* =========================================================
    PELLETS
