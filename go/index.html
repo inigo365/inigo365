@@ -536,7 +536,7 @@ video {
 /* PLAY BUTTON */
 .play-button {
   position: absolute;
-  top: 50%;
+  top: 43%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 52px;
@@ -1669,7 +1669,7 @@ function resetToPassword() {
 
   hasWrongAttempt = false;
   closeAllOverlays();
-  if (portalHint) portalHint.textContent = "tip: type a password for secret rooms ✶";
+  if (portalHint) portalHint.textContent = "hint: ? opens the code console";
 
   setButtonsForInputState();
   passwordInput.focus();
