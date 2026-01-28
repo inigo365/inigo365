@@ -1307,7 +1307,7 @@ function setJoyVisual(nx, ny){
 
   // max lean angle
   const rot = t * 14;                 // degrees, left/right only
-  const stemX = snapPx(px * 0.28);    // top of stem shifts toward ball
+  const stemX = snapPx(px * 0.34);    // top of stem shifts toward ball
   const stemSY = 1 - Math.min(0.10, Math.abs(py) / (JOY_RAD_Y || 1) * 0.10); // subtle squash
 
   joyStem.style.setProperty("--stem-rot", `${rot}deg`);
