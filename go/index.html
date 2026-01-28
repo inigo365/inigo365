@@ -188,6 +188,8 @@ button {
 }
 
 .switch-btn:hover { text-decoration: underline; }
+/* help button that lives in the action-row slot */
+.help-under { z-index: 1; }
 
 /* ENTER button (ONLY submits, never opens cheats) */
 .enter-button { z-index: 2; }
@@ -543,6 +545,66 @@ video {
 .back-button.show {
   opacity: 1;
 }
+/* ===== PORTAL DOCK (public navigation) ===== */
+.portal-dock{
+  margin-top: 18px;
+  width: min(520px, calc(100vw - 24px));
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 520px){
+  .portal-dock{ grid-template-columns: 1fr; }
+}
+
+.portal-tile{
+  border: 2px solid black;
+  background: white;
+  padding: 12px 10px;
+  text-transform: lowercase;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  color: var(--btn);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.portal-tile:hover{ text-decoration: underline; }
+
+.portal-left{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.portal-title{
+  font-size: 24px;
+  line-height: 1;
+}
+
+.portal-sub{
+  font-size: 16px;
+  opacity: 0.85;
+  line-height: 1.1;
+}
+
+.portal-right{
+  font-size: 22px;
+  opacity: 0.9;
+}
+
+/* tiny hint under dock */
+.portal-hint{
+  margin-top: 10px;
+  font-size: 18px;
+  text-transform: lowercase;
+  opacity: 0.9;
+}
+
 </style>
 </head>
 
@@ -554,24 +616,32 @@ video {
       <label>enter password:</label>
 
       <form id="passwordForm" autocomplete="off">
-        <div class="input-wrap">
-      <input
-        type="password"
-        id="passwordInput"
-        autocomplete="off"
-        autocapitalize="none"
-        autocorrect="off"
-        spellcheck="false"
-        enterkeyhint="go"
-      >
-      <button type="button" class="help-side" id="helpButton" aria-label="help">?</button>
-    </div>
+       <div class="input-wrap">
+  <input
+    type="password"
+    id="passwordInput"
+    autocomplete="off"
+    autocapitalize="none"
+    autocorrect="off"
+    spellcheck="false"
+    enterkeyhint="go"
+  >
+</div>
 
-    <div class="action-row">
-      <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
-    </div>
+   <div class="action-row">
+  <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
+  <button type="button" class="switch-btn help-under" id="helpButton" aria-label="help">?</button>
+</div>
 
       </form>
+      <div class="portal-dock" id="portalDock" aria-label="quick portal links">
+  <!-- buttons injected by JS -->
+</div>
+
+<div class="portal-hint" id="portalHint">
+  tip: type a password for secret rooms ✶
+</div>
+
     </div>
   </div>
 
@@ -963,6 +1033,45 @@ const actions = {
   "1millionfrogs": { redirect: "1millionfrogs/1millionfrogs.html", sameTab: true, useGate: false },
   "heavychest": { src: "videos/andre.mp4", mobileFill: true }
 };
+// ===== PUBLIC DOCK (always visible) =====
+const PUBLIC_ACTIONS = [
+  { key: "home",          title: "home",           sub: "main page",        glyph: "→" },
+  { key: "bag",           title: "put the bag in the bag",            sub: "game",             glyph: "▶" },
+  { key: "1millionfrogs", title: "1millionfrogs",  sub: "game",             glyph: "▶" }
+];
+
+const portalDock = document.getElementById("portalDock");
+const portalHint = document.getElementById("portalHint");
+
+function renderPortalDock() {
+  if (!portalDock) return;
+  portalDock.innerHTML = "";
+
+  for (const item of PUBLIC_ACTIONS) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "portal-tile";
+    btn.setAttribute("data-key", item.key);
+
+    btn.innerHTML = `
+      <div class="portal-left">
+        <div class="portal-title">${item.title}</div>
+        <div class="portal-sub">${item.sub}</div>
+      </div>
+      <div class="portal-right">${item.glyph}</div>
+    `;
+
+    btn.addEventListener("click", () => {
+      SFX.unlockNow();
+      SFX.play("click");
+      runActionByKey(item.key);
+    });
+
+    portalDock.appendChild(btn);
+  }
+}
+
+renderPortalDock();
 
 /**
  * Cheat sequences -> unlocks.
@@ -1221,6 +1330,7 @@ function resetToPassword() {
 
   hasWrongAttempt = false;
   closeAllOverlays();
+  if (portalHint) portalHint.textContent = "tip: type a password for secret rooms ✶";
 
   setButtonsForInputState();
   passwordInput.focus();
@@ -1272,12 +1382,19 @@ backButton.onclick = resetToPassword;
 function setButtonsForInputState() {
   const hasText = passwordInput.value.length > 0;
 
-  if (hasText) {
+  // ENTER shows only when there is text AND we're not in a locked "nope" flash
+  if (hasText && !enterLock) {
     enterButton.classList.add("show");
   } else {
     enterButton.classList.remove("show");
   }
+
+  // HELP shows only when input is empty AND enter/nope is not showing (i.e. not flashing)
+  const helpShouldShow = !hasText && !enterLock && !enterButton.classList.contains("show");
+  if (helpShouldShow) helpButton.classList.add("show");
+  else helpButton.classList.remove("show");
 }
+
 
 // ===== enter flash ("nope") =====
 let enterFlashTimer = null;
@@ -1308,12 +1425,15 @@ function tryPassword() {
   const action = actions[key];
 
   if (!action) {
-    SFX.play("password"); // wrong password
-    hasWrongAttempt = true;
-    passwordInput.value = "";
-    flashNope(520);
-    return;
-  }
+  SFX.play("password");
+  hasWrongAttempt = true;
+  passwordInput.value = "";
+  flashNope(520);
+
+  if (portalHint) portalHint.textContent = "hint: ? opens the code console";
+  return;
+}
+
 
   // only play "correct" if we won't immediately navigate away in same tab
   if (shouldPlayCorrectForAction(action)) SFX.play("correct");
