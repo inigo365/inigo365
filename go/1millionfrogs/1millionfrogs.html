@@ -883,7 +883,7 @@ const SFX_GOLD_SRC = "assets/sfx_gold.mp3";
    SETTINGS
 ========================================================= */
 const SETTINGS = {
-  bots: 13,
+  bots: 10,
 
   pelletTarget: 1200,
   segSpacing: 14,
@@ -906,14 +906,14 @@ const SETTINGS = {
   respawnMinR: 2200,
   respawnRandR: 7000,
 
-  midGiants: 3,
-  midLenMin: 3000,
-  midLenMax: 8000,
+  midGiants: 9,
+  midLenMin: 1000,
+  midLenMax: 3000,
 
   // big “starter giants”
-  starterGiants: 4,
-  giantLenMin: 10000,
-  giantLenMax: 20000,
+  starterGiants: 1,
+  giantLenMin: 8000,
+  giantLenMax: 10000,
 };
 
 const MAX_HUNTERS = 1; // try 1–3
@@ -1115,8 +1115,9 @@ function pickName(used){
 ========================================================= */
 const WORLD = { seed: 1337, pellets: [] };
 let golden = [];                 // can hold multiple gold pellets
-const GOLDEN_MAX = 10;          // total gold pellets allowed in the active area (try 4–10)
-const GOLDEN_CHANCE = 0.028;   // ~1.2% of spawned pellets become gold (try 0.008–0.02)
+const GOLDEN_MAX = 18;          // total gold pellets allowed in the active area (try 4–10)
+const GOLDEN_CHANCE = 0.06;   // ~1.2% of spawned pellets become gold (try 0.008–0.02)
+const GOLDEN_MIN = 4;   
 const GOLD_LEN_BONUS = 85;       // was 60, "slightly more"
 const GOLD_EAT_BONUS = 10;       // was 8, optional (keeps scoreboard feel)
 const GOLD_MAGNET_T = 2.0;       // seconds
@@ -1610,9 +1611,9 @@ function spawnWorldSnakes(){
   spawnBots(SETTINGS.starterGiants, 200, SETTINGS.giantLenMin, SETTINGS.giantLenMax, 0.90, 1.05, used);
 
   spawnBots(SETTINGS.midGiants, 260, SETTINGS.midLenMin, SETTINGS.midLenMax, 0.92, 1.08, used);
-
   // regular bots
-  spawnBots(SETTINGS.bots, 100, 180, 650, 0.92, 1.12, used);
+  spawnBots(SETTINGS.bots, 100, 160, 900, 0.92, 1.14, used);
+
 }
 
 /* =========================================================
@@ -1640,11 +1641,13 @@ function ensurePellets(camX, camY){
     const x = camX + Math.cos(a)*r + (rand01(j+30)-0.5)*180;
     const y = camY + Math.sin(a)*r + (rand01(j+40)-0.5)*180;
 
-    // gold pellets spawn exactly like normal pellets, just rarer (and capped)
-  if(golden.length < GOLDEN_MAX && Math.random() < GOLDEN_CHANCE){
+  // guarantee a baseline amount of gold, then use chance for extras
+  const forceGold = (golden.length < GOLDEN_MIN);
+  if(golden.length < GOLDEN_MAX && (forceGold || Math.random() < GOLDEN_CHANCE)){
     golden.push({ x, y, r: 26 });
     continue;
   }
+
 
 
     WORLD.pellets.push({ x, y, r: 16 });
