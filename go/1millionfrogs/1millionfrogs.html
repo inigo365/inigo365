@@ -910,7 +910,7 @@ const SETTINGS = {
   midLenMin: 2000,
   midLenMax: 6000,
 
-  bigs: 2,
+  bigs: 4,
   bigLenMin: 6000,
   bigLenMax: 9000,
 
@@ -1838,7 +1838,19 @@ function aiUpdate(s, dt){
     s.ai.targetY = ty;
 
     // occasional boost (rare)
-    if(!s.boost) s.boost = (s.length > 320 && Math.random() > 0.992);
+    // occasional panic / greed boost (more human)
+if(!s.boost){
+  const panic = player && player.alive && s.length < player.length * 0.85;
+  const greedy = player && player.alive && s.length > player.length * 1.3;
+
+  if(
+    (panic && Math.random() < 0.015) ||
+    (greedy && Math.random() < 0.010)
+  ){
+    s.boost = true;
+  }
+}
+
   }
 
   // === HUNT OVERRIDE (more human: cutoff + orbit, then disengage) ===
@@ -1880,6 +1892,30 @@ function aiUpdate(s, dt){
     tx = s.ai.targetX;
     ty = s.ai.targetY;
   }
+// === GREEDY KILL ATTEMPT (slither-style risk) ===
+if(player && player.alive && !s.isPlayer){
+  const dx = player.x - s.x;
+  const dy = player.y - s.y;
+  const d2 = dx*dx + dy*dy;
+
+  const ratio = s.length / Math.max(1, player.length);
+
+  // only if bot is bigger, but not ridiculously bigger
+  if(ratio > 1.15 && ratio < 2.6 && d2 < 900*900){
+    // small random chance per decision tick
+    if(Math.random() < 0.18){
+      // aim slightly past the player's head (dangerous!)
+      const overshoot = 110 + Math.random()*140;
+
+      s.ai.targetX = player.x + Math.cos(player.angle) * overshoot;
+      s.ai.targetY = player.y + Math.sin(player.angle) * overshoot;
+
+      // commit briefly
+      s.boost = Math.random() < 0.55;
+      s.ai.huntT = 0.9 + Math.random()*0.6; // SHORT commitment
+    }
+  }
+}
 
   // === AVOIDANCE STEERING ===
   let ax=0, ay=0;
@@ -1928,8 +1964,15 @@ if(player && player.alive && player !== s && player.length > s.length * 1.05){
     if(pt.sid === s.id) continue;
     const dx = s.x - pt.x, dy = s.y - pt.y;
     const d2 = dx*dx + dy*dy;
-    const smart = (player && player.alive) ? clamp((s.length / player.length - 1.0) / 0.60, 0, 1) : 0;
-    const avoidW = 1.15 + smart * 0.65; // up to 1.8 when bot is much bigger
+    const smart = (player && player.alive)
+    ? clamp((s.length / player.length - 1.0) / 0.60, 0, 1)
+    : 0;
+    // confident bots take MORE risk, not less
+    const risk = clamp((s.length / Math.max(1, player.length) - 1.2) / 0.8, 0, 1);
+
+    // smart ↑ avoidance, risk ↓ avoidance
+    const avoidW = 1.15 + smart * 0.55 - risk * 0.45;
+
 
     if(d2 < 165*165){
       danger = 1;
