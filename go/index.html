@@ -878,11 +878,15 @@ body{
   }
 
   #passwordForm .portal-hint{
-    text-align: left;
-    white-space: nowrap;       /* keep it one line so height never changes */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-height: 1.2em;         /* stable height */
+    white-space: normal;     /* allow wrapping */
+    overflow: visible;       /* no clipping */
+    text-overflow: unset;    /* no ellipsis */
+    line-height: 1.15;
+    max-width: 100%;
+  }
+    #passwordForm .hint-row{
+    margin-top: 6px;         /* was effectively larger; smaller = higher */
+    transform: translateY(-6px);
   }
 
   /* smaller label = same feel as portal tile headings */
@@ -929,7 +933,7 @@ body{
   /* action sits directly under, right side */
   .action-row{
     grid-area: action;
-    transform: translate3d(22px, 6px, 0);
+    transform: translate3d(22px, -2px, 0);
 
     justify-self: end;
     margin: 0;
@@ -967,6 +971,36 @@ body{
     text-align: left;
   }
 }
+/* ===== MOBILE: hint wraps BEFORE the action column (no overlap) ===== */
+@media (max-width: 768px){
+
+  /* 3 columns: label | flexible content | fixed action */
+  #passwordForm{
+    grid-template-columns: max-content minmax(0, 1fr) 140px;
+    grid-template-areas:
+      "label input input"
+      "hint  hint  action";
+  }
+
+  /* make sure hint stays inside its grid cell and can wrap */
+  #passwordForm .hint-row{
+    grid-area: hint;
+    min-width: 0;                 /* IMPORTANT for wrapping in grid */
+  }
+
+  #passwordForm .portal-hint{
+    white-space: normal !important;  /* override your later desktop nowrap */
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  /* keep action exactly in its lane */
+  .action-row{
+    grid-area: action;
+    justify-self: end;              /* keep right */
+  }
+}
 
 
 </style>
@@ -996,10 +1030,10 @@ body{
 
         <div class="action-row">
           <button type="submit" class="switch-btn enter-button" id="enterButton" aria-label="enter">enter ↵</button>
-          <button type="button" class="switch-btn help-under" id="hintHelp" aria-label="help">?</button>
+          <button type="button" class="switch-btn help-under" id="hintHelp" aria-label="help">secret</button>
         </div>
          <div class="hint-row">
-    <div class="portal-hint" id="portalHint">hint: ? opens the code console</div>
+    <div class="portal-hint" id="portalHint">hint: find hidden passwords around the site...</div>
   </div>
       </form>
 
@@ -1688,7 +1722,7 @@ function resetToPassword() {
 
   hasWrongAttempt = false;
   closeAllOverlays();
-  if (portalHint) portalHint.textContent = "hint: ? opens the code console";
+  if (portalHint) portalHint.textContent = "hint: find hidden passwords around the site...";
 
   setButtonsForInputState();
   passwordInput.focus();
@@ -1800,7 +1834,7 @@ function tryPassword() {
   passwordInput.value = "";
   flashNope(520);
 
-  if (portalHint) portalHint.textContent = "hint: ? opens the code console";
+  if (portalHint) portalHint.textContent = "hint: find hidden passwords around the site...";
   return;
 }
 
