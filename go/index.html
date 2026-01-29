@@ -1000,6 +1000,31 @@ body{
     grid-area: action;
     justify-self: end;              /* keep right */
   }
+
+}
+/* ===== VAULT FIX (mobile): wrap whole codes, never overflow, never split words ===== */
+@media (max-width: 768px){
+  .panel .vault-list{
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;  /* stop space-evenly pushing items out */
+    align-items: center !important;
+
+    gap: 14px !important;
+    padding: 14px 10px !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+
+    overflow: hidden !important;         /* safety: no bleed outside border */
+  }
+
+  .panel .vault-item{
+    white-space: nowrap !important;      /* keep passwords as one word */
+    flex: 0 0 auto !important;           /* DO NOT shrink, wrap instead */
+    max-width: 100% !important;
+  }
 }
 
 
