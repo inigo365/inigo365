@@ -170,6 +170,47 @@ button {
   -webkit-appearance: none;
   appearance: none;
 }
+/* =========================
+   TOP BANNER (title screen)
+   ========================= */
+.site-banner{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* space between banner and tiles */
+  margin: 8px 0 14px;
+
+  /* prevents the banner from stretching too tall */
+  flex: 0 0 auto;
+}
+
+.site-banner img{
+  width: min(980px, 100%);   /* match your content max width */
+  height: auto;
+
+  /* keep it from becoming comically huge on wide screens */
+  max-height: clamp(72px, 14vw, 160px);
+
+  /* pixel crisp */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+
+  /* no layout weirdness */
+  display: block;
+}
+
+/* Optional: a touch more breathing room on mobile */
+@media (max-width: 768px){
+  .site-banner{
+    margin-top: 6px;
+    margin-bottom: 12px;
+  }
+  .site-banner img{
+    max-height: clamp(64px, 18vw, 140px);
+  }
+}
 
 /* fixed slot so nothing shifts */
 .action-row {
@@ -1036,6 +1077,9 @@ body{
 <div class="password-screen" id="passwordScreen">
   <div class="password-row">
     <div class="password-box">
+      <div class="site-banner" aria-label="inigo365 banner">
+    <img src="images/inigo365-banner.png" alt="inigo365">
+  </div>
 
       <div class="portal-dock" id="portalDock" aria-label="quick portal links"></div>
 
