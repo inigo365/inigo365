@@ -1,28 +1,19 @@
 /* =========================
-   0) HARD LOCK SCROLL / BASE
+   HARD LOCK SCROLL
 ========================= */
-html,
-body {
+html, body {
   height: 100%;
-  margin: 0;
-  padding: 0;
-  width: 100%;
   overflow-x: hidden;
   overscroll-behavior: none; /* stops bounce on mobile */
 }
 
 body {
   overflow-y: auto;
-  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
-  background: #fff;
 }
 
-* {
-  box-sizing: border-box;
-}
 
 /* =========================
-   1) FONTS
+   FONTS
 ========================= */
 @font-face {
   font-family: "RuneScape UF";
@@ -33,16 +24,26 @@ body {
 }
 
 /* =========================
-   2) SECTIONS (GENERAL)
+   GLOBAL RESET
 ========================= */
-section {
-  width: 100%;
+* {
+  box-sizing: border-box;
+}
+
+html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+  background: #fff;
 }
 
 /* =========================
-   3) LANDING IMAGE + HITBOX LINKS
+   LANDING IMAGE + BUTTONS
 ========================= */
 .landing-wrapper {
   position: relative;
@@ -54,6 +55,10 @@ section {
   display: block;
 }
 
+/* =========================
+   INVISIBLE LINKS (CLICKABLE HITBOXES)
+========================= */
+
 /* Landing hitboxes */
 .landing-link {
   position: absolute;
@@ -61,8 +66,8 @@ section {
   z-index: 10;
   background: transparent; /* set rgba(...) to debug */
   cursor: pointer;
-  pointer-events: auto;
-  text-indent: -9999px; /* hide text */
+  pointer-events: auto; /* IMPORTANT: enable clicking */
+  text-indent: -9999px;
 }
 
 /* NEW landing.jpg positions (email / whatsapp / instagram) */
@@ -91,46 +96,77 @@ section {
   height: 15.02%;
 }
 
+/* Footer hitboxes */
+.footer-inner {
+  position: relative; /* needed for absolute footer links */
+}
+
+.footer-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.footer-link {
+  position: absolute;
+  display: block;
+  z-index: 10;
+  background: transparent; /* set rgba(...) to debug */
+  cursor: pointer;
+  pointer-events: auto;
+  text-indent: -9999px;
+}
+
+/* NEW footer.jpg positions (about / imdb) */
+
+/* About me (covers both “about” and “me”) */
+.footer-about-link {
+  left: 4.35%;
+  top: 31.94%;
+  width: 36.23%;
+  height: 36.46%;
+}
+
+/* IMDB */
+.footer-imdb-link {
+  left: 72.46%;
+  top: 37.50%;
+  width: 18.60%;
+  height: 32.99%;
+}
+
+
 /* =========================
-   4) PORTFOLIO GRID + TILES
+   SECTIONS
 ========================= */
-/* Default = mobile-first: 2 columns */
+section {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 .portfolio {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0;
   margin: 0;
   padding: 0;
 }
 
-/* Desktop: 4 columns */
-@media (min-width: 1025px) {
-  .portfolio {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  /* Big tiles (2 across) */
-  .tile.feature {
-    grid-column: span 2;
-  }
-}
-
-
-
-/* Tablets + phones → 2 columns 
+/* Tablets + phones → 2 columns */
 @media (max-width: 1024px) {
   .portfolio {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
- Very small phones only → 1 column 
+/* Very small phones only → 1 column */
 @media (max-width: 360px) {
   .portfolio {
     grid-template-columns: 1fr;
   }
 }
-*/
+
 .tile {
   position: relative;
   width: 100%;
@@ -141,39 +177,40 @@ section {
 
 .tile img {
   width: 100%;
-  height: auto;
   display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
-/* Overlay text (hover only) */
+/* =========================
+   PORTFOLIO TILE TEXT FIX (HOVER ONLY)
+========================= */
 .tile .overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
-
+  position: absolute;         /* keep overlay on top of image */
+  inset: 0;                   /* fill the tile */
+  background: rgba(0,0,0,0.3); /* semi-transparent overlay */
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  opacity: 0;
+  opacity: 0;                 /* hidden by default */
   transition: opacity 0.3s ease;
-
   text-align: center;
   padding: 10px;
+  
+  /* Responsive font sizing */
+  font-size: clamp(16px, 2vw, 24px); /* desktop max 24px, mobile min 16px */
 
-  font-size: clamp(16px, 2vw, 24px);
-  line-height: 1.2;
-
-  white-space: normal;
+  /* Smart wrapping for mobile */
+  white-space: normal;         /* allow wrapping if needed */
   word-wrap: break-word;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  pointer-events: none; /* IMPORTANT: overlay never blocks clicks */
+  line-height: 1.2;
 }
 
-/* Hover effect */
+/* Hover effect — show overlay on hover */
 .tile:hover .overlay {
   opacity: 1;
 }
@@ -186,8 +223,10 @@ section {
   }
 }
 
+
+
 /* =========================
-   5) PROJECT PAGES
+   PROJECT PAGES
 ========================= */
 .project {
   max-width: 1000px;
@@ -223,33 +262,35 @@ section {
 .back {
   position: fixed;
   top: 0;
-  left: 20px; /* forced left */
+  left: 0;
 
+  /* "clamp" to the corner with responsive padding */
   padding: clamp(8px, 2vw, 16px);
+
+  /* size: a touch bigger on desktop, smaller on mobile */
   font-size: clamp(18px, 2.6vw, 44px);
   line-height: 1;
 
   text-decoration: none;
   z-index: 9999;
 
+  /* keeps it from being a huge touch target over your landing links */
   display: inline-block;
   width: fit-content;
   height: fit-content;
 
+  /* optional: helps legibility without adding a box */
   background: transparent;
-  right: auto !important;
 }
-
 @media (max-width: 768px) {
   .back {
-    left: 12px !important;
     padding: 8px;
     font-size: 18px;
   }
 }
 
 /* =========================
-   6) VIDEO
+   VIDEO
 ========================= */
 .video-container {
   position: relative;
@@ -282,98 +323,8 @@ section {
 }
 
 /* =========================
-   7) ABOUT
+   FADE IN
 ========================= */
-.about-section {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.about-image {
-  width: 100%;
-  display: block;
-  height: auto;
-}
-
-/* =========================
-   8) FOOTER + HITBOX LINKS
-========================= */
-.site-footer {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  margin-top: 0;  /* remove extra space above footer */
-  padding: 0;
-  padding-top: 0;
-}
-
-.footer-inner {
-  position: relative; /* needed for absolute footer links */
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-.footer-image,
-.site-footer img {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-width: none;
-  margin: 0;
-  padding: 0;
-}
-
-/* Footer hitboxes */
-.footer-link {
-  position: absolute;
-  display: block;
-  z-index: 10;
-  background: transparent; /* set rgba(...) to debug */
-  cursor: pointer;
-  pointer-events: auto;
-  text-indent: -9999px;
-}
-
-/* NEW footer.jpg positions (about / imdb) */
-
-/* About me (covers both “about” and “me”) */
-.footer-about-link {
-  left: 4.35%;
-  top: 31.94%;
-  width: 36.23%;
-  height: 36.46%;
-}
-
-/* IMDB */
-.footer-imdb-link {
-  left: 72.46%;
-  top: 37.50%;
-  width: 18.60%;
-  height: 32.99%;
-}
-
-/* =========================
-   9) PAGE TRANSITIONS
-========================= */
-.fade-out {
-  opacity: 0;
-  transition: opacity 1s ease;
-}
-
-.fade-in-page {
-  opacity: 0;
-  animation: fadeInPage 1s ease forwards;
-}
-
-@keyframes fadeInPage {
-  to {
-    opacity: 1;
-  }
-}
-
-/* legacy fade-in (if you use .fade-in anywhere) */
 .fade-in {
   opacity: 0;
   transform: translateY(10px);
@@ -388,7 +339,94 @@ section {
 }
 
 /* =========================
-   10) CUSTOM CURSOR — DESKTOP ONLY
+   ABOUT SECTION
+========================= */
+.about-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.about-image {
+  width: 100%;
+  display: block;
+  height: auto;
+}
+
+/* =========================
+   FOOTER
+========================= */
+.site-footer {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 120px;
+  padding: 0;
+}
+
+.footer-inner {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.site-footer img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* =========================
+   PAGE TRANSITIONS
+========================= */
+.fade-out {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.fade-in-page {
+  opacity: 0;
+  animation: fadeInPage 1s ease forwards;
+}
+
+@keyframes fadeInPage {
+  to { opacity: 1; }
+}
+
+/* Ensure overlays don’t block clicks */
+.tile .overlay {
+  pointer-events: none;
+}
+
+/* =========================
+   FIX PORTFOLIO BOTTOM GAP
+========================= */
+body, html {
+  margin: 0;
+  padding: 0;
+}
+
+.portfolio {
+  margin: 0;
+  padding: 0;
+}
+
+.tile, .tile img {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.site-footer {
+  margin-top: 0; /* remove extra space above footer */
+  padding-top: 0;
+}
+
+/* =========================
+   CUSTOM CURSOR — DESKTOP ONLY (SMOOTH & STABLE)
 ========================= */
 @media (hover: hover) and (pointer: fine) {
   body {
@@ -400,9 +438,20 @@ section {
   .tile,
   .landing-link,
   .video-link,
-  .back,
-  .footer-link {
+  .back {
     cursor: url("./images/cursor/cursor-hover.png") 16 16, pointer;
+  }
+}
+/* FORCE back button to LEFT everywhere */
+.back {
+  left: 20px !important;
+  right: auto !important;
+}
+
+@media (max-width: 768px) {
+  .back {
+    left: 12px !important;
+    right: auto !important;
   }
 }
 
