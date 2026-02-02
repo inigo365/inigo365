@@ -56,72 +56,85 @@ body {
 }
 
 /* =========================
-   INVISIBLE LANDING LINKS (CLICKABLE HITBOXES)
+   INVISIBLE LINKS (CLICKABLE HITBOXES)
 ========================= */
+
+/* Landing hitboxes */
 .landing-link {
   position: absolute;
   display: block;
-  width: 17%;
-  height: 11%;
-  cursor: pointer;
   z-index: 10;
-  background: transparent; /* debug mode: rgba(255, 0, 0, 0.3) */ /* transparent normally */
-  text-indent: -9999px; /* hides text if any */
-  pointer-events: auto;
+  background: transparent; /* set rgba(...) to debug */
+  cursor: pointer;
+  pointer-events: auto; /* IMPORTANT: enable clicking */
+  text-indent: -9999px;
 }
 
-.landing-wrapper {
-  cursor: inherit;
-}
+/* NEW landing.jpg positions (email / whatsapp / instagram) */
 
-.landing-link {
-  pointer-events: none;  /* disables click */
-  cursor: default;       /* non-clickable cursor */
-}
-
-.about-link {
-  pointer-events: auto;
-  cursor: pointer;       /* show pointer */
-  /*outline: 2px solid red; /* DEBUG: visual position */
-  /*background: rgba(255,0,0,0.1); /* DEBUG: optional hitbox */
-  top: 50%;              /* adjust as needed */
-  right: 10%;
-  width: 45%;
-  height: 10%;
-}
-
-.instagram-link {
-  top: 56%;
-  left: 5%;
-  width: 20%;
-}
-
-.imdb-link {
-  top: 78%;
-  left: 5%;
-  width: 14%;
-}
-
-.whatsapp-link {
-  top: 46%;
-  left: 14%;
-  width: 35%;
-  height: 8%;
-}
-
+/* Email line */
 .email-link {
-  top: 69%;
-  left: 25%;
-  width: 48%;
-  height: 13%;
+  left: 5.32%;
+  top: 28.88%;
+  width: 77.83%;
+  height: 15.12%;
 }
 
-.go-link {
-  top: 85%;       
-  left: 70%;     
-  width: 22%;     
-  height: 12%;    
+/* WhatsApp line */
+.whatsapp-link {
+  left: 5.37%;
+  top: 46.63%;
+  width: 49.07%;
+  height: 11.51%;
 }
+
+/* Instagram line */
+.instagram-link {
+  left: 5.37%;
+  top: 64.68%;
+  width: 35.94%;
+  height: 15.02%;
+}
+
+/* Footer hitboxes */
+.footer-inner {
+  position: relative; /* needed for absolute footer links */
+}
+
+.footer-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.footer-link {
+  position: absolute;
+  display: block;
+  z-index: 10;
+  background: transparent; /* set rgba(...) to debug */
+  cursor: pointer;
+  pointer-events: auto;
+  text-indent: -9999px;
+}
+
+/* NEW footer.jpg positions (about / imdb) */
+
+/* About me (covers both “about” and “me”) */
+.footer-about-link {
+  left: 4.35%;
+  top: 31.94%;
+  width: 36.23%;
+  height: 36.46%;
+}
+
+/* IMDB */
+.footer-imdb-link {
+  left: 72.46%;
+  top: 37.50%;
+  width: 18.60%;
+  height: 32.99%;
+}
+
 
 /* =========================
    SECTIONS

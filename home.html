@@ -41,6 +41,7 @@
         top: 12px;
       }
     }
+    
   </style>
 </head>
 
@@ -62,26 +63,28 @@
     <!-- Landing Image -->
     <img src="images/landing.jpg" class="landing-image" alt="Landing">
 
-    <!-- Landing Links -->
-    <a href="about.html" class="landing-link about-link" aria-label="About Me">
-      <span>About Me</span>
-    </a>
+<!-- Landing Links (new: email / whatsapp / instagram only) -->
+<a href="mailto:macdonald.iggy@gmail.com"
+   class="landing-link email-link external-link"
+   target="_blank" rel="noopener noreferrer"
+   aria-label="Email">
+  <span>Email</span>
+</a>
 
-    <a href="https://www.instagram.com/iggysmalllls/" class="landing-link instagram-link external-link" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-      <span>Instagram</span>
-    </a>
+<a href="https://wa.me/447432435885"
+   class="landing-link whatsapp-link external-link"
+   target="_blank" rel="noopener noreferrer"
+   aria-label="WhatsApp">
+  <span>WhatsApp</span>
+</a>
 
-    <a href="https://www.imdb.com/name/nm17192091/" class="landing-link imdb-link external-link" target="_blank" rel="noopener noreferrer" aria-label="IMDB">
-      <span>IMDB</span>
-    </a>
+<a href="https://www.instagram.com/inigo365_/"
+   class="landing-link instagram-link external-link"
+   target="_blank" rel="noopener noreferrer"
+   aria-label="Instagram">
+  <span>Instagram</span>
+</a>
 
-    <a href="https://wa.me/447432435885" class="landing-link whatsapp-link external-link" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-      <span>WhatsApp</span>
-    </a>
-
-    <a href="mailto:macdonald.iggy@gmail.com" class="landing-link email-link external-link" target="_blank" rel="noopener noreferrer" aria-label="Email">
-      <span>Email</span>
-    </a>
 
   </div>
 </section>
@@ -135,13 +138,28 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <img src="images/footer.jpg" alt="Footer image">
+
+    <img src="images/footer.jpg" class="footer-image" alt="Footer image">
+
+    <!-- Footer Links -->
+    <a href="about.html" class="footer-link footer-about-link" aria-label="About Me">
+      <span>About Me</span>
+    </a>
+
+    <a href="https://www.imdb.com/name/nm17192091/"
+       class="footer-link footer-imdb-link external-link"
+       target="_blank" rel="noopener noreferrer"
+       aria-label="IMDB">
+      <span>IMDB</span>
+    </a>
+
   </div>
 </footer>
 
+
 <script>
   // Landing link fade-out behavior
-  document.querySelectorAll('.landing-link').forEach(link => {
+  document.querySelectorAll('.landing-link, .footer-link').forEach(link => {
     link.addEventListener('click', function(e) {
       const href = this.href;
       const target = this.target;
