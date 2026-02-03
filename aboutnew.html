@@ -30,34 +30,20 @@
       background: #000; /* prevents white flashes while image loads */
     }
 
-    /* Parallax wrapper */
-    .about-bg {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      overflow: hidden;
-      transform: translateZ(0); /* smoother on some GPUs */
-      will-change: transform;
-    }
-
-    /* Background image (no desktop scale, controlled parallax via JS) */
+    /* Background image (NO extra desktop scale) */
     .about-image {
       width: 100%;
       height: 100%;
       display: block;
-
       object-fit: cover;
-      object-position: 50% 35%;
-
-      /* the parallax effect will animate translateY */
-      transform: translateY(0);
-      will-change: transform;
-
-      /* avoids tiny seams at edges during parallax */
-      scale: 1.04;
+      object-position: 50% 35%; /* show more of the scene on wide screens */
+      position: relative;
+      z-index: 1;
+      transform: none;
       transform-origin: center;
     }
 
+    /* If you want slightly different crop per device */
     @media (max-width: 520px) {
       .about-image { object-position: 50% 30%; }
     }
@@ -69,6 +55,7 @@
       z-index: 2;
       pointer-events: none;
 
+      /* soft wash behind content area + gentle vignette */
       background:
         radial-gradient(
           circle at 50% 28%,
@@ -96,10 +83,12 @@
       padding: clamp(14px, 2.4vw, 22px);
       border-radius: 18px;
 
+      /* "glass" panel for readability */
       background: rgba(0, 0, 0, 0.28);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
 
+      /* small border so it feels intentional */
       border: 1px solid rgba(255, 255, 255, 0.18);
       box-shadow: 0 12px 40px rgba(0,0,0,0.25);
 
@@ -109,11 +98,13 @@
       transition: opacity 700ms ease, transform 700ms ease;
     }
 
+    /* Use your existing body class to trigger fade-in */
     body.fade-in-page .about-card {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
 
+    /* Text styling */
     .about-card * {
       font-family: "RuneScape UF", Arial, sans-serif;
     }
@@ -123,10 +114,12 @@
       text-align: center;
       color: #ffffff;
 
+      /* Bold + responsive */
       font-weight: 800;
       font-size: clamp(18px, 2.2vw, 30px);
       letter-spacing: 0.02em;
 
+      /* punch through image */
       text-shadow:
         0 2px 12px rgba(0,0,0,0.55),
         0 1px 0 rgba(0,0,0,0.35);
@@ -170,7 +163,7 @@
       user-select: none;
     }
 
-    /* Main copy */
+    /* Main copy (2–3 lines, readable) */
     .about-copy {
       margin: 0;
       text-align: center;
@@ -188,20 +181,8 @@
       margin-top: 10px;
     }
 
-    .about-note {
-      margin: 12px 0 0 0;
-      text-align: center;
-
-      color: rgba(255,255,255,0.90);
-      font-weight: 800;
-      font-size: clamp(12px, 1.2vw, 16px);
-      letter-spacing: 0.02em;
-
-      text-shadow: 0 2px 10px rgba(0,0,0,0.45);
-    }
-
     .about-handle {
-      margin: 10px 0 0 0;
+      margin: 14px 0 0 0;
       text-align: center;
 
       color: #ffffff;
@@ -258,16 +239,10 @@
       .about-card { top: 8%; }
     }
 
-    /* Back link above everything */
+    /* ===== Keep Back link usable above everything ===== */
     .back.back-about {
       position: absolute;
       z-index: 20;
-    }
-
-    /* Reduce motion accessibility */
-    @media (prefers-reduced-motion: reduce) {
-      .about-card { transition: none; }
-      .about-image { transition: none; }
     }
   </style>
 </head>
@@ -277,17 +252,15 @@
     Inigo Macdonald – About
   </h1>
 
-  <!-- Back button (kept behavior) -->
+  <!-- Back button (same behavior) -->
   <a class="back back-about" href="home.html">← Back</a>
 
   <!-- About section -->
   <section class="about-section">
-    <div class="about-bg" aria-hidden="true">
-      <img src="images/about/about-mobile1.jpg" class="about-image" alt="About Inigo" />
-    </div>
-
+    <img src="images/about/about-mobile1.jpg" class="about-image" alt="About Inigo" />
     <div class="about-overlay" aria-hidden="true"></div>
 
+    <!-- Mocked-up layout: headline + chips + 2–3 lines + handle + CTAs -->
     <div class="about-card" role="region" aria-label="About Inigo">
       <h2 class="about-headline">Creative professional</h2>
 
@@ -298,6 +271,7 @@
       <div class="chip-row" aria-label="Skills">
         <span class="chip">Art Dept</span>
         <span class="chip">Lighting</span>
+        <span class="chip">Camera</span>
         <span class="chip">SFX</span>
         <span class="chip">Set Dec</span>
         <span class="chip">Production</span>
@@ -312,7 +286,6 @@
         Always keen to get involved in creative projects — no idea too small/large.
       </p>
 
-      <p class="about-note">References &amp; CV on request</p>
       <p class="about-handle">@iggysmalllls</p>
 
       <!-- CTAs using your real links -->
@@ -324,26 +297,22 @@
           Email
         </a>
 
-        <a href="https://wa.me/447432435885"
-           class="about-btn external-link"
-           target="_blank" rel="noopener noreferrer"
-           aria-label="WhatsApp">
-          WhatsApp
-        </a>
-
         <a href="https://www.instagram.com/inigo365_/"
            class="about-btn external-link"
            target="_blank" rel="noopener noreferrer"
-           aria-label="Instagram @iggysmalllls">
-          @iggysmalllls
+           aria-label="Instagram">
+          Instagram
         </a>
 
-        <a href="https://www.imdb.com/name/nm17192091/"
+        <!-- Optional: if you have a CV file, uncomment and set path -->
+        <!--
+        <a href="files/Inigo-Macdonald-CV.pdf"
            class="about-btn external-link"
            target="_blank" rel="noopener noreferrer"
-           aria-label="IMDb">
-          IMDb
+           aria-label="Download CV">
+          CV
         </a>
+        -->
       </div>
     </div>
   </section>
@@ -366,66 +335,6 @@
     document.addEventListener("contextmenu", function (e) {
       e.preventDefault();
     });
-
-    // ===== Subtle parallax (background only) =====
-    // Moves the background image slightly based on scroll & pointer for a gentle "alive" feel.
-    // Safe defaults + respects prefers-reduced-motion.
-    (function () {
-      const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduceMotion) return;
-
-      const img = document.querySelector(".about-image");
-      if (!img) return;
-
-      let targetY = 0;
-      let currentY = 0;
-      let ticking = false;
-
-      // tweak strength here (smaller = subtler)
-      const SCROLL_STRENGTH = 0.06;  // scroll influence
-      const POINTER_STRENGTH = 10;   // px max from pointer
-
-      function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
-
-      function update() {
-        ticking = false;
-        currentY += (targetY - currentY) * 0.08; // easing
-        img.style.transform = `translateY(${currentY.toFixed(2)}px)`;
-      }
-
-      function requestTick() {
-        if (!ticking) {
-          ticking = true;
-          requestAnimationFrame(update);
-        }
-      }
-
-      // Scroll-based (works even if page becomes scrollable later)
-      function onScroll() {
-        const y = window.scrollY || 0;
-        const scrollY = clamp(-y * SCROLL_STRENGTH, -18, 18);
-        targetY = scrollY + pointerOffset;
-        requestTick();
-      }
-
-      // Pointer-based (desktop only vibe, still subtle)
-      let pointerOffset = 0;
-      function onPointerMove(e) {
-        const x = (e.clientX / window.innerWidth) - 0.5;
-        const y = (e.clientY / window.innerHeight) - 0.5;
-        // use vertical mostly
-        pointerOffset = clamp((-y * 2) * POINTER_STRENGTH, -12, 12);
-        const scrollY = clamp(-(window.scrollY || 0) * SCROLL_STRENGTH, -18, 18);
-        targetY = scrollY + pointerOffset;
-        requestTick();
-      }
-
-      window.addEventListener("scroll", onScroll, { passive: true });
-      window.addEventListener("mousemove", onPointerMove, { passive: true });
-
-      // init
-      onScroll();
-    })();
   </script>
 </body>
 </html>
