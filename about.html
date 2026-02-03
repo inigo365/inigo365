@@ -12,21 +12,25 @@
       margin: 0;
     }
 
-    /* Ensure section relative for button positioning */
-    .about-section {
-      position: relative;
-      width: 100%;
-      height: 100vh;           /* fill screen height */
-      overflow: hidden;        /* crop overflow */
-    }
+    /* Full-bleed About page (overrides style.css section 7) */
+.about-section {
+  position: relative;
+  width: 100vw;
+  height: 100vh;          /* fallback */
+  height: 100svh;         /* better on mobile browser UI */
+  max-width: none !important; /* kill the 1200px cap */
+  margin: 0 !important;       /* kill auto-centering */
+  overflow: hidden;           /* crop */
+}
 
-    .about-image {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: cover;       /* fill without stretching, crop instead */
-      object-position: center; /* adjust if you want top/center etc */
-    }
+.about-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;      /* no stretching, only cropping */
+  object-position: center;/* keep your text centered */
+}
+
     /* Desktop: push zoom so no side whitespace */
 @media (min-width: 1024px) {
   .about-image {

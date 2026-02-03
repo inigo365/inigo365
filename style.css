@@ -214,39 +214,55 @@ section {
 .project h1,
 .project h2,
 .project h3 {
-  font-size: 38px;
   line-height: 1.3;
   margin-bottom: 16px;
 }
 
-/* Back button — pinned top-left, consistent across devices */
-.back {
-  position: fixed;
-  top: 0;
-  left: 20px; /* forced left */
 
-  padding: clamp(8px, 2vw, 16px);
-  font-size: clamp(18px, 2.6vw, 44px);
-  line-height: 1;
+/* =========================
+   PROJECT HEADER (TITLE + BACK)
+========================= */
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
 
+  /* THIS is the shared size for BOTH title + back */
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.2;
+
+  margin-bottom: 16px;
+}
+
+/* Make the H1 not override the shared font-size */
+.project-header h1 {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Back matches the H1 exactly */
+.project-header .back {
+  font-size: inherit;
+  line-height: inherit;
   text-decoration: none;
-  z-index: 9999;
+  white-space: nowrap;
 
-  display: inline-block;
-  width: fit-content;
-  height: fit-content;
-
-  background: transparent;
-  right: auto !important;
+  /* bigger tap target, still invisible */
+  padding: 0.25em 0;
 }
 
-@media (max-width: 768px) {
-  .back {
-    left: 12px !important;
-    padding: 8px;
-    font-size: 18px;
-  }
+
+/* Optional: if your titles are long, keep Back from shrinking */
+.project-header .back {
+  flex: 0 0 auto;
 }
+.project-header h1 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 
 /* =========================
    6) VIDEO
