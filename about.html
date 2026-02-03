@@ -108,18 +108,20 @@
        PROFILE IMAGE
     ========================= */
     .about-profile {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      object-fit: contain;
-      background: rgba(0,0,0,0.25);
-      padding: 6px;
+  width: 82%;              /* ⬅️ key change (try 78–85%) */
+  max-width: 360px;        /* prevents it getting huge on desktop */
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
 
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.2);
-      box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+  margin: 0 auto 14px auto;
 
-      margin-bottom: 14px;
-    }
+  background: rgba(0,0,0,0.25);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+}
+
 
     /* =========================
        TEXT
