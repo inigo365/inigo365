@@ -431,7 +431,7 @@ section {
   left: auto;
 
   /* match the project header sizing */
-  font-size: clamp(28px, 5vw, 44px);
+  font-size: clamp(20px, 5vw, 36px);
   line-height: 1.2;
 
   /* invisible but finger-friendly */
