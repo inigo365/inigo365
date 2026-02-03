@@ -20,23 +20,30 @@
       margin: 0;
     }
 
-    .about-section {
-      position: relative;
-      width: 100vw;
-      min-height: 100svh;
-      overflow: hidden;
-      background: #000;
-    }
+   .about-section {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  margin: 0;
+}
 
-    /* =========================
-       BACKGROUND
-    ========================= */
-    .about-bg {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-      overflow: hidden;
-    }
+   /* TRUE edge-to-edge background */
+.about-bg {
+  position: fixed;       /* 🔑 this is the magic */
+  inset: 0;
+  z-index: 0;
+
+  background-image: url("images/about/about-mobile1.jpg");
+  background-size: cover;
+  background-position: 50% 35%;
+  background-repeat: no-repeat;
+
+  /* prevents white gutters on ultrawide */
+  width: 100vw;
+  height: 100vh;
+}
 
     .about-image {
       width: 100%;
@@ -215,9 +222,8 @@
   <a class="back back-about" href="home.html">← Back</a>
 
   <section class="about-section">
-    <div class="about-bg">
-      <img src="images/about/about-mobile1.jpg" class="about-image" alt="">
-    </div>
+    <div class="about-bg" aria-hidden="true"></div>
+
 
     <div class="about-card">
       <img src="images/about/profile.jpg" class="about-profile" alt="Iggy Macdonald">
