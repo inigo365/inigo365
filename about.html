@@ -13,6 +13,17 @@
 
   <style>
     /* =========================
+       COLOURS (NEW)
+    ========================= */
+   :root{
+  --text-main: #111817;
+  --text-soft: #2a3634;
+  --text-muted: #4a5c5a;
+  --accent: #0f3f3a;
+}
+
+
+    /* =========================
        BASE
     ========================= */
     html, body {
@@ -20,31 +31,31 @@
       margin: 0;
     }
 
-   .about-section {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  height: 100svh;
-  overflow: hidden;
-  margin: 0;
-}
+    .about-section {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100svh;
+      overflow: hidden;
+      margin: 0;
+    }
 
-   /* TRUE edge-to-edge background */
-.about-bg {
-  position: fixed;       /* 🔑 this is the magic */
-  inset: 0;
-  z-index: 0;
+    /* TRUE edge-to-edge background */
+    .about-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
 
-  background-image: url("images/about/about-mobile1.png");
-  background-size: cover;
-  background-position: 50% 35%;
-  background-repeat: no-repeat;
+      background-image: url("images/about/about-mobile1.jpg");
+      background-size: cover;
+      background-position: 50% 35%;
+      background-repeat: no-repeat;
 
-  /* prevents white gutters on ultrawide */
-  width: 100vw;
-  height: 100vh;
-}
+      width: 100vw;
+      height: 100vh;
+    }
 
+    /* (Unused now, safe to remove later) */
     .about-image {
       width: 100%;
       height: 100%;
@@ -61,7 +72,7 @@
        CARD
     ========================= */
     .about-card {
-      position: fixed; 
+      position: fixed;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
@@ -75,7 +86,7 @@
       padding: clamp(16px, 2.4vw, 24px);
       border-radius: 18px;
 
-      background: rgba(0,0,0,0.32);
+      background: rgba(245, 248, 247, 0.85);
       border: 1px solid rgba(111, 213, 118, 0.22);
       box-shadow: 0 14px 40px rgba(0,0,0,0.28);
       outline: 1px solid rgba(255,255,255,0.06);
@@ -88,10 +99,9 @@
 
     .about-card * {
       font-family: "RuneScape UF", Arial, sans-serif;
-      color: #fff;
-      text-shadow:
-        0 2px 14px rgba(0,0,0,0.65),
-        0 1px 0 rgba(0,0,0,0.35);
+      color: var(--text-main); /* NEW */
+      text-shadow: none;
+
     }
 
     /* =========================
@@ -120,14 +130,18 @@
       font-size: clamp(20px, 2.6vw, 34px);
       margin: 6px 0 4px;
       letter-spacing: 0.02em;
+      color: var(--text-main); /* explicit */
     }
 
     .about-meta {
       text-align: center;
       font-weight: 800;
       font-size: clamp(13px, 1.3vw, 17px);
-      opacity: 0.92;
       margin-bottom: 14px;
+
+      color: var(--text-soft);     /* NEW */
+      letter-spacing: 0.03em;      /* NEW: improves readability */
+      opacity: 1;                  /* ensure colour controls opacity */
     }
 
     .chip-row {
@@ -145,6 +159,7 @@
       font-size: clamp(12px, 1.1vw, 15px);
       background: rgba(255,255,255,0.12);
       border: 1px solid rgba(255,255,255,0.2);
+      color: var(--text-main); /* stays crisp */
     }
 
     .about-copy {
@@ -153,6 +168,9 @@
       font-size: clamp(13px, 1.4vw, 18px);
       line-height: 1.55;
       margin-bottom: 8px;
+
+      color: var(--text-soft);   /* NEW */
+      letter-spacing: 0.03em;    /* NEW */
     }
 
     .about-note {
@@ -160,7 +178,9 @@
       font-weight: 900;
       font-size: clamp(12px, 1.2vw, 16px);
       margin-top: 10px;
-      opacity: 0.9;
+
+      color: var(--text-muted);  /* NEW */
+      opacity: 1;
     }
 
     .about-handle {
@@ -168,6 +188,8 @@
       font-weight: 900;
       font-size: clamp(14px, 1.4vw, 19px);
       margin-top: 6px;
+
+      color: var(--accent);      /* NEW */
     }
 
     /* =========================
@@ -187,26 +209,31 @@
       font-weight: 900;
       font-size: clamp(13px, 1.2vw, 17px);
       text-decoration: none;
+
       border: 1px solid rgba(255,255,255,0.25);
       background: rgba(255,255,255,0.14);
       cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
+
+      color: var(--text-main); /* NEW */
+      transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
 
     .about-btn.primary {
       background: rgba(255,255,255,0.24);
+      border-color: rgba(143, 183, 195, 0.55); /* NEW: subtle accent */
     }
 
     .about-btn:hover {
       transform: translateY(-2px);
       background: rgba(255,255,255,0.3);
+      color: var(--accent); /* NEW */
     }
 
     /* =========================
        BACK LINK
     ========================= */
     .back.back-about {
-      position: absolute;
+      position: fixed;
       z-index: 10;
       top: 14px;
       right: 16px;
@@ -224,15 +251,21 @@
   <section class="about-section">
     <div class="about-bg" aria-hidden="true"></div>
 
-
     <div class="about-card">
       <img src="images/about/profile.jpg" class="about-profile" alt="Iggy Macdonald">
 
       <div class="about-name">Iggy Macdonald</div>
       <div class="about-meta">
-        London, UK • Aotearoa, New Zealand • UK licence & passport
+        London, UK • Aotearoa, New Zealand
+      </div>
+      <div class="about-copy">
+      UK/NZ licence &amp; passport
+      <br>
       </div>
 
+      <div class="about-copy">
+        Multidisciplinary artist working across film, photography, fashion, art & music. 
+      </div>
       <div class="chip-row">
         <div class="chip">Art Dept</div>
         <div class="chip">Lighting</div>
@@ -240,21 +273,15 @@
         <div class="chip">SFX</div>
       </div>
 
-      <div class="about-copy">
-        Film, photography, music, graphic design, fashion &amp; art.
-      </div>
-      <div class="about-copy">
-        Experienced across art department, lighting, production &amp; special effects.
-      </div>
-
       <div class="about-note">References &amp; CV on request</div>
       <div class="about-handle">@iggysmalllls</div>
 
       <div class="about-cta">
         <a class="about-btn primary" href="mailto:macdonald.iggy@gmail.com">Email</a>
-        <a class="about-btn primary" href="https://wa.me/447432435885" target="_blank">WhatsApp</a>
-        <a class="about-btn" href="https://www.instagram.com/iggysmalllls/" target="_blank">Instagram</a>
-        <a class="about-btn" href="https://www.imdb.com/name/nm17192091/" target="_blank">IMDb</a>
+        <a class="about-btn primary" href="https://wa.me/447432435885" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        <a class="about-btn primary" href="https://www.instagram.com/iggysmalllls/" target="_blank">
+          Instagram
+        </a>
       </div>
     </div>
   </section>
