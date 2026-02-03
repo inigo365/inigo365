@@ -1,107 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>inigo365 — About Me</title>
-  <link rel="icon" type="image/png" href="./images/icon.png">
-  <link rel="stylesheet" href="style.css">
+
+  <link rel="icon" type="image/png" href="./images/icon.png" />
+  <link rel="stylesheet" href="style.css" />
+
   <style>
-    /* Make page + section match viewport */
+    /* ===== Page baseline ===== */
     html, body {
       height: 100%;
       margin: 0;
     }
 
     /* Full-bleed About page (overrides style.css section 7) */
-.about-section {
-  position: relative;
-  width: 100vw;
-  height: 100vh;          /* fallback */
-  height: 100svh;         /* better on mobile browser UI */
-  max-width: none !important; /* kill the 1200px cap */
-  margin: 0 !important;       /* kill auto-centering */
-  overflow: hidden;           /* crop */
-}
+    .about-section {
+      position: relative;
+      width: 100vw;
+      height: 100vh;   /* fallback */
+      height: 100svh;  /* better on mobile browser UI */
+      max-width: none !important;
+      margin: 0 !important;
+      overflow: hidden;
+      background: #000; /* prevents white flashes while image loads */
+    }
 
-.about-image {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;      /* no stretching, only cropping */
-  object-position: center;/* keep your text centered */
-}
+    /* Background image */
+    .about-image {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+      position: relative;
+      z-index: 1;
+      transform-origin: center;
+    }
 
     /* Desktop: push zoom so no side whitespace */
-@media (min-width: 1024px) {
-  .about-image {
-    transform: scale(1.15);      /* increase zoom */
-    transform-origin: center;    /* keep centered */
-  }
-}
+    @media (min-width: 1024px) {
+      .about-image {
+        transform: scale(1.15);
+      }
+    }
 
+    /* ===== Readability layer (subtle overlay behind text) ===== */
+    .about-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
 
-    /* Go button */
+      /*
+        This keeps your image visible while ensuring text is readable everywhere.
+        - a soft "wash" behind the text area
+        - a gentle vignette to prevent bright sky blowout
+      */
+      background:
+        radial-gradient(
+          circle at 50% 28%,
+          rgba(255, 255, 255, 0.68) 0%,
+          rgba(255, 255, 255, 0.38) 28%,
+          rgba(255, 255, 255, 0.00) 60%
+        ),
+        radial-gradient(
+          circle at 50% 50%,
+          rgba(0, 0, 0, 0.10) 0%,
+          rgba(0, 0, 0, 0.18) 65%,
+          rgba(0, 0, 0, 0.28) 100%
+        );
+    }
+
+    /* ===== Text block ===== */
+    .about-text {
+      position: absolute;
+      left: 50%;
+      top: 18%;
+      transform: translateX(-50%);
+      z-index: 3;
+
+      width: min(70ch, 90vw);
+      text-align: center;
+
+      color: #199a8b;
+      font-family: "RuneScape UF", Arial, sans-serif;
+
+      /* scalable, consistent */
+      font-size: clamp(14px, 1.55vw, 22px);
+      line-height: 1.45;
+      letter-spacing: 0.02em;
+
+      /* make it readable on any background */
+      text-shadow:
+        0 1px 0 rgba(255,255,255,0.65),
+        0 2px 10px rgba(0,0,0,0.22);
+
+      /* you had this and it’s good */
+      pointer-events: none;
+      text-rendering: geometricPrecision;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Keep spacing consistent across devices */
+    .about-text p {
+      margin: 0 0 clamp(12px, 2.2vh, 18px) 0;
+    }
+
+    .about-handle {
+      display: inline-block;
+      margin-top: 0.15em;
+    }
+
+    /* If the text block gets too tall on small screens, nudge it up slightly */
+    @media (max-width: 520px) {
+      .about-text {
+        top: 14%;
+        font-size: clamp(13px, 4.0vw, 18px);
+        width: min(60ch, 92vw);
+      }
+    }
+
+    /* ===== Go button (kept exactly as-is in case you use it later) ===== */
     .go-button {
       position: absolute;
       top: 94%;
       left: 50%;
       transform: translateX(-50%);
-      background-color: transparent; /* default transparent */
-      color: #2d93ea;               /* blue text */
+      background-color: transparent;
+      color: #2d93ea;
       border: none;
-      padding: 0;                   /* no padding initially */
+      padding: 0;
       font-size: 3vw;
       font-family: "RuneScape UF", Arial, sans-serif;
       cursor: url("./images/cursor/cursor.png"), auto !important;
       border-radius: 6px;
       text-align: center;
       z-index: 10;
-      transition: all 0.3s ease;    /* smooth transition for hover */
+      transition: all 0.3s ease;
       white-space: nowrap;
     }
 
-    /* Hover state */
     .go-button:hover {
-      background-color: #2d93ea;     /* blue background */
-      color: white;                  /* white text */
+      background-color: #2d93ea;
+      color: white;
       padding: 14px 40px;
       transform: translateX(-50%) scale(1.05);
       opacity: 0.9;
       cursor: url("./images/cursor/cursor-hover.png"), pointer !important;
     }
 
-    /* Responsive adjustments */
     @media (max-width: 768px) {
-      .go-button {
-        font-size: 5vw;
-      }
-
-      .go-button:hover {
-        padding: 12px 32px;
-      }
+      .go-button { font-size: 5vw; }
+      .go-button:hover { padding: 12px 32px; }
     }
   </style>
 </head>
-<body class="fade-in-page">
 
-  <!-- Back button -->
-<a class="back back-about" href="home.html">← Back</a>
+<body class="fade-in-page">
+  <!-- Back button (kept) -->
+  <a class="back back-about" href="home.html">← Back</a>
 
   <!-- About section -->
   <section class="about-section">
-    <img src="images/about/about-mobile1.jpg" class="about-image" alt="About Inigo">
+    <img src="images/about/about-mobile1.jpg" class="about-image" alt="About Inigo" />
+    <div class="about-overlay" aria-hidden="true"></div>
+
+    <div class="about-text" aria-label="About text">
+      <p>
+        Creative professional from Aotearoa New Zealand<br />
+        working across film, photography, fashion, art &amp; music.
+      </p>
+
+      <p>
+        Experience across art department, lighting, special<br />
+        effects, camera, set decoration, production &amp; more.
+      </p>
+
+      <p>
+        Ready to work with a UK licence &amp; passport.<br />
+        London based, available worldwide.
+      </p>
+
+      <p>
+        Always eager to get involved in any creative project.<br />
+        My contact details are below, please be in touch<br />
+        No idea too small/large!
+      </p>
+
+      <p class="about-handle">@iggysmalllls</p>
+    </div>
   </section>
 
   <script>
     // Fade-out on Back button click
-    const backButton = document.querySelector('.back');
+    const backButton = document.querySelector(".back");
     if (backButton) {
-      backButton.addEventListener('click', function(e) {
-        e.preventDefault(); // stop immediate navigation
-        document.body.classList.add('fade-out'); // trigger fade-out
+      backButton.addEventListener("click", function (e) {
+        e.preventDefault();
+        document.body.classList.add("fade-out");
         const href = this.href;
         setTimeout(() => {
-          window.location = href; // navigate after 1s fade
+          window.location = href;
         }, 1000);
       });
     }
@@ -109,10 +210,9 @@
 
   <script>
     // Disable right-click context menu
-    document.addEventListener('contextmenu', function(e) {
+    document.addEventListener("contextmenu", function (e) {
       e.preventDefault();
     });
   </script>
-
 </body>
 </html>
