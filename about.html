@@ -12,35 +12,38 @@
   <meta name="description" content="About inigo365 — creative professional across film, photography, fashion, art & music. London based, available worldwide." />
 
   <style>
-    /* ===== Baseline ===== */
+    /* =========================
+       BASE
+    ========================= */
     html, body {
       height: 100%;
       margin: 0;
     }
 
-    /* Full-bleed About page (overrides style.css section 7) */
+    /* Full-bleed About page (overrides any max-width caps) */
     .about-section {
       position: relative;
       width: 100vw;
-      height: 100vh;   /* fallback */
-      height: 100svh;  /* better on mobile browser UI */
+      min-height: 100vh;   /* fallback */
+      min-height: 100svh;  /* mobile browser UI aware */
       max-width: none !important;
       margin: 0 !important;
       overflow: hidden;
-      background: #000; /* prevents white flashes while image loads */
+      background: #000;
     }
 
-    /* Parallax wrapper */
+    /* =========================
+       BACKGROUND + PARALLAX
+    ========================= */
     .about-bg {
       position: absolute;
       inset: 0;
       z-index: 1;
       overflow: hidden;
-      transform: translateZ(0); /* smoother on some GPUs */
+      transform: translateZ(0);
       will-change: transform;
     }
 
-    /* Background image (no desktop scale, controlled parallax via JS) */
     .about-image {
       width: 100%;
       height: 100%;
@@ -49,71 +52,82 @@
       object-fit: cover;
       object-position: 50% 35%;
 
-      /* the parallax effect will animate translateY */
+      /* Parallax animates translateY; scale prevents edge seams */
       transform: translateY(0);
-      will-change: transform;
-
-      /* avoids tiny seams at edges during parallax */
       scale: 1.04;
       transform-origin: center;
+      will-change: transform;
     }
 
     @media (max-width: 520px) {
       .about-image { object-position: 50% 30%; }
     }
 
-    /* ===== Readability overlay (subtle, keeps image visible) ===== */
+    /* Readability overlay (keeps image visible, text always readable) */
     .about-overlay {
       position: absolute;
       inset: 0;
       z-index: 2;
       pointer-events: none;
-
       background:
-        radial-gradient(
-          circle at 50% 28%,
-          rgba(0, 0, 0, 0.42) 0%,
-          rgba(0, 0, 0, 0.28) 35%,
-          rgba(0, 0, 0, 0.00) 70%
+        radial-gradient(circle at 50% 26%,
+          rgba(0,0,0,0.55) 0%,
+          rgba(0,0,0,0.35) 35%,
+          rgba(0,0,0,0.00) 72%
         ),
-        radial-gradient(
-          circle at 50% 55%,
-          rgba(0, 0, 0, 0.10) 0%,
-          rgba(0, 0, 0, 0.18) 65%,
-          rgba(0, 0, 0, 0.32) 100%
+        radial-gradient(circle at 50% 58%,
+          rgba(0,0,0,0.10) 0%,
+          rgba(0,0,0,0.20) 65%,
+          rgba(0,0,0,0.34) 100%
         );
     }
 
-    /* ===== About card (headline + chips + copy + CTA) ===== */
+    /* =========================
+       CARD (CENTERED + MOBILE SAFE)
+    ========================= */
     .about-card {
       position: absolute;
       left: 50%;
-      top: 12%;
-      transform: translateX(-50%);
+      top: 50%;
+      transform: translate(-50%, -50%);
       z-index: 3;
 
       width: min(78ch, 92vw);
+
+      /* Never overflow the viewport; scroll inside if needed */
+      max-height: calc(100svh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+
       padding: clamp(14px, 2.4vw, 22px);
       border-radius: 18px;
 
-      background: rgba(0, 0, 0, 0.28);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
 
       border: 1px solid rgba(255, 255, 255, 0.18);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      box-shadow: 0 14px 46px rgba(0,0,0,0.30);
 
-      /* Fade-in animation */
+      /* Fade-in (works with your existing fade-in-page class) */
       opacity: 0;
-      transform: translateX(-50%) translateY(10px);
       transition: opacity 700ms ease, transform 700ms ease;
     }
 
     body.fade-in-page .about-card {
       opacity: 1;
-      transform: translateX(-50%) translateY(0);
+      transform: translate(-50%, -50%);
     }
 
+    /* Extra safety padding for notches */
+    .about-card::before {
+      content: "";
+      display: block;
+      height: env(safe-area-inset-top);
+    }
+
+    /* Typography */
     .about-card * {
       font-family: "RuneScape UF", Arial, sans-serif;
     }
@@ -121,28 +135,23 @@
     .about-headline {
       margin: 0 0 10px 0;
       text-align: center;
-      color: #ffffff;
-
-      font-weight: 800;
+      color: #fff;
+      font-weight: 900;
       font-size: clamp(18px, 2.2vw, 30px);
       letter-spacing: 0.02em;
-
-      text-shadow:
-        0 2px 12px rgba(0,0,0,0.55),
-        0 1px 0 rgba(0,0,0,0.35);
+      text-shadow: 0 2px 14px rgba(0,0,0,0.6);
     }
 
     .about-subline {
       margin: 0 0 14px 0;
       text-align: center;
       color: rgba(255,255,255,0.92);
-      font-weight: 700;
+      font-weight: 800;
       font-size: clamp(13px, 1.35vw, 18px);
       line-height: 1.35;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.45);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.55);
     }
 
-    /* Chips row */
     .chip-row {
       display: flex;
       flex-wrap: wrap;
@@ -157,59 +166,48 @@
       justify-content: center;
       padding: 8px 10px;
       border-radius: 999px;
-
       color: rgba(255,255,255,0.95);
-      font-weight: 800;
+      font-weight: 900;
       font-size: clamp(12px, 1.1vw, 15px);
       letter-spacing: 0.02em;
-
       background: rgba(255,255,255,0.10);
       border: 1px solid rgba(255,255,255,0.18);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.20);
-      text-shadow: 0 2px 8px rgba(0,0,0,0.40);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.45);
       user-select: none;
     }
 
-    /* Main copy */
     .about-copy {
       margin: 0;
       text-align: center;
-
       color: rgba(255,255,255,0.92);
-      font-weight: 700;
+      font-weight: 800;
       font-size: clamp(13px, 1.35vw, 18px);
       line-height: 1.45;
       letter-spacing: 0.02em;
-
-      text-shadow: 0 2px 10px rgba(0,0,0,0.45);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.55);
     }
 
-    .about-copy + .about-copy {
-      margin-top: 10px;
-    }
+    .about-copy + .about-copy { margin-top: 10px; }
 
     .about-note {
       margin: 12px 0 0 0;
       text-align: center;
-
       color: rgba(255,255,255,0.90);
-      font-weight: 800;
+      font-weight: 900;
       font-size: clamp(12px, 1.2vw, 16px);
       letter-spacing: 0.02em;
-
-      text-shadow: 0 2px 10px rgba(0,0,0,0.45);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.55);
     }
 
     .about-handle {
       margin: 10px 0 0 0;
       text-align: center;
-
-      color: #ffffff;
+      color: #fff;
       font-weight: 900;
       font-size: clamp(14px, 1.4vw, 19px);
       letter-spacing: 0.02em;
-
-      text-shadow: 0 2px 12px rgba(0,0,0,0.55);
+      text-shadow: 0 2px 14px rgba(0,0,0,0.6);
     }
 
     /* CTA buttons */
@@ -219,7 +217,7 @@
       justify-content: center;
       gap: 12px;
       flex-wrap: wrap;
-      pointer-events: auto; /* clickable */
+      pointer-events: auto;
     }
 
     .about-btn {
@@ -238,11 +236,10 @@
 
       background: rgba(255,255,255,0.12);
       border: 1px solid rgba(255,255,255,0.20);
-
       box-shadow: 0 10px 24px rgba(0,0,0,0.22);
-      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
       text-shadow: 0 2px 10px rgba(0,0,0,0.45);
 
+      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
       cursor: url("./images/cursor/cursor.png"), auto !important;
     }
 
@@ -253,9 +250,17 @@
       cursor: url("./images/cursor/cursor-hover.png"), pointer !important;
     }
 
-    /* Keep About content from getting too low on short screens */
-    @media (max-height: 680px) {
-      .about-card { top: 8%; }
+    /* Mobile tightening */
+    @media (max-width: 420px) {
+      .about-card {
+        width: 92vw;
+        padding: 14px;
+        border-radius: 16px;
+      }
+      .chip-row { gap: 8px; margin: 8px 0 12px 0; }
+      .chip { padding: 7px 9px; }
+      .about-cta { gap: 10px; }
+      .about-btn { padding: 10px 12px; }
     }
 
     /* Back link above everything */
@@ -264,7 +269,7 @@
       z-index: 20;
     }
 
-    /* Reduce motion accessibility */
+    /* Respect reduced motion */
     @media (prefers-reduced-motion: reduce) {
       .about-card { transition: none; }
       .about-image { transition: none; }
@@ -277,7 +282,7 @@
     Inigo Macdonald – About
   </h1>
 
-  <!-- Back button (kept behavior) -->
+  <!-- Back button -->
   <a class="back back-about" href="home.html">← Back</a>
 
   <!-- About section -->
@@ -315,7 +320,6 @@
       <p class="about-note">References &amp; CV on request</p>
       <p class="about-handle">@iggysmalllls</p>
 
-      <!-- CTAs using your real links -->
       <div class="about-cta" aria-label="Contact links">
         <a href="mailto:macdonald.iggy@gmail.com"
            class="about-btn external-link"
@@ -331,7 +335,7 @@
           WhatsApp
         </a>
 
-        <a href="https://www.instagram.com/inigo365_/"
+        <a href="https://www.instagram.com/iggysmalllls/"
            class="about-btn external-link"
            target="_blank" rel="noopener noreferrer"
            aria-label="Instagram @iggysmalllls">
@@ -367,9 +371,9 @@
       e.preventDefault();
     });
 
-    // ===== Subtle parallax (background only) =====
-    // Moves the background image slightly based on scroll & pointer for a gentle "alive" feel.
-    // Safe defaults + respects prefers-reduced-motion.
+    // ===== Subtle Parallax (background image only) =====
+    // - Works great on desktop
+    // - On mobile, we keep it extremely subtle (no pointer tracking)
     (function () {
       const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduceMotion) return;
@@ -381,15 +385,11 @@
       let currentY = 0;
       let ticking = false;
 
-      // tweak strength here (smaller = subtler)
-      const SCROLL_STRENGTH = 0.06;  // scroll influence
-      const POINTER_STRENGTH = 10;   // px max from pointer
-
       function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
       function update() {
         ticking = false;
-        currentY += (targetY - currentY) * 0.08; // easing
+        currentY += (targetY - currentY) * 0.08;
         img.style.transform = `translateY(${currentY.toFixed(2)}px)`;
       }
 
@@ -400,30 +400,30 @@
         }
       }
 
-      // Scroll-based (works even if page becomes scrollable later)
       function onScroll() {
         const y = window.scrollY || 0;
-        const scrollY = clamp(-y * SCROLL_STRENGTH, -18, 18);
-        targetY = scrollY + pointerOffset;
+        targetY = clamp(-y * 0.06, -18, 18);
         requestTick();
       }
 
-      // Pointer-based (desktop only vibe, still subtle)
+      // Desktop pointer tilt (disabled on touch devices)
+      const isTouch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
       let pointerOffset = 0;
+
       function onPointerMove(e) {
-        const x = (e.clientX / window.innerWidth) - 0.5;
         const y = (e.clientY / window.innerHeight) - 0.5;
-        // use vertical mostly
-        pointerOffset = clamp((-y * 2) * POINTER_STRENGTH, -12, 12);
-        const scrollY = clamp(-(window.scrollY || 0) * SCROLL_STRENGTH, -18, 18);
+        pointerOffset = clamp((-y * 2) * 10, -12, 12);
+        const scrollY = clamp(-(window.scrollY || 0) * 0.06, -18, 18);
         targetY = scrollY + pointerOffset;
         requestTick();
       }
 
       window.addEventListener("scroll", onScroll, { passive: true });
-      window.addEventListener("mousemove", onPointerMove, { passive: true });
 
-      // init
+      if (!isTouch) {
+        window.addEventListener("mousemove", onPointerMove, { passive: true });
+      }
+
       onScroll();
     })();
   </script>
