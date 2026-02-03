@@ -253,7 +253,6 @@ section {
   padding: 0.25em 0;
 }
 
-
 /* Optional: if your titles are long, keep Back from shrinking */
 .project-header .back {
   flex: 0 0 auto;
@@ -422,4 +421,33 @@ section {
   }
 }
 
+/* =========================
+   BACK — ABOUT PAGE (fixed top-right)
+========================= */
+.back-about {
+  position: fixed;
+  top: 0;
+  right: 20px;
+  left: auto;
+
+  /* match the project header sizing */
+  font-size: clamp(28px, 5vw, 44px);
+  line-height: 1.2;
+
+  /* invisible but finger-friendly */
+  padding: clamp(8px, 2vw, 16px);
+
+  z-index: 9999;
+  text-decoration: none;
+  background: transparent;
+  white-space: nowrap;
+}
+
+/* Mobile notch-safe */
+@supports (padding: max(0px)) {
+  .back-about {
+    top: env(safe-area-inset-top);
+    right: max(12px, env(safe-area-inset-right));
+  }
+}
 
