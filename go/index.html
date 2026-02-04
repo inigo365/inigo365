@@ -1101,6 +1101,61 @@ body{
     max-width: 100% !important;
   }
 }
+/* =========================
+   MOBILE: tray fills screen, tray scrolls
+   ========================= */
+@media (max-width: 768px){
+
+  /* screen itself should NOT scroll */
+  .password-screen{
+    overflow: hidden;
+    align-items: stretch;
+    padding: 0;              /* tray will handle spacing */
+  }
+
+  /* center the tray area horizontally */
+  .password-row{
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* tray becomes the scroll container */
+  .password-box{
+    width: 100%;
+    max-width: 680px;        /* keeps it nice on tablets */
+    margin: 0 auto;
+
+    /* fill viewport height, respect safe areas */
+    height: 100svh;
+    height: 100dvh;
+
+    /* scrolling happens INSIDE the tray */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    /* comfy insets + safe areas */
+    padding-top: max(14px, calc(14px + env(safe-area-inset-top)));
+    padding-bottom: max(14px, calc(14px + env(safe-area-inset-bottom)));
+  }
+
+  /* optional: keep content from touching the border */
+  .password-box > *{
+    flex: 0 0 auto;
+  }
+}
+@media (max-width: 768px){
+  .site-banner{
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 2px solid #000;
+    margin: 0 0 12px;
+    padding: 10px 0;
+  }
+}
 
 
 </style>
