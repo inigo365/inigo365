@@ -599,24 +599,28 @@ video {
   pointer-events: auto;
 }
 
-/* BACK BUTTON */
-.back-button {
+/* BACK BUTTON (darker + readable on blue bg) */
+.back-button{
   position: fixed;
   top: 8px;
   left: 8px;
   font-size: 28px;
-  background: transparent;
-  border: none;
-  color: var(--accent);
+
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border: 2px solid #000;
+  padding: 6px 10px;
+
+  color: #000;
   font-family: "RuneScape UF", Arial, sans-serif;
   text-transform: lowercase;
-  padding: 0;
+
   z-index: 10;
 }
+.back-button:hover{ text-decoration: underline; }
 
-.back-button.show {
-  opacity: 1;
-}
 
 .portal-dock{
   width: 100%;
@@ -1512,20 +1516,23 @@ const SFX = (() => {
   function shouldPlayClick(btn) {
     if (!btn || btn.disabled) return false;
 
-    // Exclude enter (special)
-    if (btn.id === "enterButton") return false;
+    // whitelist ONLY:
+    // - the secret button
+    // - the add to home page button
+    // - anything inside the cheat/add-to-home overlays (including cheat pad buttons)
+    if (btn.id === "hintHelp") return true;
+    if (btn.id === "addHomeBtn") return true;
 
-    // Exclude cheat-pad buttons (↑ ↓ ← → a b)
-    if (btn.classList.contains("cheat-btn")) return false;
+    if (btn.closest("#cheatOverlay, #vaultOverlay, #miniOverlay, #homeOverlay")) return true;
 
-    return true;
+    return false; // everything else (portal tiles etc) = silent
   }
 
   function handler(e) {
     const btn = e.target.closest("button");
     if (!shouldPlayClick(btn)) return;
 
-    // tiny debounce to prevent any double-fire edge cases
+    // small debounce
     const now = performance.now();
     if (now - lastAt < 120) return;
     lastAt = now;
@@ -1534,13 +1541,10 @@ const SFX = (() => {
     SFX.play("click");
   }
 
-  // Use ONE fast event path (prevents double audio)
-  if ("PointerEvent" in window) {
-    document.addEventListener("pointerdown", handler, { capture: true });
-  } else {
-    document.addEventListener("touchstart", handler, { capture: true, passive: true });
-  }
+  // IMPORTANT: use CLICK (not pointerdown/touchstart) so scrolling doesn't trigger sounds
+  document.addEventListener("click", handler, true);
 })();
+
 
 
 document.addEventListener("keydown", (e) => {

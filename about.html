@@ -251,13 +251,25 @@
        BACK LINK
     ========================= */
     /* BACK LINK — default (desktop/tablet): top-left */
-.back.back-about {
+.back.back-about{
   position: fixed;
   z-index: 10;
   top: max(12px, env(safe-area-inset-top));
   left: max(16px, env(safe-area-inset-left));
   right: auto;
+
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 28px;
+
+  border: 0px solid #000;
+  padding: 6px 10px;
+
+  color: #000;
+  text-decoration: none;
+  line-height: 1;
 }
+.back.back-about:hover{ text-decoration: underline; }
+
 @media (max-width: 520px) {
   /* Keep it visible/clickable without sitting on top of the card/photo */
   .back.back-about {
