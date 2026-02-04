@@ -36,6 +36,7 @@ html, body {
   width: 100%;
   height: 100%;
   margin: 0;
+  overflow-x: hidden;
   overflow: hidden;          /* no scrollbars */
   overscroll-behavior: none;
 
@@ -1102,60 +1103,51 @@ body{
   }
 }
 /* =========================
-   MOBILE: tray fills screen, tray scrolls
+   MOBILE: keep same top spacing, box border stays on-screen,
+   scroll happens INSIDE the .password-box (future-proof)
    ========================= */
 @media (max-width: 768px){
 
-  /* screen itself should NOT scroll */
+  /* lock the viewport height so % heights work */
   .password-screen{
-    overflow: hidden;
-    align-items: stretch;
-    padding: 0;              /* tray will handle spacing */
-  }
-
-  /* center the tray area horizontally */
-  .password-row{
-    width: 100%;
-    justify-content: center;
-  }
-
-  /* tray becomes the scroll container */
-  .password-box{
-    width: 100%;
-    max-width: 680px;        /* keeps it nice on tablets */
-    margin: 0 auto;
-
-    /* fill viewport height, respect safe areas */
-    height: 100svh;
     height: 100dvh;
+    height: 100svh;
 
-    /* scrolling happens INSIDE the tray */
+    /* keep your current top spacing */
+    align-items: flex-start;
+
+    /* IMPORTANT: remove the huge desktop bottom pad on mobile,
+       otherwise there isn't enough vertical room and the box gets clipped */
+    padding-top: max(44px, calc(16px + env(safe-area-inset-top)));
+    padding-bottom: max(16px, calc(16px + env(safe-area-inset-bottom)));
+
+    overflow: hidden; /* page does NOT scroll */
+  }
+
+  /* allow the flex child to shrink within the screen */
+  .password-row{
+    height: 100%;
+    min-height: 0;     /* KEY */
+  }
+
+  /* THIS is the scroll container */
+  .password-box{
+    max-height: 100%;
+    min-height: 0;     /* KEY */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-
-    /* comfy insets + safe areas */
-    padding-top: max(14px, calc(14px + env(safe-area-inset-top)));
-    padding-bottom: max(14px, calc(14px + env(safe-area-inset-bottom)));
+    overflow-x: hidden;
+    touch-action: pan-y;
   }
 
-  /* optional: keep content from touching the border */
-  .password-box > *{
-    flex: 0 0 auto;
-  }
-}
-@media (max-width: 768px){
+  /* banner stays visible while the BOX scrolls (no background added) */
   .site-banner{
     position: sticky;
     top: 0;
     z-index: 5;
-    background: rgba(255,255,255,0.78);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-bottom: 2px solid #000;
-    margin: 0 0 12px;
-    padding: 10px 0;
   }
 }
+
 
 
 </style>
