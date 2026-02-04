@@ -1110,8 +1110,7 @@ body{
 
   /* lock the viewport height so % heights work */
   .password-screen{
-    height: 100dvh;
-    height: 100svh;
+    height: calc(var(--vh, 1vh) * 100);
 
     /* keep your current top spacing */
     align-items: flex-start;
@@ -1294,6 +1293,15 @@ body{
 </div>
 
 <script>
+  // iOS Safari: make a reliable viewport unit
+  (function () {
+    const setVh = () => {
+      document.documentElement.style.setProperty("--vh", `${window.innerHeight * 0.01}px`);
+    };
+    setVh();
+    window.addEventListener("resize", setVh);
+    window.addEventListener("orientationchange", setVh);
+  })();
 /* iOS: prevent pinch-zoom gesture glitches */
 document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: false });
 document.addEventListener("gesturechange", (e) => e.preventDefault(), { passive: false });
