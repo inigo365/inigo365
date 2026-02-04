@@ -208,7 +208,7 @@ button {
     margin-bottom: 12px;
   }
   .site-banner img{
-    max-height: clamp(96px, 18vw, 180px);
+    max-height: clamp(110px, 18vw, 180px);
   }
 }
 
@@ -728,6 +728,7 @@ body{
   border-color: #000;
 }
 
+
 /* =========================
    TILES: ALWAYS LEFT ALIGN TEXT
    ========================= */
@@ -1066,6 +1067,39 @@ body{
     flex: 0 0 auto !important;           /* DO NOT shrink, wrap instead */
     max-width: 100% !important;
   }
+}
+/* =========================
+   PASSWORD SCREEN: WHITE TEXT UI
+   ========================= */
+
+/* enter password label */
+#passwordForm label{
+  color: #fff;
+}
+
+/* hint text */
+#portalHint{
+  color: #fff;
+}
+
+/* action row buttons (enter / secret) */
+.action-row,
+.action-row .switch-btn{
+  color: #fff;
+}
+
+/* add to home page button */
+.add-home-btn{
+  color: #fff;
+}
+
+/* OPTIONAL: subtle shadow so white survives bright sky */
+#passwordForm label,
+#portalHint,
+.action-row,
+.action-row .switch-btn,
+.add-home-btn{
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
 }
 
 
