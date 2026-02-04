@@ -277,27 +277,26 @@ button {
   100% { opacity: 1; }
 }
 
-/* ===== add to home page button (mobile only) ===== */
-.add-home-btn {
-  display: none; /* default hidden */
-  position: fixed;
-  left: 50%;
-  bottom: 14px;
-  transform: translateX(-50%);
+/* add to home page button (mobile only) */
+.add-home-btn{
+  display: none;
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 18px;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  padding: 10px 14px;
+  border: 0px solid black;
+  background: rgba(255,255,255,0.0);
   color: var(--btn);
   text-transform: lowercase;
-  z-index: 20;
+  align-self: center;
+  margin-top: 10px;
 }
-.add-home-btn:hover { text-decoration: underline; }
 
-@media (max-width: 768px) {
-  .add-home-btn { display: block; }
+@media (max-width: 768px){
+  .add-home-btn{ display: inline-block; }
 }
+
+.add-home-btn:hover{ text-decoration: underline; }
+
 
 /* ===== overlays ===== */
 .overlay {
@@ -727,6 +726,40 @@ body{
 .mini-panel{
   border-color: #000;
 }
+/* =========================
+   PASSWORD TRAY BEHIND EVERYTHING
+   ========================= */
+
+.password-box{
+  position: relative; /* needed for tray layering */
+  padding: 18px 18px 16px;     /* breathing room inside the tray */
+  border: 2px solid #000;
+
+  /* frosted tray */
+  background: rgba(255,255,255,0.69);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  /* subtle lift */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+
+  /* keep your max width behaviour */
+  border-radius: 0; /* keep your crisp style */
+}
+
+/* desktop: a bit more roomy */
+@media (min-width: 769px){
+  .password-box{
+    padding: 22px 22px 18px;
+  }
+}
+
+/* mobile: tighter, edge-safe */
+@media (max-width: 768px){
+  .password-box{
+    padding: 14px 12px 12px;
+  }
+}
 
 
 /* =========================
@@ -1068,39 +1101,6 @@ body{
     max-width: 100% !important;
   }
 }
-/* =========================
-   PASSWORD SCREEN: WHITE TEXT UI
-   ========================= */
-
-/* enter password label */
-#passwordForm label{
-  color: #fff;
-}
-
-/* hint text */
-#portalHint{
-  color: #fff;
-}
-
-/* action row buttons (enter / secret) */
-.action-row,
-.action-row .switch-btn{
-  color: #fff;
-}
-
-/* add to home page button */
-.add-home-btn{
-  color: #fff;
-}
-
-/* OPTIONAL: subtle shadow so white survives bright sky */
-#passwordForm label,
-#portalHint,
-.action-row,
-.action-row .switch-btn,
-.add-home-btn{
-  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-}
 
 
 </style>
@@ -1139,11 +1139,10 @@ body{
     <div class="portal-hint" id="portalHint">hint: find hidden passwords around the site...</div>
   </div>
       </form>
+      <button class="add-home-btn" id="addHomeBtn" type="button">add to home page</button>
 
     </div>
   </div>
-
-  <button class="add-home-btn" id="addHomeBtn" type="button">add to home page</button>
 </div>
 
 <!-- CHEAT ENTRY OVERLAY -->
