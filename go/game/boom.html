@@ -343,49 +343,64 @@ canvas {
   text-align: right;
 }
 
-/* Top 3 leaderboard medals (make them POP) */
-.leaderboard-entry.rank-1 {
-  color: #ffd400;            /* bright arcade gold */
+/* ================= LEADERBOARD TOP 3 – CLEAN & READABLE ================= */
+
+/* Shared base: strong weight + crisp outline */
+.leaderboard-entry.rank-1,
+.leaderboard-entry.rank-2,
+.leaderboard-entry.rank-3 {
   font-weight: 800;
   letter-spacing: 0.2px;
 
-  /* crisp outline + glow (works great on white) */
+  /* Pure outline — NO blur */
   text-shadow:
-    1px 0 0 rgba(0,0,0,0.55),
-   -1px 0 0 rgba(0,0,0,0.55),
-    0 1px 0 rgba(0,0,0,0.55),
-    0 -1px 0 rgba(0,0,0,0.55),
-    0 0 10px rgba(255, 212, 0, 0.45);
+    1px 0 0 rgba(0,0,0,0.65),
+   -1px 0 0 rgba(0,0,0,0.65),
+    0 1px 0 rgba(0,0,0,0.65),
+    0 -1px 0 rgba(0,0,0,0.65);
+
+  /* Subtle row lift */
+  border-radius: 6px;
+  padding: 8px 10px;
 }
 
-/* Optional: give #1 a tiny “trophy” strip behind it */
+/* 🥇 GOLD — punchy + heavy */
 .leaderboard-entry.rank-1 {
+  color: #ffd400; /* bright arcade gold */
+  font-weight: 900;
   background: linear-gradient(
     90deg,
-    rgba(255, 212, 0, 0.12),
-    rgba(255, 212, 0, 0.02)
+    rgba(255, 212, 0, 0.14),
+    rgba(255, 212, 0, 0.04)
   );
-  border-radius: 6px;
-  padding-left: 10px;
-  padding-right: 10px;
 }
 
-/* Silver + bronze tuned to be cleaner on white */
+/* 🥈 SILVER — clean, readable */
 .leaderboard-entry.rank-2 {
-  color: #d8dee6;
-  text-shadow:
-    1px 0 0 rgba(0,0,0,0.45),
-   -1px 0 0 rgba(0,0,0,0.45),
-    0 0 8px rgba(216, 222, 230, 0.35);
+  color: #e6edf5;
+  background: linear-gradient(
+    90deg,
+    rgba(230, 237, 245, 0.12),
+    rgba(230, 237, 245, 0.02)
+  );
 }
 
+/* 🥉 BRONZE — brighter, not muddy */
 .leaderboard-entry.rank-3 {
-  color: #ff9a3c; /* brighter bronze */
-  text-shadow:
-    1px 0 0 rgba(0,0,0,0.45),
-   -1px 0 0 rgba(0,0,0,0.45),
-    0 0 8px rgba(255, 154, 60, 0.35);
+  color: #ff9a3c;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 154, 60, 0.14),
+    rgba(255, 154, 60, 0.03)
+  );
 }
+
+/* Extra emphasis on the SCORE for #1 only */
+.leaderboard-entry.rank-1 .score {
+  color: #fff2a8;
+  font-weight: 900;
+}
+
 
 
 /* Highlight player's own entry */
