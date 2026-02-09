@@ -343,19 +343,50 @@ canvas {
   text-align: right;
 }
 
-/* Top 3 leaderboard medals */
+/* Top 3 leaderboard medals (make them POP) */
 .leaderboard-entry.rank-1 {
-  color: #d4a017;
-  font-weight: bold;
+  color: #ffd400;            /* bright arcade gold */
+  font-weight: 800;
+  letter-spacing: 0.2px;
+
+  /* crisp outline + glow (works great on white) */
+  text-shadow:
+    1px 0 0 rgba(0,0,0,0.55),
+   -1px 0 0 rgba(0,0,0,0.55),
+    0 1px 0 rgba(0,0,0,0.55),
+    0 -1px 0 rgba(0,0,0,0.55),
+    0 0 10px rgba(255, 212, 0, 0.45);
 }
 
+/* Optional: give #1 a tiny “trophy” strip behind it */
+.leaderboard-entry.rank-1 {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 212, 0, 0.12),
+    rgba(255, 212, 0, 0.02)
+  );
+  border-radius: 6px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* Silver + bronze tuned to be cleaner on white */
 .leaderboard-entry.rank-2 {
-  color: #a8a8a8;
+  color: #d8dee6;
+  text-shadow:
+    1px 0 0 rgba(0,0,0,0.45),
+   -1px 0 0 rgba(0,0,0,0.45),
+    0 0 8px rgba(216, 222, 230, 0.35);
 }
 
 .leaderboard-entry.rank-3 {
-  color: #cd7f32;
+  color: #ff9a3c; /* brighter bronze */
+  text-shadow:
+    1px 0 0 rgba(0,0,0,0.45),
+   -1px 0 0 rgba(0,0,0,0.45),
+    0 0 8px rgba(255, 154, 60, 0.35);
 }
+
 
 /* Highlight player's own entry */
 .leaderboard-entry.is-player {
@@ -1910,7 +1941,7 @@ if (powerId === POWERUPS.baghetti) {
     shieldArmed = true;
     updateShieldHud();
     showTextPopup(
-      'ibuprofen found!',
+      'ibuprofen!',
       ball.x,
       ball.y + POP_TEXT_OFFSET_Y,
       '#2d93ea'
@@ -2334,7 +2365,7 @@ function buildHowToContent() {
 
   html += '<div class="howto-item">' +
     '<img src="sprites/powerups/shield.png" alt="shield">' +
-    '<span>ibuprofen - shields one hit</span>' +
+    '<span>look out for ibuprofen</span>' +
     '</div>';
 
   html += '<div class="howto-item">' +
