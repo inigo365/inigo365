@@ -34,6 +34,7 @@ input,
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
 
+/* ===================== TOP SCORE HUD ===================== */
 #topScores{
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 12px);
@@ -46,29 +47,65 @@ input,
   justify-content: center;
   gap: clamp(12px, 4vw, 40px);
 
-  /* ✅ never resize / never jump */
-  height: 44px;                 /* constant every play */
-  padding: 0 12px;
+  height: 44px;
+  padding: 0 16px;
   white-space: nowrap;
 
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(18px, 2.2vw, 26px);  /* responsive without JS */
+  font-size: clamp(18px, 2.2vw, 26px);
   line-height: 1;
 
   color: #2d93ea;
 
-  /* Start hidden */
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(45, 147, 234, 0.25);
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.5s;
 }
 
 #topScores > div{
-  flex: 0 0 auto;               /* prevents shrink */
+  flex: 0 0 auto;
+}
+
+/* ===================== SHIELD HUD ICON ===================== */
+#shieldHud {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 62px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: clamp(14px, 1.8vw, 18px);
+  color: #2d93ea;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#shieldHud.active {
+  opacity: 1;
+}
+
+#shieldHud img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
 }
 
 #rotateNotice {
-    display: none;               /* hidden by default */
+    display: none;
     position: fixed;
     top: 0; left: 0;
     width: 100%;
@@ -79,15 +116,38 @@ input,
     font-size: 5vw;
     text-align: center;
     line-height: 100vh;
-    z-index: 9999;              /* above all game elements */
-    opacity: 0;                 /* hidden initially */
-    pointer-events: none;       /* ignore clicks when hidden */
-    transition: opacity 0.5s ease; /* smooth fade in/out */
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
 }
 
 #rotateNotice.active {
-    opacity: 1;                 /* visible */
-    pointer-events: none;       /* block interactions while visible */
+    opacity: 1;
+    pointer-events: none;
+}
+
+/* ===================== SHARED GAME BUTTON ===================== */
+.game-btn {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 4px 8px;
+  touch-action: none;
+  transition: opacity 0.5s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.game-btn:hover {
+  transform: scale(1.08);
+}
+
+.game-btn:active {
+  transform: scale(0.95);
 }
 
 /* Back Button */
@@ -95,37 +155,19 @@ input,
   position: fixed;
   top: 8px;
   left: 8px;
-  font-size: 24px;
-  background: transparent;
-  border: none;
-  color: #2d93ea;
-  font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  text-transform: lowercase;
-  padding: 0;
   z-index: 100;
   opacity: 1;
-  transition: opacity 0.5s ease;
-  touch-action: none;
+  padding: 0;
 }
 
-/* Music Button (like back button, bottom-left, hidden initially) */
+/* Music Button */
 .music-button {
   position: fixed;
   bottom: 8px;
   left: 8px;
-  font-size: 24px;
-  background: transparent;
-  border: none;
-  color: #2d93ea;
-  font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  text-transform: lowercase;
-  padding: 0;
   z-index: 400;
-  opacity: 0;           /* hidden initially */
-  transition: opacity 0.5s ease;
-  touch-action: none;
+  opacity: 0;
+  padding: 0;
 }
 
 canvas {
@@ -156,9 +198,7 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255,255,255,0.55);
-  backdrop-filter: none;
-  background: rgba(255,255,255,0.75);  /* bump this up a bit */
+  background: rgba(255,255,255,0.75);
   display: none;
   align-items: center;
   justify-content: center;
@@ -210,8 +250,38 @@ canvas {
 }
 
 .name-modal button:hover {
-  background: #1a7bd4;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+
+/* Game Over sprite display */
+.game-over-sprite {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+  image-rendering: pixelated;
+}
+
+/* Primary button (submit) */
+.name-modal .btn-primary {
+  background: #2d93ea;
+  color: white;
+  border: 2px solid #2d93ea;
+}
+
+.name-modal .btn-primary:hover {
+  background: #1a7bd4;
+  border-color: #1a7bd4;
+}
+
+/* Secondary button (play again) */
+.name-modal .btn-secondary {
+  background: transparent;
+  color: #2d93ea;
+  border: 2px solid #2d93ea;
+}
+
+.name-modal .btn-secondary:hover {
+  background: rgba(45, 147, 234, 0.08);
 }
 
 /* Leaderboard */
@@ -221,9 +291,7 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255,255,255,0.55);
-  backdrop-filter: none;
-  background: rgba(255,255,255,0.75);  /* bump this up a bit */
+  background: rgba(255,255,255,0.75);
   display: none;
   z-index: 9999;
   align-items: center;
@@ -275,17 +343,32 @@ canvas {
   text-align: right;
 }
 
+/* Top 3 leaderboard medals */
+.leaderboard-entry.rank-1 {
+  color: #d4a017;
+  font-weight: bold;
+}
+
+.leaderboard-entry.rank-2 {
+  color: #a8a8a8;
+}
+
+.leaderboard-entry.rank-3 {
+  color: #cd7f32;
+}
+
+/* Highlight player's own entry */
+.leaderboard-entry.is-player {
+  background: rgba(45, 147, 234, 0.08);
+  border-radius: 4px;
+}
+
 .leaderboard-btn {
   position: fixed;
   top: 8px;
   right: 8px;
-  font-size: 24px;
-  background: transparent;
-  border: none;
-  color: #2d93ea;
-  font-family: "RuneScape UF", Arial, sans-serif;
   z-index: 100;
-  display: none; /* ✅ start hidden */
+  display: none;
 }
 
 .leaderboard-close {
@@ -318,18 +401,8 @@ canvas {
   position: fixed;
   bottom: 8px;
   right: 15px;
-  font-size: 24px;
-  background: transparent;
-  border: none;
-  color: #2d93ea;
-  font-family: "RuneScape UF", Arial, sans-serif;
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  text-transform: lowercase;
-  padding: 0;
   z-index: 400;
-  display: none; /* ✅ start hidden */
-  transition: opacity 0.5s ease;
-  touch-action: none;
+  display: none;
 }
 
 /* Goodybag Backdrop */
@@ -344,9 +417,7 @@ canvas {
     align-items: center;
     justify-content: center;
 
-    background: rgba(255,255,255,0.55);
-    backdrop-filter: none;
-    background: rgba(255,255,255,0.75);  /* bump this up a bit */
+    background: rgba(255,255,255,0.75);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
@@ -390,6 +461,102 @@ canvas {
 }
 #goodybagContent li {
     margin: 4px 0;
+}
+
+/* Soundtrack page wrapper */
+.soundtrack-wrapper {
+  width: min(520px, 86vw);
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.soundtrack-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.soundtrack-header .soundtrack-title {
+  font-weight: bold;
+}
+
+.soundtrack-header .soundtrack-link-btn {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 20px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  text-transform: lowercase;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+
+.soundtrack-tracklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  flex: 0 1 auto;
+  overflow-y: auto;
+  padding-right: 6px;
+  max-height: 50vh;
+  margin-bottom: 10px;
+}
+
+.soundtrack-tracklist li {
+  margin: 4px 0;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.soundtrack-bottom {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.soundtrack-bottom .soundtrack-nav {
+  display: flex;
+  gap: 12px;
+  flex: 0 0 auto;
+  justify-content: flex-start;
+}
+
+.soundtrack-bottom .soundtrack-spacer {
+  flex: 1 1 auto;
+}
+
+.soundtrack-nav-btn,
+.soundtrack-select-btn {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  text-transform: lowercase;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+
+/* Password unlock items with sprites */
+.password-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 6px 0;
+  font-size: 20px;
+  color: #2d93ea;
+}
+
+.password-item img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
 }
 
 #goodybagButtons {
@@ -444,9 +611,7 @@ canvas {
   align-items: center;
   justify-content: center;
 
-  background: rgba(255,255,255,0.55);
-  backdrop-filter: none;
-  background: rgba(255,255,255,0.75);  /* bump this up a bit */
+  background: rgba(255,255,255,0.75);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -477,7 +642,41 @@ canvas {
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
 
-/* One stable overlay “unit” */
+/* How To Play item rows */
+.howto-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  text-align: left;
+  font-size: 18px;
+  color: #2d93ea;
+}
+
+.howto-item img {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
+.howto-section-title {
+  font-size: 20px;
+  color: #2d93ea;
+  margin: 14px 0 6px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.howto-intro {
+  font-size: 18px;
+  color: #2d93ea;
+  text-align: center;
+  margin-bottom: 10px;
+  white-space: pre-line;
+}
+
+/* One stable overlay "unit" */
 #playWrap{
   position: absolute;
   top: 44%;
@@ -568,10 +767,10 @@ canvas {
 <body>
 <div id="pageBg"></div>
 <div id="rotateNotice">Please rotate your phone to portrait</div>
-<button class="back-button" onclick="goBack()">← back</button>
-<button class="music-button" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
-<button id="goodybagBtn" class="soundcloud-btn">goodybag</button>
-<button id="howToBtn" class="soundcloud-btn">how to play</button>
+<button class="back-button game-btn" onclick="goBack()">← back</button>
+<button class="music-button game-btn" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
+<button id="goodybagBtn" class="soundcloud-btn game-btn">goodybag</button>
+<button id="howToBtn" class="soundcloud-btn game-btn">how to play</button>
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 
 <div id="playWrap">
@@ -587,16 +786,22 @@ canvas {
   <div id="topHighscore">highscore: 0</div>
 </div>
 
-<button class="leaderboard-btn" onclick="toggleLeaderboard()">leaderboard</button>
+<div id="shieldHud">
+  <img src="sprites/powerups/shield.png" alt="shield">
+  <span>shield active</span>
+</div>
+
+<button class="leaderboard-btn game-btn" onclick="toggleLeaderboard()">leaderboard</button>
 
 <div class="name-modal" id="nameModal">
+  <img id="gameOverSprite" class="game-over-sprite" src="" alt="" style="display:none;">
   <h2>game over!</h2>
   <div class="final-score" id="finalScore">score: 0</div>
   <div class="final-score" id="modalHighscore">highscore: 0</div>
 
   <input type="text" id="playerName" placeholder="enter name" maxlength="12" autocomplete="off">
-  <button onclick="submitScore()">submit</button>
-  <button onclick="playAgain()">play again</button>
+  <button class="btn-primary" onclick="submitScore()">submit</button>
+  <button class="btn-secondary" onclick="playAgain()">play again</button>
 </div>
 
 
@@ -649,15 +854,8 @@ canvas {
   <div class="leaderboard">
     <button class="leaderboard-close" onclick="closeHowTo()">×</button>
     <h3>how to play</h3>
-    <div id="howToContent" style="font-size:18px; color:#2d93ea; text-align:center; white-space:pre-line;">
-click/tap to jump
-your aim:
-to put the bag, into the bag.
-
-avoid all non bags.
-collect immense & powerful bags.
-sonically benefit yourself.
-prosper greatly.
+    <div id="howToContent" style="font-size:18px; color:#2d93ea; text-align:center;">
+      <!-- filled dynamically after assets load -->
     </div>
 
     </div>
@@ -985,6 +1183,13 @@ let lastHoopWasNotBag = false;
 // Shield: simplest + safest = 1-use shield (saves you once)
 let shieldArmed = false;
 
+function updateShieldHud() {
+  const el = document.getElementById('shieldHud');
+  if (!el) return;
+  if (shieldArmed) el.classList.add('active');
+  else el.classList.remove('active');
+}
+
 // Baghetti: forces the next N hoops to spawn as baghetti (+4 each)
 let baghettiCharges = 0;         // number of forced baghettis still to spawn
 let baghettiRunLeft = 0;         // total baghettis remaining on-screen for bg (pickup+forced)
@@ -1069,6 +1274,7 @@ allSpritePaths.forEach((path) => {
     if (loadedCount === allSpritePaths.length) {
       assetsLoaded = true;
       console.log('All assets loaded!');
+      buildHowToContent();
     }
   };
   img.src = path;
@@ -1420,6 +1626,8 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   score = 0;
   updateTopScores();
   gameOver = false;
+  shieldArmed = false;
+  updateShieldHud();
   ball.spriteIndex = getWeightedSpriteIndex(true);
 
   // ----- START POSITION: MOBILE vs DESKTOP -----
@@ -1646,6 +1854,7 @@ function loop(ts) {
 if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT) {
   if (shieldArmed) {
     shieldArmed = false;
+    updateShieldHud();
     showTextPopup('healed by da brufen', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
     hoops.splice(i, 1);
     continue;
@@ -1729,6 +1938,7 @@ if (powerId === POWERUPS.baghetti) {
 
   if (powerId === POWERUPS.shield) {
     shieldArmed = true;
+    updateShieldHud();
     showTextPopup(
       'ibuprofen found!',
       ball.x,
@@ -1789,6 +1999,7 @@ if (h.x + SPRITE_SIZE < ball.x - 20) {
   // Otherwise normal miss behaviour
   if (shieldArmed) {
     shieldArmed = false;
+    updateShieldHud();
     showTextPopup('ibuprofen saved you', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
     hoops.splice(i, 1);
     continue;
@@ -1822,11 +2033,12 @@ function endGame() {
   rafId = null;
   lastTs = null;
   hideTopScores();
+  updateShieldHud();
   const hs = localStorage.getItem('flappyBasketHighscore') || 0;
   if (score > hs) localStorage.setItem('flappyBasketHighscore', score);
   backButton.style.opacity = 1;
   leaderboardBtn.style.display = 'block';
-  showNameModal(score);
+  showNameModal(score, ball.spriteIndex);
 }
 
 window.addEventListener('resize', () => {
@@ -1987,18 +2199,26 @@ function goBack() { window.location.href = "../index.html"; }
     catch (e) { console.error(e); }
   }
 
-  function renderLeaderboard(entries) {
+  function renderLeaderboard(entries, currentPlayerName) {
     if (!entries.length) {
       leaderboardEntriesEl.innerHTML = '<div style="color:#999;font-size:16px;">no scores yet</div>';
       return;
     }
-    leaderboardEntriesEl.innerHTML = entries.map((entry, i) => `
-      <div class="leaderboard-entry">
+    const pName = (currentPlayerName || '').toLowerCase().trim();
+    leaderboardEntriesEl.innerHTML = entries.map((entry, i) => {
+      const classes = ['leaderboard-entry'];
+      if (i === 0) classes.push('rank-1');
+      else if (i === 1) classes.push('rank-2');
+      else if (i === 2) classes.push('rank-3');
+      if (pName && entry.name.toLowerCase().trim() === pName) classes.push('is-player');
+      return `
+      <div class="${classes.join(' ')}">
         <span class="rank">${i + 1}.</span>
         <span class="name">${entry.name}</span>
         <span class="score">${entry.score}</span>
       </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   window.toggleLeaderboard = async function () {
@@ -2009,16 +2229,32 @@ function goBack() { window.location.href = "../index.html"; }
       leaderboardEntriesEl.innerHTML = 'loading...';
       leaderboardBackdrop.style.display = 'flex';
       const entries = await fetchLeaderboard();
-      renderLeaderboard(entries);
+      const playerName = localStorage.getItem('playerName') || '';
+      renderLeaderboard(entries, playerName);
     }
   };
 
-  window.showNameModal = function (finalScore) {
+  window.showNameModal = function (finalScore, spriteIdx) {
     finalScoreEl.textContent = 'score: ' + finalScore;
     playerNameInput.value = localStorage.getItem('playerName') || '';
     nameModal.classList.add('show');
     const hs = localStorage.getItem('flappyBasketHighscore') || 0;
     document.getElementById('modalHighscore').textContent = 'highscore: ' + hs;
+
+    // Show the bag sprite the player was using
+    const spriteEl = document.getElementById('gameOverSprite');
+    if (spriteIdx !== undefined && spriteIdx !== null) {
+      const img = imgForIndex(spriteIdx);
+      if (img && img.src) {
+        spriteEl.src = img.src;
+        spriteEl.style.display = 'block';
+      } else {
+        spriteEl.style.display = 'none';
+      }
+    } else {
+      spriteEl.style.display = 'none';
+    }
+
     backButton.style.zIndex = 400;
     backButton.style.opacity = 1;
     leaderboardBtn.style.display = 'block';
@@ -2085,6 +2321,60 @@ function closeHowTo() {
   howToBackdrop.classList.remove('active');
 }
 
+function buildHowToContent() {
+  const container = document.getElementById('howToContent');
+  if (!container) return;
+
+  let html = '';
+
+  html += '<div class="howto-intro">click/tap to jump\nyour aim:\nto put the bag, into the bag.</div>';
+
+  html += '<div class="howto-section-title">bags</div>';
+
+  html += '<div class="howto-item">' +
+    '<img src="sprites/02.png" alt="common bag">' +
+    '<span style="color:' + TIER_COLORS.common + '">common bag - +1 point</span>' +
+    '</div>';
+
+  html += '<div class="howto-item">' +
+    '<img src="sprites/11.png" alt="rare bag">' +
+    '<span style="color:' + TIER_COLORS.rare + '">rare bag - +2 points</span>' +
+    '</div>';
+
+  html += '<div class="howto-item">' +
+    '<img src="sprites/22.png" alt="goated bag">' +
+    '<span style="color:' + TIER_COLORS.goated + '">goated bag - +3 points</span>' +
+    '</div>';
+
+  html += '<div class="howto-item">' +
+    '<img src="sprites/mythic1.png" alt="mythic bag">' +
+    '<span style="color:' + TIER_COLORS.mythic + '">mythic bag - +5 points</span>' +
+    '</div>';
+
+  html += '<div class="howto-section-title">hazards</div>';
+
+  html += '<div class="howto-item">' +
+    '<img src="sprites/notbag/00.png" alt="not bag">' +
+    '<span style="color:#ec564f">definitely not bag - avoid!</span>' +
+    '</div>';
+
+  html += '<div class="howto-section-title">powerups</div>';
+
+  html += '<div class="howto-item">' +
+    '<img src="sprites/powerups/shield.png" alt="shield">' +
+    '<span>ibuprofen - shields one hit</span>' +
+    '</div>';
+
+  html += '<div class="howto-item">' +
+    '<img src="sprites/unlock/deathstar.png" alt="secret bag">' +
+    '<span style="color:gold">secret bags - find them all...</span>' +
+    '</div>';
+
+  html += '<div class="howto-intro" style="margin-top:10px;">collect immense & powerful bags.\nsonically benefit yourself.\nprosper greatly.</div>';
+
+  container.innerHTML = html;
+}
+
 howToBtn.addEventListener('click', openHowTo);
 
 
@@ -2131,43 +2421,25 @@ function renderSoundtrackPage() {
     return;
   }
 
-  // clamp to unlocked range
   soundtrackPageIndex = Math.max(0, Math.min(soundtrackPageIndex, unlocked - 1));
   const s = SOUNDTRACKS[soundtrackPageIndex];
 
-  goodybagContent.innerHTML = ''; // clear
+  goodybagContent.innerHTML = '';
 
   const wrapper = document.createElement('div');
-  wrapper.style.width = 'min(520px, 86vw)';  // ✅ always same-ish width, mobile-safe
-  wrapper.style.boxSizing = 'border-box';
-  wrapper.style.overflow = 'hidden';         // ✅ prevent long text from widening the panel
-  wrapper.style.height = '58vh';       // ✅ stable height across pages
-  wrapper.style.maxHeight = '520px';   // ✅ stops it getting huge on desktop
-  wrapper.style.minHeight = '360px';   // ✅ prevents tiny boxes
-  wrapper.style.display = 'flex';
-  wrapper.style.flexDirection = 'column';
+  wrapper.className = 'soundtrack-wrapper';
 
-
-  // header row: title left, link right
+  // header row
   const headerRow = document.createElement('div');
-  headerRow.style.display = 'flex';
-  headerRow.style.justifyContent = 'space-between';
-  headerRow.style.alignItems = 'center';
-  headerRow.style.marginBottom = '6px';
+  headerRow.className = 'soundtrack-header';
 
   const header = document.createElement('div');
-  header.style.fontWeight = 'bold';
+  header.className = 'soundtrack-title';
   header.textContent = s.title;
 
   const linkBtn = document.createElement('button');
   linkBtn.textContent = 'link';
-  linkBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
-  linkBtn.style.fontSize = '20px';
-  linkBtn.style.padding = '4px 8px';
-  linkBtn.style.background = 'transparent';
-  linkBtn.style.border = 'none';
-  linkBtn.style.color = '#2d93ea';
-  linkBtn.style.textTransform = 'lowercase';
+  linkBtn.className = 'soundtrack-link-btn';
   linkBtn.onclick = () => window.open(s.link, '_blank');
 
   headerRow.appendChild(header);
@@ -2175,60 +2447,32 @@ function renderSoundtrackPage() {
 
   // track list
   const ul = document.createElement('ul');
-  ul.style.listStyle = 'none';
-  ul.style.padding = '0';
-  ul.style.margin = '0';
-  ul.style.textAlign = 'center';
-  ul.style.flex = '0 1 auto';       // ✅ don't expand to fill tall wrapper
-  ul.style.overflowY = 'auto';
-  ul.style.paddingRight = '6px';
-  ul.style.maxHeight = '36vh';      // ✅ consistent list area (adjust if you want)
-  ul.style.marginBottom = '10px';   // ✅ small consistent gap to buttons
+  ul.className = 'soundtrack-tracklist';
   s.tracks.forEach(track => {
     const li = document.createElement('li');
     li.textContent = track;
-    li.style.margin = '4px 0';
-    li.style.whiteSpace = 'normal';        // ✅ allow wrap
-    li.style.wordBreak = 'break-word';     // ✅ break long chunks safely
-    li.style.overflowWrap = 'anywhere';    // ✅ prevents width push
     ul.appendChild(li);
   });
 
-// bottom row: back/next left, select right (never shifts)
-const bottomRow = document.createElement('div');
-bottomRow.style.display = 'flex';
-bottomRow.style.alignItems = 'center';
-bottomRow.style.marginTop = '8px';
-bottomRow.style.width = '100%';
+  // bottom row
+  const bottomRow = document.createElement('div');
+  bottomRow.className = 'soundtrack-bottom';
 
-const leftControls = document.createElement('div');
-leftControls.style.display = 'flex';
-leftControls.style.gap = '12px';
-leftControls.style.flex = '0 0 auto'; // ✅ never stretches
-leftControls.style.justifyContent = 'flex-start';
+  const leftControls = document.createElement('div');
+  leftControls.className = 'soundtrack-nav';
 
-const spacer = document.createElement('div');
-spacer.style.flex = '1 1 auto'; // ✅ pushes select to the right
+  const spacer = document.createElement('div');
+  spacer.className = 'soundtrack-spacer';
 
   const backBtn = document.createElement('button');
   backBtn.textContent = 'back';
-  backBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
-  backBtn.style.fontSize = '24px';
-  backBtn.style.background = 'transparent';
-  backBtn.style.border = 'none';
-  backBtn.style.color = '#2d93ea';
-  backBtn.style.textTransform = 'lowercase';
+  backBtn.className = 'soundtrack-nav-btn';
   backBtn.style.display = (soundtrackPageIndex === 0) ? 'none' : 'inline-block';
   backBtn.onclick = () => { soundtrackPageIndex--; renderSoundtrackPage(); };
 
   const nextBtn = document.createElement('button');
   nextBtn.textContent = 'next';
-  nextBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
-  nextBtn.style.fontSize = '24px';
-  nextBtn.style.background = 'transparent';
-  nextBtn.style.border = 'none';
-  nextBtn.style.color = '#2d93ea';
-  nextBtn.style.textTransform = 'lowercase';
+  nextBtn.className = 'soundtrack-nav-btn';
   nextBtn.style.display = (soundtrackPageIndex >= unlocked - 1) ? 'none' : 'inline-block';
   nextBtn.onclick = () => { soundtrackPageIndex++; renderSoundtrackPage(); };
 
@@ -2237,20 +2481,15 @@ spacer.style.flex = '1 1 auto'; // ✅ pushes select to the right
 
   const selectBtn = document.createElement('button');
   selectBtn.textContent = 'select';
-  selectBtn.style.fontFamily = '"RuneScape UF", Arial, sans-serif';
-  selectBtn.style.fontSize = '24px';
-  selectBtn.style.background = 'transparent';
-  selectBtn.style.border = 'none';
-  selectBtn.style.color = '#2d93ea';
-  selectBtn.style.textTransform = 'lowercase';
+  selectBtn.className = 'soundtrack-select-btn';
   selectBtn.onclick = () => {
     setSelectedSoundtrackIndex(soundtrackPageIndex);
     setSoundtrackByIndex(soundtrackPageIndex, true);
   };
 
-bottomRow.appendChild(leftControls);
-bottomRow.appendChild(spacer);
-bottomRow.appendChild(selectBtn);
+  bottomRow.appendChild(leftControls);
+  bottomRow.appendChild(spacer);
+  bottomRow.appendChild(selectBtn);
 
   wrapper.appendChild(headerRow);
   wrapper.appendChild(ul);
@@ -2266,12 +2505,17 @@ soundtrackBtn.addEventListener('click', () => {
 
 
 // ----- PASSWORD BUTTON -----
+const PASSWORD_SPRITES = {
+  tinny: 'sprites/unlock/tinny.png',
+  onway: 'sprites/unlock/onway.png',
+  deathstar: 'sprites/unlock/deathstar.png'
+};
+
 passwordBtn.addEventListener('click', () => {
   const unlocked = [];
   if (localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true') unlocked.push('tinny');
   if (localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true') unlocked.push('onway');
-  if (localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true') unlocked.push('deathstar'); // ✅ NEW
-
+  if (localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true') unlocked.push('deathstar');
 
   if (!unlocked.length) {
     goodybagContent.innerHTML = '<div>no passwords unlocked yet...</div>';
@@ -2280,7 +2524,12 @@ passwordBtn.addEventListener('click', () => {
 
   goodybagContent.innerHTML =
     '<div>unlocked passwords:</div>' +
-    unlocked.map(p => `<div><strong>${p}</strong></div>`).join('');
+    unlocked.map(p =>
+      '<div class="password-item">' +
+        '<img src="' + PASSWORD_SPRITES[p] + '" alt="' + p + '">' +
+        '<strong>' + p + '</strong>' +
+      '</div>'
+    ).join('');
 });
 
 </script>
