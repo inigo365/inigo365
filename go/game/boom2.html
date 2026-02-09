@@ -1066,12 +1066,25 @@ function setTierBanner(text, color, durationMs = 4000) {
   const rect = topScoresEl ? topScoresEl.getBoundingClientRect() : null;
   const baseY = rect ? (rect.bottom + 14) : 70;
 
+  const lines = String(text).split('\n');
+
+  // Pre-calculate font size once (instead of every frame)
+  let fontSize = Math.max(16, Math.min(34, Math.round(canvas.width * 0.045)));
+  const maxWidth = canvas.width - 24;
+  for (let i = 0; i < 16; i++) {
+    ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
+    const widest = Math.max(...lines.map(line => ctx.measureText(line).width));
+    if (widest <= maxWidth) break;
+    fontSize = Math.max(14, fontSize - 1);
+  }
+
   tierBanner = {
-    lines: String(text).split('\n'),
+    lines,
     color,
     start: Date.now(),
     duration: durationMs,
-    baseY
+    baseY,
+    fontSize
   };
 }
 
@@ -1086,35 +1099,20 @@ function drawTierBanner() {
     return;
   }
 
-  /* ================= FADE CONTROL ================= */
-  const FADE_OUT_MS = 1000; // ⬅ change fade length here (ms)
+  const FADE_OUT_MS = 1000;
   let alpha = 1;
-
   if (elapsed > tierBanner.duration - FADE_OUT_MS) {
     alpha = 1 - (elapsed - (tierBanner.duration - FADE_OUT_MS)) / FADE_OUT_MS;
   }
-  /* ================================================= */
 
   const baseY = tierBanner.baseY || 70;
   const x = canvas.width / 2;
-
-  // Responsive font sizing
-  let fontSize = Math.max(16, Math.min(34, Math.round(canvas.width * 0.045)));
-  const maxWidth = canvas.width - 24;
+  const fontSize = tierBanner.fontSize;
 
   ctx.save();
-  ctx.globalAlpha = alpha; // ← apply fade
+  ctx.globalAlpha = alpha;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-
-  // shrink-to-fit (so it scales and never wraps)
-  for (let i = 0; i < 16; i++) {
-    ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
-    const widest = Math.max(...tierBanner.lines.map(line => ctx.measureText(line).width));
-    if (widest <= maxWidth) break;
-    fontSize = Math.max(14, fontSize - 1);
-  }
-
   ctx.font = `${fontSize}px "RuneScape UF", Arial, sans-serif`;
   ctx.fillStyle = tierBanner.color;
 
@@ -1164,7 +1162,7 @@ let SPEED = 3;
 const START_SPEED = 4;       // speed when the game starts
 const MAX_SPEED = 7.3;       // speed when score reaches MAX_SPEED_SCORE
 const MAX_SPEED_SCORE = 500;
-let SPRITE_SIZE = Math.round(canvas.height * 0.12);
+let SPRITE_SIZE = Math.round(canvas.height * 0.10);
       // ✅ Definitely-not-bag hitbox tuning
 const NOTBAG_HITBOX_SCALE = 0.45; // 0.4 very forgiving, 0.55 nice, 0.7 strict
 let ball = { x: Math.round(canvas.width * 0.4), y: canvas.height / 2, vy: 0, spriteIndex: 0, scaleX: 1, scaleY: 1 };
@@ -1375,54 +1373,28 @@ function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
 }
 
 function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'center') {
-  const isMobile = window.innerWidth <= 768;
+  const fontSize = 24;
+  const padding = 12;
 
   funTextPopup.textContent = text;
-  funTextPopup.style.color = color;
+  funTextPopup.style.cssText =
+    'display:block;opacity:0;white-space:pre;font-size:' + fontSize + 'px;color:' + color +
+    ';text-align:' + (align === 'right' ? 'right' : 'center') +
+    ';transform:translate(' + (align === 'right' ? '-100%' : '-50%') + ',0) translateY(8px);';
 
-  // ✅ IMPORTANT: only break where you put \n (never wrap automatically)
-  funTextPopup.style.whiteSpace = 'pre';
+  // Estimate width from text length (avoids layout thrashing from offsetWidth reads)
+  const estCharW = fontSize * 0.55;
+  const estW = text.length * estCharW;
+  const estH = fontSize * 1.3;
 
-  // start size
-  let fontSize = isMobile ? 24 : 24;
-  funTextPopup.style.fontSize = fontSize + 'px';
-
-  // make sure it’s measurable before clamp
-  funTextPopup.style.display = 'block';
-  funTextPopup.style.opacity = 0;
-
-  // alignment + anchor transform
-  if (align === 'right') {
-    funTextPopup.style.textAlign = 'right';
-    funTextPopup.style.transform = "translate(-100%, 0) translateY(8px)";
-  } else {
-    funTextPopup.style.textAlign = 'center';
-    funTextPopup.style.transform = "translate(-50%, 0) translateY(8px)";
-  }
-
-  const padding = 12;
-  const maxAllowedWidth = window.innerWidth - padding * 2;
-
-  // ✅ Auto-shrink font until BOTH lines fit on screen without wrapping
-  let w = 0, h = 0;
-  for (let i = 0; i < 8; i++) {
-    w = funTextPopup.offsetWidth || 0;
-    h = funTextPopup.offsetHeight || 0;
-    if (w <= maxAllowedWidth) break;
-    fontSize = Math.max(14, fontSize - 1);
-    funTextPopup.style.fontSize = fontSize + 'px';
-  }
-
-  // clamp X based on anchor type
+  // Clamp position using cached dimensions
   let clampedX = x;
   if (align === 'right') {
-    clampedX = clamp(x, padding + w, window.innerWidth - padding);
+    clampedX = clamp(x, padding + estW, cachedWinW - padding);
   } else {
-    clampedX = clamp(x, padding + w / 2, window.innerWidth - padding - w / 2);
+    clampedX = clamp(x, padding + estW / 2, cachedWinW - padding - estW / 2);
   }
-
-  // clamp Y
-  const clampedY = clamp(y, padding, window.innerHeight - padding - h);
+  const clampedY = clamp(y, padding, cachedWinH - padding - estH);
 
   funTextPopup.style.left = clampedX + 'px';
   funTextPopup.style.top = clampedY + 'px';
@@ -1441,8 +1413,8 @@ function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'c
 }
 
 function getPlayableHeight() {
-  if (window.innerWidth <= 768) {
-    return canvas.height * 0.95; // cut off bottom 20%
+  if (cachedWinW <= 768) {
+    return canvas.height * 0.95;
   }
   return canvas.height;
 }
@@ -1561,10 +1533,19 @@ function hideMusicButton() {
   musicToggle.style.opacity = 0;
 }
 
+// Cache window dimensions to avoid DOM reads during gameplay
+let cachedWinW = window.innerWidth;
+let cachedWinH = window.innerHeight;
+let cachedHighscore = Number(localStorage.getItem('flappyBasketHighscore') || 0);
+
+window.addEventListener('resize', () => {
+  cachedWinW = window.innerWidth;
+  cachedWinH = window.innerHeight;
+});
+
 function updateTopScores() {
   topCurrentScore.textContent = "current score: " + score;
-  const hs = localStorage.getItem('flappyBasketHighscore') || 0;
-  topHighscore.textContent = "highscore: " + hs;
+  topHighscore.textContent = "highscore: " + cachedHighscore;
 }
 
 function showOverlay(showLastScore = false) {
@@ -1708,12 +1689,16 @@ function playAgain() {
   // Show play overlay (like submitScore)
   showOverlay(false);
 }
-function drawGlowForSprite(img, drawX, drawY, w, h, color, pulse) {
-  if (!img) return;
+// Lightweight glow: radial gradient halo instead of expensive shadowBlur
+function drawGlowHalo(cx, cy, radius, color, pulse) {
+  const r = radius + 4 + Math.sin(pulse) * 2;
+  const alpha = 0.18 + Math.sin(pulse) * 0.06;
   ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 10 + Math.sin(pulse) * 3;
-  ctx.drawImage(img, drawX, drawY, w, h);
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
   ctx.restore();
 }
 
@@ -1750,33 +1735,20 @@ function loop(ts) {
   ctx.scale(ball.scaleX, ball.scaleY);
 
   const ballImg = imgForIndex(ball.spriteIndex);
+  const halfSprite = SPRITE_SIZE / 2;
 
+  // Lightweight glow halos (no shadowBlur)
   if (ball.spriteIndex === NUM_SPRITES) {
-    ctx.shadowColor = 'yellow';
-    ctx.shadowBlur = 12 + Math.sin(glowPulse) * 6;
-    if (ballImg) ctx.drawImage(ballImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-    ctx.shadowBlur = 0;
-
+    drawGlowHalo(0, 0, halfSprite, 'yellow', glowPulse);
   } else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
-    const intensity = (ball.spriteIndex - 14) * 2 + Math.sin(glowPulse) * 2;
-    ctx.shadowColor = 'rgba(255,215,0,0.8)';
-    ctx.shadowBlur = intensity;
-    if (ballImg) ctx.drawImage(ballImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
-    ctx.shadowBlur = 0;
-
-  } else {
-    if (ballImg) ctx.drawImage(ballImg, -SPRITE_SIZE/2, -SPRITE_SIZE/2, SPRITE_SIZE, SPRITE_SIZE);
+    drawGlowHalo(0, 0, halfSprite, 'rgba(255,215,0,0.8)', glowPulse);
   }
 
-  // shield overlay ALWAYS
-  if (shieldArmed && ballImg) {
-    drawGlowForSprite(
-      ballImg,
-      -SPRITE_SIZE/2, -SPRITE_SIZE/2,
-      SPRITE_SIZE, SPRITE_SIZE,
-      '#2d93ea',
-      glowPulse
-    );
+  if (ballImg) ctx.drawImage(ballImg, -halfSprite, -halfSprite, SPRITE_SIZE, SPRITE_SIZE);
+
+  // Shield halo
+  if (shieldArmed) {
+    drawGlowHalo(0, 0, halfSprite, '#2d93ea', glowPulse);
   }
 
   ctx.restore();
@@ -1810,18 +1782,16 @@ function loop(ts) {
       continue;
     }
 
+    const hoopCx = h.x + SPRITE_SIZE / 2;
+    const hoopCy = h.y + SPRITE_SIZE / 2;
+
     if (h.spriteIndex === NUM_SPRITES) {
-      ctx.shadowColor = 'yellow';
-      ctx.shadowBlur = 20 + Math.sin(glowPulse) * 10;
-      ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-      ctx.shadowBlur = 0;
+      drawGlowHalo(hoopCx, hoopCy, SPRITE_SIZE / 2, 'yellow', glowPulse);
+      if (mythicImg) ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
     } else if (h.spriteIndex >= 11 && !isNotBagIndex(h.spriteIndex)) {
-      const intensity = (h.spriteIndex - 14) * 3 + Math.sin(glowPulse) * 4;
-      ctx.shadowColor = 'rgba(255,215,0,0.8)';
-      ctx.shadowBlur = intensity;
+      drawGlowHalo(hoopCx, hoopCy, SPRITE_SIZE / 2, 'rgba(255,215,0,0.8)', glowPulse);
       const img = imgForIndex(h.spriteIndex);
       if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-      ctx.shadowBlur = 0;
     } else {
       const img = imgForIndex(h.spriteIndex);
       if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
@@ -2034,8 +2004,10 @@ function endGame() {
   lastTs = null;
   hideTopScores();
   updateShieldHud();
-  const hs = localStorage.getItem('flappyBasketHighscore') || 0;
-  if (score > hs) localStorage.setItem('flappyBasketHighscore', score);
+  if (score > cachedHighscore) {
+    cachedHighscore = score;
+    localStorage.setItem('flappyBasketHighscore', score);
+  }
   backButton.style.opacity = 1;
   leaderboardBtn.style.display = 'block';
   showNameModal(score, ball.spriteIndex);
@@ -2044,7 +2016,7 @@ function endGame() {
 window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  SPRITE_SIZE = Math.round(canvas.height * 0.12);
+  SPRITE_SIZE = Math.round(canvas.height * 0.10);
 });
 
 // ------------------- MUSIC -------------------
