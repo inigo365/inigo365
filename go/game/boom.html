@@ -810,7 +810,7 @@ canvas {
 #playWrap{
   position: absolute;
   top: 44%;
-  left: 50%;
+  left: calc(50% + 8px);
   transform: translate(-50%, -50%) scale(0.8);
   opacity: 0;
   transition: opacity 0.5s, transform 0.5s;
@@ -892,6 +892,143 @@ canvas {
   transition: opacity 1s ease-out; /* slow fade (both directions) */
 }
 
+/* ===================== NOKIA KEYPAD ===================== */
+#nokiaKeypad {
+  position: fixed;
+  left: 50%;
+  z-index: 55;
+  top: 54%;
+  transform: translateX(-50%);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.nokia-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 14px;
+  justify-items: center;
+}
+
+.nokia-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+
+  width: clamp(68px, 7.5vw, 100px);
+  height: clamp(28px, 3vw, 38px);
+  border-radius: 50%;
+  padding: 0 4px;
+
+  /* 16-bit pixel-art Nokia style — stepped blue gradient with hard edges */
+  background:
+    linear-gradient(180deg,
+      #5bc0e8 0%, #5bc0e8 15%,
+      #3998bf 15%, #3998bf 50%,
+      #2d7da3 50%, #2d7da3 85%,
+      #1f6080 85%, #1f6080 100%);
+  border: 2px solid #1a5570;
+  border-top-color: #6dd0f5;
+  border-left-color: #4dafd4;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 2px 0 #163e52;
+  image-rendering: pixelated;
+
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter 0.08s ease, box-shadow 0.08s ease;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* Rotations + center column drops down + fan-out (wider at top) */
+/* Row 1: ±8px outward */
+.nokia-key:nth-child(1)  { transform: translateX(-8px) rotate(10deg); }
+.nokia-key:nth-child(2)  { transform: translateY(22px) rotate(0deg); }
+.nokia-key:nth-child(3)  { transform: translateX(8px) rotate(-10deg); }
+/* Row 2: ±5px outward */
+.nokia-key:nth-child(4)  { transform: translateX(-5px) rotate(8deg); }
+.nokia-key:nth-child(5)  { transform: translateY(22px) rotate(0deg); }
+.nokia-key:nth-child(6)  { transform: translateX(5px) rotate(-8deg); }
+/* Row 3: ±3px outward */
+.nokia-key:nth-child(7)  { transform: translateX(-3px) rotate(10deg); }
+.nokia-key:nth-child(8)  { transform: translateY(22px) rotate(0deg); }
+.nokia-key:nth-child(9)  { transform: translateX(3px) rotate(-10deg); }
+/* Row 4: no shift */
+.nokia-key:nth-child(10) { transform: rotate(8deg); }
+.nokia-key:nth-child(11) { transform: translateY(22px) rotate(0deg); }
+.nokia-key:nth-child(12) { transform: rotate(-8deg); }
+
+.nokia-key:hover {
+  background:
+    linear-gradient(180deg,
+      #6dd0f5 0%, #6dd0f5 15%,
+      #4dafd4 15%, #4dafd4 50%,
+      #3998bf 50%, #3998bf 85%,
+      #2d7da3 85%, #2d7da3 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 2px 0 #163e52;
+}
+
+/* Decorative/future keys — identical look, no click response */
+.nokia-key.deco { cursor: default; }
+.nokia-key.deco:hover {
+  background:
+    linear-gradient(180deg,
+      #5bc0e8 0%, #5bc0e8 15%,
+      #3998bf 15%, #3998bf 50%,
+      #2d7da3 50%, #2d7da3 85%,
+      #1f6080 85%, #1f6080 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 2px 0 #163e52;
+}
+
+.nokia-key .key-num {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: clamp(12px, 1.4vw, 18px);
+  color: #c8edff;
+  line-height: 1;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.nokia-key .key-label {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: clamp(8px, 1vw, 13px);
+  color: #ffffff;
+  line-height: 1;
+  text-transform: lowercase;
+  white-space: nowrap;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Desktop: play.png 0.8x, nudged up + keypad slightly smaller to match mobile */
+@media (min-width: 769px) {
+  #playWrap #playOverlay {
+    max-width: 64vw;
+    max-height: 64vh;
+  }
+  #playWrap {
+    top: 38%;
+  }
+  #nokiaKeypad {
+    transform: translateX(-50%) scale(0.88);
+  }
+}
+
+/* Mobile: keypad sits below play.png */
+@media (max-width: 768px) {
+  #nokiaKeypad {
+    top: 57%;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -906,6 +1043,58 @@ canvas {
 <div id="playWrap">
   <img id="playOverlay" src="play.png" alt="play">
   <div id="playSplashText"></div>
+</div>
+
+<div id="nokiaKeypad">
+  <div class="nokia-grid">
+    <button class="nokia-key" data-action="tap">
+      <span class="key-num">1</span>
+      <span class="key-label">tap</span>
+    </button>
+    <button class="nokia-key" data-action="to">
+      <span class="key-num">2</span>
+      <span class="key-label">to</span>
+    </button>
+    <button class="nokia-key" data-action="start">
+      <span class="key-label">start!</span>
+      <span class="key-num">3</span>
+    </button>
+    <button class="nokia-key" data-action="howto">
+      <span class="key-num">4</span>
+      <span class="key-label">how2play</span>
+    </button>
+    <button class="nokia-key" data-action="sfx">
+      <span class="key-num">5</span>
+      <span class="key-label" id="nokiaSfxLabel">sfx:</span>
+    </button>
+    <button class="nokia-key" data-action="music">
+      <span class="key-label" id="nokiaMusicLabel">music:</span>
+      <span class="key-num">6</span>
+    </button>
+    <button class="nokia-key" data-action="goody">
+      <span class="key-num">7</span>
+      <span class="key-label">goodybag</span>
+    </button>
+    <button class="nokia-key" data-action="back">
+      <span class="key-num">8</span>
+      <span class="key-label">back</span>
+    </button>
+    <button class="nokia-key" data-action="scores">
+      <span class="key-label">leaderboard</span>
+      <span class="key-num">9</span>
+    </button>
+    <button class="nokia-key deco" data-action="star">
+      <span class="key-num">*</span>
+      <span class="key-label">+</span>
+    </button>
+    <button class="nokia-key deco" data-action="zero">
+      <span class="key-num">0</span>
+      <span class="key-label">_</span>
+    </button>
+    <button class="nokia-key deco" data-action="hash">
+      <span class="key-num">#</span>
+    </button>
+  </div>
 </div>
 
 <div id="overlayHighscore"></div>
@@ -1705,11 +1894,13 @@ function updateTopScores() {
 }
 
 function showOverlay(showLastScore = false) {
-const howToBtnEl = document.getElementById('howToBtn');
-if (howToBtnEl) howToBtnEl.style.display = 'block';
- // ✅ LOADING SCREEN: keep these hidden
-leaderboardBtn.style.display = 'none';
-if (goodybagBtn) goodybagBtn.style.display = 'none';
+  // Hide ALL old scattered buttons — keypad is the only UI on home screen
+  const howToBtnEl = document.getElementById('howToBtn');
+  if (howToBtnEl) howToBtnEl.style.display = 'none';
+  leaderboardBtn.style.display = 'none';
+  if (goodybagBtn) goodybagBtn.style.display = 'none';
+  backButton.style.opacity = 0;
+  hideMusicButton();
 
   // ✅ LOADING SCREEN: show play overlay
   playWrap.style.opacity = 1;
@@ -1726,10 +1917,9 @@ if (goodybagBtn) goodybagBtn.style.display = 'none';
   }
 
   gameStarted = false;
-  backButton.style.opacity = 1;
 
-  // ✅ keep music toggle visible on loading screen
-  showMusicButton();
+  // ✅ Show Nokia keypad (only UI on home)
+  showNokiaKeypad();
 }
 
 function hideOverlay() {
@@ -1737,12 +1927,14 @@ function hideOverlay() {
   playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
   playWrap.style.pointerEvents = "none";
   playWrap.classList.remove('pulsing');
-const howToBtnEl = document.getElementById('howToBtn');
-if (howToBtnEl) howToBtnEl.style.display = 'none';
+  const howToBtnEl = document.getElementById('howToBtn');
+  if (howToBtnEl) howToBtnEl.style.display = 'none';
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
   showTopScores();
   hideMusicButton();
+  // Hide Nokia keypad
+  hideNokiaKeypad();
 }
 
 //setInterval(updateTopScores, 100);
@@ -2777,6 +2969,91 @@ passwordBtn.addEventListener('click', () => {
     link.innerHTML = '<img src="' + PASSWORD_SPRITES[p] + '" alt="' + p + '"><strong>' + p + '</strong>';
     goodybagContent.appendChild(link);
   });
+});
+
+// ===== NOKIA KEYPAD =====
+let sfxEnabled = true;
+const nokiaKeypad = document.getElementById('nokiaKeypad');
+const nokiaMusicLabel = document.getElementById('nokiaMusicLabel');
+const nokiaSfxLabel = document.getElementById('nokiaSfxLabel');
+
+function showNokiaKeypad() {
+  nokiaKeypad.style.opacity = '1';
+  nokiaKeypad.style.pointerEvents = 'auto';
+  // sync music label
+  updateNokiaMusicLabel();
+}
+
+function hideNokiaKeypad() {
+  nokiaKeypad.style.opacity = '0';
+  nokiaKeypad.style.pointerEvents = 'none';
+}
+
+function updateNokiaMusicLabel() {
+  if (!nokiaMusicLabel) return;
+  if (bgMusic.readyState > 2 && !bgMusic.paused) {
+    nokiaMusicLabel.textContent = 'music: on';
+  } else {
+    nokiaMusicLabel.textContent = 'music: off';
+  }
+}
+
+// Click handlers for each key
+nokiaKeypad.addEventListener('click', (e) => {
+  const key = e.target.closest('.nokia-key');
+  if (!key) return;
+  const action = key.dataset.action;
+
+  switch (action) {
+    case 'tap':    // 1 - "tap" (part of "tap to start!")
+    case 'to':     // 2 - "to"
+    case 'start':  // 3 - "start!"
+      startGame();
+      break;
+
+    case 'music':  // 6
+      if (bgMusic.paused) {
+        ensureSoundtrackLoadedOnce();
+        bgMusic.play().catch(() => {});
+        musicToggle.textContent = 'music: on';
+      } else {
+        bgMusic.pause();
+        musicToggle.textContent = 'music: off';
+      }
+      updateNokiaMusicLabel();
+      break;
+
+    case 'sfx':    // 5
+      sfxEnabled = !sfxEnabled;
+      nokiaSfxLabel.textContent = sfxEnabled ? 'sfx:' : 'sfx: off';
+      break;
+
+    case 'howto':  // 4
+      openHowTo();
+      break;
+
+    case 'goody':  // 7
+      openGoodybag();
+      break;
+
+    case 'scores': // 9
+      toggleLeaderboard();
+      break;
+
+    case 'back':   // 8
+      goBack();
+      break;
+
+    // ---- SECRET / FUTURE KEYS ----
+    // To activate: remove 'deco' class from the button in HTML,
+    // then add your logic below.
+    case 'star':   // * key
+      break;
+    case 'zero':   // 0 key
+      break;
+    case 'hash':   // # key
+      break;
+  }
 });
 
 </script>
