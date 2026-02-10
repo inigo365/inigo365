@@ -1964,10 +1964,7 @@ if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT
   const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
   const key = unlockDef.storageKey;
 
-  // ✅ under-bag popup EVERY time (always gold)
-  showTextPopup(unlockDef.popupText, ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
-
-  // ✅ banner + HUD notification logic
+  // HUD notification + unlock logic
   const unlockImg = imgForIndex(h.spriteIndex);
 
 if (key === UNLOCK_KEYS.soundtracks) {
@@ -1977,18 +1974,13 @@ if (key === UNLOCK_KEYS.soundtracks) {
     lvl++;
     localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, String(lvl));
     localStorage.setItem(UNLOCK_KEYS.soundtracks, "true"); // legacy flag
-
-    setTierBanner(`*soundtrack found!*\nunlocked soundtrack0${lvl}!`, 'gold', 3000);
     showPickupNotification(unlockImg ? unlockImg.src : '', 'new soundtrack unlocked!', 'gold', 3000);
-  } else {
-    setTierBanner(`*soundtrack found!*\nall soundtracks unlocked!`, 'gold', 2200);
   }
 
 } else {
-  // passwords: banner + notification only first time
+  // passwords: unlock storage on first find
   if (localStorage.getItem(key) !== 'true') {
     localStorage.setItem(key, 'true');
-    setTierBanner(unlockDef.bannerText, 'gold', 3000);
   }
   const pwNames = { 0: 'tinny', 1: 'onway', 3: 'deathstar' };
   const pwName = pwNames[h.spriteIndex - UNLOCK_START] || 'secret bag';
