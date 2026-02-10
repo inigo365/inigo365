@@ -1298,7 +1298,6 @@ let hoops = [];
 let score = 0;
 let gameOver = false;
 let gameStarted = false;
-let glowPulse = 0;
 let rafId = null;
 let lastTs = null;
 let lastDt = 1;
@@ -1853,27 +1852,6 @@ function playAgain() {
   // Show play overlay (like submitScore)
   showOverlay(false);
 }
-// Lightweight glow: radial gradient ring behind sprites (not a filled disc)
-function drawGlowHalo(cx, cy, radius, color, pulse) {
-  const pulseAmt = Math.sin(pulse);
-  const outerR = radius + 8 + pulseAmt * 3;
-  const innerR = radius * 0.65;
-  const alpha = 0.28 + pulseAmt * 0.08;
-
-  ctx.save();
-  ctx.globalAlpha = alpha;
-
-  const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
-  grad.addColorStop(0, 'transparent');
-  grad.addColorStop(0.5, color);
-  grad.addColorStop(1, 'transparent');
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.restore();
-}
 
 function loop(ts) {
   if (gameOver) return;
@@ -1900,8 +1878,6 @@ function loop(ts) {
   // Speed scaling
   SPEED = START_SPEED + ((MAX_SPEED - START_SPEED) * Math.min(score, MAX_SPEED_SCORE) / MAX_SPEED_SCORE);
 
-  glowPulse += 0.05 * dt;
-
   // Draw ball
   ctx.save();
   ctx.translate(ball.x, ball.y);
@@ -1909,16 +1885,6 @@ function loop(ts) {
 
   const ballImg = imgForIndex(ball.spriteIndex);
   const halfSprite = SPRITE_SIZE / 2;
-
-  // Draw all glows BEHIND the sprite
-  if (shieldArmed) {
-    drawGlowHalo(0, 0, halfSprite, '#2d93ea', glowPulse);
-  }
-  if (ball.spriteIndex === NUM_SPRITES) {
-    drawGlowHalo(0, 0, halfSprite, 'yellow', glowPulse);
-  } else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
-    drawGlowHalo(0, 0, halfSprite, 'rgba(255,215,0,0.8)', glowPulse);
-  }
 
   if (ballImg) ctx.drawImage(ballImg, -halfSprite, -halfSprite, SPRITE_SIZE, SPRITE_SIZE);
 
@@ -1953,20 +1919,8 @@ function loop(ts) {
       continue;
     }
 
-    const hoopCx = h.x + SPRITE_SIZE / 2;
-    const hoopCy = h.y + SPRITE_SIZE / 2;
-
-    if (h.spriteIndex === NUM_SPRITES) {
-      drawGlowHalo(hoopCx, hoopCy, SPRITE_SIZE / 2, 'yellow', glowPulse);
-      if (mythicImg) ctx.drawImage(mythicImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-    } else if (h.spriteIndex >= 11 && !isNotBagIndex(h.spriteIndex)) {
-      drawGlowHalo(hoopCx, hoopCy, SPRITE_SIZE / 2, 'rgba(255,215,0,0.8)', glowPulse);
-      const img = imgForIndex(h.spriteIndex);
-      if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-    } else {
-      const img = imgForIndex(h.spriteIndex);
-      if (img) ctx.drawImage(img, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
-    }
+    const hoopImg = imgForIndex(h.spriteIndex);
+    if (hoopImg) ctx.drawImage(hoopImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
 
     // --- collision logic unchanged below ---
     let hit = false;
