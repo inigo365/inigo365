@@ -71,14 +71,23 @@ input,
   flex: 0 0 auto;
 }
 
-/* ===================== SHIELD HUD ICON ===================== */
-#shieldHud {
+/* ===================== HUD STACK (below top scores) ===================== */
+#hudStack {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 62px);
+  top: calc(env(safe-area-inset-top, 0px) + 60px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+/* ===================== SHIELD HUD ICON ===================== */
+#shieldHud {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -87,13 +96,15 @@ input,
   font-size: clamp(14px, 1.8vw, 18px);
   color: #2d93ea;
 
+  max-height: 0;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+  overflow: hidden;
+  transition: opacity 0.3s ease, max-height 0.3s ease;
 }
 
 #shieldHud.active {
   opacity: 1;
+  max-height: 30px;
 }
 
 #shieldHud img {
@@ -102,18 +113,12 @@ input,
   image-rendering: pixelated;
 }
 
-/* Pickup notification toasts (stacks below shield HUD) */
+/* Pickup notification toasts */
 #pickupNotifications {
-  position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 88px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 200;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  pointer-events: none;
 }
 
 .pickup-toast {
@@ -911,12 +916,13 @@ canvas {
   <div id="topHighscore">highscore: 0</div>
 </div>
 
-<div id="shieldHud">
-  <img src="sprites/powerups/shield.png" alt="shield">
-  <span>shield active</span>
+<div id="hudStack">
+  <div id="shieldHud">
+    <img src="sprites/powerups/shield.png" alt="shield">
+    <span>shield active</span>
+  </div>
+  <div id="pickupNotifications"></div>
 </div>
-
-<div id="pickupNotifications"></div>
 
 <button class="leaderboard-btn game-btn" onclick="toggleLeaderboard()">leaderboard</button>
 
@@ -940,24 +946,6 @@ canvas {
   </div>
 </div>
 
-<div id="mythicUnlockPopup" style="
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  text-align: center;
-  font-family: 'RuneScape UF', Arial, sans-serif;
-  color: #2d93ea;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.5s ease, transform 0.5s ease;
-  z-index: 5000;
-">
-  <div style="font-size: 32px;">*mythic found*</div>
-  <div style="font-size: 28px; margin-top: 14px;">
-    soundtrack unlocked!
-  </div>
-</div>
 
 <div id="goodybagBackdrop">
   <div class="leaderboard">
@@ -1298,6 +1286,12 @@ let hoops = [];
 let score = 0;
 let gameOver = false;
 let gameStarted = false;
+let dying = false;
+let deathRotation = 0;
+let deathSpinRate = 0;
+let deathVx = 0;
+let deathVy = 0;
+let deathLastTs = null;
 let rafId = null;
 let lastTs = null;
 let lastDt = 1;
@@ -1764,6 +1758,7 @@ const howToBtnEl = document.getElementById('howToBtn');
 if (howToBtnEl) howToBtnEl.style.display = 'none';
   hideOverlay();
   gameStarted = true;
+  dying = false;
   SPEED = 3;
   hoops = [];
   score = 0;
@@ -1799,6 +1794,7 @@ if (goodybagBtn) goodybagBtn.style.display = 'none';
 // removed: let touchActive = false; (unused)
 
 function jump() {
+  if (dying) return;
   if (gameStarted && !gameOver) {
     ball.vy = 0;     // reset vertical velocity
     ball.vy += LIFT; // apply lift
@@ -1809,6 +1805,7 @@ function jump() {
 // Handles taps/clicks on canvas
 function handleInput(e) {
   e.preventDefault();
+  if (dying) return;
   if (!gameStarted) {
     startGame();
     requestAnimationFrame(() => jump());
@@ -1843,6 +1840,7 @@ function playAgain() {
   // Reset game state
   gameStarted = false;
   gameOver = false;
+  dying = false;
   score = 0;
   hoops = [];
 
@@ -1854,7 +1852,7 @@ function playAgain() {
 }
 
 function loop(ts) {
-  if (gameOver) return;
+  if (gameOver || dying) return;
 
   // dt = 1 at 60fps, ~0.5 at 120fps, ~2 at 30fps
   if (lastTs == null) lastTs = ts;
@@ -1873,7 +1871,7 @@ function loop(ts) {
   ball.y  += ball.vy * dt;
 
   const playableHeight = getPlayableHeight();
-  if (ball.y < 0 || ball.y > playableHeight) return endGame();
+  if (ball.y < 0 || ball.y > playableHeight) return startDeathAnimation();
 
   // Speed scaling
   SPEED = START_SPEED + ((MAX_SPEED - START_SPEED) * Math.min(score, MAX_SPEED_SCORE) / MAX_SPEED_SCORE);
@@ -1954,7 +1952,7 @@ if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT
     hoops.splice(i, 1);
     continue;
   } else {
-    return endGame();
+    return startDeathAnimation();
   }
 }
 
@@ -1969,14 +1967,9 @@ if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT
   // ✅ under-bag popup EVERY time (always gold)
   showTextPopup(unlockDef.popupText, ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
 
-  // HUD notification toast
+  // ✅ banner + HUD notification logic
   const unlockImg = imgForIndex(h.spriteIndex);
-  const unlockNames = ['tinny', 'onway', 'ipod', 'deathstar'];
-  const unlockName = unlockNames[h.spriteIndex - UNLOCK_START] || 'secret bag';
-  showPickupNotification(unlockImg ? unlockImg.src : '', unlockName + ' found!', 'gold', 3000);
 
-  // ✅ banner ONLY first time
-  // ✅ banner logic
 if (key === UNLOCK_KEYS.soundtracks) {
   let lvl = getUnlockedSoundtrackLevel();
 
@@ -1986,16 +1979,20 @@ if (key === UNLOCK_KEYS.soundtracks) {
     localStorage.setItem(UNLOCK_KEYS.soundtracks, "true"); // legacy flag
 
     setTierBanner(`*soundtrack found!*\nunlocked soundtrack0${lvl}!`, 'gold', 3000);
+    showPickupNotification(unlockImg ? unlockImg.src : '', 'new soundtrack unlocked!', 'gold', 3000);
   } else {
     setTierBanner(`*soundtrack found!*\nall soundtracks unlocked!`, 'gold', 2200);
   }
 
 } else {
-  // passwords: banner only first time
+  // passwords: banner + notification only first time
   if (localStorage.getItem(key) !== 'true') {
     localStorage.setItem(key, 'true');
     setTierBanner(unlockDef.bannerText, 'gold', 3000);
   }
+  const pwNames = { 0: 'tinny', 1: 'onway', 3: 'deathstar' };
+  const pwName = pwNames[h.spriteIndex - UNLOCK_START] || 'secret bag';
+  showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', 'gold', 3000);
 }
 
   updateTopScores();
@@ -2020,10 +2017,11 @@ if (powerId === POWERUPS.baghetti) {
   showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, BAGHETTI_COLOR);
   showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, BAGHETTI_COLOR);
 
+  showPickupNotification('sprites/powerups/baghetti.png', 'baghetti found!', BAGHETTI_COLOR, 3000);
+
   if (!h.forcedBaghetti) {
     baghettiCharges = BAGHETTI_FORCED_COUNT; // 2 forced
     baghettiRunLeft = BAGHETTI_TOTAL_RUN;    // 3 total
-    showPickupNotification('sprites/powerups/baghetti.png', 'baghetti found!', BAGHETTI_COLOR, 3000);
   }
 
   // ✅ decrement for every baghetti collected (pickup + forced)
@@ -2112,7 +2110,7 @@ if (h.x + SPRITE_SIZE < ball.x - 20) {
     continue;
   }
 
-  return endGame();
+  return startDeathAnimation();
 }
 
   }
@@ -2131,6 +2129,80 @@ if (!loop._lastTopUpdate || performance.now() - loop._lastTopUpdate > 120) {
   updateTopScores();
   loop._lastTopUpdate = performance.now();
 }
+}
+
+// ===================== DEATH ANIMATION =====================
+function startDeathAnimation() {
+  if (dying || gameOver) return;
+  dying = true;
+
+  // Stop the main game loop
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+
+  // Death physics: small upward pop, random spin + horizontal drift
+  deathVy = -4;
+  deathVx = (Math.random() < 0.5 ? -1 : 1) * (1 + Math.random() * 1.5);
+  deathSpinRate = (Math.random() < 0.5 ? -1 : 1) * (0.08 + Math.random() * 0.08);
+  deathRotation = 0;
+  deathLastTs = null;
+
+  requestAnimationFrame(deathLoop);
+}
+
+function deathLoop(ts) {
+  if (!dying) return;
+
+  if (deathLastTs == null) deathLastTs = ts;
+  let dt = (ts - deathLastTs) / 16.6667;
+  deathLastTs = ts;
+  dt = Math.max(0.5, Math.min(dt, 2.5));
+
+  // Death gravity (heavier than gameplay gravity for a snappy fall)
+  deathVy += 0.5 * dt;
+  ball.y += deathVy * dt;
+  ball.x += deathVx * dt;
+  deathRotation += deathSpinRate * dt;
+
+  // Redraw scene
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawTierBanner();
+
+  // Draw frozen hoops (visual context, not moving)
+  for (let i = 0; i < hoops.length; i++) {
+    const h = hoops[i];
+    const hoopImg = imgForIndex(h.spriteIndex);
+    if (hoopImg) ctx.drawImage(hoopImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
+  }
+
+  // Draw tumbling ball
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.rotate(deathRotation);
+  ctx.scale(ball.scaleX, ball.scaleY);
+
+  const ballImg = imgForIndex(ball.spriteIndex);
+  const halfSprite = SPRITE_SIZE / 2;
+  if (ballImg) ctx.drawImage(ballImg, -halfSprite, -halfSprite, SPRITE_SIZE, SPRITE_SIZE);
+
+  ctx.restore();
+
+  // Check if ball has fallen off screen
+  if (ball.y > canvas.height + SPRITE_SIZE * 2) {
+    finishDeath();
+    return;
+  }
+
+  requestAnimationFrame(deathLoop);
+}
+
+function finishDeath() {
+  dying = false;
+  deathRotation = 0;
+  deathVx = 0;
+  deathVy = 0;
+  deathLastTs = null;
+  endGame();
 }
 
 function endGame() {
