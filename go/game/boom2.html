@@ -238,7 +238,7 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255,255,255,0.75);
+  background: rgba(255,255,255,0.65);
   display: none;
   align-items: center;
   justify-content: center;
@@ -871,10 +871,54 @@ canvas {
   z-index: 0;            /* behind everything */
   pointer-events: none;
 
-  background-image: url("background.png"); /* same folder as play.png */
-  background-size: cover;       /* keeps aspect ratio, crops as needed */
-  background-position: center;  /* nice crop */
+  background-image: url("background.png");
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
+
+  will-change: opacity, filter;
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+#pageBg.gameplay {
+  opacity: 0.35;
+  filter: blur(2px) saturate(0.5);
+}
+
+/* White vignette — fades center clean during gameplay */
+#gameVignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 50%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  opacity: 0;
+  will-change: opacity;
+  transition: opacity 0.4s ease;
+}
+
+#gameVignette.active {
+  opacity: 1;
+}
+
+/* White wash behind home/play screen — same as name-modal overlay */
+#homeOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.65);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  will-change: opacity;
+}
+#homeOverlay.active {
+  opacity: 1;
 }
 
 #baghettiBg{
@@ -896,7 +940,7 @@ canvas {
 #nokiaKeypad {
   position: fixed;
   left: 50%;
-  z-index: 55;
+  z-index: 65;
   top: 54%;
   transform: translateX(-50%);
 
@@ -923,14 +967,14 @@ canvas {
   border-radius: 50%;
   padding: 0 4px;
 
-  /* Pale icy blue with smooth shading */
-  background: linear-gradient(180deg, #f0f8ff 0%, #dceefb 50%, #c8e2f5 100%);
-  border: 2px solid #b0d4ea;
-  border-top-color: #ffffff;
-  border-left-color: #e8f4fc;
+  /* Light icy blue — slightly stronger blue to pop against background */
+  background: linear-gradient(180deg, #e8f4ff 0%, #cee4f8 50%, #b8d8f0 100%);
+  border: 2px solid #9cc8e2;
+  border-top-color: #f0f8ff;
+  border-left-color: #d8edf8;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 2px 0 #9cc5de;
+    0 2px 0 #8ab8d4;
 
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   -webkit-tap-highlight-color: transparent;
@@ -958,10 +1002,10 @@ canvas {
 .nokia-key:nth-child(12) { transform: rotate(-8deg); }
 
 .nokia-key:hover {
-  background: linear-gradient(180deg, #ffffff 0%, #e8f4fc 50%, #d4eaf8 100%);
+  background: linear-gradient(180deg, #f0f8ff 0%, #dceefb 50%, #c8e2f5 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 1),
-    0 2px 0 #9cc5de;
+    0 2px 0 #8ab8d4;
 }
 
 /* Decorative/future keys — identical look, no click response */
@@ -1016,6 +1060,8 @@ canvas {
 </head>
 <body>
 <div id="pageBg"></div>
+<div id="gameVignette"></div>
+<div id="homeOverlay"></div>
 <div id="rotateNotice">Please rotate your phone to portrait</div>
 <button class="back-button game-btn" onclick="goBack()">← back</button>
 <button class="music-button game-btn" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
@@ -1885,6 +1931,13 @@ function showOverlay(showLastScore = false) {
   backButton.style.opacity = 0;
   hideMusicButton();
 
+  // White Terraces: restore vivid background on home screen
+  document.getElementById('pageBg').classList.remove('gameplay');
+  document.getElementById('gameVignette').classList.remove('active');
+
+  // White wash behind home screen (same as name-modal)
+  document.getElementById('homeOverlay').classList.add('active');
+
   // ✅ LOADING SCREEN: show play overlay
   playWrap.style.opacity = 1;
   playWrap.style.transform = "translate(-50%, -50%) scale(1)";
@@ -1916,8 +1969,9 @@ function hideOverlay() {
   overlayLastScore.style.opacity = 0;
   showTopScores();
   hideMusicButton();
-  // Hide Nokia keypad
+  // Hide Nokia keypad + home overlay
   hideNokiaKeypad();
+  document.getElementById('homeOverlay').classList.remove('active');
 }
 
 //setInterval(updateTopScores, 100);
@@ -1934,6 +1988,10 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   hideOverlay();
   gameStarted = true;
   dying = false;
+
+  // White Terraces: fade background + show vignette during gameplay
+  document.getElementById('pageBg').classList.add('gameplay');
+  document.getElementById('gameVignette').classList.add('active');
 
   // Auto-enable SFX on first play (unless user manually toggled it off)
   if (!sfxUserToggled && !sfxEnabled) {
@@ -1998,8 +2056,14 @@ function handleInput(e) {
 canvas.addEventListener('touchstart', handleInput, { passive: false });
 canvas.addEventListener('mousedown', handleInput);
 
-playWrap.addEventListener('click', (e) => { e.preventDefault(); startGame(); });
-playWrap.addEventListener('touchstart', (e) => { e.preventDefault(); startGame(); }, { passive: false });
+playWrap.addEventListener('click', (e) => {
+  e.preventDefault();
+  startGame();
+});
+playWrap.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  startGame();
+}, { passive: false });
 
 // Prevent zooming/pinch scroll on mobile
 document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -2386,6 +2450,11 @@ function endGame() {
   lastTs = null;
   hideTopScores();
   updateShieldHud();
+
+  // White Terraces: restore vivid background on game over
+  document.getElementById('pageBg').classList.remove('gameplay');
+  document.getElementById('gameVignette').classList.remove('active');
+
   if (score > cachedHighscore) {
     cachedHighscore = score;
     localStorage.setItem('flappyBasketHighscore', score);
@@ -2988,11 +3057,26 @@ function updateNokiaMusicLabel() {
   }
 }
 
+// Stop non-start button taps from bubbling to canvas/playWrap (which would start the game)
+nokiaKeypad.addEventListener('touchstart', (e) => {
+  const key = e.target.closest('.nokia-key');
+  if (!key) return;
+  const action = key.dataset.action;
+  // Let tap/to/start bubble — they start the game anyway
+  if (action === 'tap' || action === 'to' || action === 'start') return;
+  // All other buttons: stop the event so it doesn't reach canvas/playWrap
+  e.stopPropagation();
+}, { passive: false });
+
 // Click handlers for each key
 nokiaKeypad.addEventListener('click', (e) => {
   const key = e.target.closest('.nokia-key');
   if (!key) return;
   const action = key.dataset.action;
+  // Stop non-start clicks from bubbling
+  if (action !== 'tap' && action !== 'to' && action !== 'start') {
+    e.stopPropagation();
+  }
 
   switch (action) {
     case 'tap':    // 1 - "tap" (part of "tap to start!")
