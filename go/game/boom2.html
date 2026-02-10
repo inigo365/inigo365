@@ -386,13 +386,15 @@ canvas {
   color: #d4a017;
   font-weight: bold;
   font-size: 24px;
-  padding: 10px 0;
-  animation: rank1Pulse 2s ease-in-out infinite;
+  padding: 10px 4px;
+  border-left: 3px solid #d4a017;
+  border-radius: 2px;
+  animation: rank1Glow 2.5s ease-in-out infinite;
 }
 
-@keyframes rank1Pulse {
-  0%, 100% { text-shadow: 0 0 4px rgba(212, 160, 23, 0.3); }
-  50%      { text-shadow: 0 0 10px rgba(212, 160, 23, 0.6); }
+@keyframes rank1Glow {
+  0%, 100% { background: rgba(212, 160, 23, 0.04); }
+  50%      { background: rgba(212, 160, 23, 0.12); }
 }
 
 .leaderboard-entry.rank-2 {
@@ -634,13 +636,15 @@ canvas {
   transform: scale(0.96);
 }
 
-/* Collection grid */
+/* Collection grid - max 10 across (48px sprite + 8px gap = 56px each, 10 * 56 - 8 = 552) */
 .collection-grid {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
   padding: 8px 0;
+  max-width: 552px;
+  margin: 0 auto;
   max-height: 50vh;
   overflow-y: auto;
 }
@@ -671,22 +675,29 @@ canvas {
 
 #goodybagButtons {
     display: flex;
-    justify-content: space-between; /* one left, one right */
-    width: 100%;                    /* fill the modal width */
-    max-width: 360px;               /* optional, keeps it from being too wide */
-    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 360px;
+    margin: 20px auto 0;
 }
 
 #goodybagButtons button {
-    flex: 1;                        /* buttons take equal width */
-    margin: 0 8px;                  /* small gap between buttons */
+    flex: 0 1 auto;
+    min-width: 130px;
     text-align: center;
     font-size: 24px;
     background: transparent;
     border: 2px solid #2d93ea;
     color: #2d93ea;
-    padding: 8px 0;
+    padding: 8px 16px;
     text-transform: lowercase;
+}
+
+#goodybagButtons #collectionBtn {
+    flex-basis: 100%;
+    max-width: 200px;
 }
 
 #goodybagButtons button:disabled {
@@ -732,6 +743,10 @@ canvas {
   display: flex;
   opacity: 1;
   pointer-events: auto;
+}
+
+#howToBackdrop .leaderboard {
+  width: min(480px, 90vw);
 }
 
 #howToButtons {
@@ -2031,6 +2046,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
 }
 
   updateTopScores();
+  addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
   continue;
@@ -2060,6 +2076,7 @@ if (powerId === POWERUPS.baghetti) {
   // ✅ decrement for every baghetti collected (pickup + forced)
   if (baghettiRunLeft > 0) baghettiRunLeft--;
 
+  addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
   continue;
@@ -2082,6 +2099,7 @@ if (powerId === POWERUPS.baghetti) {
     showPickupNotification('sprites/powerups/shield.png', 'ibuprofen found!', '#2d93ea', 3000);
   }
 
+  addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
   continue;
@@ -2680,26 +2698,32 @@ collectionBtn.addEventListener('click', () => {
   const grid = document.createElement('div');
   grid.className = 'collection-grid';
 
-  // All collectable sprites: regular bags (0-24), mythic (25)
-  const totalCollectable = NUM_SPRITES + 1; // 0-25
+  // All collectable sprite indices:
+  // Regular bags 0-24, mythic 25, unlock bags 36-39, powerups 40-41
+  const collectableIndices = [];
+  for (let i = 0; i <= MYTHIC_INDEX; i++) collectableIndices.push(i); // 0-25
+  for (let i = UNLOCK_START; i < UNLOCK_START + UNLOCK_COUNT; i++) collectableIndices.push(i); // 36-39
+  for (let i = POWERUP_START; i < POWERUP_START + POWERUP_COUNT; i++) collectableIndices.push(i); // 40-41
+
+  const totalCollectable = collectableIndices.length;
   let foundCount = 0;
 
-  for (let i = 0; i < totalCollectable; i++) {
+  collectableIndices.forEach(idx => {
     const img = document.createElement('img');
     img.className = 'collection-sprite';
-    const spriteImg = imgForIndex(i);
+    const spriteImg = imgForIndex(idx);
     if (spriteImg && spriteImg.src) {
       img.src = spriteImg.src;
     }
-    img.alt = 'bag ' + i;
+    img.alt = 'bag ' + idx;
 
-    if (col.includes(i)) {
+    if (col.includes(idx)) {
       foundCount++;
     } else {
       img.classList.add('locked');
     }
     grid.appendChild(img);
-  }
+  });
 
   goodybagContent.appendChild(grid);
 
@@ -2710,9 +2734,9 @@ collectionBtn.addEventListener('click', () => {
 });
 
 const PASSWORD_LINKS = {
-  tinny: '/go/scale/scale.html',
-  onway: '/go/stoneinfocus/stoneinfocus.html',
-  deathstar: '/go/couchburnsimulator/couch.html'
+  tinny: '../scale/scale.html',
+  onway: '../stoneinfocus/stoneinfocus.html',
+  deathstar: '../couchburnsimulator/couch.html'
 };
 
 passwordBtn.addEventListener('click', () => {
@@ -2728,13 +2752,13 @@ passwordBtn.addEventListener('click', () => {
 
   goodybagContent.innerHTML = '<div>unlocked passwords:</div>';
   unlocked.forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'password-item password-link';
-    item.innerHTML = '<img src="' + PASSWORD_SPRITES[p] + '" alt="' + p + '"><strong>' + p + '</strong>';
-    item.addEventListener('click', () => {
-      window.location.href = PASSWORD_LINKS[p];
-    });
-    goodybagContent.appendChild(item);
+    const link = document.createElement('a');
+    link.className = 'password-item password-link';
+    link.href = PASSWORD_LINKS[p];
+    link.style.textDecoration = 'none';
+    link.style.color = 'inherit';
+    link.innerHTML = '<img src="' + PASSWORD_SPRITES[p] + '" alt="' + p + '"><strong>' + p + '</strong>';
+    goodybagContent.appendChild(link);
   });
 });
 
