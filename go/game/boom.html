@@ -196,7 +196,7 @@ input,
   top: 8px;
   left: 8px;
   z-index: 100;
-  opacity: 1;
+  opacity: 0;
   padding: 0;
 }
 
@@ -814,7 +814,7 @@ canvas {
   transform: translate(-50%, -50%) scale(0.8);
   opacity: 0;
   transition: opacity 0.5s, transform 0.5s;
-  z-index: 50;
+  z-index: 60;
   pointer-events: none; /* enabled when shown via JS */
 
   /* keep paint cheap */
@@ -923,20 +923,14 @@ canvas {
   border-radius: 50%;
   padding: 0 4px;
 
-  /* 16-bit pixel-art Nokia style — stepped blue gradient with hard edges */
-  background:
-    linear-gradient(180deg,
-      #5bc0e8 0%, #5bc0e8 15%,
-      #3998bf 15%, #3998bf 50%,
-      #2d7da3 50%, #2d7da3 85%,
-      #1f6080 85%, #1f6080 100%);
-  border: 2px solid #1a5570;
-  border-top-color: #6dd0f5;
-  border-left-color: #4dafd4;
+  /* Pale icy blue with smooth shading */
+  background: linear-gradient(180deg, #f0f8ff 0%, #dceefb 50%, #c8e2f5 100%);
+  border: 2px solid #b0d4ea;
+  border-top-color: #ffffff;
+  border-left-color: #e8f4fc;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 2px 0 #163e52;
-  image-rendering: pixelated;
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 0 #9cc5de;
 
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   -webkit-tap-highlight-color: transparent;
@@ -964,48 +958,37 @@ canvas {
 .nokia-key:nth-child(12) { transform: rotate(-8deg); }
 
 .nokia-key:hover {
-  background:
-    linear-gradient(180deg,
-      #6dd0f5 0%, #6dd0f5 15%,
-      #4dafd4 15%, #4dafd4 50%,
-      #3998bf 50%, #3998bf 85%,
-      #2d7da3 85%, #2d7da3 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #e8f4fc 50%, #d4eaf8 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 2px 0 #163e52;
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 2px 0 #9cc5de;
 }
 
 /* Decorative/future keys — identical look, no click response */
 .nokia-key.deco { cursor: default; }
 .nokia-key.deco:hover {
-  background:
-    linear-gradient(180deg,
-      #5bc0e8 0%, #5bc0e8 15%,
-      #3998bf 15%, #3998bf 50%,
-      #2d7da3 50%, #2d7da3 85%,
-      #1f6080 85%, #1f6080 100%);
+  background: linear-gradient(180deg, #f0f8ff 0%, #dceefb 50%, #c8e2f5 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 2px 0 #163e52;
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 0 #9cc5de;
 }
 
 .nokia-key .key-num {
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(12px, 1.4vw, 18px);
-  color: #c8edff;
+  font-size: clamp(11px, 1.2vw, 15px);
+  color: #6bafd6;
   line-height: 1;
   font-weight: bold;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
 }
 
 .nokia-key .key-label {
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(8px, 1vw, 13px);
-  color: #ffffff;
+  font-size: clamp(10px, 1.3vw, 15px);
+  color: #1a4a6a;
   line-height: 1;
+  font-weight: bold;
   text-transform: lowercase;
   white-space: nowrap;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
 }
 
 /* Desktop: play.png 0.8x, nudged up + keypad slightly smaller to match mobile */
@@ -1065,7 +1048,7 @@ canvas {
     </button>
     <button class="nokia-key" data-action="sfx">
       <span class="key-num">5</span>
-      <span class="key-label" id="nokiaSfxLabel">sfx:</span>
+      <span class="key-label" id="nokiaSfxLabel">sfx: off</span>
     </button>
     <button class="nokia-key" data-action="music">
       <span class="key-label" id="nokiaMusicLabel">music:</span>
@@ -1951,6 +1934,12 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   hideOverlay();
   gameStarted = true;
   dying = false;
+
+  // Auto-enable SFX on first play (unless user manually toggled it off)
+  if (!sfxUserToggled && !sfxEnabled) {
+    sfxEnabled = true;
+    if (nokiaSfxLabel) nokiaSfxLabel.textContent = 'sfx: on';
+  }
   SPEED = 3;
   hoops = [];
   score = 0;
@@ -2477,7 +2466,7 @@ bgMusic.loop = true;
 
 const musicToggle = document.getElementById('musicToggle');
 
-musicToggle.style.opacity = 1;
+musicToggle.style.opacity = 0;
 musicToggle.textContent = "music: off"; // default state
 
 function handleFirstUserGesture() {
@@ -2507,7 +2496,7 @@ musicToggle.addEventListener('click', () => {
     musicToggle.textContent = "music: off";
   }
 });
-musicToggle.style.display = "block"; // ensure visible
+musicToggle.style.display = "none"; // hidden on home, shown after game over
 
 // ------------------- PAUSE ON HIDE / CLOSE -------------------
 document.addEventListener('visibilitychange', () => {
@@ -2972,7 +2961,8 @@ passwordBtn.addEventListener('click', () => {
 });
 
 // ===== NOKIA KEYPAD =====
-let sfxEnabled = true;
+let sfxEnabled = false;
+let sfxUserToggled = false; // tracks if user manually toggled sfx
 const nokiaKeypad = document.getElementById('nokiaKeypad');
 const nokiaMusicLabel = document.getElementById('nokiaMusicLabel');
 const nokiaSfxLabel = document.getElementById('nokiaSfxLabel');
@@ -3025,7 +3015,8 @@ nokiaKeypad.addEventListener('click', (e) => {
 
     case 'sfx':    // 5
       sfxEnabled = !sfxEnabled;
-      nokiaSfxLabel.textContent = sfxEnabled ? 'sfx:' : 'sfx: off';
+      sfxUserToggled = true;
+      nokiaSfxLabel.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
       break;
 
     case 'howto':  // 4
