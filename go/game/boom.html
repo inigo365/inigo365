@@ -57,11 +57,9 @@ input,
 
   color: #2d93ea;
 
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   border: 1.5px solid rgba(45, 147, 234, 0.25);
   border-radius: 8px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
   opacity: 0;
@@ -99,6 +97,43 @@ input,
 }
 
 #shieldHud img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+/* Pickup notification toasts (stacks below shield HUD) */
+#pickupNotifications {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 88px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.pickup-toast {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: clamp(14px, 1.8vw, 18px);
+  color: gold;
+  opacity: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateY(-6px);
+}
+
+.pickup-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pickup-toast img {
   width: 24px;
   height: 24px;
   image-rendering: pixelated;
@@ -302,10 +337,13 @@ canvas {
   background: white;
   border: 2px solid #2d93ea;
   padding: 24px;
+  padding-top: 16px;
   min-width: 280px;
+  max-width: calc(100vw - 32px);
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
+  box-sizing: border-box;
 }
 
 .leaderboard h3 {
@@ -343,65 +381,34 @@ canvas {
   text-align: right;
 }
 
-/* ================= LEADERBOARD TOP 3 – CLEAN & READABLE ================= */
-
-/* Shared base: strong weight + crisp outline */
-.leaderboard-entry.rank-1,
-.leaderboard-entry.rank-2,
-.leaderboard-entry.rank-3 {
-  font-weight: 800;
-  letter-spacing: 0.2px;
-
-  /* Pure outline — NO blur */
-  text-shadow:
-    1px 0 0 rgba(0,0,0,0.65),
-   -1px 0 0 rgba(0,0,0,0.65),
-    0 1px 0 rgba(0,0,0,0.65),
-    0 -1px 0 rgba(0,0,0,0.65);
-
-  /* Subtle row lift */
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-/* 🥇 GOLD — punchy + heavy */
+/* Top 3 leaderboard medals */
 .leaderboard-entry.rank-1 {
-  color: #ffd400; /* bright arcade gold */
-  font-weight: 900;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 212, 0, 0.14),
-    rgba(255, 212, 0, 0.04)
-  );
+  color: #d4a017;
+  font-weight: bold;
+  font-size: 24px;
+  padding: 10px 4px;
+  border-radius: 2px;
+  animation: rank1Glow 2.5s ease-in-out infinite;
 }
 
-/* 🥈 SILVER — clean, readable */
+@keyframes rank1Glow {
+  0%, 100% { background: rgba(212, 160, 23, 0.04); }
+  50%      { background: rgba(212, 160, 23, 0.12); }
+}
+
 .leaderboard-entry.rank-2 {
-  color: #e6edf5;
-  background: linear-gradient(
-    90deg,
-    rgba(230, 237, 245, 0.12),
-    rgba(230, 237, 245, 0.02)
-  );
+  color: #a8a8a8;
+  font-weight: bold;
+  font-size: 22px;
+  padding: 8px 0;
 }
 
-/* 🥉 BRONZE — brighter, not muddy */
 .leaderboard-entry.rank-3 {
-  color: #ff9a3c;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 154, 60, 0.14),
-    rgba(255, 154, 60, 0.03)
-  );
+  color: #cd7f32;
+  font-weight: bold;
+  font-size: 22px;
+  padding: 8px 0;
 }
-
-/* Extra emphasis on the SCORE for #1 only */
-.leaderboard-entry.rank-1 .score {
-  color: #fff2a8;
-  font-weight: 900;
-}
-
-
 
 /* Highlight player's own entry */
 .leaderboard-entry.is-player {
@@ -419,13 +426,20 @@ canvas {
 
 .leaderboard-close {
   position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 24px;
+  top: 6px;
+  right: 6px;
+  font-size: 28px;
   background: transparent;
   border: none;
   color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #overlayHighscore{
@@ -605,24 +619,84 @@ canvas {
   image-rendering: pixelated;
 }
 
+.password-link {
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.password-link:hover {
+  background: rgba(45, 147, 234, 0.08);
+  transform: scale(1.04);
+}
+
+.password-link:active {
+  transform: scale(0.96);
+}
+
+/* Collection grid - max 10 across (48px sprite + 8px gap = 56px each, 10 * 56 - 8 = 552) */
+.collection-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0;
+  max-width: 552px;
+  margin: 0 auto;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.collection-sprite {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  opacity: 1;
+  transition: transform 0.15s ease;
+}
+
+.collection-sprite:hover {
+  transform: scale(1.15);
+}
+
+.collection-sprite.locked {
+  opacity: 0.12;
+  filter: grayscale(1);
+}
+
+.collection-count {
+  font-size: 16px;
+  color: #2d93ea;
+  opacity: 0.7;
+  margin-top: 6px;
+}
+
 #goodybagButtons {
     display: flex;
-    justify-content: space-between; /* one left, one right */
-    width: 100%;                    /* fill the modal width */
-    max-width: 360px;               /* optional, keeps it from being too wide */
-    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 360px;
+    margin: 20px auto 0;
 }
 
 #goodybagButtons button {
-    flex: 1;                        /* buttons take equal width */
-    margin: 0 8px;                  /* small gap between buttons */
+    flex: 0 1 auto;
+    min-width: 130px;
     text-align: center;
     font-size: 24px;
     background: transparent;
     border: 2px solid #2d93ea;
     color: #2d93ea;
-    padding: 8px 0;
+    padding: 8px 16px;
     text-transform: lowercase;
+}
+
+#goodybagButtons #collectionBtn {
+    flex-basis: 100%;
+    max-width: 200px;
 }
 
 #goodybagButtons button:disabled {
@@ -670,6 +744,10 @@ canvas {
   pointer-events: auto;
 }
 
+#howToBackdrop .leaderboard {
+  width: min(480px, 90vw);
+}
+
 #howToButtons {
   display: flex;
   justify-content: center;
@@ -692,6 +770,7 @@ canvas {
 .howto-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   margin: 8px 0;
   text-align: left;
@@ -837,6 +916,8 @@ canvas {
   <span>shield active</span>
 </div>
 
+<div id="pickupNotifications"></div>
+
 <button class="leaderboard-btn game-btn" onclick="toggleLeaderboard()">leaderboard</button>
 
 <div class="name-modal" id="nameModal">
@@ -892,6 +973,7 @@ canvas {
     <div id="goodybagButtons">
       <button id="soundtrackBtn" disabled>soundtracks</button>
       <button id="passwordBtn" disabled>passwords</button>
+      <button id="collectionBtn">collection</button>
     </div>
 
   </div>
@@ -1232,6 +1314,41 @@ function updateShieldHud() {
   if (!el) return;
   if (shieldArmed) el.classList.add('active');
   else el.classList.remove('active');
+}
+
+function showPickupNotification(spriteSrc, text, color, duration) {
+  color = color || 'gold';
+  duration = duration || 3000;
+  const container = document.getElementById('pickupNotifications');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'pickup-toast';
+
+  const img = document.createElement('img');
+  img.src = spriteSrc;
+  img.alt = '';
+
+  const span = document.createElement('span');
+  span.textContent = text;
+  span.style.color = color;
+
+  toast.appendChild(img);
+  toast.appendChild(span);
+  container.appendChild(toast);
+
+  // Trigger fade-in
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+
+  // Fade-out and remove
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 400);
+  }, duration);
 }
 
 // Baghetti: forces the next N hoops to spawn as baghetti (+4 each)
@@ -1656,6 +1773,7 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   shieldArmed = false;
   updateShieldHud();
   ball.spriteIndex = getWeightedSpriteIndex(true);
+  addToCollection(ball.spriteIndex);
 
   // ----- START POSITION: MOBILE vs DESKTOP -----
   if (window.innerWidth <= 768) { // mobile
@@ -1735,15 +1853,24 @@ function playAgain() {
   // Show play overlay (like submitScore)
   showOverlay(false);
 }
-// Lightweight glow: radial gradient halo instead of expensive shadowBlur
+// Lightweight glow: radial gradient ring behind sprites (not a filled disc)
 function drawGlowHalo(cx, cy, radius, color, pulse) {
-  const r = radius + 4 + Math.sin(pulse) * 2;
-  const alpha = 0.18 + Math.sin(pulse) * 0.06;
+  const pulseAmt = Math.sin(pulse);
+  const outerR = radius + 8 + pulseAmt * 3;
+  const innerR = radius * 0.65;
+  const alpha = 0.28 + pulseAmt * 0.08;
+
   ctx.save();
   ctx.globalAlpha = alpha;
+
+  const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+  grad.addColorStop(0, 'transparent');
+  grad.addColorStop(0.5, color);
+  grad.addColorStop(1, 'transparent');
+
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = color;
+  ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
   ctx.fill();
   ctx.restore();
 }
@@ -1783,7 +1910,10 @@ function loop(ts) {
   const ballImg = imgForIndex(ball.spriteIndex);
   const halfSprite = SPRITE_SIZE / 2;
 
-  // Lightweight glow halos (no shadowBlur)
+  // Draw all glows BEHIND the sprite
+  if (shieldArmed) {
+    drawGlowHalo(0, 0, halfSprite, '#2d93ea', glowPulse);
+  }
   if (ball.spriteIndex === NUM_SPRITES) {
     drawGlowHalo(0, 0, halfSprite, 'yellow', glowPulse);
   } else if (ball.spriteIndex >= 11 && !isNotBagIndex(ball.spriteIndex)) {
@@ -1791,11 +1921,6 @@ function loop(ts) {
   }
 
   if (ballImg) ctx.drawImage(ballImg, -halfSprite, -halfSprite, SPRITE_SIZE, SPRITE_SIZE);
-
-  // Shield halo
-  if (shieldArmed) {
-    drawGlowHalo(0, 0, halfSprite, '#2d93ea', glowPulse);
-  }
 
   ctx.restore();
 
@@ -1890,6 +2015,12 @@ if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT
   // ✅ under-bag popup EVERY time (always gold)
   showTextPopup(unlockDef.popupText, ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
 
+  // HUD notification toast
+  const unlockImg = imgForIndex(h.spriteIndex);
+  const unlockNames = ['tinny', 'onway', 'ipod', 'deathstar'];
+  const unlockName = unlockNames[h.spriteIndex - UNLOCK_START] || 'secret bag';
+  showPickupNotification(unlockImg ? unlockImg.src : '', unlockName + ' found!', 'gold', 3000);
+
   // ✅ banner ONLY first time
   // ✅ banner logic
 if (key === UNLOCK_KEYS.soundtracks) {
@@ -1914,6 +2045,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
 }
 
   updateTopScores();
+  addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
   continue;
@@ -1937,11 +2069,13 @@ if (powerId === POWERUPS.baghetti) {
   if (!h.forcedBaghetti) {
     baghettiCharges = BAGHETTI_FORCED_COUNT; // 2 forced
     baghettiRunLeft = BAGHETTI_TOTAL_RUN;    // 3 total
+    showPickupNotification('sprites/powerups/baghetti.png', 'baghetti found!', BAGHETTI_COLOR, 3000);
   }
 
   // ✅ decrement for every baghetti collected (pickup + forced)
   if (baghettiRunLeft > 0) baghettiRunLeft--;
 
+  addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
   continue;
@@ -1956,13 +2090,15 @@ if (powerId === POWERUPS.baghetti) {
     shieldArmed = true;
     updateShieldHud();
     showTextPopup(
-      'ibuprofen!',
+      'ibuprofen found!',
       ball.x,
       ball.y + POP_TEXT_OFFSET_Y,
       '#2d93ea'
     );
+    showPickupNotification('sprites/powerups/shield.png', 'ibuprofen found!', '#2d93ea', 3000);
   }
 
+  addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
   continue;
@@ -1995,6 +2131,7 @@ if (powerId === POWERUPS.baghetti) {
         showPopup('+1', ball.x, pointY, TIER_COLORS.common);
       }
       updateTopScores();
+      addToCollection(h.spriteIndex);
       ball.spriteIndex = h.spriteIndex;
       hoops.splice(i, 1);
       continue;
@@ -2380,7 +2517,7 @@ function buildHowToContent() {
 
   html += '<div class="howto-item">' +
     '<img src="sprites/powerups/shield.png" alt="shield">' +
-    '<span>look out for ibuprofen</span>' +
+    '<span>ibuprofen - shields one hit</span>' +
     '</div>';
 
   html += '<div class="howto-item">' +
@@ -2529,6 +2666,78 @@ const PASSWORD_SPRITES = {
   deathstar: 'sprites/unlock/deathstar.png'
 };
 
+// ===== COLLECTION SYSTEM =====
+const COLLECTION_KEY = 'bag_collection';
+
+function getCollection() {
+  try {
+    return JSON.parse(localStorage.getItem(COLLECTION_KEY) || '[]');
+  } catch(e) { return []; }
+}
+
+function addToCollection(spriteIndex) {
+  const col = getCollection();
+  if (!col.includes(spriteIndex)) {
+    col.push(spriteIndex);
+    localStorage.setItem(COLLECTION_KEY, JSON.stringify(col));
+  }
+}
+
+const collectionBtn = document.getElementById('collectionBtn');
+
+collectionBtn.addEventListener('click', () => {
+  const col = getCollection();
+  goodybagContent.innerHTML = '';
+
+  const title = document.createElement('div');
+  title.textContent = 'bag collection';
+  title.style.marginBottom = '8px';
+  goodybagContent.appendChild(title);
+
+  const grid = document.createElement('div');
+  grid.className = 'collection-grid';
+
+  // All collectable sprite indices:
+  // Regular bags 0-24, mythic 25, unlock bags 36-39, powerups 40-41
+  const collectableIndices = [];
+  for (let i = 0; i <= MYTHIC_INDEX; i++) collectableIndices.push(i); // 0-25
+  for (let i = UNLOCK_START; i < UNLOCK_START + UNLOCK_COUNT; i++) collectableIndices.push(i); // 36-39
+  for (let i = POWERUP_START; i < POWERUP_START + POWERUP_COUNT; i++) collectableIndices.push(i); // 40-41
+
+  const totalCollectable = collectableIndices.length;
+  let foundCount = 0;
+
+  collectableIndices.forEach(idx => {
+    const img = document.createElement('img');
+    img.className = 'collection-sprite';
+    const spriteImg = imgForIndex(idx);
+    if (spriteImg && spriteImg.src) {
+      img.src = spriteImg.src;
+    }
+    img.alt = 'bag ' + idx;
+
+    if (col.includes(idx)) {
+      foundCount++;
+    } else {
+      img.classList.add('locked');
+    }
+    grid.appendChild(img);
+  });
+
+  goodybagContent.appendChild(grid);
+
+  const count = document.createElement('div');
+  count.className = 'collection-count';
+  count.textContent = foundCount + ' / ' + totalCollectable + ' bags found';
+  goodybagContent.appendChild(count);
+});
+
+const PASSWORD_LINKS = {
+  tinny: '../scale/scale.html',
+  onway: '../stoneinfocus/stoneinfocus.html',
+  deathstar: '../couchburnsimulator/couch.html'
+};
+
 passwordBtn.addEventListener('click', () => {
   const unlocked = [];
   if (localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true') unlocked.push('tinny');
@@ -2540,14 +2749,16 @@ passwordBtn.addEventListener('click', () => {
     return;
   }
 
-  goodybagContent.innerHTML =
-    '<div>unlocked passwords:</div>' +
-    unlocked.map(p =>
-      '<div class="password-item">' +
-        '<img src="' + PASSWORD_SPRITES[p] + '" alt="' + p + '">' +
-        '<strong>' + p + '</strong>' +
-      '</div>'
-    ).join('');
+  goodybagContent.innerHTML = '<div>unlocked passwords:</div>';
+  unlocked.forEach(p => {
+    const link = document.createElement('a');
+    link.className = 'password-item password-link';
+    link.href = PASSWORD_LINKS[p];
+    link.style.textDecoration = 'none';
+    link.style.color = 'inherit';
+    link.innerHTML = '<img src="' + PASSWORD_SPRITES[p] + '" alt="' + p + '"><strong>' + p + '</strong>';
+    goodybagContent.appendChild(link);
+  });
 });
 
 </script>
