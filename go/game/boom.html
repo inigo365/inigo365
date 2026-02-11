@@ -1687,7 +1687,7 @@ function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
   pointPopup.style.top = y + 'px';
   pointPopup.style.color = color;
 
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = cachedWinW <= 768;
   pointPopup.style.fontSize = isMobile ? '22px' : size;
 
   pointPopup.style.opacity = 1;
@@ -1753,11 +1753,8 @@ function getPlayableHeight() {
 function addHoop() {
   const playableHeight = getPlayableHeight();
 
-  const topScoresEl = document.getElementById('topScores');
-  const topScoresHeight = topScoresEl.offsetHeight || 0;
-
   const bottomMargin = playableHeight * 0.3;
-  const topMargin = topScoresHeight + 100;
+  const topMargin = cachedTopScoresH + 100;
 
   const y = Math.random() * (playableHeight - topMargin - bottomMargin) + topMargin;
 
@@ -1868,10 +1865,13 @@ function hideMusicButton() {
 let cachedWinW = window.innerWidth;
 let cachedWinH = window.innerHeight;
 let cachedHighscore = Number(localStorage.getItem('flappyBasketHighscore') || 0);
+let cachedTopScoresH = 44; // fallback; updated on resize + game start
 
 window.addEventListener('resize', () => {
   cachedWinW = window.innerWidth;
   cachedWinH = window.innerHeight;
+  const el = document.getElementById('topScores');
+  if (el) cachedTopScoresH = el.offsetHeight || 44;
 });
 
 function updateTopScores() {
@@ -1940,6 +1940,9 @@ window.addEventListener('load', () => {
 
 function startGame() {
   if (gameStarted || !assetsLoaded) return;
+  // Cache topScores height before gameplay begins
+  const tsEl = document.getElementById('topScores');
+  if (tsEl) cachedTopScoresH = tsEl.offsetHeight || 44;
 const howToBtnEl = document.getElementById('howToBtn');
 if (howToBtnEl) howToBtnEl.style.display = 'none';
   hideOverlay();
