@@ -267,10 +267,9 @@ function stopSmokeWithLinger() {
 
 /* -------------------------------------------------------
    AUDIO — All WebAudio, single AudioContext
-   - Both ignite and crackle use decoded buffers
-   - No HTMLAudio pool (unreliable on iOS/Android)
-   - Context created + resumed on first gesture
-   - Re-resumes on every gesture (handles iOS suspension)
+   KEY iOS RULE: AudioContext must be created AND resumed
+   SYNCHRONOUSLY inside the user-gesture call stack.
+   Any `await` before ctx.resume() = iOS won't unlock it.
 ------------------------------------------------------- */
 const igniteEl = document.getElementById("igniteEl"); // preload hint only
 
@@ -282,37 +281,50 @@ let crackleBuffer = null;
 let crackleGain   = null;
 let crackleSource = null;
 let audioReady    = false;
-let initPromise   = null;
+let loadPromise   = null;
 
-/* — Init: create context, decode both buffers, start silent crackle loop — */
-async function initAudio() {
+/*
+  unlockCtx() — MUST be called synchronously from a gesture handler.
+  Creates AudioContext (once) and calls resume() every time.
+  iOS Safari only honours resume() if it happens in the same
+  call-stack frame as the touch/click event — no awaits before this.
+*/
+function unlockCtx() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    if (!ctx) {
+      ctx = new AudioCtx({ latencyHint: "interactive" });
+    }
+
+    // resume() is synchronous-ish on iOS when called from gesture
+    if (ctx.state === "suspended") {
+      ctx.resume();
+    }
+
+    // Silent blip — some iOS versions need actual audio output to fully unlock
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    g.gain.value = 0.00001;
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.01);
+  } catch (_) {}
+}
+
+/*
+  loadBuffers() — async, decodes audio files. Safe to call after gesture.
+  Only runs once; subsequent calls return the same promise.
+*/
+async function loadBuffers() {
   if (audioReady) return true;
-  if (initPromise) return initPromise;
+  if (loadPromise) return loadPromise;
+  if (!ctx) return false;
 
-  initPromise = (async () => {
+  loadPromise = (async () => {
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return false;
-
-      if (!ctx) {
-        ctx = new AudioCtx({ latencyHint: "interactive" });
-      }
-
-      // Always try to resume (handles iOS re-suspension)
-      if (ctx.state === "suspended") {
-        await ctx.resume();
-      }
-
-      // Silent blip to fully unlock iOS AudioContext
-      const osc = ctx.createOscillator();
-      const silentGain = ctx.createGain();
-      silentGain.gain.value = 0.00001;
-      osc.connect(silentGain);
-      silentGain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.01);
-
-      // Decode both buffers in parallel (only on first init)
       if (!igniteBuffer || !crackleBuffer) {
         const [igBuf, crBuf] = await Promise.all([
           fetch("ignite.mp3").then(r => r.arrayBuffer()).then(ab => ctx.decodeAudioData(ab)),
@@ -322,14 +334,12 @@ async function initAudio() {
         crackleBuffer = crBuf;
       }
 
-      // Set up crackle gain node (once)
       if (!crackleGain) {
         crackleGain = ctx.createGain();
         crackleGain.gain.value = 0.0;
         crackleGain.connect(ctx.destination);
       }
 
-      // Start the crackle loop silently (once)
       if (!crackleSource) {
         crackleSource = ctx.createBufferSource();
         crackleSource.buffer = crackleBuffer;
@@ -343,18 +353,11 @@ async function initAudio() {
     } catch (e) {
       return false;
     } finally {
-      initPromise = null;
+      loadPromise = null;
     }
   })();
 
-  return initPromise;
-}
-
-/* — Ensure context is alive (call on every gesture) — */
-async function ensureContext() {
-  if (ctx && ctx.state === "suspended") {
-    try { await ctx.resume(); } catch (_) {}
-  }
+  return loadPromise;
 }
 
 /* — Ignite: fire-and-forget one-shot buffer — */
@@ -386,23 +389,34 @@ function crackleOff() {
 }
 
 /* -------------------------------------------------------
-   INPUT (Pointer Events)
+   INPUT
+   - touchstart for iOS audio unlock (must be synchronous)
+   - pointerdown for visuals + audio playback
 ------------------------------------------------------- */
 document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+// iOS needs the AudioContext unlock on touchstart specifically
+// (pointerdown sometimes doesn't count as a "user gesture" for audio on iOS)
+stageEl.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  unlockCtx();
+}, { passive: false });
 
 async function onDown(e) {
   e.preventDefault();
   holding = true;
 
-  // Visuals start instantly — no waiting on audio
+  // 1. Unlock synchronously in this gesture frame (no-op if already unlocked)
+  unlockCtx();
+
+  // 2. Visuals start instantly
   startFire();
   setTimeout(() => { if (holding) startSmoke(); }, 120);
 
-  // Init or re-resume audio from this gesture
-  await initAudio();
-  await ensureContext();
+  // 3. Load buffers (async, but context is already unlocked above)
+  await loadBuffers();
 
-  // If user released while we were initing, bail on audio
+  // 4. If user released while buffers were loading, bail
   if (!holding) return;
 
   playIgnite();
