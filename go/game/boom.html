@@ -824,8 +824,8 @@ canvas {
 /* play.png sizing */
 #playWrap #playOverlay{
   display: block;
-  max-width: 80vw;
-  max-height: 80vh;
+  max-width: 64vw;
+  max-height: 64vh;
   width: auto;
   height: auto;
 }
@@ -893,8 +893,8 @@ canvas {
   pointer-events: none;
   background: radial-gradient(
     ellipse 70% 60% at 50% 50%,
-    rgba(255, 255, 255, 0.2) 0%,
-    rgba(255, 255, 255, 0.0) 50%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
     transparent 100%
   );
   opacity: 0;
@@ -911,7 +911,7 @@ canvas {
   position: fixed;
   inset: 0;
   z-index: 2;
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.0);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.4s ease;
@@ -936,123 +936,113 @@ canvas {
   transition: opacity 1s ease-out; /* slow fade (both directions) */
 }
 
-/* ===================== NOKIA KEYPAD ===================== */
-#nokiaKeypad {
+/* ===================== NOKIA 3310 PHONE WRAP ===================== */
+/* position:fixed creates a containing block for absolute children.
+   width:fit-content shrink-wraps to the #nokiaFrame image. */
+#nokiaPhoneWrap {
   position: fixed;
+  top: 50%;
   left: 50%;
-  z-index: 65;
-  top: 54%;
-  transform: translateX(-50%);
-
-  opacity: 0;
+  transform: translate(-50%, -50%);
+  z-index: 56;
   pointer-events: none;
-  transition: opacity 0.4s ease;
+  opacity: 0;
+  transition: opacity 0.5s;
+  width: fit-content;
 }
 
-.nokia-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px 14px;
-  justify-items: center;
+/* Phone body image — sets the wrapper's intrinsic size */
+#nokiaFrame {
+  display: block;
+  height: min(84vh, 760px);
+  width: auto;
+  pointer-events: none;
 }
 
+/* Button overlay — identical pixel dimensions as nokia3310.png.
+   Covers the frame exactly so the button graphics align. */
+#nokiaButtonOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ===================== NOKIA KEYPAD (transparent hit areas) ===================== */
+/* Covers the full phone image; each button is individually positioned
+   using percentages measured from nokia3310buttons.png (1364 x 2048). */
+#nokiaKeypad {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;        /* only buttons receive events */
+}
+
+/* Each button is absolutely positioned over its PNG graphic */
 .nokia-key {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-
-  width: clamp(68px, 7.5vw, 100px);
-  height: clamp(28px, 3vw, 38px);
+  position: absolute;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   border-radius: 50%;
-  padding: 0 4px;
-
-  /* Light icy blue — slightly stronger blue to pop against background */
-  background: linear-gradient(180deg, #e8f4ff 0%, #cee4f8 50%, #b8d8f0 100%);
-  border: 2px solid #9cc8e2;
-  border-top-color: #f0f8ff;
-  border-left-color: #d8edf8;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 2px 0 #8ab8d4;
-
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: filter 0.08s ease, box-shadow 0.08s ease;
+  transition: background 0.1s ease;
   user-select: none;
   touch-action: manipulation;
+  pointer-events: auto;
 }
-
-/* Rotations + center column drops down + fan-out (wider at top) */
-/* Row 1: ±8px outward */
-.nokia-key:nth-child(1)  { transform: translateX(-8px) rotate(10deg); }
-.nokia-key:nth-child(2)  { transform: translateY(22px) rotate(0deg); }
-.nokia-key:nth-child(3)  { transform: translateX(8px) rotate(-10deg); }
-/* Row 2: ±5px outward */
-.nokia-key:nth-child(4)  { transform: translateX(-5px) rotate(8deg); }
-.nokia-key:nth-child(5)  { transform: translateY(22px) rotate(0deg); }
-.nokia-key:nth-child(6)  { transform: translateX(5px) rotate(-8deg); }
-/* Row 3: ±3px outward */
-.nokia-key:nth-child(7)  { transform: translateX(-3px) rotate(10deg); }
-.nokia-key:nth-child(8)  { transform: translateY(22px) rotate(0deg); }
-.nokia-key:nth-child(9)  { transform: translateX(3px) rotate(-10deg); }
-/* Row 4: no shift */
-.nokia-key:nth-child(10) { transform: rotate(8deg); }
-.nokia-key:nth-child(11) { transform: translateY(22px) rotate(0deg); }
-.nokia-key:nth-child(12) { transform: rotate(-8deg); }
 
 .nokia-key:hover {
-  background: linear-gradient(180deg, #f0f8ff 0%, #dceefb 50%, #c8e2f5 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    0 2px 0 #8ab8d4;
+  background: transparent; /* rgba(255, 255, 255, 0.2) */
 }
 
-/* Decorative/future keys — identical look, no click response */
+.nokia-key:active {
+  background: transparent; /* rgba(255, 255, 255, 0.35) */
+}
+
 .nokia-key.deco { cursor: default; }
-.nokia-key.deco:hover {
-  background: linear-gradient(180deg, #f0f8ff 0%, #dceefb 50%, #c8e2f5 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 2px 0 #9cc5de;
-}
 
-.nokia-key .key-num {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(11px, 1.2vw, 15px);
-  color: #6bafd6;
-  line-height: 1;
-  font-weight: bold;
-}
+/* --- Row 1 --- */
+.nokia-key[data-action="tap"]   { left: 16.35%; top: 59.81%; width: 17.96%; height: 5.37%; }
+.nokia-key[data-action="to"]    { left: 41.28%; top: 61.08%; width: 19.57%; height: 5.37%; }
+.nokia-key[data-action="start"] { left: 68.18%; top: 59.81%; width: 17.96%; height: 5.37%; }
 
-.nokia-key .key-label {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(10px, 1.3vw, 15px);
-  color: #1a4a6a;
-  line-height: 1;
-  font-weight: bold;
-  text-transform: lowercase;
-  white-space: nowrap;
-}
+/* --- Row 2 --- */
+.nokia-key[data-action="howto"] { left: 17.01%; top: 66.06%; width: 17.96%; height: 5.42%; }
+.nokia-key[data-action="sfx"]   { left: 41.86%; top: 67.92%; width: 18.91%; height: 4.69%; }
+.nokia-key[data-action="music"] { left: 67.52%; top: 66.06%; width: 17.96%; height: 5.42%; }
 
-/* Desktop: play.png 0.8x, nudged up + keypad slightly smaller to match mobile */
+/* --- Row 3 --- */
+.nokia-key[data-action="goody"]  { left: 17.96%; top: 72.41%; width: 17.96%; height: 5.42%; }
+.nokia-key[data-action="back"]   { left: 41.57%; top: 74.27%; width: 19.79%; height: 4.64%; }
+.nokia-key[data-action="scores"] { left: 66.57%; top: 72.41%; width: 17.96%; height: 5.42%; }
+
+/* --- Row 4 --- */
+.nokia-key[data-action="star"] { left: 18.70%; top: 78.71%; width: 17.96%; height: 5.42%; }
+.nokia-key[data-action="zero"] { left: 41.86%; top: 80.52%; width: 19.43%; height: 4.64%; }
+.nokia-key[data-action="hash"] { left: 65.84%; top: 78.71%; width: 17.96%; height: 5.42%; }
+
+/* ===================== DESKTOP ===================== */
 @media (min-width: 769px) {
-  #playWrap #playOverlay {
-    max-width: 64vw;
-    max-height: 64vh;
-  }
   #playWrap {
-    top: 38%;
-  }
-  #nokiaKeypad {
-    transform: translateX(-50%) scale(0.88);
+    top: 44%;
   }
 }
 
-/* Mobile: keypad sits below play.png */
+/* ===================== MOBILE ===================== */
 @media (max-width: 768px) {
-  #nokiaKeypad {
-    top: 57%;
+  #nokiaFrame {
+    height: min(60vh, 760px);
+  }
+  #nokiaPhoneWrap {
+    top: 50%;
   }
 }
 
@@ -1069,61 +1059,28 @@ canvas {
 <button id="howToBtn" class="soundcloud-btn game-btn">how to play</button>
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 
+<div id="nokiaPhoneWrap">
+  <img id="nokiaFrame" src="nokia3310.png" alt="">
+  <img id="nokiaButtonOverlay" src="nokia3310buttons.png" alt="">
+  <div id="nokiaKeypad">
+    <button class="nokia-key" data-action="tap"></button>
+    <button class="nokia-key" data-action="to"></button>
+    <button class="nokia-key" data-action="start"></button>
+    <button class="nokia-key" data-action="howto"></button>
+    <button class="nokia-key" data-action="sfx"></button>
+    <button class="nokia-key" data-action="music"></button>
+    <button class="nokia-key" data-action="goody"></button>
+    <button class="nokia-key" data-action="back"></button>
+    <button class="nokia-key" data-action="scores"></button>
+    <button class="nokia-key deco" data-action="star"></button>
+    <button class="nokia-key deco" data-action="zero"></button>
+    <button class="nokia-key deco" data-action="hash"></button>
+  </div>
+</div>
+
 <div id="playWrap">
   <img id="playOverlay" src="play.png" alt="play">
   <div id="playSplashText"></div>
-</div>
-
-<div id="nokiaKeypad">
-  <div class="nokia-grid">
-    <button class="nokia-key" data-action="tap">
-      <span class="key-num">1</span>
-      <span class="key-label">tap</span>
-    </button>
-    <button class="nokia-key" data-action="to">
-      <span class="key-num">2</span>
-      <span class="key-label">to</span>
-    </button>
-    <button class="nokia-key" data-action="start">
-      <span class="key-label">start!</span>
-      <span class="key-num">3</span>
-    </button>
-    <button class="nokia-key" data-action="howto">
-      <span class="key-num">4</span>
-      <span class="key-label">how2play</span>
-    </button>
-    <button class="nokia-key" data-action="sfx">
-      <span class="key-num">5</span>
-      <span class="key-label" id="nokiaSfxLabel">sfx: off</span>
-    </button>
-    <button class="nokia-key" data-action="music">
-      <span class="key-label" id="nokiaMusicLabel">music:</span>
-      <span class="key-num">6</span>
-    </button>
-    <button class="nokia-key" data-action="goody">
-      <span class="key-num">7</span>
-      <span class="key-label">goodybag</span>
-    </button>
-    <button class="nokia-key" data-action="back">
-      <span class="key-num">8</span>
-      <span class="key-label">back</span>
-    </button>
-    <button class="nokia-key" data-action="scores">
-      <span class="key-label">leaderboard</span>
-      <span class="key-num">9</span>
-    </button>
-    <button class="nokia-key deco" data-action="star">
-      <span class="key-num">*</span>
-      <span class="key-label">+</span>
-    </button>
-    <button class="nokia-key deco" data-action="zero">
-      <span class="key-num">0</span>
-      <span class="key-label">_</span>
-    </button>
-    <button class="nokia-key deco" data-action="hash">
-      <span class="key-num">#</span>
-    </button>
-  </div>
 </div>
 
 <div id="overlayHighscore"></div>
@@ -1941,7 +1898,7 @@ function showOverlay(showLastScore = false) {
   // ✅ LOADING SCREEN: show play overlay
   playWrap.style.opacity = 1;
   playWrap.style.transform = "translate(-50%, -50%) scale(1)";
-  playWrap.style.pointerEvents = "auto";
+  playWrap.style.pointerEvents = "none";
   playWrap.classList.add('pulsing');
 
   // random every time
@@ -2056,14 +2013,7 @@ function handleInput(e) {
 canvas.addEventListener('touchstart', handleInput, { passive: false });
 canvas.addEventListener('mousedown', handleInput);
 
-playWrap.addEventListener('click', (e) => {
-  e.preventDefault();
-  startGame();
-});
-playWrap.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  startGame();
-}, { passive: false });
+// playWrap is visual-only (pointer-events:none) — canvas handles start taps
 
 // Prevent zooming/pinch scroll on mobile
 document.addEventListener('gesturestart', (e) => e.preventDefault());
@@ -3037,15 +2987,17 @@ const nokiaMusicLabel = document.getElementById('nokiaMusicLabel');
 const nokiaSfxLabel = document.getElementById('nokiaSfxLabel');
 
 function showNokiaKeypad() {
-  nokiaKeypad.style.opacity = '1';
-  nokiaKeypad.style.pointerEvents = 'auto';
-  // sync music label
+  const wrap = document.getElementById('nokiaPhoneWrap');
+  if (wrap) wrap.style.opacity = '1';
+  // wrap stays pointer-events:none so clicks on the phone body
+  // fall through to the canvas and start the game.
+  // Only .nokia-key buttons (pointer-events:auto in CSS) are clickable.
   updateNokiaMusicLabel();
 }
 
 function hideNokiaKeypad() {
-  nokiaKeypad.style.opacity = '0';
-  nokiaKeypad.style.pointerEvents = 'none';
+  const wrap = document.getElementById('nokiaPhoneWrap');
+  if (wrap) wrap.style.opacity = '0';
 }
 
 function updateNokiaMusicLabel() {
@@ -3100,7 +3052,7 @@ nokiaKeypad.addEventListener('click', (e) => {
     case 'sfx':    // 5
       sfxEnabled = !sfxEnabled;
       sfxUserToggled = true;
-      nokiaSfxLabel.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
+      if (nokiaSfxLabel) nokiaSfxLabel.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
       break;
 
     case 'howto':  // 4
