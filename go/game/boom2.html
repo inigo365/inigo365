@@ -215,7 +215,7 @@ canvas {
   margin: 0 auto;
   background: transparent;
   position: relative;
-  z-index: 1; /* above the background layer */
+  z-index: 2; /* above the white overlay */
 }
 
 
@@ -238,7 +238,7 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255,255,255,0.65);
+  background: transparent;
   display: none;
   align-items: center;
   justify-content: center;
@@ -940,12 +940,12 @@ canvas {
   opacity: 1;
 }
 
-/* White wash behind home/play screen — same as name-modal overlay */
+/* Single white overlay — visible during gameplay & game-over, hidden on home screen */
 #homeOverlay {
   position: fixed;
   inset: 0;
-  z-index: 2;
-  background: rgba(255, 255, 255, 0.0);
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.65);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.4s ease;
@@ -1884,8 +1884,12 @@ function showTopScores() {
   topScoresEl.style.pointerEvents = 'auto';
 }
 function hideTopScores() {
-  document.getElementById('topScores').style.opacity = 0;
-  document.getElementById('topScores').style.pointerEvents = 'none';
+  const el = document.getElementById('topScores');
+  el.style.transition = 'none';
+  el.style.opacity = 0;
+  el.style.pointerEvents = 'none';
+  // Restore transition for next showTopScores fade-in
+  requestAnimationFrame(() => { el.style.transition = ''; });
 }
 
 function showMusicButton() {
@@ -1928,12 +1932,8 @@ function showOverlay(showLastScore = false) {
   backButton.style.opacity = 0;
   hideMusicButton();
 
-  // White Terraces: restore vivid background on home screen
-  document.getElementById('pageBg').classList.remove('gameplay');
-  document.getElementById('gameVignette').classList.remove('active');
-
-  // White wash behind home screen (same as name-modal)
-  document.getElementById('homeOverlay').classList.add('active');
+  // Remove white overlay on home screen
+  document.getElementById('homeOverlay').classList.remove('active');
 
   // ✅ LOADING SCREEN: show play overlay
   playWrap.style.opacity = 1;
@@ -1966,9 +1966,8 @@ function hideOverlay() {
   overlayLastScore.style.opacity = 0;
   showTopScores();
   hideMusicButton();
-  // Hide Nokia keypad + home overlay
+  // Hide Nokia keypad (overlay stays — startGame will keep it active)
   hideNokiaKeypad();
-  document.getElementById('homeOverlay').classList.remove('active');
 }
 
 //setInterval(updateTopScores, 100);
@@ -1989,9 +1988,8 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   gameStarted = true;
   dying = false;
 
-  // White Terraces: fade background + show vignette during gameplay
-  document.getElementById('pageBg').classList.add('gameplay');
-  document.getElementById('gameVignette').classList.add('active');
+  // Show single white overlay for gameplay + game-over
+  document.getElementById('homeOverlay').classList.add('active');
 
   // Auto-enable SFX on first play (unless user manually toggled it off)
   if (!sfxUserToggled && !sfxEnabled) {
@@ -2444,9 +2442,7 @@ function endGame() {
   hideTopScores();
   updateShieldHud();
 
-  // White Terraces: restore vivid background on game over
-  document.getElementById('pageBg').classList.remove('gameplay');
-  document.getElementById('gameVignette').classList.remove('active');
+  // Overlay stays active through game-over (same as gameplay)
 
   if (score > cachedHighscore) {
     cachedHighscore = score;
