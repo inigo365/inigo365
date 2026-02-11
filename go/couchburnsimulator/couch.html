@@ -155,6 +155,9 @@ const fireFrames = [
 ];
 const smokeFrames = ["smoke_1.png","smoke_2.png","smoke_3.png"];
 
+// Preload all sprite frames so first cycle doesn't flash white
+fireFrames.concat(smokeFrames).forEach(src => { new Image().src = src; });
+
 const FIRE_MS  = 110;
 const SMOKE_MS = 220;
 
@@ -166,6 +169,8 @@ let fireIndex = 0;
 let smokeTimer = null;
 let smokeIndex = 0;
 let smokeY = 0;
+let smokeX = 0;
+let smokeScale = 1;
 
 let stopSmokeTimeout = null;
 
@@ -182,8 +187,10 @@ function startFire() {
     fireIndex = (fireIndex + 1) % fireFrames.length;
     fireEl.src = fireFrames[fireIndex];
 
-    const jx = (Math.random() < 0.35) ? (Math.random() < 0.5 ? -1 : 1) : 0;
-    const jy = (Math.random() < 0.25) ? (Math.random() < 0.5 ? -1 : 1) : 0;
+    // Scale jitter to ~0.5% of stage width so it's visible on retina
+    const j = Math.max(1, stageEl.offsetWidth * 0.005);
+    const jx = (Math.random() < 0.35) ? (Math.random() - 0.5) * 2 * j : 0;
+    const jy = (Math.random() < 0.25) ? (Math.random() - 0.5) * 2 * j : 0;
     fireEl.style.transform = `translate(${jx}px, ${jy}px)`;
   }, FIRE_MS);
 }
@@ -206,6 +213,8 @@ function startSmoke() {
 
   smokeEl.style.opacity = "1";
   smokeY = 0;
+  smokeX = 0;
+  smokeScale = 1;
 
   smokeIndex = Math.floor(Math.random() * smokeFrames.length);
   smokeEl.src = smokeFrames[smokeIndex];
@@ -214,11 +223,29 @@ function startSmoke() {
     smokeIndex = (smokeIndex + 1) % smokeFrames.length;
     smokeEl.src = smokeFrames[smokeIndex];
 
-    if (Math.random() < 0.75) smokeY -= 1;
-    if (smokeY < -10) smokeY = 0;
+    // Rise upward
+    if (Math.random() < 0.75) smokeY -= 1.2;
 
-    const sx = (Math.random() < 0.15) ? (Math.random() < 0.5 ? -1 : 1) : 0;
-    smokeEl.style.transform = `translate(${sx}px, ${smokeY}px)`;
+    // Drift sideways (gentle wander)
+    smokeX += (Math.random() - 0.5) * 1.5;
+
+    // Spread wider as it rises
+    smokeScale += 0.008;
+
+    // Fade out as it rises
+    const progress = Math.min(1, Math.abs(smokeY) / 20);
+    const opacity = 1 - progress * 0.7;
+    smokeEl.style.opacity = String(Math.max(0.15, opacity));
+
+    // Reset when fully risen (seamless loop)
+    if (smokeY < -22) {
+      smokeY = 0;
+      smokeX = 0;
+      smokeScale = 1;
+      smokeEl.style.opacity = "1";
+    }
+
+    smokeEl.style.transform = `translate(${smokeX}px, ${smokeY}px) scale(${smokeScale})`;
   }, SMOKE_MS);
 }
 
@@ -227,11 +254,14 @@ function stopSmokeWithLinger() {
 
   stopSmokeTimeout = setTimeout(() => {
     smokeEl.style.opacity = "0";
-    smokeEl.style.transform = "translate(0px, 0px)";
+    smokeEl.style.transform = "translate(0px, 0px) scale(1)";
 
     clearInterval(smokeTimer);
     smokeTimer = null;
     stopSmokeTimeout = null;
+    smokeY = 0;
+    smokeX = 0;
+    smokeScale = 1;
   }, 300);
 }
 
