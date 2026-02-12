@@ -299,7 +299,8 @@ canvas {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-top: 16px;
+  margin-bottom: 0;
 }
 
 .modal-link-btn {
@@ -1141,15 +1142,15 @@ canvas {
   <div class="final-score" id="finalScore">score: 0</div>
   <div class="final-score" id="modalHighscore">highscore: 0</div>
 
+  <input type="text" id="playerName" placeholder="enter name" maxlength="12" autocomplete="off">
+  <button class="btn-primary" onclick="submitScore()">submit</button>
+  <button class="btn-secondary" onclick="playAgain()">play again</button>
+
   <div class="modal-actions-row">
     <button class="modal-link-btn" onclick="toggleLeaderboard()">leaderboard</button>
     <span class="modal-link-sep">·</span>
     <button class="modal-link-btn" onclick="openGoodybag()">goodybag</button>
   </div>
-
-  <input type="text" id="playerName" placeholder="enter name" maxlength="12" autocomplete="off">
-  <button class="btn-primary" onclick="submitScore()">submit</button>
-  <button class="btn-secondary" onclick="playAgain()">play again</button>
 </div>
 
 
@@ -1988,8 +1989,10 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   gameStarted = true;
   dying = false;
 
-  // Show single white overlay for gameplay + game-over
-  document.getElementById('homeOverlay').classList.add('active');
+  // Show single white overlay for gameplay (behind sprites)
+  const overlay = document.getElementById('homeOverlay');
+  overlay.style.zIndex = 1;
+  overlay.classList.add('active');
 
   // Auto-enable SFX on first play (unless user manually toggled it off)
   if (!sfxUserToggled && !sfxEnabled) {
@@ -2195,9 +2198,10 @@ if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT
 // -------- SPECIAL: Unlock bags (+3 always) --------
 if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT) {
   score += 3;
-  showPopup('+3', ball.x, ball.y + POP_POINT_OFFSET_Y, 'gold');
-
   const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
+  showTextPopup(unlockDef.popupText, ball.x, textY, 'gold');
+  showPopup('+3', ball.x, pointY, 'gold', '28px', true);
+
   const key = unlockDef.storageKey;
 
   // HUD notification + unlock logic
@@ -2442,7 +2446,8 @@ function endGame() {
   hideTopScores();
   updateShieldHud();
 
-  // Overlay stays active through game-over (same as gameplay)
+  // Bring overlay in front of canvas so leftover sprites are hidden
+  document.getElementById('homeOverlay').style.zIndex = 3;
 
   if (score > cachedHighscore) {
     cachedHighscore = score;
@@ -3026,16 +3031,19 @@ const nokiaSfxLabel = document.getElementById('nokiaSfxLabel');
 
 function showNokiaKeypad() {
   const wrap = document.getElementById('nokiaPhoneWrap');
-  if (wrap) wrap.style.opacity = '1';
-  // wrap stays pointer-events:none so clicks on the phone body
-  // fall through to the canvas and start the game.
-  // Only .nokia-key buttons (pointer-events:auto in CSS) are clickable.
+  if (wrap) {
+    wrap.style.opacity = '1';
+    wrap.querySelectorAll('.nokia-key').forEach(k => k.style.pointerEvents = 'auto');
+  }
   updateNokiaMusicLabel();
 }
 
 function hideNokiaKeypad() {
   const wrap = document.getElementById('nokiaPhoneWrap');
-  if (wrap) wrap.style.opacity = '0';
+  if (wrap) {
+    wrap.style.opacity = '0';
+    wrap.querySelectorAll('.nokia-key').forEach(k => k.style.pointerEvents = 'none');
+  }
 }
 
 function updateNokiaMusicLabel() {
