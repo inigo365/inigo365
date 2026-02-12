@@ -309,7 +309,7 @@ canvas {
   background: transparent;
   border: none;
   color: #2d93ea;
-  opacity: 0.65;
+  opacity: 0.8;
   padding: 2px 4px;
   text-transform: lowercase;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
@@ -1144,13 +1144,14 @@ canvas {
 
   <input type="text" id="playerName" placeholder="enter name" maxlength="12" autocomplete="off">
   <button class="btn-primary" onclick="submitScore()">submit</button>
-  <button class="btn-secondary" onclick="playAgain()">play again</button>
 
   <div class="modal-actions-row">
     <button class="modal-link-btn" onclick="toggleLeaderboard()">leaderboard</button>
     <span class="modal-link-sep">·</span>
     <button class="modal-link-btn" onclick="openGoodybag()">goodybag</button>
   </div>
+
+  <button class="btn-secondary" onclick="playAgain()">play again</button>
 </div>
 
 
@@ -2006,6 +2007,7 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   gameOver = false;
   shieldArmed = false;
   updateShieldHud();
+  document.getElementById('hudStack').style.opacity = 1;
   ball.spriteIndex = getWeightedSpriteIndex(true);
   addToCollection(ball.spriteIndex);
 
@@ -2444,7 +2446,7 @@ function endGame() {
   rafId = null;
   lastTs = null;
   hideTopScores();
-  updateShieldHud();
+  document.getElementById('hudStack').style.opacity = 0;
 
   // Bring overlay in front of canvas so leftover sprites are hidden
   document.getElementById('homeOverlay').style.zIndex = 3;
