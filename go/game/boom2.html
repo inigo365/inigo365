@@ -295,6 +295,28 @@ input,
   transform: scale(0.95);
 }
 
+#homeBackBtn {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: clamp(18px, 4vw, 28px);
+  background: transparent;
+  border: none;
+  color: white;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.25);
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 4px 8px;
+  transition: opacity 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#homeBackBtn:hover {
+  transform: scale(1.08);
+}
+
+#homeBackBtn:active {
+  transform: scale(0.95);
+}
+
 canvas {
   display: block;
   margin: 0 auto;
@@ -1186,6 +1208,7 @@ canvas {
     <button id="homeSfxBtn">sfx: off</button>
   </div>
   <button id="homeHowToBtn" onclick="openHowTo()">how to play</button>
+  <button id="homeBackBtn" onclick="goBack()">← back</button>
 </div>
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 
@@ -1610,6 +1633,7 @@ let lastDt = 1;
 
 // ===================== SPECIAL SPAWN + POWERUP STATE =====================
 let lastHoopWasNotBag = false;
+let lastHoopSpriteIndex = -1; // prevent same bag twice in a row
 
 // Shield: simplest + safest = 1-use shield (saves you once)
 let shieldArmed = false;
@@ -1947,10 +1971,16 @@ else if (Math.random() < BAGHETTI_SPAWN_CHANCE) {
 // --- otherwise normal bag ---
 else {
   spriteIndex = getWeightedSpriteIndex();
+  // Re-roll once if same bag as last hoop
+  if (spriteIndex === lastHoopSpriteIndex) {
+    spriteIndex = getWeightedSpriteIndex();
+  }
 }
 
     }
   }
+
+  lastHoopSpriteIndex = spriteIndex;
 
   hoops.push({
   x: canvas.width + 50,
@@ -2047,10 +2077,8 @@ function showOverlay(showLastScore = false) {
 
   gameStarted = false;
 
-  // ✅ Show home screen UI
-  backButton.style.opacity = 1;
-  backButton.style.color = 'white';
-  backButton.style.textShadow = '1px 1px 0 rgba(0,0,0,0.25)';
+  // ✅ Hide fixed back button (homeUI has its own back button)
+  backButton.style.opacity = 0;
 
   // Update toggle labels and show homeUI
   const homeUI = document.getElementById('homeUI');
@@ -2112,6 +2140,7 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   SPEED = 3;
   hoops = [];
   score = 0;
+  lastHoopSpriteIndex = -1;
   updateTopScores();
   gameOver = false;
   shieldArmed = false;
@@ -2193,6 +2222,10 @@ function playAgain() {
   dying = false;
   score = 0;
   hoops = [];
+  lastHoopSpriteIndex = -1;
+
+  // Clear the canvas so leftover bag sprites from the death animation are gone
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
