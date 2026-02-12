@@ -235,7 +235,12 @@ input,
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: clamp(18px, 4.5vw, 36px);
   color: white;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.25);
+  text-shadow:
+    1px 1px 0 rgba(0,0,0,0.5),
+    -1px -1px 0 rgba(0,0,0,0.3),
+    1px -1px 0 rgba(0,0,0,0.3),
+    -1px 1px 0 rgba(0,0,0,0.3),
+    0 2px 4px rgba(0,0,0,0.3);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -254,7 +259,12 @@ input,
   border: none;
   color: white;
   opacity: 0.7;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  text-shadow:
+    1px 1px 0 rgba(0,0,0,0.5),
+    -1px -1px 0 rgba(0,0,0,0.3),
+    1px -1px 0 rgba(0,0,0,0.3),
+    -1px 1px 0 rgba(0,0,0,0.3),
+    0 2px 4px rgba(0,0,0,0.3);
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 2px 4px;
@@ -279,7 +289,12 @@ input,
   background: transparent;
   border: none;
   color: white;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.25);
+  text-shadow:
+    1px 1px 0 rgba(0,0,0,0.5),
+    -1px -1px 0 rgba(0,0,0,0.3),
+    1px -1px 0 rgba(0,0,0,0.3),
+    -1px 1px 0 rgba(0,0,0,0.3),
+    0 2px 4px rgba(0,0,0,0.3);
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 4px 8px;
@@ -301,7 +316,12 @@ input,
   background: transparent;
   border: none;
   color: white;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.25);
+  text-shadow:
+    1px 1px 0 rgba(0,0,0,0.5),
+    -1px -1px 0 rgba(0,0,0,0.3),
+    1px -1px 0 rgba(0,0,0,0.3),
+    -1px 1px 0 rgba(0,0,0,0.3),
+    0 2px 4px rgba(0,0,0,0.3);
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 4px 8px;
@@ -1185,6 +1205,9 @@ canvas {
   }
   #nokiaPhoneWrap {
     top: 50%;
+  }
+  #playWrap #playOverlay {
+    max-width: 80vw;
   }
   #homeUI {
     top: 60%;
