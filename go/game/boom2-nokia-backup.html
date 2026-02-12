@@ -200,7 +200,7 @@ input,
   padding: 0;
 }
 
-/* Music Button (game-over only fallback — hidden on home now) */
+/* Music Button */
 .music-button {
   position: fixed;
   bottom: 8px;
@@ -208,91 +208,6 @@ input,
   z-index: 400;
   opacity: 0;
   padding: 0;
-}
-
-/* ===================== HOME SCREEN CENTRE STACK ===================== */
-#homeUI {
-  position: fixed;
-  top: 66%;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 61;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  opacity: 0;
-  transition: opacity 0.5s;
-  pointer-events: none;
-}
-
-#homeUI.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-#startSplash {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(18px, 4.5vw, 36px);
-  color: white;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.25);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-#homeToggles {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-#homeToggles button {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(16px, 3.5vw, 22px);
-  background: transparent;
-  border: none;
-  color: white;
-  opacity: 0.7;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  text-transform: lowercase;
-  padding: 2px 4px;
-  transition: opacity 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-#homeToggles button:hover {
-  opacity: 1;
-}
-
-#homeToggles .home-sep {
-  color: white;
-  opacity: 0.35;
-  font-size: clamp(16px, 3.5vw, 22px);
-  user-select: none;
-}
-
-#homeHowToBtn {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(18px, 4vw, 28px);
-  background: transparent;
-  border: none;
-  color: white;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.25);
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  text-transform: lowercase;
-  padding: 4px 8px;
-  transition: opacity 0.2s, transform 0.15s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-#homeHowToBtn:hover {
-  transform: scale(1.08);
-}
-
-#homeHowToBtn:active {
-  transform: scale(0.95);
 }
 
 canvas {
@@ -944,8 +859,8 @@ canvas {
 /* play.png sizing */
 #playWrap #playOverlay{
   display: block;
-  max-width: 70vw;
-  max-height: 70vh;
+  max-width: 64vw;
+  max-height: 64vh;
   width: auto;
   height: auto;
 }
@@ -1176,17 +1091,7 @@ canvas {
 <button class="back-button game-btn" onclick="goBack()">← back</button>
 <button class="music-button game-btn" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 <button id="goodybagBtn" class="soundcloud-btn game-btn">goodybag</button>
-<button id="howToBtn" class="soundcloud-btn game-btn" style="display:none;">how to play</button>
-
-<div id="homeUI">
-  <div id="startSplash">tap/click anywhere to start!</div>
-  <div id="homeToggles">
-    <button id="homeMusicBtn">music: off</button>
-    <span class="home-sep">·</span>
-    <button id="homeSfxBtn">sfx: off</button>
-  </div>
-  <button id="homeHowToBtn" onclick="openHowTo()">how to play</button>
-</div>
+<button id="howToBtn" class="soundcloud-btn game-btn">how to play</button>
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 
 <div id="nokiaPhoneWrap">
@@ -2021,15 +1926,18 @@ function updateTopScores() {
 }
 
 function showOverlay(showLastScore = false) {
-  // Hide game-over / gameplay UI
+  // Hide ALL old scattered buttons — keypad is the only UI on home screen
+  const howToBtnEl = document.getElementById('howToBtn');
+  if (howToBtnEl) howToBtnEl.style.display = 'none';
   leaderboardBtn.style.display = 'none';
   if (goodybagBtn) goodybagBtn.style.display = 'none';
+  backButton.style.opacity = 0;
   hideMusicButton();
 
   // Remove white overlay on home screen
   document.getElementById('homeOverlay').classList.remove('active');
 
-  // ✅ Show play overlay
+  // ✅ LOADING SCREEN: show play overlay
   playWrap.style.opacity = 1;
   playWrap.style.transform = "translate(-50%, -50%) scale(1)";
   playWrap.style.pointerEvents = "none";
@@ -2039,27 +1947,14 @@ function showOverlay(showLastScore = false) {
   playSplashText.textContent = pickRandomFunText();
 
   overlayLastScore.style.opacity = showLastScore ? 1 : 0;
-  overlayLastScore.style.color = 'white';
-  overlayLastScore.style.textShadow = '1px 1px 0 rgba(0,0,0,0.25)';
   if (showLastScore) {
     overlayLastScore.textContent = "last score: " + score;
   }
 
   gameStarted = false;
 
-  // ✅ Show home screen UI
-  backButton.style.opacity = 1;
-  backButton.style.color = 'white';
-  backButton.style.textShadow = '1px 1px 0 rgba(0,0,0,0.25)';
-
-  // Update toggle labels and show homeUI
-  const homeUI = document.getElementById('homeUI');
-  document.getElementById('homeMusicBtn').textContent = (bgMusic.readyState > 2 && !bgMusic.paused) ? 'music: on' : 'music: off';
-  document.getElementById('homeSfxBtn').textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
-  homeUI.classList.add('active');
-
-  // Nokia keypad disabled (kept for future use)
-  hideNokiaKeypad();
+  // ✅ Show Nokia keypad (only UI on home)
+  showNokiaKeypad();
 }
 
 function hideOverlay() {
@@ -2067,17 +1962,13 @@ function hideOverlay() {
   playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
   playWrap.style.pointerEvents = "none";
   playWrap.classList.remove('pulsing');
+  const howToBtnEl = document.getElementById('howToBtn');
+  if (howToBtnEl) howToBtnEl.style.display = 'none';
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
   showTopScores();
   hideMusicButton();
-
-  // Hide home screen UI
-  document.getElementById('homeUI').classList.remove('active');
-  backButton.style.opacity = 0;
-  backButton.style.color = '#2d93ea';
-  backButton.style.textShadow = 'none';
-
+  // Hide Nokia keypad (overlay stays — startGame will keep it active)
   hideNokiaKeypad();
 }
 
@@ -2649,7 +2540,6 @@ function handleFirstUserGesture() {
   if (bgMusic.paused) {
     bgMusic.play().then(() => {
       musicToggle.textContent = "music: on";
-      if (homeMusicBtn) homeMusicBtn.textContent = "music: on";
     }).catch(() => { });
   }
 
@@ -2671,29 +2561,7 @@ musicToggle.addEventListener('click', () => {
     musicToggle.textContent = "music: off";
   }
 });
-// HOME SCREEN TOGGLES
-const homeMusicBtn = document.getElementById('homeMusicBtn');
-const homeSfxBtn = document.getElementById('homeSfxBtn');
-
-homeMusicBtn.addEventListener('click', () => {
-  if (bgMusic.paused) {
-    ensureSoundtrackLoadedOnce();
-    bgMusic.play().catch(() => {});
-    homeMusicBtn.textContent = 'music: on';
-    musicToggle.textContent = 'music: on';
-  } else {
-    bgMusic.pause();
-    homeMusicBtn.textContent = 'music: off';
-    musicToggle.textContent = 'music: off';
-  }
-});
-
-homeSfxBtn.addEventListener('click', () => {
-  sfxEnabled = !sfxEnabled;
-  sfxUserToggled = true;
-  homeSfxBtn.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
-  if (nokiaSfxLabel) nokiaSfxLabel.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
-});
+musicToggle.style.display = "none"; // hidden on home, shown after game over
 
 // ------------------- PAUSE ON HIDE / CLOSE -------------------
 document.addEventListener('visibilitychange', () => {
@@ -2808,12 +2676,9 @@ function goBack() { window.location.href = "../index.html"; }
 
     backButton.style.zIndex = 400;
     backButton.style.opacity = 1;
-    backButton.style.color = '#2d93ea';
-    backButton.style.textShadow = 'none';
     leaderboardBtn.style.display = 'none';
     setTimeout(() => playerNameInput.focus(), 100);
-    hideMusicButton();
-    document.getElementById('homeUI').classList.remove('active');
+    showMusicButton();
 
     if (goodybagBtn) goodybagBtn.style.display = 'none';
 
