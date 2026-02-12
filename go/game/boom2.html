@@ -1186,6 +1186,24 @@ canvas {
   #nokiaPhoneWrap {
     top: 50%;
   }
+  #homeUI {
+    top: 60%;
+  }
+  #startSplash {
+    font-size: clamp(22px, 5.5vw, 36px);
+  }
+  #homeToggles button {
+    font-size: clamp(20px, 4.5vw, 24px);
+  }
+  #homeToggles .home-sep {
+    font-size: clamp(20px, 4.5vw, 24px);
+  }
+  #homeHowToBtn {
+    font-size: clamp(22px, 5vw, 30px);
+  }
+  #homeBackBtn {
+    font-size: clamp(22px, 5vw, 30px);
+  }
 }
 
 </style>
@@ -1328,6 +1346,9 @@ const overlayHighscoreEl = document.getElementById('overlayHighscore');
 const topScoresEl = document.getElementById('topScores');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+// Toggle: set to true to show white overlay during gameplay & name modal
+const USE_GAMEPLAY_OVERLAY = false;
 
 const POP_TEXT_OFFSET_Y  = 50;  // fun text / "rare bag" line
 const POP_POINT_OFFSET_Y = 20;  // +1/+2/+3 line
@@ -2130,7 +2151,7 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   // Show single white overlay for gameplay (behind sprites)
   const overlay = document.getElementById('homeOverlay');
   overlay.style.zIndex = 1;
-  overlay.classList.add('active');
+  if (USE_GAMEPLAY_OVERLAY) overlay.classList.add('active');
 
   // Auto-enable SFX on first play (unless user manually toggled it off)
   if (!sfxUserToggled && !sfxEnabled) {
@@ -2591,7 +2612,7 @@ function endGame() {
   document.getElementById('hudStack').style.opacity = 0;
 
   // Bring overlay in front of canvas so leftover sprites are hidden
-  document.getElementById('homeOverlay').style.zIndex = 3;
+  if (USE_GAMEPLAY_OVERLAY) document.getElementById('homeOverlay').style.zIndex = 3;
 
   if (score > cachedHighscore) {
     cachedHighscore = score;
