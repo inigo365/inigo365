@@ -306,8 +306,8 @@ input,
   font-size: 22px;
   background: transparent;
   border: none;
-  color: white;
-  text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);
+  color: #2d93ea;
+  /*text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);*/
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 4px 8px;
@@ -473,8 +473,8 @@ canvas {
   font-size: 22px;
   background: transparent !important;
   border: none !important;
-  color: white;
-  text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);
+  color: #2d93ea;
+  /*text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);*/
   padding: 4px 8px;
   text-transform: lowercase;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
@@ -3291,9 +3291,12 @@ sfxGold.volume = 0.5;
 
 function playSfx(sound) {
   if (!sfxEnabled) return;
-  sound.currentTime = 0;
-  sound.play().catch(() => {});
+
+  const clone = sound.cloneNode();
+  clone.volume = sound.volume;
+  clone.play().catch(() => {});
 }
+
 const nokiaKeypad = document.getElementById('nokiaKeypad');
 const nokiaMusicLabel = document.getElementById('nokiaMusicLabel');
 const nokiaSfxLabel = document.getElementById('nokiaSfxLabel');
