@@ -229,25 +229,20 @@ input,
 #homeUI.active {
   opacity: 1;
   pointer-events: auto;
-  /* Pulse in sync with playWrap — remove this line to disable 
-  animation: homeUiPulse 1.1s ease-in-out infinite;*/
+  /* Pulse in sync with playWrap — uncomment to re-enable */
+  /* animation: homeUiPulse 1.2s ease-in-out infinite; */
 }
 
 @keyframes homeUiPulse {
   0%, 100% { transform: translateX(-50%) scale(1); }
-  50%      { transform: translateX(-50%) scale(1.014); }
+  50%      { transform: translateX(-50%) scale(1.025); }
 }
 
 #startSplash {
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: clamp(18px, 4.5vw, 36px);
-  color: #5aabe9;
-  text-shadow:
-    1px 1px 0 rgba(0,0,0,0.5),
-    -1px -1px 0 rgba(0,0,0,0.3),
-    1px -1px 0 rgba(0,0,0,0.3),
-    -1px 1px 0 rgba(0,0,0,0.3),
-    0 2px 4px rgba(0,0,0,0.3);
+  color: white;
+  text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -256,88 +251,72 @@ input,
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 #homeToggles button {
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(16px, 3.5vw, 22px);
-  background: transparent;
-  border: none;
-  color: #5aabe9;
-  opacity: 0.7;
-  text-shadow:
-    1px 1px 0 rgba(0,0,0,0.5),
-    -1px -1px 0 rgba(0,0,0,0.3),
-    1px -1px 0 rgba(0,0,0,0.3),
-    -1px 1px 0 rgba(0,0,0,0.3),
-    0 2px 4px rgba(0,0,0,0.3);
+  font-size: 18px;
+  background: #2d93ea;
+  border: 2px solid #2d93ea;
+  color: white;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
-  padding: 2px 4px;
-  transition: opacity 0.2s;
+  padding: 8px 20px;
+  min-width: 120px;
+  text-align: center;
+  transition: background 0.2s, border-color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
 
 #homeToggles button:hover {
-  opacity: 1;
+  background: #1a7bd4;
+  border-color: #1a7bd4;
 }
 
 #homeToggles .home-sep {
-  color: #5aabe9;
-  opacity: 0.35;
-  font-size: clamp(16px, 3.5vw, 22px);
-  user-select: none;
+  display: none;
 }
 
 #homeHowToBtn {
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(18px, 4vw, 28px);
-  background: transparent;
-  border: none;
-  color: #5aabe9;
-  text-shadow:
-    1px 1px 0 rgba(0,0,0,0.5),
-    -1px -1px 0 rgba(0,0,0,0.3),
-    1px -1px 0 rgba(0,0,0,0.3),
-    -1px 1px 0 rgba(0,0,0,0.3),
-    0 2px 4px rgba(0,0,0,0.3);
+  font-size: 18px;
+  background: #2d93ea;
+  border: 2px solid #2d93ea;
+  color: white;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
-  padding: 4px 8px;
-  transition: opacity 0.2s, transform 0.15s;
+  padding: 8px 20px;
+  transition: background 0.2s, border-color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
 
 #homeHowToBtn:hover {
-  transform: scale(1.08);
+  background: #1a7bd4;
+  border-color: #1a7bd4;
 }
 
 #homeHowToBtn:active {
   transform: scale(0.95);
 }
 
+/* Back button on play screen — matches name modal back button exactly */
 #homeBackBtn {
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(18px, 4vw, 28px);
+  font-size: 22px;
   background: transparent;
   border: none;
-  color: #5aabe9;
-  text-shadow:
-    1px 1px 0 rgba(0,0,0,0.5),
-    -1px -1px 0 rgba(0,0,0,0.3),
-    1px -1px 0 rgba(0,0,0,0.3),
-    -1px 1px 0 rgba(0,0,0,0.3),
-    0 2px 4px rgba(0,0,0,0.3);
+  color: white;
+  text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 4px 8px;
-  transition: opacity 0.2s, transform 0.15s;
+  transition: opacity 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
 
 #homeBackBtn:hover {
-  transform: scale(1.08);
+  opacity: 0.8;
 }
 
 #homeBackBtn:active {
@@ -379,10 +358,12 @@ canvas {
   z-index: 200;
   flex-direction: column;
   pointer-events: none;
+  gap: 10px;
 }
 
 .name-modal > * {
   pointer-events: auto;
+  margin: 0;
 }
 
 .name-modal.show {
@@ -392,13 +373,11 @@ canvas {
 .name-modal h2 {
   font-size: 36px;
   color: #2d93ea;
-  margin-bottom: 8px;
 }
 
 .name-modal .final-score {
   font-size: 28px;
   color: #2d93ea;
-  margin-bottom: 24px;
 }
 
 .name-modal input {
@@ -410,7 +389,6 @@ canvas {
   outline: none;
   text-align: center;
   width: 200px;
-  margin-bottom: 16px;
 }
 
 .name-modal button {
@@ -420,7 +398,6 @@ canvas {
   border: 2px solid #2d93ea;
   background: #2d93ea;
   color: white;
-  margin-top: 12px;
 }
 
 .name-modal button:hover {
@@ -433,8 +410,6 @@ canvas {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-top: 16px;
-  margin-bottom: 0;
 }
 
 .modal-link-btn {
@@ -466,7 +441,6 @@ canvas {
 .game-over-sprite {
   width: 64px;
   height: 64px;
-  margin-bottom: 12px;
   image-rendering: pixelated;
 }
 
@@ -484,13 +458,32 @@ canvas {
 
 /* Secondary button (play again) */
 .name-modal .btn-secondary {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.7);
   color: #2d93ea;
   border: 2px solid #2d93ea;
 }
 
 .name-modal .btn-secondary:hover {
-  background: rgba(45, 147, 234, 0.08);
+  background: white;
+}
+
+/* Back button inside name modal — plain white text, no box */
+.name-modal .modal-back-btn {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 22px;
+  background: transparent !important;
+  border: none !important;
+  color: white;
+  text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);
+  padding: 4px 8px;
+  text-transform: lowercase;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  transition: opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.name-modal .modal-back-btn:hover {
+  opacity: 0.8;
 }
 
 /* Leaderboard */
@@ -1222,18 +1215,6 @@ canvas {
   #startSplash {
     font-size: clamp(22px, 5.5vw, 36px);
   }
-  #homeToggles button {
-    font-size: clamp(20px, 4.5vw, 24px);
-  }
-  #homeToggles .home-sep {
-    font-size: clamp(20px, 4.5vw, 24px);
-  }
-  #homeHowToBtn {
-    font-size: clamp(22px, 5vw, 30px);
-  }
-  #homeBackBtn {
-    font-size: clamp(22px, 5vw, 30px);
-  }
 }
 
 </style>
@@ -1259,6 +1240,9 @@ canvas {
   <button id="homeBackBtn" onclick="goBack()">← back</button>
 </div>
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
+<audio id="sfxGold" src="sfx_gold.mp3" preload="auto"></audio>
+<audio id="sfxDie" src="sfx_die.mp3" preload="auto"></audio>
+<audio id="sfxPower" src="sfx_power.mp3" preload="auto"></audio>
 
 <div id="nokiaPhoneWrap">
   <img id="nokiaFrame" src="nokia3310.png" alt="">
@@ -1318,6 +1302,7 @@ canvas {
   </div>
 
   <button class="btn-secondary" onclick="playAgain()">play again</button>
+  <button class="modal-back-btn" onclick="goBack()">← back</button>
 </div>
 
 
@@ -1734,6 +1719,41 @@ function showPickupNotification(spriteSrc, text, color, duration) {
 // Baghetti: forces the next N hoops to spawn as baghetti (+4 each)
 let baghettiCharges = 0;         // number of forced baghettis still to spawn
 let baghettiRunLeft = 0;         // total baghettis remaining on-screen for bg (pickup+forced)
+let baghettiToast = null;        // persistent notification for baghetti run
+
+function showBaghettiNotification() {
+  // Remove any existing baghetti toast first
+  dismissBaghettiNotification();
+
+  const container = document.getElementById('pickupNotifications');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'pickup-toast';
+
+  const img = document.createElement('img');
+  img.src = 'sprites/powerups/baghetti.png';
+  img.alt = '';
+
+  const span = document.createElement('span');
+  span.textContent = 'baghetti found!';
+  span.style.color = 'gold';
+
+  toast.appendChild(img);
+  toast.appendChild(span);
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => { toast.classList.add('show'); });
+  baghettiToast = toast;
+}
+
+function dismissBaghettiNotification() {
+  if (!baghettiToast) return;
+  const toast = baghettiToast;
+  baghettiToast = null;
+  toast.classList.remove('show');
+  setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+}
 
 let lastTouchTime = 0;
 document.addEventListener('touchstart', function (e) {
@@ -2422,6 +2442,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
   showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', 'gold', 3000);
 }
 
+  playSfx(sfxPower);
   updateTopScores();
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
@@ -2441,12 +2462,12 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
 if (powerId === POWERUPS.baghetti) {
   score += 1;
 
-  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, BAGHETTI_COLOR);
-  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, BAGHETTI_COLOR);
+  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
+  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, 'gold');
 
-  showPickupNotification('sprites/powerups/baghetti.png', 'baghetti found!', BAGHETTI_COLOR, 3000);
-
+  // Only show the persistent notification on the initial pickup, not forced ones
   if (!h.forcedBaghetti) {
+    showBaghettiNotification();
     baghettiCharges = BAGHETTI_FORCED_COUNT; // 2 forced
     baghettiRunLeft = BAGHETTI_TOTAL_RUN;    // 3 total
   }
@@ -2454,6 +2475,7 @@ if (powerId === POWERUPS.baghetti) {
   // ✅ decrement for every baghetti collected (pickup + forced)
   if (baghettiRunLeft > 0) baghettiRunLeft--;
 
+  playSfx(sfxPower);
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -2463,7 +2485,7 @@ if (powerId === POWERUPS.baghetti) {
 
   // -------- Shield (still +1) --------
   score += 1;
-  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
+  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, 'gold');
 
   if (powerId === POWERUPS.shield) {
     shieldArmed = true;
@@ -2472,11 +2494,12 @@ if (powerId === POWERUPS.baghetti) {
       'ibuprofen found!',
       ball.x,
       ball.y + POP_TEXT_OFFSET_Y,
-      '#2d93ea'
+      'gold'
     );
-    showPickupNotification('sprites/powerups/shield.png', 'ibuprofen found!', '#2d93ea', 3000);
+    showPickupNotification('sprites/powerups/shield.png', 'ibuprofen found!', 'gold', 3000);
   }
 
+  playSfx(sfxPower);
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -2509,6 +2532,7 @@ if (powerId === POWERUPS.baghetti) {
 
         showPopup('+1', ball.x, pointY, TIER_COLORS.common);
       }
+      playSfx(sfxGold);
       updateTopScores();
       addToCollection(h.spriteIndex);
       ball.spriteIndex = h.spriteIndex;
@@ -2546,9 +2570,13 @@ if (h.x + SPRITE_SIZE < ball.x - 20) {
 const GAP = Math.min(420, Math.max(260, Math.floor(canvas.width * 0.7)));
 if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - GAP) addHoop();
 
-// ✅ bg active only during the 3-baghetti run (pickup+forced)
-if (baghettiRunLeft > 0) showBaghettiBg();
-else hideBaghettiBg();
+// ✅ bg + notification active only during the 3-baghetti run (pickup+forced)
+if (baghettiRunLeft > 0) {
+  showBaghettiBg();
+} else {
+  hideBaghettiBg();
+  dismissBaghettiNotification();
+}
 
 if (!gameOver) rafId = requestAnimationFrame(loop);
 // ✅ lightweight throttled score UI update
@@ -2562,6 +2590,7 @@ if (!loop._lastTopUpdate || performance.now() - loop._lastTopUpdate > 120) {
 function startDeathAnimation() {
   if (dying || gameOver) return;
   dying = true;
+  playSfx(sfxDie);
 
   // Stop the main game loop
   if (rafId) cancelAnimationFrame(rafId);
@@ -2651,7 +2680,7 @@ function endGame() {
     cachedHighscore = score;
     localStorage.setItem('flappyBasketHighscore', score);
   }
-  backButton.style.opacity = 1;
+  backButton.style.opacity = 0;
   leaderboardBtn.style.display = 'block';
   showNameModal(score, ball.spriteIndex);
 }
@@ -2738,6 +2767,13 @@ function handleFirstUserGesture() {
       musicToggle.textContent = "music: on";
       if (homeMusicBtn) homeMusicBtn.textContent = "music: on";
     }).catch(() => { });
+  }
+
+  // Enable SFX by default on first interaction (unless user already toggled it off)
+  if (!sfxUserToggled) {
+    sfxEnabled = true;
+    if (homeSfxBtn) homeSfxBtn.textContent = 'sfx: on';
+    if (nokiaSfxLabel) nokiaSfxLabel.textContent = 'sfx: on';
   }
 
   window.removeEventListener('touchstart', handleFirstUserGesture);
@@ -2893,10 +2929,7 @@ function goBack() { window.location.href = "../index.html"; }
       spriteEl.style.display = 'none';
     }
 
-    backButton.style.zIndex = 400;
-    backButton.style.opacity = 1;
-    backButton.style.color = '#2d93ea';
-    backButton.style.textShadow = 'none';
+    backButton.style.opacity = 0;
     leaderboardBtn.style.display = 'none';
     setTimeout(() => playerNameInput.focus(), 100);
     hideMusicButton();
@@ -3249,6 +3282,18 @@ passwordBtn.addEventListener('click', () => {
 // ===== NOKIA KEYPAD =====
 let sfxEnabled = false;
 let sfxUserToggled = false; // tracks if user manually toggled sfx
+
+// SFX audio elements
+const sfxGold  = document.getElementById('sfxGold');
+const sfxDie   = document.getElementById('sfxDie');
+const sfxPower = document.getElementById('sfxPower');
+sfxGold.volume = 0.5;
+
+function playSfx(sound) {
+  if (!sfxEnabled) return;
+  sound.currentTime = 0;
+  sound.play().catch(() => {});
+}
 const nokiaKeypad = document.getElementById('nokiaKeypad');
 const nokiaMusicLabel = document.getElementById('nokiaMusicLabel');
 const nokiaSfxLabel = document.getElementById('nokiaSfxLabel');
