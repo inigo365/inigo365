@@ -211,8 +211,18 @@
       transition: opacity 0.2s ease;
     }
 
-    a.credit:hover { opacity: 0.7; }
-    a.credit:hover .credit-title { color: var(--accent); }
+   @media (hover: hover) and (pointer: fine) {
+
+  a.credit:hover { 
+    opacity: 0.7; 
+  }
+
+  a.credit:hover .credit-title { 
+    color: var(--accent); 
+  }
+
+}
+
 
     .credit-title {
       font-size: clamp(14px, 2.2vw, 18px);
@@ -447,7 +457,7 @@
 
     <!-- BIO -->
     <div class="about-bio">
-      Multidisciplinary artist working across film, photography, fashion, art &amp; music.
+      London based multidisciplinary artist working across film, photography, fashion, art &amp; music. Originally from Aotearoa New Zealand.
     </div>
 
     <!-- DISCIPLINES -->
@@ -475,29 +485,29 @@
     <!-- SELECTED WORK -->
     <div class="about-section" data-section="work">
       <div class="section-header">
-        <span class="section-title">Selected Work</span>
+        <span class="section-title">Selected Works</span>
         <span class="section-arrow">&rarr;</span>
       </div>
       <div class="section-body">
         <div class="section-inner">
           <a class="credit" href="projects/minecraft.html">
             <span class="credit-title">A Minecraft Movie</span>
-            <span class="credit-role">SFX Runner</span>
+            <span class="credit-role">SFX Runner/Onset Assistant</span>
           </a>
           <a class="credit" href="projects/ash.html">
             <span class="credit-title">Ash (Flying Lotus / Amazon)</span>
             <span class="credit-role">Art Dept Runner</span>
           </a>
           <a class="credit" href="projects/ols.html">
-            <span class="credit-title">One Last Shot</span>
+            <span class="credit-title">One Last Shot (Feature Length 2026)</span>
             <span class="credit-role">Spark / Lighting</span>
           </a>
           <a class="credit" href="projects/eve.html">
-            <span class="credit-title">Eve</span>
-            <span class="credit-role">Spark</span>
+            <span class="credit-title">Eve (Short Film)</span>
+            <span class="credit-role">Spark / Lighting</span>
           </a>
           <a class="credit" href="projects/canyon.html">
-            <span class="credit-title">Canyon</span>
+            <span class="credit-title">Canyon (Feature Length 2023)</span>
             <span class="credit-role">Art Dept Runner</span>
           </a>
           <a class="credit" href="projects/martino.html">
@@ -513,8 +523,8 @@
             <span class="credit-role">LFW Production</span>
           </a>
           <a class="credit" href="projects/remz.html">
-            <span class="credit-title">SCOOPGARDEN</span>
-            <span class="credit-role">Film / Creative Direction</span>
+            <span class="credit-title">Stolen Remz x SRMPofu- SCOOPGARDEN</span>
+            <span class="credit-role">Filming / Creative Direction</span>
           </a>
         </div>
       </div>
@@ -529,7 +539,7 @@
       <div class="section-body">
         <div class="section-inner">
           <div class="about-bio" style="margin-bottom: 0; font-size: clamp(14px, 2.4vw, 18px); color: var(--dim);">
-            This website is a creative project in itself. Designed &amp; built by hand. There might be more here than you think.
+            This website is a creative project in itself. All music, graphic design, games &amp; website design has been built by me. There might be more here than you think.
           </div>
         </div>
       </div>
@@ -543,7 +553,7 @@
       <a class="contact-btn" href="https://www.imdb.com/name/nm17192091/" target="_blank" rel="noopener noreferrer">IMDb</a>
     </div>
 
-    <div class="about-handle">@iggysmalllls</div>
+    <div class="about-handle">@iggysmalllls @inigo365</div>
     <div class="about-note">References &amp; CV on request</div>
 
     <!-- EASTER EGG -->

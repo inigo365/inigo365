@@ -145,24 +145,24 @@ section {
   display: block;
 }
 
-/* Overlay text (hover only) */
+/* Overlay — always-visible gradient label at bottom */
 .tile .overlay {
   position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  inset: auto 0 0 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%);
   color: #fff;
 
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-
-  opacity: 0;
-  transition: opacity 0.3s ease;
-
   text-align: center;
-  padding: 10px;
 
-  font-size: clamp(16px, 2vw, 24px);
+  opacity: 1;
+  transition: all 0.3s ease;
+
+  padding: 28px 10px 10px;
+
+  font-size: clamp(13px, 2vw, 20px);
   line-height: 1.2;
 
   white-space: normal;
@@ -173,16 +173,38 @@ section {
   pointer-events: none; /* IMPORTANT: overlay never blocks clicks */
 }
 
-/* Hover effect */
+/* Hover: expand to full overlay */
 .tile:hover .overlay {
-  opacity: 1;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  align-items: flex-end;
+  padding: 28px 10px 10px;
+  font-size: clamp(16px, 2vw, 24px);
 }
 
-/* Mobile / touch devices hover fallback */
+/* Feature tiles: centre text on hover */
+.tile.feature:hover .overlay {
+  align-items: center;
+  padding: 10px;
+}
+
+/* Touch devices */
 @media (hover: none) {
-  .tile:active .overlay,
-  .tile:focus .overlay {
-    opacity: 1;
+  .tile .overlay {
+    font-size: clamp(13px, 3.2vw, 18px);
+  }
+
+  .tile:active .overlay {
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    align-items: flex-end;
+    padding: 28px 10px 10px;
+    font-size: clamp(16px, 3.6vw, 22px);
+  }
+
+  .tile.feature:active .overlay {
+    align-items: center;
+    padding: 10px;
   }
 }
 
@@ -193,6 +215,12 @@ section {
   max-width: 1000px;
   margin: 80px auto 0;
   padding: 0 20px;
+}
+
+@media (max-width: 768px) {
+  .project {
+    margin-top: 40px;
+  }
 }
 
 .project img {
@@ -207,7 +235,7 @@ section {
 .project li,
 .project span,
 .project .blurb {
-  font-size: 32px;
+  font-size: clamp(18px, 4vw, 32px);
   line-height: 1.6;
 }
 
@@ -297,19 +325,8 @@ section {
 }
 
 /* =========================
-   7) ABOUT
+   7) ABOUT — styles live in about.html inline
 ========================= */
-.about-section {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.about-image {
-  width: 100%;
-  display: block;
-  height: auto;
-}
 
 /* =========================
    8) FOOTER + HITBOX LINKS
@@ -422,32 +439,6 @@ section {
 }
 
 /* =========================
-   BACK — ABOUT PAGE (fixed top-right)
+   BACK — ABOUT PAGE (styles live in about.html inline)
 ========================= */
-.back-about {
-  position: fixed;
-  top: 0;
-  right: 20px;
-  left: auto;
-
-  /* match the project header sizing */
-  font-size: clamp(20px, 5vw, 36px);
-  line-height: 1.2;
-
-  /* invisible but finger-friendly */
-  padding: clamp(8px, 2vw, 16px);
-
-  z-index: 9999;
-  text-decoration: none;
-  background: transparent;
-  white-space: nowrap;
-}
-
-/* Mobile notch-safe */
-@supports (padding: max(0px)) {
-  .back-about {
-    top: env(safe-area-inset-top);
-    right: max(12px, env(safe-area-inset-right));
-  }
-}
 
