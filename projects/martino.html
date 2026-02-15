@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>inigo365</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>inigo365 — Martino Gamper OBE</title>
   <link rel="icon" type="image/png" href="../images/icon.png">
   <link rel="stylesheet" href="../style.css">
 </head>
-<body>
+<body class="fade-in-page">
 
   <section class="project">
     <div class="project-header">
@@ -22,13 +23,22 @@
       In total I worked this project for the full one month duration of the show.
     </p>
 
-    <img src="../images/projects/martino/01.jpg" alt="Martino project image 1">
-    <img src="../images/projects/martino/02.jpg" alt="Martino project image 2">
-    <img src="../images/projects/martino/03.jpg" alt="Martino project image 3">
-    <img src="../images/projects/martino/04.jpg" alt="Martino project image 4">
-    <img src="../images/projects/martino/05.jpg" alt="Martino project image 5">
+    <img src="../images/projects/martino/01.jpg" alt="Martino project image 1" loading="lazy">
+    <img src="../images/projects/martino/02.jpg" alt="Martino project image 2" loading="lazy">
+    <img src="../images/projects/martino/03.jpg" alt="Martino project image 3" loading="lazy">
+    <img src="../images/projects/martino/04.jpg" alt="Martino project image 4" loading="lazy">
+    <img src="../images/projects/martino/05.jpg" alt="Martino project image 5" loading="lazy">
 
   </section>
+
+<script>
+  document.querySelector('.back').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.body.classList.add('fade-out');
+    setTimeout(() => { window.location = this.href; }, 1000);
+  });
+  document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+</script>
 
 </body>
 </html>

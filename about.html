@@ -2,346 +2,685 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <title>inigo365— About</title>
+  <title>inigo365 — About</title>
   <link rel="icon" type="image/png" href="./images/icon.png" />
   <link rel="stylesheet" href="style.css" />
 
   <!-- SEO -->
-  <meta name="description" content="Iggy Macdonald — Art Department, Lighting, Production, SFX. London based. Available worldwide. UK licence & passport." />
+  <meta name="description" content="Iggy Macdonald — Multidisciplinary artist working across film, photography, fashion, art & music. London / Aotearoa." />
 
   <style>
-    /* =========================
-       COLOURS (NEW)
-    ========================= */
-   :root{
-  --text-main: #111817;
-  --text-soft: #2a3634;
-  --text-muted: #4a5c5a;
-  --accent: #2d93ea;
-}
+    @font-face {
+      font-family: "RuneScape UF";
+      src: url("./fonts/RuneScape-UF.woff2") format("woff2"),
+           url("./fonts/RuneScape-UF.woff") format("woff");
+      font-display: swap;
+    }
 
+    :root {
+      --bg: #0a0a0a;
+      --text: #e8e8e8;
+      --dim: #666;
+      --accent: #2d93ea;
+      --glow: rgba(45, 147, 234, 0.15);
+    }
 
-    /* =========================
-       BASE
-    ========================= */
     html, body {
       height: 100%;
       margin: 0;
-    }
-
-    .about-section {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      height: 100svh;
-      overflow: hidden;
-      margin: 0;
-    }
-
-    /* TRUE edge-to-edge background */
-    .about-bg {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-
-      background-image: url("images/about/background.png");
-      background-size: cover;
-      background-position: 50% 35%;
-      background-repeat: no-repeat;
-
-      width: 100vw;
-      height: 100vh;
-    }
-
-    /* (Unused now, safe to remove later) */
-    .about-image {
+      padding: 0;
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: 50% 35%;
-      transform: scale(1.04);
-    }
-
-    @media (max-width: 520px) {
-      .about-image { object-position: 50% 30%; }
-    }
-
-    /* =========================
-       CARD
-    ========================= */
-    .about-card {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 3;
-
-  width: min(76ch, 92vw);
-  height: calc(100svh - 32px);     /* fixed height = viewport */
-  overflow-y: auto;                /* scroll inside the card */
-  -webkit-overflow-scrolling: touch;
-
-  padding: clamp(16px, 2.4vw, 24px);
-  border-radius: 18px;
-
-  background: rgba(245, 248, 247, 0.85);
-  border: 1px solid rgba(111, 213, 118, 0.22);
-  box-shadow: 0 14px 40px rgba(0,0,0,0.28);
-  outline: 1px solid rgba(255,255,255,0.06);
-
-  opacity: 0;
-  transition: opacity 700ms ease;
-
-  /* NEW */
-  display: flex;
-  flex-direction: column;
-  align-items: center;             /* centres image + text */
-  text-align: center;
-}
-
-
-    body.fade-in-page .about-card { opacity: 1; }
-
-    .about-card * {
+      overflow-x: hidden;
+      overscroll-behavior: none;
+      background: var(--bg);
+      color: var(--text);
       font-family: "RuneScape UF", Arial, sans-serif;
-      color: var(--text-main); /* NEW */
-      text-shadow: none;
-
+      -webkit-text-size-adjust: 100%;
     }
 
-    /* =========================
-       PROFILE IMAGE
-    ========================= */
-    .about-profile {
-  display: block;
-  margin: 0 auto 14px;
-
-  width: min(520px, 92%);
-  height: min(58svh, 520px);       /* BIG on desktop, pushes text down */
-  object-fit: cover;               /* fills the frame */
-  object-position: center;         /* always centred */
-
-  background: rgba(0,0,0,0.0);
-  padding: 3px;
-
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.0);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.00);
-}
-
-/* Mobile: reduce the image so it doesn't eat the whole card */
-@media (max-width: 520px) {
-  .about-profile {
-    height: min(34svh, 340px);
-    width: min(360px, 92%);
-  }
-}
-
-    /* =========================
-       TEXT
-    ========================= */
-    .about-name {
-      text-align: center;
-      font-weight: 900;
-      font-size: clamp(20px, 2.6vw, 34px);
-      margin: 6px 0 4px;
-      letter-spacing: 0.02em;
-      color: var(--text-main); /* explicit */
+    body {
+      overflow-y: auto;
     }
 
-    .about-meta {
-      text-align: center;
-      font-weight: 800;
-      font-size: clamp(13px, 1.3vw, 17px);
-      margin-bottom: 14px;
-
-      color: var(--accent);     /* NEW */
-      letter-spacing: 0.03em;      /* NEW: improves readability */
-      opacity: 1;                  /* ensure colour controls opacity */
-    }
-
-    .chip-row {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-
-    .chip {
-      padding: 7px 10px;
-      border-radius: 999px;
-      font-weight: 900;
-      font-size: clamp(12px, 1.1vw, 15px);
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: var(--text-main); /* stays crisp */
-    }
-
-    .about-copy {
-      text-align: center;
-      font-weight: 800;
-      font-size: clamp(13px, 1.4vw, 18px);
-      line-height: 1.55;
-      margin-bottom: 8px;
-
-      color: var(--text-soft);   /* NEW */
-      letter-spacing: 0.03em;    /* NEW */
-    }
-
-    .about-note {
-      text-align: center;
-      font-weight: 900;
-      font-size: clamp(12px, 1.2vw, 16px);
-      margin-top: 10px;
-
-      color: var(--text-muted);  /* NEW */
-      opacity: 1;
-    }
-
-    .about-handle {
-      text-align: center;
-      font-weight: 900;
-      font-size: clamp(14px, 1.4vw, 19px);
-      margin-top: 6px;
-
-      color: var(--accent);      /* NEW */
-    }
-
-    /* =========================
-       CTA BUTTONS
-    ========================= */
-    .about-cta {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .about-btn {
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-weight: 900;
-      font-size: clamp(13px, 1.2vw, 17px);
-      text-decoration: none;
-
-      border: 1px solid rgba(255,255,255,0.25);
-      background: rgba(255,255,255,0.14);
-      cursor: pointer;
-
-      color: var(--text-main); /* NEW */
-      transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-    }
-
-    .about-btn.primary {
-      background: rgba(255,255,255,0.24);
-      border-color: rgba(143, 183, 195, 0.55); /* NEW: subtle accent */
-    }
-
-    .about-btn:hover {
-      transform: translateY(-2px);
-      background: rgba(255,255,255,0.3);
-      color: var(--accent); /* NEW */
-    }
+    *, *::before, *::after { box-sizing: border-box; }
 
     /* =========================
        BACK LINK
     ========================= */
-    /* BACK LINK — default (desktop/tablet): top-left */
-.back.back-about{
-  position: fixed;
-  z-index: 10;
-  top: max(12px, env(safe-area-inset-top));
-  left: max(16px, env(safe-area-inset-left));
-  right: auto;
-
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 28px;
-
-  border: 0px solid #000;
-  padding: 6px 10px;
-
-  color: #000;
-  text-decoration: none;
-  line-height: 1;
-}
-.back.back-about:hover{ text-decoration: underline; }
-
-@media (max-width: 520px) {
-  /* Keep it visible/clickable without sitting on top of the card/photo */
-  .back.back-about {
-    top: max(10px, env(safe-area-inset-top));
-    left: max(10px, env(safe-area-inset-left));
-  }
-}
-@media (max-width: 520px) {
-  /* Let the card fit content (no big empty white area), but still cap it to viewport */
-  .about-card {
-    height: auto;                           /* key: removes forced empty space */
-    max-height: calc(100svh - 88px);        /* keeps it from going under the back button */
-    overflow-y: auto;                       /* scroll only if genuinely needed */
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  /* Show the whole photo (no crop) */
-  .about-profile {
-    height: auto;                           /* key: let the image determine height */
-    max-height: 38svh;                      /* keeps it from dominating the card */
-    width: min(360px, 92%);
-    object-fit: contain;                    /* key: no cropping */
-    object-position: center;
-  }
-}
-
-
-    @media (max-width: 420px) {
-      .about-card { padding: 14px; }
+    .back.back-about {
+      position: fixed;
+      z-index: 100;
+      top: max(14px, env(safe-area-inset-top));
+      left: max(18px, env(safe-area-inset-left));
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 26px;
+      color: var(--dim);
+      text-decoration: none;
+      line-height: 1;
+      padding: 6px 10px;
+      transition: color 0.2s ease;
     }
+    .back.back-about:hover { color: var(--text); }
+
+    @media (max-width: 520px) {
+      .back.back-about {
+        top: max(10px, env(safe-area-inset-top));
+        left: max(10px, env(safe-area-inset-left));
+        font-size: 22px;
+      }
+    }
+
+    /* =========================
+       MAIN CONTAINER
+    ========================= */
+    .about-wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+      opacity: 0;
+      transition: opacity 800ms ease;
+    }
+    body.fade-in-page .about-wrap { opacity: 1; }
+
+    @media (max-width: 520px) {
+      .about-wrap { padding: 64px 18px 48px; }
+    }
+
+    /* =========================
+       PROFILE
+    ========================= */
+    .about-profile-wrap {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .about-profile {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #222;
+      flex-shrink: 0;
+    }
+
+    .about-id {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .about-name {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+    }
+
+    .about-loc {
+      font-size: clamp(13px, 2vw, 16px);
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+
+    .about-passport {
+      font-size: clamp(12px, 1.6vw, 14px);
+      color: var(--dim);
+      margin-top: 2px;
+    }
+
+    /* =========================
+       BIO TEXT
+    ========================= */
+    .about-bio {
+      font-size: clamp(16px, 3vw, 22px);
+      line-height: 1.6;
+      color: var(--text);
+      margin-bottom: 36px;
+      letter-spacing: 0.01em;
+    }
+
+    /* =========================
+       EXPANDABLE SECTIONS
+    ========================= */
+    .about-section {
+      border-top: 1px solid #1a1a1a;
+      padding: 0;
+      margin-bottom: 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .section-header:hover .section-title { color: var(--accent); }
+
+    .section-title {
+      font-size: clamp(16px, 2.8vw, 22px);
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      transition: color 0.2s ease;
+    }
+
+    .section-arrow {
+      font-size: 18px;
+      color: var(--dim);
+      transition: transform 0.3s ease, color 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .about-section.open .section-arrow {
+      transform: rotate(90deg);
+      color: var(--accent);
+    }
+
+    .section-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    .about-section.open .section-body {
+      opacity: 1;
+    }
+
+    .section-inner {
+      padding: 0 0 20px 0;
+    }
+
+    /* =========================
+       CREDIT ITEMS
+    ========================= */
+    .credit {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 6px 0;
+      gap: 12px;
+      text-decoration: none;
+      transition: opacity 0.2s ease;
+    }
+
+    a.credit:hover { opacity: 0.7; }
+    a.credit:hover .credit-title { color: var(--accent); }
+
+    .credit-title {
+      font-size: clamp(14px, 2.2vw, 18px);
+      color: var(--text);
+      transition: color 0.2s ease;
+    }
+
+    .credit-role {
+      font-size: clamp(12px, 1.8vw, 15px);
+      color: var(--dim);
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* =========================
+       DISCIPLINE CHIPS
+    ========================= */
+    .disciplines {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 4px 0 8px;
+    }
+
+    .disc-chip {
+      padding: 6px 12px;
+      font-size: clamp(12px, 1.8vw, 15px);
+      font-weight: 900;
+      letter-spacing: 0.03em;
+      border: 1px solid #2a2a2a;
+      color: var(--text);
+      background: transparent;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .disc-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* =========================
+       CONTACT ROW
+    ========================= */
+    .about-contact {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid #1a1a1a;
+    }
+
+    .contact-btn {
+      padding: 10px 16px;
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: clamp(14px, 2vw, 18px);
+      font-weight: 900;
+      text-decoration: none;
+      letter-spacing: 0.03em;
+      border: 1px solid #2a2a2a;
+      color: var(--text);
+      background: transparent;
+      transition: all 0.2s ease;
+    }
+
+    .contact-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 12px var(--glow);
+    }
+
+    /* =========================
+       HANDLE + NOTE
+    ========================= */
+    .about-handle {
+      margin-top: 20px;
+      font-size: clamp(14px, 2vw, 18px);
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    .about-note {
+      margin-top: 8px;
+      font-size: clamp(12px, 1.6vw, 14px);
+      color: var(--dim);
+    }
+
+    /* =========================
+       SWIPE TO UNLOCK
+    ========================= */
+    .about-footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid #1a1a1a;
+      text-align: center;
+    }
+
+    .swipe-track {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      height: 44px;
+      margin: 0 auto;
+      border-radius: 22px;
+      border: 1px solid #1a1a1a;
+      background: rgba(255,255,255,0.03);
+      overflow: hidden;
+      touch-action: pan-x;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .swipe-track,
+      .swipe-thumb {
+        cursor: url("./images/cursor/cursor-hover.png") 16 16, pointer;
+      }
+    }
+
+    .swipe-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(11px, 1.4vw, 13px);
+      color: #222;
+      letter-spacing: 0.12em;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .swipe-track:hover .swipe-label { color: #444; }
+
+    .swipe-shimmer {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+      animation: shimmer 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { left: -100%; }
+      50% { left: 100%; }
+    }
+
+    .swipe-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      z-index: 2;
+    }
+
+    .swipe-thumb::after {
+      content: "\2192";
+      color: #444;
+      font-size: 16px;
+      transition: color 0.2s ease;
+    }
+
+    .swipe-track:hover .swipe-thumb {
+      border-color: #333;
+    }
+    .swipe-track:hover .swipe-thumb::after {
+      color: var(--accent);
+    }
+
+    .swipe-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, transparent, var(--glow));
+      border-radius: 22px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .swipe-track.unlocked {
+      border-color: var(--accent);
+    }
+    .swipe-track.unlocked .swipe-thumb {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .swipe-track.unlocked .swipe-thumb::after {
+      color: #fff;
+    }
+    .swipe-track.unlocked .swipe-label {
+      color: var(--accent);
+      opacity: 1;
+    }
+
+    /* =========================
+       SCROLLBAR (subtle)
+    ========================= */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #333; }
   </style>
 </head>
 
 <body class="fade-in-page">
   <a class="back back-about" href="home.html">← Back</a>
 
-  <section class="about-section">
-    <div class="about-bg" aria-hidden="true"></div>
+  <div class="about-wrap">
 
-    <div class="about-card">
-      <img src="images/about/profile.jpg" class="about-profile" alt="Iggy Macdonald">
-
-      <div class="about-name">Iggy Macdonald</div>
-      <div class="about-meta">
-        London, UK • Aotearoa, New Zealand
-      </div>
-      <div class="about-copy">
-      UK/NZ licence &amp; passport
-      </div>
-   
-      <div class="about-copy">
-        Multidisciplinary artist working across film, photography, fashion, art & music. 
-      </div>
-      <div class="chip-row">
-        <div class="chip">Art Dept</div>
-        <div class="chip">Lighting</div>
-        <div class="chip">Production</div>
-        <div class="chip">SFX</div>
-      </div>
-
-      <div class="about-note">References &amp; CV on request</div>
-      <div class="about-handle">@iggysmalllls</div>
-
-      <div class="about-cta">
-        <a class="about-btn primary" href="mailto:macdonald.iggy@gmail.com">Email</a>
-        <a class="about-btn primary" href="https://wa.me/447432435885" target="_blank" rel="noopener noreferrer">WhatsApp</a>
-        <a class="about-btn primary" href="https://www.instagram.com/iggysmalllls/" target="_blank">
-          Instagram
-        </a>
+    <!-- PROFILE -->
+    <div class="about-profile-wrap">
+      <img src="images/about/profile.jpg" class="about-profile" alt="Iggy Macdonald" loading="lazy">
+      <div class="about-id">
+        <div class="about-name">Iggy Macdonald</div>
+        <div class="about-loc">London, UK / Aotearoa, New Zealand</div>
+        <div class="about-passport">UK/NZ licence &amp; passport</div>
       </div>
     </div>
-  </section>
+
+    <!-- BIO -->
+    <div class="about-bio">
+      Multidisciplinary artist working across film, photography, fashion, art &amp; music.
+    </div>
+
+    <!-- DISCIPLINES -->
+    <div class="about-section open" data-section="disciplines">
+      <div class="section-header">
+        <span class="section-title">Disciplines</span>
+        <span class="section-arrow">&rarr;</span>
+      </div>
+      <div class="section-body">
+        <div class="section-inner">
+          <div class="disciplines">
+            <span class="disc-chip">Art Department</span>
+            <span class="disc-chip">Lighting</span>
+            <span class="disc-chip">Production</span>
+            <span class="disc-chip">SFX</span>
+            <span class="disc-chip">Music</span>
+            <span class="disc-chip">Creative Direction</span>
+            <span class="disc-chip">Set Design</span>
+            <span class="disc-chip">Game/Web Design</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SELECTED WORK -->
+    <div class="about-section" data-section="work">
+      <div class="section-header">
+        <span class="section-title">Selected Work</span>
+        <span class="section-arrow">&rarr;</span>
+      </div>
+      <div class="section-body">
+        <div class="section-inner">
+          <a class="credit" href="projects/minecraft.html">
+            <span class="credit-title">A Minecraft Movie</span>
+            <span class="credit-role">SFX Runner</span>
+          </a>
+          <a class="credit" href="projects/ash.html">
+            <span class="credit-title">Ash (Flying Lotus / Amazon)</span>
+            <span class="credit-role">Art Dept Runner</span>
+          </a>
+          <a class="credit" href="projects/ols.html">
+            <span class="credit-title">One Last Shot</span>
+            <span class="credit-role">Spark / Lighting</span>
+          </a>
+          <a class="credit" href="projects/eve.html">
+            <span class="credit-title">Eve</span>
+            <span class="credit-role">Spark</span>
+          </a>
+          <a class="credit" href="projects/canyon.html">
+            <span class="credit-title">Canyon</span>
+            <span class="credit-role">Art Dept Runner</span>
+          </a>
+          <a class="credit" href="projects/martino.html">
+            <span class="credit-title">Martino Gamper OBE</span>
+            <span class="credit-role">Exhibition Setup</span>
+          </a>
+          <a class="credit" href="projects/chopova.html">
+            <span class="credit-title">Chopova Lowena SS26</span>
+            <span class="credit-role">LFW Production</span>
+          </a>
+          <a class="credit" href="projects/nanushka.html">
+            <span class="credit-title">Nanushka SS26</span>
+            <span class="credit-role">LFW Production</span>
+          </a>
+          <a class="credit" href="projects/remz.html">
+            <span class="credit-title">SCOOPGARDEN</span>
+            <span class="credit-role">Film / Creative Direction</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT THIS SITE -->
+    <div class="about-section" data-section="site">
+      <div class="section-header">
+        <span class="section-title">About This Site</span>
+        <span class="section-arrow">&rarr;</span>
+      </div>
+      <div class="section-body">
+        <div class="section-inner">
+          <div class="about-bio" style="margin-bottom: 0; font-size: clamp(14px, 2.4vw, 18px); color: var(--dim);">
+            This website is a creative project in itself. Designed &amp; built by hand. There might be more here than you think.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="about-contact">
+      <a class="contact-btn" href="mailto:macdonald.iggy@gmail.com">Email</a>
+      <a class="contact-btn" href="https://wa.me/447432435885" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+      <a class="contact-btn" href="https://www.instagram.com/iggysmalllls/" target="_blank" rel="noopener noreferrer">Instagram</a>
+      <a class="contact-btn" href="https://www.imdb.com/name/nm17192091/" target="_blank" rel="noopener noreferrer">IMDb</a>
+    </div>
+
+    <div class="about-handle">@iggysmalllls</div>
+    <div class="about-note">References &amp; CV on request</div>
+
+    <!-- EASTER EGG -->
+    <div class="about-footer">
+      <div class="swipe-track" id="swipeTrack">
+        <div class="swipe-shimmer"></div>
+        <div class="swipe-fill" id="swipeFill"></div>
+        <div class="swipe-thumb" id="swipeThumb"></div>
+        <div class="swipe-label" id="swipeLabel">&gt;&gt;&gt;</div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  // Expandable sections
+  document.querySelectorAll('.section-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const section = header.parentElement;
+      const body = section.querySelector('.section-body');
+      const isOpen = section.classList.contains('open');
+
+      if (isOpen) {
+        body.style.maxHeight = '0px';
+        section.classList.remove('open');
+      } else {
+        section.classList.add('open');
+        body.style.maxHeight = body.scrollHeight + 'px';
+      }
+    });
+  });
+
+  // Set initial max-height for sections that start open
+  document.querySelectorAll('.about-section.open .section-body').forEach(body => {
+    body.style.maxHeight = body.scrollHeight + 'px';
+  });
+
+  // Back button fade
+  const backBtn = document.querySelector('.back');
+  if (backBtn) {
+    backBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.body.classList.add('fade-out');
+      setTimeout(() => { window.location = this.href; }, 1000);
+    });
+  }
+
+  // =========================
+  // SWIPE TO UNLOCK
+  // =========================
+  (function() {
+    const track = document.getElementById('swipeTrack');
+    const thumb = document.getElementById('swipeThumb');
+    const fill = document.getElementById('swipeFill');
+    const label = document.getElementById('swipeLabel');
+    if (!track || !thumb) return;
+
+    let dragging = false;
+    let startX = 0;
+    let thumbX = 0;
+    const thumbW = 38;
+    const padding = 3;
+    let unlocked = false;
+
+    function getMaxX() {
+      return track.offsetWidth - thumbW - (padding * 2);
+    }
+
+    function setPos(x) {
+      const max = getMaxX();
+      x = Math.max(0, Math.min(x, max));
+      thumbX = x;
+      thumb.style.left = (padding + x) + 'px';
+      fill.style.width = (padding + x + thumbW / 2) + 'px';
+
+      // fade out label as thumb moves
+      const pct = x / max;
+      label.style.opacity = 1 - pct * 1.5;
+    }
+
+    function onStart(e) {
+      if (unlocked) return;
+      dragging = true;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      startX = clientX - thumbX;
+      thumb.style.transition = 'none';
+      fill.style.transition = 'none';
+      e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      setPos(clientX - startX);
+      e.preventDefault();
+    }
+
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+      thumb.style.transition = 'left 0.3s ease, background 0.2s ease, border-color 0.2s ease';
+      fill.style.transition = 'width 0.3s ease';
+
+      const max = getMaxX();
+      if (thumbX >= max * 0.85) {
+        // UNLOCKED
+        unlocked = true;
+        setPos(max);
+        track.classList.add('unlocked');
+        label.textContent = 'go';
+        label.style.opacity = '1';
+
+        setTimeout(() => {
+          document.body.classList.add('fade-out');
+          setTimeout(() => { window.location.href = 'go/index.html'; }, 1000);
+        }, 400);
+      } else {
+        // snap back
+        setPos(0);
+        label.style.opacity = '1';
+      }
+    }
+
+    // Mouse events
+    thumb.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+
+    // Touch events
+    thumb.addEventListener('touchstart', onStart, { passive: false });
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+  })();
+
+  // Disable right-click (consistent with rest of site)
+  document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+</script>
+
 </body>
 </html>

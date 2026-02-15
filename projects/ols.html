@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>inigo365</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>inigo365 — One Last Shot</title>
   <link rel="icon" type="image/png" href="../images/icon.png">
   <link rel="stylesheet" href="../style.css">
 </head>
-<body>
+<body class="fade-in-page">
 
   <section class="project">
      <div class="project-header">
@@ -22,12 +23,21 @@
       This was a fast paced and intense role that required a lot of specialist knowledge and an acute attention to detail.
     </p>
 
-    <img src="../images/projects/ols/01.jpg" alt="OLS project image 1">
-    <img src="../images/projects/ols/02.jpg" alt="OLS project image 2">
-    <img src="../images/projects/ols/03.jpg" alt="OLS project image 3">
-    <img src="../images/projects/ols/04.jpg" alt="OLS project image 4">
+    <img src="../images/projects/ols/01.jpg" alt="OLS project image 1" loading="lazy">
+    <img src="../images/projects/ols/02.jpg" alt="OLS project image 2" loading="lazy">
+    <img src="../images/projects/ols/03.jpg" alt="OLS project image 3" loading="lazy">
+    <img src="../images/projects/ols/04.jpg" alt="OLS project image 4" loading="lazy">
 
   </section>
+
+<script>
+  document.querySelector('.back').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.body.classList.add('fade-out');
+    setTimeout(() => { window.location = this.href; }, 1000);
+  });
+  document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+</script>
 
 </body>
 </html>

@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>inigo365</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>inigo365 — Canyon</title>
   <link rel="icon" type="image/png" href="../images/icon.png">
   <link rel="stylesheet" href="../style.css">
 </head>
-<body>
+<body class="fade-in-page">
 
   <section class="project">
     <div class="project-header">
@@ -26,18 +27,27 @@
       Although the film was never released, it was an incredibly valuable job that allowed for my first real experience working in set decoration &amp; building.
     </p>
 
-    <img src="../images/projects/canyon/01.jpg" alt="Canyon project image 1">
-    <img src="../images/projects/canyon/02.jpg" alt="Canyon project image 2">
-    <img src="../images/projects/canyon/03.jpg" alt="Canyon project image 3">
-    <img src="../images/projects/canyon/04.jpg" alt="Canyon project image 4">
-    <img src="../images/projects/canyon/05.jpg" alt="Canyon project image 5">
-    <img src="../images/projects/canyon/06.jpg" alt="Canyon project image 6">
-    <img src="../images/projects/canyon/07.jpg" alt="Canyon project image 7">
-    <img src="../images/projects/canyon/08.jpg" alt="Canyon project image 8">
-    <img src="../images/projects/canyon/09.jpg" alt="Canyon project image 9">
-    <img src="../images/projects/canyon/10.jpg" alt="Canyon project image 10">
+    <img src="../images/projects/canyon/01.jpg" alt="Canyon project image 1" loading="lazy">
+    <img src="../images/projects/canyon/02.jpg" alt="Canyon project image 2" loading="lazy">
+    <img src="../images/projects/canyon/03.jpg" alt="Canyon project image 3" loading="lazy">
+    <img src="../images/projects/canyon/04.jpg" alt="Canyon project image 4" loading="lazy">
+    <img src="../images/projects/canyon/05.jpg" alt="Canyon project image 5" loading="lazy">
+    <img src="../images/projects/canyon/06.jpg" alt="Canyon project image 6" loading="lazy">
+    <img src="../images/projects/canyon/07.jpg" alt="Canyon project image 7" loading="lazy">
+    <img src="../images/projects/canyon/08.jpg" alt="Canyon project image 8" loading="lazy">
+    <img src="../images/projects/canyon/09.jpg" alt="Canyon project image 9" loading="lazy">
+    <img src="../images/projects/canyon/10.jpg" alt="Canyon project image 10" loading="lazy">
 
   </section>
+
+<script>
+  document.querySelector('.back').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.body.classList.add('fade-out');
+    setTimeout(() => { window.location = this.href; }, 1000);
+  });
+  document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+</script>
 
 </body>
 </html>

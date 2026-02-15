@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>inigo365</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>inigo365 — A Minecraft Movie</title>
   <link rel="icon" type="image/png" href="../images/icon.png">
   <link rel="stylesheet" href="../style.css">
 </head>
-<body>
+<body class="fade-in-page">
 
   <section class="project">
      <div class="project-header">
@@ -22,11 +23,27 @@
       It was a fast paced and dynamic role that was both on-set and off-set.
     </p>
 
-    <img src="../images/projects/minecraft/01.jpg" alt="Minecraft project image 1">
-    <img src="../images/projects/minecraft/02.jpg" alt="Minecraft project image 2">
-    <img src="../images/projects/minecraft/03.jpg" alt="Minecraft project image 3">
+    <img src="../images/projects/minecraft/01.jpg" alt="Minecraft project image 1" loading="lazy">
+    <div class="pw-wrap" style="position:relative;">
+      <img src="../images/projects/minecraft/02.jpg" alt="Minecraft project image 2" loading="lazy" style="margin-bottom:0;">
+      <span class="pw-hint" style="position:absolute;bottom:14px;right:16px;font-size:clamp(13px,2.2vw,16px);color:rgba(255,255,255,0.06);transition:color 0.5s ease;pointer-events:auto;letter-spacing:0.06em;font-family:'RuneScape UF',Arial,sans-serif;cursor:default;">password: onway</span>
+    </div>
+    <style>
+      .pw-wrap:hover .pw-hint{color:rgba(255,255,255,0.28)!important;}
+      @media (hover: none){.pw-hint{-webkit-tap-highlight-color:transparent;}.pw-wrap:active .pw-hint,.pw-hint:active{color:rgba(255,255,255,0.28)!important;}}
+    </style>
+    <img src="../images/projects/minecraft/03.jpg" alt="Minecraft project image 3" loading="lazy">
 
   </section>
+
+<script>
+  document.querySelector('.back').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.body.classList.add('fade-out');
+    setTimeout(() => { window.location = this.href; }, 1000);
+  });
+  document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+</script>
 
 </body>
 </html>
