@@ -122,22 +122,20 @@ input,
 }
 
 .pickup-toast {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 6px;
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: clamp(14px, 1.8vw, 18px);
   color: #e8b810;
   opacity: 0;
-  transition: opacity 0.4s ease, transform 0.4s ease;
-  transform: translateY(-6px);
-  will-change: transform, opacity;
-  contain: layout style;
+  transition: opacity 0.4s ease;
+  will-change: opacity;
 }
 
 .pickup-toast.show {
+  display: flex;
   opacity: 1;
-  transform: translateY(0);
 }
 
 .pickup-toast img {
@@ -215,7 +213,7 @@ input,
 /* ===================== HOME SCREEN CENTRE STACK ===================== */
 #homeUI {
   position: fixed;
-  top: 66%;
+  top: 72%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 61;
@@ -350,16 +348,17 @@ canvas {
 
 /* Point Popup */
 .point-popup {
-  position: absolute;
+  position: fixed;
+  left: 0;
+  top: 0;
   font-size: 28px;
   color: #d1dce8;
   font-family: "RuneScape UF", Arial, sans-serif;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s, transform 0.3s;
+  transition: opacity 0.35s;
   z-index: 6;
-  will-change: transform, opacity;
-  contain: layout style;
+  will-change: opacity;
 }
 
 /* Name Input Modal */
@@ -1004,8 +1003,8 @@ canvas {
 /* play.png sizing */
 #playWrap #playOverlay{
   display: block;
-  max-width: 70vw;
-  max-height: 70vh;
+  max-width: 78vw;
+  max-height: 78vh;
   width: auto;
   height: auto;
 }
@@ -1116,99 +1115,6 @@ canvas {
   transition: opacity 1s ease-out; /* slow fade (both directions) */
 }
 
-/* ===================== NOKIA 3310 PHONE WRAP ===================== */
-/* position:fixed creates a containing block for absolute children.
-   width:fit-content shrink-wraps to the #nokiaFrame image. */
-#nokiaPhoneWrap {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 56;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.5s;
-  width: fit-content;
-}
-
-/* Phone body image — sets the wrapper's intrinsic size */
-#nokiaFrame {
-  display: block;
-  height: min(84vh, 760px);
-  width: auto;
-  pointer-events: none;
-}
-
-/* Button overlay — identical pixel dimensions as nokia3310.png.
-   Covers the frame exactly so the button graphics align. */
-#nokiaButtonOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* ===================== NOKIA KEYPAD (transparent hit areas) ===================== */
-/* Covers the full phone image; each button is individually positioned
-   using percentages measured from nokia3310buttons.png (1364 x 2048). */
-#nokiaKeypad {
-  position: absolute;
-  z-index: 3;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;        /* only buttons receive events */
-}
-
-/* Each button is absolutely positioned over its PNG graphic */
-.nokia-key {
-  position: absolute;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  border-radius: 50%;
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.1s ease;
-  user-select: none;
-  touch-action: manipulation;
-  pointer-events: auto;
-}
-
-.nokia-key:hover {
-  background: transparent; /* rgba(255, 255, 255, 0.2) */
-}
-
-.nokia-key:active {
-  background: transparent; /* rgba(255, 255, 255, 0.35) */
-}
-
-.nokia-key.deco { cursor: default; }
-
-/* --- Row 1 --- */
-.nokia-key[data-action="tap"]   { left: 16.35%; top: 59.81%; width: 17.96%; height: 5.37%; }
-.nokia-key[data-action="to"]    { left: 41.28%; top: 61.08%; width: 19.57%; height: 5.37%; }
-.nokia-key[data-action="start"] { left: 68.18%; top: 59.81%; width: 17.96%; height: 5.37%; }
-
-/* --- Row 2 --- */
-.nokia-key[data-action="howto"] { left: 17.01%; top: 66.06%; width: 17.96%; height: 5.42%; }
-.nokia-key[data-action="sfx"]   { left: 41.86%; top: 67.92%; width: 18.91%; height: 4.69%; }
-.nokia-key[data-action="music"] { left: 67.52%; top: 66.06%; width: 17.96%; height: 5.42%; }
-
-/* --- Row 3 --- */
-.nokia-key[data-action="goody"]  { left: 17.96%; top: 72.41%; width: 17.96%; height: 5.42%; }
-.nokia-key[data-action="back"]   { left: 41.57%; top: 74.27%; width: 19.79%; height: 4.64%; }
-.nokia-key[data-action="scores"] { left: 66.57%; top: 72.41%; width: 17.96%; height: 5.42%; }
-
-/* --- Row 4 --- */
-.nokia-key[data-action="star"] { left: 18.70%; top: 78.71%; width: 17.96%; height: 5.42%; }
-.nokia-key[data-action="zero"] { left: 41.86%; top: 80.52%; width: 19.43%; height: 4.64%; }
-.nokia-key[data-action="hash"] { left: 65.84%; top: 78.71%; width: 17.96%; height: 5.42%; }
-
 /* ===================== DESKTOP ===================== */
 @media (min-width: 769px) {
   #playWrap {
@@ -1218,20 +1124,17 @@ canvas {
 
 /* ===================== MOBILE ===================== */
 @media (max-width: 768px) {
-  #nokiaFrame {
-    height: min(60vh, 760px);
-  }
-  #nokiaPhoneWrap {
-    top: 50%;
+  #playWrap {
+    top: 48%;
   }
   #playWrap #playOverlay {
-    max-width: 80vw;
+    max-width: 86vw;
   }
   #homeUI {
-    top: 60%;
+    top: 68%;
   }
   #startSplash {
-    font-size: clamp(22px, 5.5vw, 36px);
+    font-size: clamp(24px, 6vw, 38px);
   }
 }
 
@@ -1245,7 +1148,6 @@ canvas {
 <button class="back-button game-btn" onclick="goBack()">← back</button>
 <button class="music-button game-btn" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 <button id="goodybagBtn" class="soundcloud-btn game-btn">goodybag</button>
-<button id="howToBtn" class="soundcloud-btn game-btn" style="display:none;">how to play</button>
 
 <div id="homeUI">
   <div id="startSplash">tap/click anywhere to start!</div>
@@ -1263,25 +1165,6 @@ canvas {
 <audio id="sfxGold" src="sfx_gold.mp3" preload="auto"></audio>
 <audio id="sfxDie" src="sfx_die.mp3" preload="auto"></audio>
 <audio id="sfxPower" src="sfx_power.mp3" preload="auto"></audio>
-
-<div id="nokiaPhoneWrap">
-  <img id="nokiaFrame" src="nokia3310.png" alt="">
-  <img id="nokiaButtonOverlay" src="nokia3310buttons.png" alt="">
-  <div id="nokiaKeypad">
-    <button class="nokia-key" data-action="tap"></button>
-    <button class="nokia-key" data-action="to"></button>
-    <button class="nokia-key" data-action="start"></button>
-    <button class="nokia-key" data-action="howto"></button>
-    <button class="nokia-key" data-action="sfx"></button>
-    <button class="nokia-key" data-action="music"></button>
-    <button class="nokia-key" data-action="goody"></button>
-    <button class="nokia-key" data-action="back"></button>
-    <button class="nokia-key" data-action="scores"></button>
-    <button class="nokia-key deco" data-action="star"></button>
-    <button class="nokia-key deco" data-action="zero"></button>
-    <button class="nokia-key deco" data-action="hash"></button>
-  </div>
-</div>
 
 <div id="playWrap">
   <img id="playOverlay" src="play.png" alt="play">
@@ -1701,38 +1584,50 @@ function updateShieldHud() {
   else el.classList.remove('active');
 }
 
+// Pre-built toast pool — avoids createElement during gameplay
+const TOAST_POOL_SIZE = 4;
+const toastPool = [];
+let toastPoolIdx = 0;
+
+(function initToastPool() {
+  const container = document.getElementById('pickupNotifications');
+  if (!container) return;
+  for (let i = 0; i < TOAST_POOL_SIZE; i++) {
+    const toast = document.createElement('div');
+    toast.className = 'pickup-toast';
+    const img = document.createElement('img');
+    img.alt = '';
+    const span = document.createElement('span');
+    toast.appendChild(img);
+    toast.appendChild(span);
+    container.appendChild(toast);
+    toastPool.push({ el: toast, img, span, timer: 0 });
+  }
+})();
+
 function showPickupNotification(spriteSrc, text, color, duration) {
   color = color || '#e8b810';
   duration = duration || 3000;
-  const container = document.getElementById('pickupNotifications');
-  if (!container) return;
 
-  const toast = document.createElement('div');
-  toast.className = 'pickup-toast';
+  const entry = toastPool[toastPoolIdx];
+  toastPoolIdx = (toastPoolIdx + 1) % TOAST_POOL_SIZE;
 
-  const img = document.createElement('img');
-  img.src = spriteSrc;
-  img.alt = '';
+  // Reset previous state
+  clearTimeout(entry.timer);
+  entry.el.classList.remove('show');
 
-  const span = document.createElement('span');
-  span.textContent = text;
-  span.style.color = color;
+  entry.img.src = spriteSrc;
+  entry.span.textContent = text;
+  entry.span.style.color = color;
 
-  toast.appendChild(img);
-  toast.appendChild(span);
-  container.appendChild(toast);
-
-  // Trigger fade-in
+  // Fade in on next frame
   requestAnimationFrame(() => {
-    toast.classList.add('show');
+    entry.el.classList.add('show');
   });
 
-  // Fade-out and remove
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => {
-      if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 400);
+  // Fade out
+  entry.timer = setTimeout(() => {
+    entry.el.classList.remove('show');
   }, duration);
 }
 
@@ -1741,38 +1636,35 @@ let baghettiCharges = 0;         // number of forced baghettis still to spawn
 let baghettiRunLeft = 0;         // total baghettis remaining on-screen for bg (pickup+forced)
 let baghettiToast = null;        // persistent notification for baghetti run
 
-function showBaghettiNotification() {
-  // Remove any existing baghetti toast first
-  dismissBaghettiNotification();
-
+// Pre-built baghetti notification (avoids createElement during gameplay)
+let baghettiToastEl = null;
+(function initBaghettiToast() {
   const container = document.getElementById('pickupNotifications');
   if (!container) return;
-
   const toast = document.createElement('div');
   toast.className = 'pickup-toast';
-
   const img = document.createElement('img');
   img.src = 'sprites/powerups/baghetti.png';
   img.alt = '';
-
   const span = document.createElement('span');
   span.textContent = 'baghetti found!';
   span.style.color = '#e8b810';
-
   toast.appendChild(img);
   toast.appendChild(span);
   container.appendChild(toast);
+  baghettiToastEl = toast;
+})();
 
-  requestAnimationFrame(() => { toast.classList.add('show'); });
-  baghettiToast = toast;
+function showBaghettiNotification() {
+  if (!baghettiToastEl) return;
+  baghettiToast = baghettiToastEl;
+  requestAnimationFrame(() => { baghettiToastEl.classList.add('show'); });
 }
 
 function dismissBaghettiNotification() {
   if (!baghettiToast) return;
-  const toast = baghettiToast;
   baghettiToast = null;
-  toast.classList.remove('show');
-  setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+  baghettiToastEl.classList.remove('show');
 }
 
 let lastTouchTime = 0;
@@ -1932,71 +1824,61 @@ function clamp(n, min, max) {
 const funTextPopup = document.getElementById('funTextPopup');
 const pointPopup = document.getElementById('pointPopup');
 
+// ---- POPUP SYSTEM (zero-layout, no transform transition so popups snap to position) ----
 let popupTimer = 0;
+const popupFontMobile = '22px';
+
 function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
-  pointPopup.textContent = text;
-  pointPopup.style.left = x + 'px';
-  pointPopup.style.top = y + 'px';
-  pointPopup.style.color = color;
-
-  const isMobile = cachedWinW <= 768;
-  pointPopup.style.fontSize = isMobile ? '22px' : size;
-
-  pointPopup.style.opacity = 1;
-  pointPopup.style.transform = "translate(-50%, 0) translateY(10px)";
-
-  // optional glow
-  pointPopup.style.textShadow = glow ? `0 0 6px ${color}` : '';
+  const el = pointPopup;
+  const fs = cachedWinW <= 768 ? popupFontMobile : size;
+  el.textContent = text;
+  el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;font-family:"RuneScape UF",Arial,sans-serif;z-index:6;will-change:opacity;'
+    + 'font-size:' + fs
+    + ';color:' + color
+    + ';opacity:1'
+    + ';transform:translate(' + x + 'px,' + (y + 10) + 'px) translate(-50%,0)'
+    + (glow ? ';text-shadow:0 0 6px ' + color : '')
+    + ';transition:opacity 0.35s';
 
   clearTimeout(popupTimer);
   popupTimer = setTimeout(() => {
-    requestAnimationFrame(() => {
-      pointPopup.style.opacity = 0;
-      pointPopup.style.transform = "translate(-50%, 0) translateY(24px)";
-      pointPopup.style.textShadow = '';
-    });
+    el.style.opacity = 0;
   }, 400);
 }
 
+let funTextTimer = 0;
 function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'center') {
   const fontSize = 24;
   const padding = 12;
+  const el = funTextPopup;
 
-  funTextPopup.textContent = text;
-  funTextPopup.style.cssText =
-    'display:block;opacity:0;white-space:pre;font-size:' + fontSize + 'px;color:' + color +
-    ';text-align:' + (align === 'right' ? 'right' : 'center') +
-    ';transform:translate(' + (align === 'right' ? '-100%' : '-50%') + ',0) translateY(8px);';
-
-  // Estimate width from text length (avoids layout thrashing from offsetWidth reads)
+  // Estimate width (avoids layout reads)
   const estCharW = fontSize * 0.55;
   const estW = text.length * estCharW;
   const estH = fontSize * 1.3;
 
-  // Clamp position using cached dimensions
-  let clampedX = x;
+  let cx = x;
   if (align === 'right') {
-    clampedX = clamp(x, padding + estW, cachedWinW - padding);
+    cx = clamp(x, padding + estW, cachedWinW - padding);
   } else {
-    clampedX = clamp(x, padding + estW / 2, cachedWinW - padding - estW / 2);
+    cx = clamp(x, padding + estW / 2, cachedWinW - padding - estW / 2);
   }
-  const clampedY = clamp(y, padding, cachedWinH - padding - estH);
+  const cy = clamp(y, padding, cachedWinH - padding - estH);
 
-  funTextPopup.style.left = clampedX + 'px';
-  funTextPopup.style.top = clampedY + 'px';
+  const anchorX = align === 'right' ? '-100%' : '-50%';
 
-  requestAnimationFrame(() => {
-    funTextPopup.style.opacity = 1;
-  });
+  el.textContent = text;
+  el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;font-family:"RuneScape UF",Arial,sans-serif;z-index:6;will-change:opacity;white-space:pre;'
+    + 'font-size:' + fontSize + 'px'
+    + ';color:' + color
+    + ';text-align:' + (align === 'right' ? 'right' : 'center')
+    + ';opacity:1'
+    + ';transform:translate(' + cx + 'px,' + cy + 'px) translate(' + anchorX + ',0)'
+    + ';transition:opacity 0.35s';
 
-  setTimeout(() => {
-    requestAnimationFrame(() => {
-      funTextPopup.style.opacity = 0;
-      funTextPopup.style.transform =
-        (align === 'right')
-          ? "translate(-100%, 0) translateY(22px)"
-          : "translate(-50%, 0) translateY(22px)";
-    });
+  clearTimeout(funTextTimer);
+  funTextTimer = setTimeout(() => {
+    el.style.opacity = 0;
   }, duration);
 }
 
@@ -2188,8 +2070,6 @@ function showOverlay(showLastScore = false) {
   document.getElementById('homeSfxBtn').textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
   homeUI.classList.add('active');
 
-  // Nokia keypad disabled (kept for future use)
-  hideNokiaKeypad();
 }
 
 function hideOverlay() {
@@ -2208,7 +2088,6 @@ function hideOverlay() {
   backButton.style.color = '#2d93ea';
   backButton.style.textShadow = 'none';
 
-  hideNokiaKeypad();
 }
 
 //setInterval(updateTopScores, 100);
@@ -2223,8 +2102,6 @@ function startGame() {
   // Cache topScores height before gameplay begins
   const tsEl = document.getElementById('topScores');
   if (tsEl) cachedTopScoresH = tsEl.offsetHeight || 44;
-const howToBtnEl = document.getElementById('howToBtn');
-if (howToBtnEl) howToBtnEl.style.display = 'none';
   hideOverlay();
   gameStarted = true;
   dying = false;
@@ -2237,7 +2114,7 @@ if (howToBtnEl) howToBtnEl.style.display = 'none';
   // Auto-enable SFX on first play (unless user manually toggled it off)
   if (!sfxUserToggled && !sfxEnabled) {
     sfxEnabled = true;
-    if (nokiaSfxLabel) nokiaSfxLabel.textContent = 'sfx: on';
+
   }
   SPEED = 3;
   hoops = [];
@@ -2480,7 +2357,6 @@ if (key === UNLOCK_KEYS.soundtracks) {
 }
 
   playSfx(sfxPower);
-  updateTopScores();
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -2570,7 +2446,6 @@ if (powerId === POWERUPS.baghetti) {
         showPopup('+1', ball.x, pointY, TIER_COLORS.common);
       }
       playSfx(sfxGold);
-      updateTopScores();
       addToCollection(h.spriteIndex);
       ball.spriteIndex = h.spriteIndex;
       hoops.splice(i, 1);
@@ -2811,7 +2686,7 @@ function handleFirstUserGesture() {
   if (!sfxUserToggled) {
     sfxEnabled = true;
     if (homeSfxBtn) homeSfxBtn.textContent = 'sfx: on';
-    if (nokiaSfxLabel) nokiaSfxLabel.textContent = 'sfx: on';
+
   }
 
   window.removeEventListener('touchstart', handleFirstUserGesture);
@@ -2853,7 +2728,6 @@ homeSfxBtn.addEventListener('click', () => {
   sfxEnabled = !sfxEnabled;
   sfxUserToggled = true;
   homeSfxBtn.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
-  if (nokiaSfxLabel) nokiaSfxLabel.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
 });
 
 // ------------------- PAUSE ON HIDE / CLOSE -------------------
@@ -3021,7 +2895,6 @@ const soundtrackBtn = document.getElementById('soundtrackBtn');
 const passwordBtn = document.getElementById('passwordBtn');
 const goodybagContent = document.getElementById('goodybagContent');
 const goodybagBtn = document.getElementById('goodybagBtn');
-const howToBtn = document.getElementById('howToBtn');
 const howToBackdrop = document.getElementById('howToBackdrop');
 
 function openHowTo() {
@@ -3086,7 +2959,6 @@ function buildHowToContent() {
   container.innerHTML = html;
 }
 
-howToBtn.addEventListener('click', openHowTo);
 
 
 function refreshGoodybagButtons() {
@@ -3335,7 +3207,7 @@ let sfxUserToggled = false; // tracks if user manually toggled sfx
 const sfxGold  = document.getElementById('sfxGold');
 const sfxDie   = document.getElementById('sfxDie');
 const sfxPower = document.getElementById('sfxPower');
-sfxGold.volume = 0.2;
+sfxGold.volume = 0.6;
 
 // Audio pool to avoid expensive cloneNode() on every SFX play
 const sfxPools = new Map();
@@ -3362,109 +3234,6 @@ function playSfx(sound) {
   a.play().catch(() => {});
 }
 
-const nokiaKeypad = document.getElementById('nokiaKeypad');
-const nokiaMusicLabel = document.getElementById('nokiaMusicLabel');
-const nokiaSfxLabel = document.getElementById('nokiaSfxLabel');
-
-function showNokiaKeypad() {
-  const wrap = document.getElementById('nokiaPhoneWrap');
-  if (wrap) {
-    wrap.style.opacity = '1';
-    wrap.querySelectorAll('.nokia-key').forEach(k => k.style.pointerEvents = 'auto');
-  }
-  updateNokiaMusicLabel();
-}
-
-function hideNokiaKeypad() {
-  const wrap = document.getElementById('nokiaPhoneWrap');
-  if (wrap) {
-    wrap.style.opacity = '0';
-    wrap.querySelectorAll('.nokia-key').forEach(k => k.style.pointerEvents = 'none');
-  }
-}
-
-function updateNokiaMusicLabel() {
-  if (!nokiaMusicLabel) return;
-  if (bgMusic.readyState > 2 && !bgMusic.paused) {
-    nokiaMusicLabel.textContent = 'music: on';
-  } else {
-    nokiaMusicLabel.textContent = 'music: off';
-  }
-}
-
-// Stop non-start button taps from bubbling to canvas/playWrap (which would start the game)
-nokiaKeypad.addEventListener('touchstart', (e) => {
-  const key = e.target.closest('.nokia-key');
-  if (!key) return;
-  const action = key.dataset.action;
-  // Let tap/to/start bubble — they start the game anyway
-  if (action === 'tap' || action === 'to' || action === 'start') return;
-  // All other buttons: stop the event so it doesn't reach canvas/playWrap
-  e.stopPropagation();
-}, { passive: false });
-
-// Click handlers for each key
-nokiaKeypad.addEventListener('click', (e) => {
-  const key = e.target.closest('.nokia-key');
-  if (!key) return;
-  const action = key.dataset.action;
-  // Stop non-start clicks from bubbling
-  if (action !== 'tap' && action !== 'to' && action !== 'start') {
-    e.stopPropagation();
-  }
-
-  switch (action) {
-    case 'tap':    // 1 - "tap" (part of "tap to start!")
-    case 'to':     // 2 - "to"
-    case 'start':  // 3 - "start!"
-      startGame();
-      break;
-
-    case 'music':  // 6
-      if (bgMusic.paused) {
-        ensureSoundtrackLoadedOnce();
-        bgMusic.play().catch(() => {});
-        musicToggle.textContent = 'music: on';
-      } else {
-        bgMusic.pause();
-        musicToggle.textContent = 'music: off';
-      }
-      updateNokiaMusicLabel();
-      break;
-
-    case 'sfx':    // 5
-      sfxEnabled = !sfxEnabled;
-      sfxUserToggled = true;
-      if (nokiaSfxLabel) nokiaSfxLabel.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
-      break;
-
-    case 'howto':  // 4
-      openHowTo();
-      break;
-
-    case 'goody':  // 7
-      openGoodybag();
-      break;
-
-    case 'scores': // 9
-      toggleLeaderboard();
-      break;
-
-    case 'back':   // 8
-      goBack();
-      break;
-
-    // ---- SECRET / FUTURE KEYS ----
-    // To activate: remove 'deco' class from the button in HTML,
-    // then add your logic below.
-    case 'star':   // * key
-      break;
-    case 'zero':   // 0 key
-      break;
-    case 'hash':   // # key
-      break;
-  }
-});
 
 </script>
 
