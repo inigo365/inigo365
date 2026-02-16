@@ -122,20 +122,20 @@ input,
 }
 
 .pickup-toast {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 6px;
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: clamp(14px, 1.8vw, 18px);
-  color: #e8b810;
+  color: gold;
   opacity: 0;
-  transition: opacity 0.4s ease;
-  will-change: opacity;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateY(-6px);
 }
 
 .pickup-toast.show {
-  display: flex;
   opacity: 1;
+  transform: translateY(0);
 }
 
 .pickup-toast img {
@@ -213,7 +213,7 @@ input,
 /* ===================== HOME SCREEN CENTRE STACK ===================== */
 #homeUI {
   position: fixed;
-  top: 72%;
+  top: 66%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 61;
@@ -256,24 +256,22 @@ input,
 
 #homeToggles button {
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 22px;
-  background: transparent;
-  border: none;
-  color: #2d93ea;
+  font-size: 18px;
+  background: #2d93ea;
+  border: 2px solid #2d93ea;
+  color: white;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
-  padding: 4px 8px;
+  padding: 8px 20px;
+  min-width: 120px;
   text-align: center;
-  transition: opacity 0.2s;
+  transition: background 0.2s, border-color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
 
 #homeToggles button:hover {
-  opacity: 0.8;
-}
-
-#homeToggles button:active {
-  transform: scale(0.95);
+  background: #1a7bd4;
+  border-color: #1a7bd4;
 }
 
 #homeToggles .home-sep {
@@ -282,36 +280,24 @@ input,
 
 #homeHowToBtn {
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 22px;
-  background: transparent;
-  border: none;
-  color: #2d93ea;
+  font-size: 18px;
+  background: #2d93ea;
+  border: 2px solid #2d93ea;
+  color: white;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
-  padding: 4px 8px;
-  transition: opacity 0.2s;
+  padding: 8px 20px;
+  transition: background 0.2s, border-color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
 
 #homeHowToBtn:hover {
-  opacity: 0.8;
+  background: #1a7bd4;
+  border-color: #1a7bd4;
 }
 
 #homeHowToBtn:active {
   transform: scale(0.95);
-}
-
-#homeBottomRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-}
-
-#homeBottomRow button {
-  margin: 0;
-  line-height: 1;
-  vertical-align: baseline;
 }
 
 /* Back button on play screen — matches name modal back button exactly */
@@ -564,7 +550,7 @@ canvas {
 
 /* Top 3 leaderboard medals */
 .leaderboard-entry.rank-1 {
-  color: #e8b810;
+  color: #d4a017;
   font-weight: bold;
   font-size: 24px;
   padding: 10px 4px;
@@ -573,8 +559,8 @@ canvas {
 }
 
 @keyframes rank1Glow {
-  0%, 100% { background: rgba(232, 184, 16, 0.04); }
-  50%      { background: rgba(232, 184, 16, 0.12); }
+  0%, 100% { background: rgba(212, 160, 23, 0.04); }
+  50%      { background: rgba(212, 160, 23, 0.12); }
 }
 
 .leaderboard-entry.rank-2 {
@@ -1000,8 +986,8 @@ canvas {
 /* play.png sizing */
 #playWrap #playOverlay{
   display: block;
-  max-width: 78vw;
-  max-height: 78vh;
+  max-width: 70vw;
+  max-height: 70vh;
   width: auto;
   height: auto;
 }
@@ -1112,6 +1098,99 @@ canvas {
   transition: opacity 1s ease-out; /* slow fade (both directions) */
 }
 
+/* ===================== NOKIA 3310 PHONE WRAP ===================== */
+/* position:fixed creates a containing block for absolute children.
+   width:fit-content shrink-wraps to the #nokiaFrame image. */
+#nokiaPhoneWrap {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 56;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+  width: fit-content;
+}
+
+/* Phone body image — sets the wrapper's intrinsic size */
+#nokiaFrame {
+  display: block;
+  height: min(84vh, 760px);
+  width: auto;
+  pointer-events: none;
+}
+
+/* Button overlay — identical pixel dimensions as nokia3310.png.
+   Covers the frame exactly so the button graphics align. */
+#nokiaButtonOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ===================== NOKIA KEYPAD (transparent hit areas) ===================== */
+/* Covers the full phone image; each button is individually positioned
+   using percentages measured from nokia3310buttons.png (1364 x 2048). */
+#nokiaKeypad {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;        /* only buttons receive events */
+}
+
+/* Each button is absolutely positioned over its PNG graphic */
+.nokia-key {
+  position: absolute;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 50%;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s ease;
+  user-select: none;
+  touch-action: manipulation;
+  pointer-events: auto;
+}
+
+.nokia-key:hover {
+  background: transparent; /* rgba(255, 255, 255, 0.2) */
+}
+
+.nokia-key:active {
+  background: transparent; /* rgba(255, 255, 255, 0.35) */
+}
+
+.nokia-key.deco { cursor: default; }
+
+/* --- Row 1 --- */
+.nokia-key[data-action="tap"]   { left: 16.35%; top: 59.81%; width: 17.96%; height: 5.37%; }
+.nokia-key[data-action="to"]    { left: 41.28%; top: 61.08%; width: 19.57%; height: 5.37%; }
+.nokia-key[data-action="start"] { left: 68.18%; top: 59.81%; width: 17.96%; height: 5.37%; }
+
+/* --- Row 2 --- */
+.nokia-key[data-action="howto"] { left: 17.01%; top: 66.06%; width: 17.96%; height: 5.42%; }
+.nokia-key[data-action="sfx"]   { left: 41.86%; top: 67.92%; width: 18.91%; height: 4.69%; }
+.nokia-key[data-action="music"] { left: 67.52%; top: 66.06%; width: 17.96%; height: 5.42%; }
+
+/* --- Row 3 --- */
+.nokia-key[data-action="goody"]  { left: 17.96%; top: 72.41%; width: 17.96%; height: 5.42%; }
+.nokia-key[data-action="back"]   { left: 41.57%; top: 74.27%; width: 19.79%; height: 4.64%; }
+.nokia-key[data-action="scores"] { left: 66.57%; top: 72.41%; width: 17.96%; height: 5.42%; }
+
+/* --- Row 4 --- */
+.nokia-key[data-action="star"] { left: 18.70%; top: 78.71%; width: 17.96%; height: 5.42%; }
+.nokia-key[data-action="zero"] { left: 41.86%; top: 80.52%; width: 19.43%; height: 4.64%; }
+.nokia-key[data-action="hash"] { left: 65.84%; top: 78.71%; width: 17.96%; height: 5.42%; }
+
 /* ===================== DESKTOP ===================== */
 @media (min-width: 769px) {
   #playWrap {
@@ -1121,33 +1200,20 @@ canvas {
 
 /* ===================== MOBILE ===================== */
 @media (max-width: 768px) {
-  #playWrap {
-    top: 48%;
+  #nokiaFrame {
+    height: min(60vh, 760px);
+  }
+  #nokiaPhoneWrap {
+    top: 50%;
   }
   #playWrap #playOverlay {
-    max-width: 86vw;
+    max-width: 80vw;
   }
   #homeUI {
-    top: 68%;
-    gap: 4px;
-  }
-  #homeToggles button {
-    font-size: 18px;
-    padding: 2px 6px;
-  }
-  #homeHowToBtn {
-    font-size: 18px;
-    padding: 2px 6px;
-  }
-  #homeBackBtn {
-    font-size: 18px;
-    padding: 2px 6px;
-  }
-  #homeBottomRow {
-    gap: 4px;
+    top: 60%;
   }
   #startSplash {
-    font-size: clamp(24px, 6vw, 38px);
+    font-size: clamp(22px, 5.5vw, 36px);
   }
 }
 
@@ -1161,6 +1227,7 @@ canvas {
 <button class="back-button game-btn" onclick="goBack()">← back</button>
 <button class="music-button game-btn" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 <button id="goodybagBtn" class="soundcloud-btn game-btn">goodybag</button>
+<button id="howToBtn" class="soundcloud-btn game-btn" style="display:none;">how to play</button>
 
 <div id="homeUI">
   <div id="startSplash">tap/click anywhere to start!</div>
@@ -1169,15 +1236,32 @@ canvas {
     <span class="home-sep">·</span>
     <button id="homeSfxBtn">sfx: off</button>
   </div>
-  <div id="homeBottomRow">
-    <button id="homeBackBtn" onclick="goBack()">← back</button>
-    <button id="homeHowToBtn" onclick="openHowTo()">how to play</button>
-  </div>
+  <button id="homeHowToBtn" onclick="openHowTo()">how to play</button>
+  <button id="homeBackBtn" onclick="goBack()">← back</button>
 </div>
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 <audio id="sfxGold" src="sfx_gold.mp3" preload="auto"></audio>
 <audio id="sfxDie" src="sfx_die.mp3" preload="auto"></audio>
 <audio id="sfxPower" src="sfx_power.mp3" preload="auto"></audio>
+
+<div id="nokiaPhoneWrap">
+  <img id="nokiaFrame" src="nokia3310.png" alt="">
+  <img id="nokiaButtonOverlay" src="nokia3310buttons.png" alt="">
+  <div id="nokiaKeypad">
+    <button class="nokia-key" data-action="tap"></button>
+    <button class="nokia-key" data-action="to"></button>
+    <button class="nokia-key" data-action="start"></button>
+    <button class="nokia-key" data-action="howto"></button>
+    <button class="nokia-key" data-action="sfx"></button>
+    <button class="nokia-key" data-action="music"></button>
+    <button class="nokia-key" data-action="goody"></button>
+    <button class="nokia-key" data-action="back"></button>
+    <button class="nokia-key" data-action="scores"></button>
+    <button class="nokia-key deco" data-action="star"></button>
+    <button class="nokia-key deco" data-action="zero"></button>
+    <button class="nokia-key deco" data-action="hash"></button>
+  </div>
+</div>
 
 <div id="playWrap">
   <img id="playOverlay" src="play.png" alt="play">
@@ -1270,7 +1354,7 @@ canvas {
 <script>
 // ===================== GAME VARIABLES =====================
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d', { desynchronized: true });
+const ctx = canvas.getContext('2d');
 const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
 const overlayHighscoreEl = document.getElementById('overlayHighscore');
@@ -1457,7 +1541,7 @@ const POWERUPS = {
 const TIER_COLORS = {
   common: '#c78665',
   rare: '#1ccfcf',      // teal blue
-  goated: '#e8b810',
+  goated: 'gold',
   mythic: '#a855f7'     // glowing purple base
 };
 
@@ -1597,50 +1681,38 @@ function updateShieldHud() {
   else el.classList.remove('active');
 }
 
-// Pre-built toast pool — avoids createElement during gameplay
-const TOAST_POOL_SIZE = 4;
-const toastPool = [];
-let toastPoolIdx = 0;
-
-(function initToastPool() {
+function showPickupNotification(spriteSrc, text, color, duration) {
+  color = color || 'gold';
+  duration = duration || 3000;
   const container = document.getElementById('pickupNotifications');
   if (!container) return;
-  for (let i = 0; i < TOAST_POOL_SIZE; i++) {
-    const toast = document.createElement('div');
-    toast.className = 'pickup-toast';
-    const img = document.createElement('img');
-    img.alt = '';
-    const span = document.createElement('span');
-    toast.appendChild(img);
-    toast.appendChild(span);
-    container.appendChild(toast);
-    toastPool.push({ el: toast, img, span, timer: 0 });
-  }
-})();
 
-function showPickupNotification(spriteSrc, text, color, duration) {
-  color = color || '#e8b810';
-  duration = duration || 3000;
+  const toast = document.createElement('div');
+  toast.className = 'pickup-toast';
 
-  const entry = toastPool[toastPoolIdx];
-  toastPoolIdx = (toastPoolIdx + 1) % TOAST_POOL_SIZE;
+  const img = document.createElement('img');
+  img.src = spriteSrc;
+  img.alt = '';
 
-  // Reset previous state
-  clearTimeout(entry.timer);
-  entry.el.classList.remove('show');
+  const span = document.createElement('span');
+  span.textContent = text;
+  span.style.color = color;
 
-  entry.img.src = spriteSrc;
-  entry.span.textContent = text;
-  entry.span.style.color = color;
+  toast.appendChild(img);
+  toast.appendChild(span);
+  container.appendChild(toast);
 
-  // Fade in on next frame
+  // Trigger fade-in
   requestAnimationFrame(() => {
-    entry.el.classList.add('show');
+    toast.classList.add('show');
   });
 
-  // Fade out
-  entry.timer = setTimeout(() => {
-    entry.el.classList.remove('show');
+  // Fade-out and remove
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 400);
   }, duration);
 }
 
@@ -1649,35 +1721,38 @@ let baghettiCharges = 0;         // number of forced baghettis still to spawn
 let baghettiRunLeft = 0;         // total baghettis remaining on-screen for bg (pickup+forced)
 let baghettiToast = null;        // persistent notification for baghetti run
 
-// Pre-built baghetti notification (avoids createElement during gameplay)
-let baghettiToastEl = null;
-(function initBaghettiToast() {
+function showBaghettiNotification() {
+  // Remove any existing baghetti toast first
+  dismissBaghettiNotification();
+
   const container = document.getElementById('pickupNotifications');
   if (!container) return;
+
   const toast = document.createElement('div');
   toast.className = 'pickup-toast';
+
   const img = document.createElement('img');
   img.src = 'sprites/powerups/baghetti.png';
   img.alt = '';
+
   const span = document.createElement('span');
   span.textContent = 'baghetti found!';
-  span.style.color = '#e8b810';
+  span.style.color = 'gold';
+
   toast.appendChild(img);
   toast.appendChild(span);
   container.appendChild(toast);
-  baghettiToastEl = toast;
-})();
 
-function showBaghettiNotification() {
-  if (!baghettiToastEl) return;
-  baghettiToast = baghettiToastEl;
-  requestAnimationFrame(() => { baghettiToastEl.classList.add('show'); });
+  requestAnimationFrame(() => { toast.classList.add('show'); });
+  baghettiToast = toast;
 }
 
 function dismissBaghettiNotification() {
   if (!baghettiToast) return;
+  const toast = baghettiToast;
   baghettiToast = null;
-  baghettiToastEl.classList.remove('show');
+  toast.classList.remove('show');
+  setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
 }
 
 let lastTouchTime = 0;
@@ -1709,20 +1784,21 @@ const NOTBAG_START = MYTHIC_INDEX + 1;            // 26
 const UNLOCK_START = NOTBAG_START + NOTBAG_COUNT; // 36
 const POWERUP_START = UNLOCK_START + UNLOCK_COUNT;// 39
 
-// Flat sprite lookup — built once after load, O(1) access in hot loop
-const spriteTable = [];
-
-function buildSpriteTable() {
-  spriteTable.length = POWERUP_START + POWERUP_COUNT;
-  for (let i = 0; i < NUM_SPRITES; i++) spriteTable[i] = sprites[i];
-  spriteTable[MYTHIC_INDEX] = mythicImg;
-  for (let i = 0; i < NOTBAG_COUNT; i++) spriteTable[NOTBAG_START + i] = notbagSprites[i];
-  for (let i = 0; i < UNLOCK_COUNT; i++) spriteTable[UNLOCK_START + i] = unlockSprites[i];
-  for (let i = 0; i < POWERUP_COUNT; i++) spriteTable[POWERUP_START + i] = powerupSprites[i];
-}
-
+// Helper: get the correct Image object for any spriteIndex
 function imgForIndex(idx) {
-  return spriteTable[idx] || null;
+  if (idx < NUM_SPRITES) return sprites[idx];
+  if (idx === MYTHIC_INDEX) return mythicImg;
+
+  if (idx >= NOTBAG_START && idx < NOTBAG_START + NOTBAG_COUNT) {
+    return notbagSprites[idx - NOTBAG_START];
+  }
+  if (idx >= UNLOCK_START && idx < UNLOCK_START + UNLOCK_COUNT) {
+    return unlockSprites[idx - UNLOCK_START];
+  }
+  if (idx >= POWERUP_START && idx < POWERUP_START + POWERUP_COUNT) {
+    return powerupSprites[idx - POWERUP_START];
+  }
+  return null;
 }
 
 const allSpritePaths = [];
@@ -1758,7 +1834,7 @@ allSpritePaths.forEach((path) => {
     loadedCount++;
     if (loadedCount === allSpritePaths.length) {
       assetsLoaded = true;
-      buildSpriteTable();
+      console.log('All assets loaded!');
       buildHowToContent();
     }
   };
@@ -2032,18 +2108,12 @@ let cachedWinW = window.innerWidth;
 let cachedWinH = window.innerHeight;
 let cachedHighscore = Number(localStorage.getItem('flappyBasketHighscore') || 0);
 let cachedTopScoresH = 44; // fallback; updated on resize + game start
-let cachedPlayableH = cachedWinW <= 768 ? window.innerHeight * 0.95 : window.innerHeight;
-
-function refreshCachedPlayableH() {
-  cachedPlayableH = cachedWinW <= 768 ? canvas.height * 0.95 : canvas.height;
-}
 
 window.addEventListener('resize', () => {
   cachedWinW = window.innerWidth;
   cachedWinH = window.innerHeight;
   const el = document.getElementById('topScores');
   if (el) cachedTopScoresH = el.offsetHeight || 44;
-  refreshCachedPlayableH();
 });
 
 function updateTopScores() {
@@ -2087,6 +2157,8 @@ function showOverlay(showLastScore = false) {
   document.getElementById('homeSfxBtn').textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
   homeUI.classList.add('active');
 
+  // Nokia keypad disabled (kept for future use)
+  hideNokiaKeypad();
 }
 
 function hideOverlay() {
@@ -2105,6 +2177,7 @@ function hideOverlay() {
   backButton.style.color = '#2d93ea';
   backButton.style.textShadow = 'none';
 
+  hideNokiaKeypad();
 }
 
 //setInterval(updateTopScores, 100);
@@ -2119,6 +2192,8 @@ function startGame() {
   // Cache topScores height before gameplay begins
   const tsEl = document.getElementById('topScores');
   if (tsEl) cachedTopScoresH = tsEl.offsetHeight || 44;
+const howToBtnEl = document.getElementById('howToBtn');
+if (howToBtnEl) howToBtnEl.style.display = 'none';
   hideOverlay();
   gameStarted = true;
   dying = false;
@@ -2131,7 +2206,7 @@ function startGame() {
   // Auto-enable SFX on first play (unless user manually toggled it off)
   if (!sfxUserToggled && !sfxEnabled) {
     sfxEnabled = true;
-
+    if (nokiaSfxLabel) nokiaSfxLabel.textContent = 'sfx: on';
   }
   SPEED = 3;
   hoops = [];
@@ -2239,45 +2314,40 @@ function loop(ts) {
   lastTs = ts;
 
   // prevent crazy jumps after tab-switch etc.
-  if (dt < 0.5) dt = 0.5;
-  else if (dt > 2.5) dt = 2.5;
+  dt = Math.max(0.5, Math.min(dt, 2.5));
   lastDt = dt;
 
-  const cw = canvas.width;
-  const ch = canvas.height;
-  ctx.clearRect(0, 0, cw, ch);
-  if (tierBanner) drawTierBanner();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawTierBanner();
 
   // Update ball physics (time-based)
   ball.vy += GRAVITY * dt;
   ball.y  += ball.vy * dt;
 
-  const playableHeight = cachedPlayableH;
+  const playableHeight = getPlayableHeight();
   if (ball.y < 0 || ball.y > playableHeight) return startDeathAnimation();
 
   // Speed scaling
   SPEED = START_SPEED + ((MAX_SPEED - START_SPEED) * Math.min(score, MAX_SPEED_SCORE) / MAX_SPEED_SCORE);
 
-  // Pre-compute once per frame
+  // Draw ball
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.scale(ball.scaleX, ball.scaleY);
+
+  const ballImg = imgForIndex(ball.spriteIndex);
   const halfSprite = SPRITE_SIZE / 2;
-  const speedDt = SPEED * dt;
 
-  // Draw ball — avoid save/restore, use setTransform + reset
-  const bx = ball.x, by = ball.y;
-  const sx = ball.scaleX, sy = ball.scaleY;
-  ctx.setTransform(sx, 0, 0, sy, bx, by);
-
-  const ballImg = spriteTable[ball.spriteIndex];
   if (ballImg) ctx.drawImage(ballImg, -halfSprite, -halfSprite, SPRITE_SIZE, SPRITE_SIZE);
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.restore();
 
   // Draw hoops
   for (let i = hoops.length - 1; i >= 0; i--) {
     const h = hoops[i];
 
-    // time-based hoop motion
-    h.x -= speedDt;
+    // ✅ time-based hoop motion
+    h.x -= SPEED * dt;
 
     // passed not-bag popup
     if (
@@ -2301,28 +2371,27 @@ function loop(ts) {
       continue;
     }
 
-    const hoopImg = spriteTable[h.spriteIndex];
+    const hoopImg = imgForIndex(h.spriteIndex);
     if (hoopImg) ctx.drawImage(hoopImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
 
-    // --- collision (uses pre-computed halfSprite, bx, by) ---
-    const hsi = h.spriteIndex;
+    // --- collision logic unchanged below ---
     let hit = false;
 
-    if (hsi >= NOTBAG_START && hsi < NOTBAG_START + NOTBAG_COUNT) {
+    if (isNotBagIndex(h.spriteIndex)) {
       const shrink = SPRITE_SIZE * NOTBAG_HITBOX_SCALE;
       const offset = (SPRITE_SIZE - shrink) / 2;
 
       hit =
-        bx + halfSprite > h.x + offset &&
-        bx - halfSprite < h.x + offset + shrink &&
-        by + halfSprite > h.y + offset &&
-        by - halfSprite < h.y + offset + shrink;
+        ball.x + SPRITE_SIZE / 2 > h.x + offset &&
+        ball.x - SPRITE_SIZE / 2 < h.x + offset + shrink &&
+        ball.y + SPRITE_SIZE / 2 > h.y + offset &&
+        ball.y - SPRITE_SIZE / 2 < h.y + offset + shrink;
     } else {
       hit =
-        bx + halfSprite > h.x &&
-        bx - halfSprite < h.x + SPRITE_SIZE &&
-        by + halfSprite > h.y &&
-        by - halfSprite < h.y + SPRITE_SIZE;
+        ball.x + SPRITE_SIZE / 2 > h.x &&
+        ball.x - SPRITE_SIZE / 2 < h.x + SPRITE_SIZE &&
+        ball.y + SPRITE_SIZE / 2 > h.y &&
+        ball.y - SPRITE_SIZE / 2 < h.y + SPRITE_SIZE;
     }
 
     if (hit) {
@@ -2345,8 +2414,8 @@ if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT
 if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT) {
   score += 3;
   const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
-  showTextPopup(unlockDef.popupText, ball.x, textY, '#e8b810');
-  showPopup('+3', ball.x, pointY, '#e8b810', '28px', true);
+  showTextPopup(unlockDef.popupText, ball.x, textY, 'gold');
+  showPopup('+3', ball.x, pointY, 'gold', '28px', true);
 
   const key = unlockDef.storageKey;
 
@@ -2360,7 +2429,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
     lvl++;
     localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, String(lvl));
     localStorage.setItem(UNLOCK_KEYS.soundtracks, "true"); // legacy flag
-    showPickupNotification(unlockImg ? unlockImg.src : '', 'new soundtrack unlocked!', '#e8b810', 3000);
+    showPickupNotification(unlockImg ? unlockImg.src : '', 'new soundtrack unlocked!', 'gold', 3000);
   }
 
 } else {
@@ -2370,10 +2439,11 @@ if (key === UNLOCK_KEYS.soundtracks) {
   }
   const pwNames = { 0: 'tinny', 1: 'onway', 3: 'deathstar' };
   const pwName = pwNames[h.spriteIndex - UNLOCK_START] || 'secret bag';
-  showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', '#e8b810', 3000);
+  showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', 'gold', 3000);
 }
 
   playSfx(sfxPower);
+  updateTopScores();
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -2392,8 +2462,8 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
 if (powerId === POWERUPS.baghetti) {
   score += 1;
 
-  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#e8b810');
-  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, '#e8b810');
+  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
+  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, 'gold');
 
   // Only show the persistent notification on the initial pickup, not forced ones
   if (!h.forcedBaghetti) {
@@ -2415,7 +2485,7 @@ if (powerId === POWERUPS.baghetti) {
 
   // -------- Shield (still +1) --------
   score += 1;
-  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, '#2d93ea');
+  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, 'gold');
 
   if (powerId === POWERUPS.shield) {
     shieldArmed = true;
@@ -2424,9 +2494,9 @@ if (powerId === POWERUPS.baghetti) {
       'ibuprofen found!',
       ball.x,
       ball.y + POP_TEXT_OFFSET_Y,
-      '#2d93ea'
+      'gold'
     );
-    showPickupNotification('sprites/powerups/shield.png', 'ibuprofen found!', '#2d93ea', 3000);
+    showPickupNotification('sprites/powerups/shield.png', 'ibuprofen found!', 'gold', 3000);
   }
 
   playSfx(sfxPower);
@@ -2463,6 +2533,7 @@ if (powerId === POWERUPS.baghetti) {
         showPopup('+1', ball.x, pointY, TIER_COLORS.common);
       }
       playSfx(sfxGold);
+      updateTopScores();
       addToCollection(h.spriteIndex);
       ball.spriteIndex = h.spriteIndex;
       hoops.splice(i, 1);
@@ -2499,21 +2570,20 @@ if (h.x + SPRITE_SIZE < ball.x - 20) {
 const GAP = Math.min(420, Math.max(260, Math.floor(canvas.width * 0.7)));
 if (hoops.length === 0 || hoops[hoops.length - 1].x < canvas.width - GAP) addHoop();
 
-// bg + notification: only touch DOM when state actually changes
+// ✅ bg + notification active only during the 3-baghetti run (pickup+forced)
 if (baghettiRunLeft > 0) {
-  if (!baghettiBgActive) showBaghettiBg();
-} else if (baghettiBgActive) {
+  showBaghettiBg();
+} else {
   hideBaghettiBg();
   dismissBaghettiNotification();
 }
 
-// throttled score UI update (uses raf timestamp, no extra perf.now calls)
-if (ts - (loop._lastTopUpdate || 0) > 120) {
-  updateTopScores();
-  loop._lastTopUpdate = ts;
-}
-
 if (!gameOver) rafId = requestAnimationFrame(loop);
+// ✅ lightweight throttled score UI update
+if (!loop._lastTopUpdate || performance.now() - loop._lastTopUpdate > 120) {
+  updateTopScores();
+  loop._lastTopUpdate = performance.now();
+}
 }
 
 // ===================== DEATH ANIMATION =====================
@@ -2552,25 +2622,26 @@ function deathLoop(ts) {
 
   // Redraw scene
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (tierBanner) drawTierBanner();
+  drawTierBanner();
 
   // Draw frozen hoops (visual context, not moving)
   for (let i = 0; i < hoops.length; i++) {
     const h = hoops[i];
-    const hoopImg = spriteTable[h.spriteIndex];
+    const hoopImg = imgForIndex(h.spriteIndex);
     if (hoopImg) ctx.drawImage(hoopImg, h.x, h.y, SPRITE_SIZE, SPRITE_SIZE);
   }
 
-  // Draw tumbling ball — use setTransform for rotate + scale (no save/restore)
-  const halfSprite = SPRITE_SIZE / 2;
-  const cosR = Math.cos(deathRotation), sinR = Math.sin(deathRotation);
-  const sx = ball.scaleX, sy = ball.scaleY;
-  ctx.setTransform(sx * cosR, sx * sinR, -sy * sinR, sy * cosR, ball.x, ball.y);
+  // Draw tumbling ball
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.rotate(deathRotation);
+  ctx.scale(ball.scaleX, ball.scaleY);
 
-  const ballImg = spriteTable[ball.spriteIndex];
+  const ballImg = imgForIndex(ball.spriteIndex);
+  const halfSprite = SPRITE_SIZE / 2;
   if (ballImg) ctx.drawImage(ballImg, -halfSprite, -halfSprite, SPRITE_SIZE, SPRITE_SIZE);
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.restore();
 
   // Check if ball has fallen off screen
   if (ball.y > canvas.height + SPRITE_SIZE * 2) {
@@ -2618,7 +2689,6 @@ window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   SPRITE_SIZE = Math.round(canvas.height * 0.10);
-  refreshCachedPlayableH();
 });
 
 // ------------------- MUSIC -------------------
@@ -2703,7 +2773,7 @@ function handleFirstUserGesture() {
   if (!sfxUserToggled) {
     sfxEnabled = true;
     if (homeSfxBtn) homeSfxBtn.textContent = 'sfx: on';
-
+    if (nokiaSfxLabel) nokiaSfxLabel.textContent = 'sfx: on';
   }
 
   window.removeEventListener('touchstart', handleFirstUserGesture);
@@ -2745,6 +2815,7 @@ homeSfxBtn.addEventListener('click', () => {
   sfxEnabled = !sfxEnabled;
   sfxUserToggled = true;
   homeSfxBtn.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
+  if (nokiaSfxLabel) nokiaSfxLabel.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
 });
 
 // ------------------- PAUSE ON HIDE / CLOSE -------------------
@@ -2912,6 +2983,7 @@ const soundtrackBtn = document.getElementById('soundtrackBtn');
 const passwordBtn = document.getElementById('passwordBtn');
 const goodybagContent = document.getElementById('goodybagContent');
 const goodybagBtn = document.getElementById('goodybagBtn');
+const howToBtn = document.getElementById('howToBtn');
 const howToBackdrop = document.getElementById('howToBackdrop');
 
 function openHowTo() {
@@ -2968,7 +3040,7 @@ function buildHowToContent() {
 
   html += '<div class="howto-item">' +
     '<img src="sprites/unlock/deathstar.png" alt="secret bag">' +
-    '<span style="color:#e8b810">secret bags - find them all...</span>' +
+    '<span style="color:gold">secret bags - find them all...</span>' +
     '</div>';
 
   html += '<div class="howto-intro" style="margin-top:10px;">collect immense & powerful bags.\nsonically benefit yourself.\nprosper greatly.</div>';
@@ -2976,6 +3048,7 @@ function buildHowToContent() {
   container.innerHTML = html;
 }
 
+howToBtn.addEventListener('click', openHowTo);
 
 
 function refreshGoodybagButtons() {
@@ -3120,22 +3193,12 @@ function getCollection() {
   } catch(e) { return []; }
 }
 
-// In-memory collection cache — avoids JSON.parse on every pickup
-let collectionCache = null;
-const collectionSet = new Set();
-
-function ensureCollectionCache() {
-  if (collectionCache !== null) return;
-  collectionCache = getCollection();
-  collectionCache.forEach(i => collectionSet.add(i));
-}
-
 function addToCollection(spriteIndex) {
-  ensureCollectionCache();
-  if (collectionSet.has(spriteIndex)) return;
-  collectionSet.add(spriteIndex);
-  collectionCache.push(spriteIndex);
-  localStorage.setItem(COLLECTION_KEY, JSON.stringify(collectionCache));
+  const col = getCollection();
+  if (!col.includes(spriteIndex)) {
+    col.push(spriteIndex);
+    localStorage.setItem(COLLECTION_KEY, JSON.stringify(col));
+  }
 }
 
 const collectionBtn = document.getElementById('collectionBtn');
@@ -3224,33 +3287,119 @@ let sfxUserToggled = false; // tracks if user manually toggled sfx
 const sfxGold  = document.getElementById('sfxGold');
 const sfxDie   = document.getElementById('sfxDie');
 const sfxPower = document.getElementById('sfxPower');
-sfxGold.volume = 0.6;
-
-// Audio pool to avoid expensive cloneNode() on every SFX play
-const sfxPools = new Map();
-const SFX_POOL_SIZE = 4;
-
-function getSfxPool(sound) {
-  if (sfxPools.has(sound)) return sfxPools.get(sound);
-  const pool = [];
-  for (let i = 0; i < SFX_POOL_SIZE; i++) {
-    const a = new Audio(sound.src);
-    a.volume = sound.volume;
-    pool.push(a);
-  }
-  sfxPools.set(sound, { pool, idx: 0 });
-  return sfxPools.get(sound);
-}
+sfxGold.volume = 0.2;
 
 function playSfx(sound) {
   if (!sfxEnabled) return;
-  const entry = getSfxPool(sound);
-  const a = entry.pool[entry.idx];
-  entry.idx = (entry.idx + 1) % entry.pool.length;
-  a.currentTime = 0;
-  a.play().catch(() => {});
+
+  const clone = sound.cloneNode();
+  clone.volume = sound.volume;
+  clone.play().catch(() => {});
 }
 
+const nokiaKeypad = document.getElementById('nokiaKeypad');
+const nokiaMusicLabel = document.getElementById('nokiaMusicLabel');
+const nokiaSfxLabel = document.getElementById('nokiaSfxLabel');
+
+function showNokiaKeypad() {
+  const wrap = document.getElementById('nokiaPhoneWrap');
+  if (wrap) {
+    wrap.style.opacity = '1';
+    wrap.querySelectorAll('.nokia-key').forEach(k => k.style.pointerEvents = 'auto');
+  }
+  updateNokiaMusicLabel();
+}
+
+function hideNokiaKeypad() {
+  const wrap = document.getElementById('nokiaPhoneWrap');
+  if (wrap) {
+    wrap.style.opacity = '0';
+    wrap.querySelectorAll('.nokia-key').forEach(k => k.style.pointerEvents = 'none');
+  }
+}
+
+function updateNokiaMusicLabel() {
+  if (!nokiaMusicLabel) return;
+  if (bgMusic.readyState > 2 && !bgMusic.paused) {
+    nokiaMusicLabel.textContent = 'music: on';
+  } else {
+    nokiaMusicLabel.textContent = 'music: off';
+  }
+}
+
+// Stop non-start button taps from bubbling to canvas/playWrap (which would start the game)
+nokiaKeypad.addEventListener('touchstart', (e) => {
+  const key = e.target.closest('.nokia-key');
+  if (!key) return;
+  const action = key.dataset.action;
+  // Let tap/to/start bubble — they start the game anyway
+  if (action === 'tap' || action === 'to' || action === 'start') return;
+  // All other buttons: stop the event so it doesn't reach canvas/playWrap
+  e.stopPropagation();
+}, { passive: false });
+
+// Click handlers for each key
+nokiaKeypad.addEventListener('click', (e) => {
+  const key = e.target.closest('.nokia-key');
+  if (!key) return;
+  const action = key.dataset.action;
+  // Stop non-start clicks from bubbling
+  if (action !== 'tap' && action !== 'to' && action !== 'start') {
+    e.stopPropagation();
+  }
+
+  switch (action) {
+    case 'tap':    // 1 - "tap" (part of "tap to start!")
+    case 'to':     // 2 - "to"
+    case 'start':  // 3 - "start!"
+      startGame();
+      break;
+
+    case 'music':  // 6
+      if (bgMusic.paused) {
+        ensureSoundtrackLoadedOnce();
+        bgMusic.play().catch(() => {});
+        musicToggle.textContent = 'music: on';
+      } else {
+        bgMusic.pause();
+        musicToggle.textContent = 'music: off';
+      }
+      updateNokiaMusicLabel();
+      break;
+
+    case 'sfx':    // 5
+      sfxEnabled = !sfxEnabled;
+      sfxUserToggled = true;
+      if (nokiaSfxLabel) nokiaSfxLabel.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
+      break;
+
+    case 'howto':  // 4
+      openHowTo();
+      break;
+
+    case 'goody':  // 7
+      openGoodybag();
+      break;
+
+    case 'scores': // 9
+      toggleLeaderboard();
+      break;
+
+    case 'back':   // 8
+      goBack();
+      break;
+
+    // ---- SECRET / FUTURE KEYS ----
+    // To activate: remove 'deco' class from the button in HTML,
+    // then add your logic below.
+    case 'star':   // * key
+      break;
+    case 'zero':   // 0 key
+      break;
+    case 'hash':   // # key
+      break;
+  }
+});
 
 </script>
 
