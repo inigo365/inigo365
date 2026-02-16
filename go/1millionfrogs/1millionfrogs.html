@@ -683,7 +683,7 @@ function drawKillFeed(){
 /* =========================================================
    PARTICLES (lightweight pool)
 ========================================================= */
-const MAX_PARTICLES = 200;
+const MAX_PARTICLES = 350;
 const particles = [];
 
 function spawnParticle(x, y, vx, vy, life, color, size){
@@ -692,37 +692,40 @@ function spawnParticle(x, y, vx, vy, life, color, size){
 }
 
 function spawnDeathBurst(body, color){
-  // burst from up to 12 body points
-  const step = Math.max(1, (body.length / 12) | 0);
+  // big burst from many body points — 2 particles per sample point
+  const count = Math.min(body.length, 30);
+  const step = Math.max(1, (body.length / count) | 0);
   for(let i = 0; i < body.length; i += step){
     const pt = body[i];
-    const a = Math.random() * Math.PI * 2;
-    const spd = 60 + Math.random() * 120;
-    spawnParticle(pt.x, pt.y, Math.cos(a) * spd, Math.sin(a) * spd, 0.6 + Math.random() * 0.4, color, 4 + Math.random() * 4);
+    for(let j = 0; j < 2; j++){
+      const a = Math.random() * Math.PI * 2;
+      const spd = 80 + Math.random() * 180;
+      spawnParticle(pt.x, pt.y, Math.cos(a) * spd, Math.sin(a) * spd, 0.8 + Math.random() * 0.6, color, 7 + Math.random() * 7);
+    }
   }
 }
 
 function spawnEatPop(x, y){
-  for(let i = 0; i < 3; i++){
+  for(let i = 0; i < 5; i++){
     const a = Math.random() * Math.PI * 2;
-    const spd = 30 + Math.random() * 50;
-    spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.25 + Math.random() * 0.15, "rgba(55,180,90,0.8)", 2.5 + Math.random() * 2);
+    const spd = 40 + Math.random() * 70;
+    spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.35 + Math.random() * 0.2, "rgba(55,180,90,0.95)", 4 + Math.random() * 3);
   }
 }
 
 function spawnGoldEatPop(x, y){
-  for(let i = 0; i < 5; i++){
+  for(let i = 0; i < 8; i++){
     const a = Math.random() * Math.PI * 2;
-    const spd = 40 + Math.random() * 70;
-    spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.35 + Math.random() * 0.2, "rgba(255,215,0,0.85)", 3 + Math.random() * 3);
+    const spd = 50 + Math.random() * 100;
+    spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.5 + Math.random() * 0.3, "rgba(255,215,0,0.95)", 5 + Math.random() * 5);
   }
 }
 
 function spawnBoostTrail(x, y, angle, color){
-  const spread = 0.6;
+  const spread = 0.7;
   const a = angle + Math.PI + (Math.random() - 0.5) * spread;
-  const spd = 20 + Math.random() * 40;
-  spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.2 + Math.random() * 0.15, color, 2 + Math.random() * 2);
+  const spd = 25 + Math.random() * 55;
+  spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.3 + Math.random() * 0.2, color, 4 + Math.random() * 3);
 }
 
 function updateParticles(dt){
@@ -730,8 +733,8 @@ function updateParticles(dt){
     const p = particles[i];
     p.x += p.vx * dt;
     p.y += p.vy * dt;
-    p.vx *= 0.96;
-    p.vy *= 0.96;
+    p.vx *= 0.95;
+    p.vy *= 0.95;
     p.life -= dt;
     if(p.life <= 0) particles.splice(i, 1);
   }
@@ -746,11 +749,14 @@ function drawParticles(){
   for(let i = 0; i < particles.length; i++){
     const p = particles[i];
     const sx = p.x * z + ox, sy = p.y * z + oy;
-    if(sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
-    ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1) * 0.85;
+    if(sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30) continue;
+    const alpha = clamp(p.life / p.maxLife, 0, 1);
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = p.color;
-    const r = p.size * z;
-    ctx.fillRect(sx - r * 0.5, sy - r * 0.5, r, r);
+    const r = p.size * z * (0.6 + alpha * 0.4);
+    ctx.beginPath();
+    ctx.arc(sx, sy, r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -1358,10 +1364,10 @@ function updateMovement(s, dt){
       WORLD.pellets.push({ x: bx, y: by, r: 16 });
       updateRadius(s);
     }
-    // boost trail particles (player only, subtle)
-    if(s.isPlayer && Math.random() < 0.45){
-      const tx = s.x - Math.cos(s.angle) * (s.radius * 1.5);
-      const ty = s.y - Math.sin(s.angle) * (s.radius * 1.5);
+    // boost trail particles (player only)
+    if(s.isPlayer && Math.random() < 0.7){
+      const tx = s.x - Math.cos(s.angle) * (s.radius * 1.8);
+      const ty = s.y - Math.sin(s.angle) * (s.radius * 1.8);
       spawnBoostTrail(tx, ty, s.angle, s.color);
     }
   }
@@ -1730,6 +1736,9 @@ function popSnake(s, killer, method){
   }
 }
 
+let deathScreenTimer = 0;
+let deathScreenPending = false;
+
 function showDeathScreen(s, killerName, method){
   playerDead = true;
 
@@ -1753,6 +1762,7 @@ function showDeathScreen(s, killerName, method){
   if(rank < highScores.bestRank) highScores.bestRank = rank;
   saveHighScores(highScores);
 
+  // prepare overlay content but don't show yet
   const methodText = method === "encircled" ? "encircled by" : "killed by";
   deathTitle.textContent = "you died!";
   deathStats.innerHTML =
@@ -1762,6 +1772,13 @@ function showDeathScreen(s, killerName, method){
     `rank: #${playerDeathStats.rank}`;
   deathBest.textContent = `best: length ${Math.round(highScores.bestLength)} | eaten ${highScores.bestEaten} | rank #${highScores.bestRank}`;
 
+  // delay showing the overlay so death particles play out
+  deathScreenTimer = 1.0;
+  deathScreenPending = true;
+}
+
+function revealDeathOverlay(){
+  deathScreenPending = false;
   deathOverlay.style.display = "flex";
   deathOverlay.setAttribute("aria-hidden", "false");
 }
@@ -1812,7 +1829,7 @@ function findSafeSpawn(){
 }
 
 function quickRespawn(){
-  if(!playerDead) return;
+  if(!playerDead || deathScreenPending) return;
   hideDeathScreen();
 
   // remove old player from snakes
@@ -2331,6 +2348,12 @@ function tick(now){
   updateLeaderboard(dt);
   updateKillFeed(dt);
   updateParticles(dt);
+
+  // delayed death screen reveal
+  if(deathScreenPending){
+    deathScreenTimer -= dt;
+    if(deathScreenTimer <= 0) revealDeathOverlay();
+  }
 
   // === DRAW ===
   drawPinnedBackground();
