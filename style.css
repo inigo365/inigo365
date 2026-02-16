@@ -127,15 +127,10 @@ section {
   padding: 0;
 }
 
-/* Desktop: 4 columns */
+/* Desktop: 5 columns (2 clean rows of 5) */
 @media (min-width: 1025px) {
   .portfolio {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  /* Big tiles (2 across) */
-  .tile.feature {
-    grid-column: span 2;
+    grid-template-columns: repeat(5, 1fr);
   }
 }
 
@@ -205,8 +200,6 @@ section {
 
   .tile:hover .overlay {
     opacity: 1;
-    font-size: clamp(16px, 2.2vw, 22px);
-    text-shadow: 0 0 12px rgba(255,255,255,0.5);
   }
 }
 
