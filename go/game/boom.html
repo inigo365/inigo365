@@ -268,10 +268,13 @@ input,
   -webkit-tap-highlight-color: transparent;
 }
 #homeMusicBtn {
-  min-width: 10ch;
+  margin-left: 18px;
 }
-#homeSfxBtn {
-  min-width: 7ch;
+#musicState,
+#sfxState {
+  display: inline-block;
+  width: 2.1em;
+  text-align: left;
 }
 
 #homeToggles button:hover {
@@ -1171,9 +1174,9 @@ canvas {
 <div id="homeUI">
   <div id="startSplash">tap/click anywhere to start!</div>
   <div id="homeToggles">
-    <button id="homeMusicBtn">music: off</button>
+    <button id="homeMusicBtn">music: <span id="musicState">off</span></button>
     <span class="home-sep">·</span>
-    <button id="homeSfxBtn">sfx: off</button>
+    <button id="homeSfxBtn">sfx: <span id="sfxState">off</span></button>
   </div>
   <div id="homeBottomRow">
     <button id="homeBackBtn" onclick="goBack()">← back</button>
@@ -2089,8 +2092,8 @@ function showOverlay(showLastScore = false) {
 
   // Update toggle labels and show homeUI
   const homeUI = document.getElementById('homeUI');
-  document.getElementById('homeMusicBtn').textContent = (bgMusic.readyState > 2 && !bgMusic.paused) ? 'music: on' : 'music: off';
-  document.getElementById('homeSfxBtn').textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
+  document.getElementById('musicState').textContent = (bgMusic.readyState > 2 && !bgMusic.paused) ? 'on' : 'off';
+  document.getElementById('sfxState').textContent = sfxEnabled ? 'on' : 'off';
   homeUI.classList.add('active');
 
 }
@@ -2701,14 +2704,14 @@ function handleFirstUserGesture() {
   if (bgMusic.paused) {
     bgMusic.play().then(() => {
       musicToggle.textContent = "music: on";
-      if (homeMusicBtn) homeMusicBtn.textContent = "music: on";
+      const ms = document.getElementById('musicState'); if (ms) ms.textContent = "on";
     }).catch(() => { });
   }
 
   // Enable SFX by default on first interaction (unless user already toggled it off)
   if (!sfxUserToggled) {
     sfxEnabled = true;
-    if (homeSfxBtn) homeSfxBtn.textContent = 'sfx: on';
+    const ss = document.getElementById('sfxState'); if (ss) ss.textContent = 'on';
 
   }
 
@@ -2734,15 +2737,18 @@ musicToggle.addEventListener('click', () => {
 const homeMusicBtn = document.getElementById('homeMusicBtn');
 const homeSfxBtn = document.getElementById('homeSfxBtn');
 
+const musicStateEl = document.getElementById('musicState');
+const sfxStateEl = document.getElementById('sfxState');
+
 homeMusicBtn.addEventListener('click', () => {
   if (bgMusic.paused) {
     ensureSoundtrackLoadedOnce();
     bgMusic.play().catch(() => {});
-    homeMusicBtn.textContent = 'music: on';
+    musicStateEl.textContent = 'on';
     musicToggle.textContent = 'music: on';
   } else {
     bgMusic.pause();
-    homeMusicBtn.textContent = 'music: off';
+    musicStateEl.textContent = 'off';
     musicToggle.textContent = 'music: off';
   }
 });
@@ -2750,7 +2756,7 @@ homeMusicBtn.addEventListener('click', () => {
 homeSfxBtn.addEventListener('click', () => {
   sfxEnabled = !sfxEnabled;
   sfxUserToggled = true;
-  homeSfxBtn.textContent = sfxEnabled ? 'sfx: on' : 'sfx: off';
+  sfxStateEl.textContent = sfxEnabled ? 'on' : 'off';
 });
 
 // ------------------- PAUSE ON HIDE / CLOSE -------------------
