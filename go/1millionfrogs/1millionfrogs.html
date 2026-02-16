@@ -56,7 +56,8 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 .back-button{
   pointer-events:auto;
   font-size:28px; background:transparent; border:none;
-  color:var(--accent);
+  color:#111;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
   font-family:"RuneScape UF", Arial, sans-serif;
   text-transform:lowercase; padding:0;
 }
@@ -178,8 +179,6 @@ button{
 
 .overlay-back{
   position:fixed; top:8px; left:8px; z-index:10000;
-  color:#111;
-  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
 }
 
 /* ===== Bottom buttons ===== */
@@ -677,6 +676,81 @@ function drawKillFeed(){
     const text = `${entry.killer} ${entry.method} ${entry.victim}`;
     ctx.fillText(text, x, y);
     y += fontSize + 4;
+  }
+  ctx.restore();
+}
+
+/* =========================================================
+   PARTICLES (lightweight pool)
+========================================================= */
+const MAX_PARTICLES = 200;
+const particles = [];
+
+function spawnParticle(x, y, vx, vy, life, color, size){
+  if(particles.length >= MAX_PARTICLES) return;
+  particles.push({ x, y, vx, vy, life, maxLife: life, color, size });
+}
+
+function spawnDeathBurst(body, color){
+  // burst from up to 12 body points
+  const step = Math.max(1, (body.length / 12) | 0);
+  for(let i = 0; i < body.length; i += step){
+    const pt = body[i];
+    const a = Math.random() * Math.PI * 2;
+    const spd = 60 + Math.random() * 120;
+    spawnParticle(pt.x, pt.y, Math.cos(a) * spd, Math.sin(a) * spd, 0.6 + Math.random() * 0.4, color, 4 + Math.random() * 4);
+  }
+}
+
+function spawnEatPop(x, y){
+  for(let i = 0; i < 3; i++){
+    const a = Math.random() * Math.PI * 2;
+    const spd = 30 + Math.random() * 50;
+    spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.25 + Math.random() * 0.15, "rgba(55,180,90,0.8)", 2.5 + Math.random() * 2);
+  }
+}
+
+function spawnGoldEatPop(x, y){
+  for(let i = 0; i < 5; i++){
+    const a = Math.random() * Math.PI * 2;
+    const spd = 40 + Math.random() * 70;
+    spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.35 + Math.random() * 0.2, "rgba(255,215,0,0.85)", 3 + Math.random() * 3);
+  }
+}
+
+function spawnBoostTrail(x, y, angle, color){
+  const spread = 0.6;
+  const a = angle + Math.PI + (Math.random() - 0.5) * spread;
+  const spd = 20 + Math.random() * 40;
+  spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.2 + Math.random() * 0.15, color, 2 + Math.random() * 2);
+}
+
+function updateParticles(dt){
+  for(let i = particles.length - 1; i >= 0; i--){
+    const p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vx *= 0.96;
+    p.vy *= 0.96;
+    p.life -= dt;
+    if(p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function drawParticles(){
+  if(particles.length === 0) return;
+  const z = cam.z;
+  const ox = W * 0.5 - cam.x * z;
+  const oy = H * 0.5 - cam.y * z;
+  ctx.save();
+  for(let i = 0; i < particles.length; i++){
+    const p = particles[i];
+    const sx = p.x * z + ox, sy = p.y * z + oy;
+    if(sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
+    ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1) * 0.85;
+    ctx.fillStyle = p.color;
+    const r = p.size * z;
+    ctx.fillRect(sx - r * 0.5, sy - r * 0.5, r, r);
   }
   ctx.restore();
 }
@@ -1284,6 +1358,12 @@ function updateMovement(s, dt){
       WORLD.pellets.push({ x: bx, y: by, r: 16 });
       updateRadius(s);
     }
+    // boost trail particles (player only, subtle)
+    if(s.isPlayer && Math.random() < 0.45){
+      const tx = s.x - Math.cos(s.angle) * (s.radius * 1.5);
+      const ty = s.y - Math.sin(s.angle) * (s.radius * 1.5);
+      spawnBoostTrail(tx, ty, s.angle, s.color);
+    }
   }
 }
 
@@ -1478,7 +1558,7 @@ function eatCheck(s){
     const gi = golden.indexOf(p);
     if(gi !== -1){
       golden.splice(gi, 1);
-      if(s.isPlayer) SFX.gold();
+      if(s.isPlayer){ SFX.gold(); spawnGoldEatPop(p.x, p.y); }
       s.eaten += CFG.goldEatBonus;
       s.length += CFG.goldLenBonus;
       updateRadius(s);
@@ -1487,6 +1567,7 @@ function eatCheck(s){
     }
 
     p._dead = true;
+    if(s.isPlayer) spawnEatPop(p.x, p.y);
     s.eaten++;
     s.length += 10;
     updateRadius(s);
@@ -1634,6 +1715,9 @@ function popSnake(s, killer, method){
   s.alive = false;
   s.killedBy = killerName;
 
+  // death particles
+  spawnDeathBurst(s.body, s.color);
+
   // drop pellets from body
   const b = s.body;
   for(let i = 0; i < b.length; i += 2){
@@ -1689,6 +1773,44 @@ function hideDeathScreen(){
   deathOverlay.setAttribute("aria-hidden", "true");
 }
 
+function findSafeSpawn(){
+  // try several candidates, pick the one with fewest nearby snakes
+  let bestX = 0, bestY = 0, bestDanger = Infinity;
+  const safeR = 500; // danger check radius
+  const safeR2 = safeR * safeR;
+
+  for(let attempt = 0; attempt < 12; attempt++){
+    const a = Math.random() * Math.PI * 2;
+    const r = 1200 + Math.random() * 4000;
+    let cx = Math.cos(a) * r;
+    let cy = Math.sin(a) * r;
+
+    // keep inside world
+    const d = Math.hypot(cx, cy);
+    if(d > CFG.worldRadius * 0.85){
+      const sc = (CFG.worldRadius * 0.8) / d;
+      cx *= sc; cy *= sc;
+    }
+
+    // count nearby alive snakes weighted by proximity
+    let danger = 0;
+    for(let i = 0; i < snakes.length; i++){
+      const s = snakes[i];
+      if(!s.alive) continue;
+      const d2 = dist2(s.x, s.y, cx, cy);
+      if(d2 < safeR2) danger += 1 + (s.length / 500);
+    }
+
+    if(danger < bestDanger){
+      bestDanger = danger;
+      bestX = cx;
+      bestY = cy;
+      if(danger === 0) break; // perfect spot
+    }
+  }
+  return { x: bestX, y: bestY };
+}
+
 function quickRespawn(){
   if(!playerDead) return;
   hideDeathScreen();
@@ -1698,14 +1820,13 @@ function quickRespawn(){
   if(idx !== -1) snakes.splice(idx, 1);
 
   const nm = player.name;
-  const a = Math.random() * Math.PI * 2;
-  const r = 1000 + Math.random() * 3000;
+  const spawn = findSafeSpawn();
   const s = makeSnake({
     id: 1,
     name: nm,
     isPlayer: true,
-    x: Math.cos(a) * r,
-    y: Math.sin(a) * r,
+    x: spawn.x,
+    y: spawn.y,
     length: 140,
     speedMul: 1.0,
     respawnLen: 140
@@ -1959,9 +2080,9 @@ function drawWorld(){
     if(tSy < sMinY) sMinY = tSy; if(tSy > sMaxY) sMaxY = tSy;
     if(sMaxX + 120 < 0 || sMinX - 120 > W || sMaxY + 120 < 0 || sMinY - 120 > H) continue;
 
-    const big = s.radius > 22;
     const isLeader = leader && s === leader;
-    const size = big ? 58 : 46;
+    // sprite size scales with length: 42 at length 100, up to 80 at length 10000+
+    const size = Math.round(clamp(42 + (s.length - 100) * 0.004, 42, 80));
     const spr = getSnakeSprite(size, s.color, isLeader);
     const dw = spr.width * z, dh = spr.height * z;
 
@@ -2209,12 +2330,14 @@ function tick(now){
 
   updateLeaderboard(dt);
   updateKillFeed(dt);
+  updateParticles(dt);
 
   // === DRAW ===
   drawPinnedBackground();
   drawWorldBoundary();
   drawLeaderboardLayer();
   drawWorld();
+  drawParticles();
   drawLeaderArrow(leader);
   drawMinimap();
   drawKillFeed();
@@ -2244,6 +2367,7 @@ async function startGame(){
   leader = null;
   _lbLines = [];
   killFeed.length = 0;
+  particles.length = 0;
   playerDead = false;
   hideDeathScreen();
 
