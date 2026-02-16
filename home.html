@@ -38,8 +38,11 @@
 <section class="landing">
   <div class="landing-wrapper">
 
-    <!-- Landing Image -->
-    <img src="images/landing.jpg" class="landing-image" alt="Landing">
+    <!-- Landing Image (desktop: shorter 4:1 banner / mobile: original 2:1) -->
+    <picture>
+      <source media="(min-width: 1025px)" srcset="images/landingdesktop.jpg">
+      <img src="images/landing.jpg" class="landing-image" alt="Landing">
+    </picture>
 
 <!-- Landing Links (new: email / whatsapp / instagram only) -->
 <a href="mailto:macdonald.iggy@gmail.com"
@@ -128,7 +131,11 @@
 <footer class="site-footer">
   <div class="footer-inner">
 
-    <img src="images/footer.jpg" class="footer-image" alt="Footer image">
+    <!-- Footer Image (desktop: wider banner / mobile: original) -->
+    <picture>
+      <source media="(min-width: 1025px)" srcset="images/footerdesktop.jpg">
+      <img src="images/footer.jpg" class="footer-image" alt="Footer image">
+    </picture>
 
     <!-- Footer Links -->
     <a href="about.html" class="footer-link footer-about-link" aria-label="About Me">

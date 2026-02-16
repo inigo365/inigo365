@@ -59,13 +59,13 @@ section {
   position: absolute;
   display: block;
   z-index: 10;
-  background: transparent; /* set rgba(...) to debug */
+  background: transparent; /* DEBUG: red overlay — set back to transparent when done */
   cursor: pointer;
   pointer-events: auto;
   text-indent: -9999px; /* hide text */
 }
 
-/* NEW landing.jpg positions (email / whatsapp / instagram) */
+/* Mobile landing.jpg positions (email / whatsapp / instagram) */
 
 /* Email line */
 .email-link {
@@ -89,6 +89,30 @@ section {
   top: 64.68%;
   width: 35.94%;
   height: 15.02%;
+}
+
+/* Desktop landingdesktop.jpg positions */
+@media (min-width: 1025px) {
+  .email-link {
+    left: 3%;
+    top: 16%;
+    width: 50%;
+    height: 24%;
+  }
+
+  .whatsapp-link {
+    left: 3%;
+    top: 40%;
+    width: 34%;
+    height: 20%;
+  }
+
+  .instagram-link {
+    left: 3%;
+    top: 60%;
+    width: 26%;
+    height: 26%;
+  }
 }
 
 /* =========================
@@ -145,24 +169,24 @@ section {
   display: block;
 }
 
-/* Overlay — always-visible gradient label at bottom */
+/* Overlay — centred label */
 .tile .overlay {
   position: absolute;
-  inset: auto 0 0 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 100%);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
   color: #fff;
 
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   text-align: center;
 
   opacity: 1;
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, text-shadow 0.3s ease, font-size 0.3s ease;
 
-  padding: 28px 10px 10px;
+  padding: 10px;
 
-  font-size: clamp(13px, 2vw, 20px);
+  font-size: clamp(13px, 3.2vw, 18px);
   line-height: 1.2;
 
   white-space: normal;
@@ -173,38 +197,25 @@ section {
   pointer-events: none; /* IMPORTANT: overlay never blocks clicks */
 }
 
-/* Hover: expand to full overlay */
-.tile:hover .overlay {
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  align-items: flex-end;
-  padding: 28px 10px 10px;
-  font-size: clamp(16px, 2vw, 24px);
+/* Desktop: hidden by default, visible on hover with glow */
+@media (hover: hover) and (pointer: fine) {
+  .tile .overlay {
+    opacity: 0;
+  }
+
+  .tile:hover .overlay {
+    opacity: 1;
+    font-size: clamp(16px, 2.2vw, 22px);
+    text-shadow: 0 0 12px rgba(255,255,255,0.5);
+  }
 }
 
-/* Feature tiles: centre text on hover */
-.tile.feature:hover .overlay {
-  align-items: center;
-  padding: 10px;
-}
-
-/* Touch devices */
+/* Mobile: always visible, no dark overlay — just the text */
 @media (hover: none) {
   .tile .overlay {
-    font-size: clamp(13px, 3.2vw, 18px);
-  }
-
-  .tile:active .overlay {
-    inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    align-items: flex-end;
-    padding: 28px 10px 10px;
-    font-size: clamp(16px, 3.6vw, 22px);
-  }
-
-  .tile.feature:active .overlay {
-    align-items: center;
-    padding: 10px;
+    opacity: 1;
+    background: none;
+    text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6);
   }
 }
 
@@ -362,7 +373,7 @@ section {
   position: absolute;
   display: block;
   z-index: 10;
-  background: transparent; /* set rgba(...) to debug */
+  background: transparent; /* DEBUG: red overlay — set back to transparent when done */
   cursor: pointer;
   pointer-events: auto;
   text-indent: -9999px;
@@ -384,6 +395,23 @@ section {
   top: 37.50%;
   width: 18.60%;
   height: 32.99%;
+}
+
+/* Desktop footerdesktop.jpg positions */
+@media (min-width: 1025px) {
+  .footer-about-link {
+    left: 2%;
+    top: 25%;
+    width: 28%;
+    height: 50%;
+  }
+
+  .footer-imdb-link {
+    left: 78%;
+    top: 28%;
+    width: 14%;
+    height: 45%;
+  }
 }
 
 /* =========================
