@@ -348,17 +348,14 @@ canvas {
 
 /* Point Popup */
 .point-popup {
-  position: fixed;
-  left: 0;
-  top: 0;
+  position: absolute;
   font-size: 28px;
   color: #d1dce8;
   font-family: "RuneScape UF", Arial, sans-serif;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.35s;
+  transition: opacity 0.3s, transform 0.3s;
   z-index: 6;
-  will-change: opacity;
 }
 
 /* Name Input Modal */
@@ -1132,6 +1129,22 @@ canvas {
   }
   #homeUI {
     top: 68%;
+    gap: 4px;
+  }
+  #homeToggles button {
+    font-size: 18px;
+    padding: 2px 6px;
+  }
+  #homeHowToBtn {
+    font-size: 18px;
+    padding: 2px 6px;
+  }
+  #homeBackBtn {
+    font-size: 18px;
+    padding: 2px 6px;
+  }
+  #homeBottomRow {
+    gap: 4px;
   }
   #startSplash {
     font-size: clamp(24px, 6vw, 38px);
@@ -1824,61 +1837,65 @@ function clamp(n, min, max) {
 const funTextPopup = document.getElementById('funTextPopup');
 const pointPopup = document.getElementById('pointPopup');
 
-// ---- POPUP SYSTEM (zero-layout, no transform transition so popups snap to position) ----
-let popupTimer = 0;
-const popupFontMobile = '22px';
-
 function showPopup(text, x, y, color = '#2d93ea', size = '28px', glow = false) {
-  const el = pointPopup;
-  const fs = cachedWinW <= 768 ? popupFontMobile : size;
-  el.textContent = text;
-  el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;font-family:"RuneScape UF",Arial,sans-serif;z-index:6;will-change:opacity;'
-    + 'font-size:' + fs
-    + ';color:' + color
-    + ';opacity:1'
-    + ';transform:translate(' + x + 'px,' + (y + 10) + 'px) translate(-50%,0)'
-    + (glow ? ';text-shadow:0 0 6px ' + color : '')
-    + ';transition:opacity 0.35s';
+  pointPopup.textContent = text;
+  pointPopup.style.left = x + 'px';
+  pointPopup.style.top = y + 'px';
+  pointPopup.style.color = color;
 
-  clearTimeout(popupTimer);
-  popupTimer = setTimeout(() => {
-    el.style.opacity = 0;
+  const isMobile = cachedWinW <= 768;
+  pointPopup.style.fontSize = isMobile ? '22px' : size;
+
+  pointPopup.style.opacity = 1;
+  pointPopup.style.transform = "translate(-50%, 0) translateY(10px)";
+
+  // optional glow
+  pointPopup.style.textShadow = glow ? `0 0 6px ${color}` : '';
+
+  setTimeout(() => {
+    pointPopup.style.opacity = 0;
+    pointPopup.style.transform = "translate(-50%, 0) translateY(24px)";
+    pointPopup.style.textShadow = '';
   }, 400);
 }
 
-let funTextTimer = 0;
 function showTextPopup(text, x, y, color = '#2d93ea', duration = 600, align = 'center') {
   const fontSize = 24;
   const padding = 12;
-  const el = funTextPopup;
 
-  // Estimate width (avoids layout reads)
+  funTextPopup.textContent = text;
+  funTextPopup.style.cssText =
+    'display:block;opacity:0;white-space:pre;font-size:' + fontSize + 'px;color:' + color +
+    ';text-align:' + (align === 'right' ? 'right' : 'center') +
+    ';transform:translate(' + (align === 'right' ? '-100%' : '-50%') + ',0) translateY(8px);';
+
+  // Estimate width from text length (avoids layout thrashing from offsetWidth reads)
   const estCharW = fontSize * 0.55;
   const estW = text.length * estCharW;
   const estH = fontSize * 1.3;
 
-  let cx = x;
+  // Clamp position using cached dimensions
+  let clampedX = x;
   if (align === 'right') {
-    cx = clamp(x, padding + estW, cachedWinW - padding);
+    clampedX = clamp(x, padding + estW, cachedWinW - padding);
   } else {
-    cx = clamp(x, padding + estW / 2, cachedWinW - padding - estW / 2);
+    clampedX = clamp(x, padding + estW / 2, cachedWinW - padding - estW / 2);
   }
-  const cy = clamp(y, padding, cachedWinH - padding - estH);
+  const clampedY = clamp(y, padding, cachedWinH - padding - estH);
 
-  const anchorX = align === 'right' ? '-100%' : '-50%';
+  funTextPopup.style.left = clampedX + 'px';
+  funTextPopup.style.top = clampedY + 'px';
 
-  el.textContent = text;
-  el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;font-family:"RuneScape UF",Arial,sans-serif;z-index:6;will-change:opacity;white-space:pre;'
-    + 'font-size:' + fontSize + 'px'
-    + ';color:' + color
-    + ';text-align:' + (align === 'right' ? 'right' : 'center')
-    + ';opacity:1'
-    + ';transform:translate(' + cx + 'px,' + cy + 'px) translate(' + anchorX + ',0)'
-    + ';transition:opacity 0.35s';
+  requestAnimationFrame(() => {
+    funTextPopup.style.opacity = 1;
+  });
 
-  clearTimeout(funTextTimer);
-  funTextTimer = setTimeout(() => {
-    el.style.opacity = 0;
+  setTimeout(() => {
+    funTextPopup.style.opacity = 0;
+    funTextPopup.style.transform =
+      (align === 'right')
+        ? "translate(-100%, 0) translateY(22px)"
+        : "translate(-50%, 0) translateY(22px)";
   }, duration);
 }
 
