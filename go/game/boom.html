@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>put the bag in the bag</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/png" href="./images/icon.png">
 <style>
 @font-face {
@@ -122,20 +122,22 @@ input,
 }
 
 .pickup-toast {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 6px;
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: clamp(14px, 1.8vw, 18px);
-  color: #e8b810;
+  color: gold;
   opacity: 0;
-  transition: opacity 0.4s ease;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.4s ease, max-height 0.4s ease;
   will-change: opacity;
 }
 
 .pickup-toast.show {
-  display: flex;
   opacity: 1;
+  max-height: 40px;
 }
 
 .pickup-toast img {
@@ -213,7 +215,7 @@ input,
 /* ===================== HOME SCREEN CENTRE STACK ===================== */
 #homeUI {
   position: fixed;
-  top: 72%;
+  top: 69%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 61;
@@ -573,7 +575,7 @@ canvas {
 
 /* Top 3 leaderboard medals */
 .leaderboard-entry.rank-1 {
-  color: #e8b810;
+  color: gold;
   font-weight: bold;
   font-size: 24px;
   padding: 10px 4px;
@@ -582,8 +584,8 @@ canvas {
 }
 
 @keyframes rank1Glow {
-  0%, 100% { background: rgba(232, 184, 16, 0.04); }
-  50%      { background: rgba(232, 184, 16, 0.12); }
+  0%, 100% { background: rgba(255, 215, 0, 0.04); }
+  50%      { background: rgba(255, 215, 0, 0.12); }
 }
 
 .leaderboard-entry.rank-2 {
@@ -1137,7 +1139,7 @@ canvas {
     max-width: 86vw;
   }
   #homeUI {
-    top: 65%;
+    top: 62%;
     gap: 6px;
   }
   #homeToggles button {
@@ -1284,8 +1286,11 @@ const backButton = document.querySelector('.back-button');
 const leaderboardBtn = document.querySelector('.leaderboard-btn');
 const overlayHighscoreEl = document.getElementById('overlayHighscore');
 const topScoresEl = document.getElementById('topScores');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// Use CSS layout viewport (reliable across Safari & iOS WebView/standalone)
+function getViewportW() { return document.documentElement.clientWidth  || window.innerWidth; }
+function getViewportH() { return document.documentElement.clientHeight || window.innerHeight; }
+canvas.width = getViewportW();
+canvas.height = getViewportH();
 
 // Toggle: set to true to show white overlay during gameplay & name modal
 const USE_GAMEPLAY_OVERLAY = false;
@@ -1466,7 +1471,7 @@ const POWERUPS = {
 const TIER_COLORS = {
   common: '#c78665',
   rare: '#1ccfcf',      // teal blue
-  goated: '#e8b810',
+  goated: 'gold',
   mythic: '#a855f7'     // glowing purple base
 };
 
@@ -1574,7 +1579,7 @@ let SPEED = 3;
 const START_SPEED = 4;       // speed when the game starts
 const MAX_SPEED = 7.3;       // speed when score reaches MAX_SPEED_SCORE
 const MAX_SPEED_SCORE = 500;
-let SPRITE_SIZE = Math.round(canvas.height * 0.10);
+let SPRITE_SIZE = Math.round(Math.min(canvas.height, screen.height) * 0.10);
       // ✅ Definitely-not-bag hitbox tuning
 const NOTBAG_HITBOX_SCALE = 0.45; // 0.4 very forgiving, 0.55 nice, 0.7 strict
 let ball = { x: Math.round(canvas.width * 0.4), y: canvas.height / 2, vy: 0, spriteIndex: 0, scaleX: 1, scaleY: 1 };
@@ -1628,7 +1633,7 @@ let toastPoolIdx = 0;
 })();
 
 function showPickupNotification(spriteSrc, text, color, duration) {
-  color = color || '#e8b810';
+  color = color || 'gold';
   duration = duration || 3000;
 
   const entry = toastPool[toastPoolIdx];
@@ -1670,7 +1675,7 @@ let baghettiToastEl = null;
   img.alt = '';
   const span = document.createElement('span');
   span.textContent = 'baghetti found!';
-  span.style.color = '#e8b810';
+  span.style.color = 'gold';
   toast.appendChild(img);
   toast.appendChild(span);
   container.appendChild(toast);
@@ -2037,19 +2042,19 @@ function hideMusicButton() {
 }
 
 // Cache window dimensions to avoid DOM reads during gameplay
-let cachedWinW = window.innerWidth;
-let cachedWinH = window.innerHeight;
+let cachedWinW = getViewportW();
+let cachedWinH = getViewportH();
 let cachedHighscore = Number(localStorage.getItem('flappyBasketHighscore') || 0);
 let cachedTopScoresH = 44; // fallback; updated on resize + game start
-let cachedPlayableH = cachedWinW <= 768 ? window.innerHeight * 0.95 : window.innerHeight;
+let cachedPlayableH = cachedWinW <= 768 ? getViewportH() * 0.95 : getViewportH();
 
 function refreshCachedPlayableH() {
   cachedPlayableH = cachedWinW <= 768 ? canvas.height * 0.95 : canvas.height;
 }
 
 window.addEventListener('resize', () => {
-  cachedWinW = window.innerWidth;
-  cachedWinH = window.innerHeight;
+  cachedWinW = getViewportW();
+  cachedWinH = getViewportH();
   const el = document.getElementById('topScores');
   if (el) cachedTopScoresH = el.offsetHeight || 44;
   refreshCachedPlayableH();
@@ -2354,8 +2359,8 @@ if (h.spriteIndex >= NOTBAG_START && h.spriteIndex < NOTBAG_START + NOTBAG_COUNT
 if (h.spriteIndex >= UNLOCK_START && h.spriteIndex < UNLOCK_START + UNLOCK_COUNT) {
   score += 3;
   const unlockDef = UNLOCK_BAGS[h.spriteIndex - UNLOCK_START];
-  showTextPopup(unlockDef.popupText, ball.x, textY, '#e8b810');
-  showPopup('+3', ball.x, pointY, '#e8b810', '28px', true);
+  showTextPopup(unlockDef.popupText, ball.x, textY, 'gold');
+  showPopup('+3', ball.x, pointY, 'gold', '28px', true);
 
   const key = unlockDef.storageKey;
 
@@ -2369,7 +2374,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
     lvl++;
     localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, String(lvl));
     localStorage.setItem(UNLOCK_KEYS.soundtracks, "true"); // legacy flag
-    showPickupNotification(unlockImg ? unlockImg.src : '', 'new soundtrack unlocked!', '#e8b810', 3000);
+    showPickupNotification(unlockImg ? unlockImg.src : '', 'new soundtrack unlocked!', 'gold', 3000);
   }
 
 } else {
@@ -2379,7 +2384,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
   }
   const pwNames = { 0: 'tinny', 1: 'onway', 3: 'deathstar' };
   const pwName = pwNames[h.spriteIndex - UNLOCK_START] || 'secret bag';
-  showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', '#e8b810', 3000);
+  showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', 'gold', 3000);
 }
 
   playSfx(sfxPower);
@@ -2401,8 +2406,8 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
 if (powerId === POWERUPS.baghetti) {
   score += 1;
 
-  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#e8b810');
-  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, '#e8b810');
+  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, 'gold');
+  showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, 'gold');
 
   // Only show the persistent notification on the initial pickup, not forced ones
   if (!h.forcedBaghetti) {
@@ -2624,9 +2629,9 @@ function endGame() {
 }
 
 window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  SPRITE_SIZE = Math.round(canvas.height * 0.10);
+  canvas.width = getViewportW();
+  canvas.height = getViewportH();
+  SPRITE_SIZE = Math.round(Math.min(canvas.height, screen.height) * 0.10);
   refreshCachedPlayableH();
 });
 
@@ -2980,7 +2985,7 @@ function buildHowToContent() {
 
   html += '<div class="howto-item">' +
     '<img src="sprites/unlock/deathstar.png" alt="secret bag">' +
-    '<span style="color:#e8b810">secret bags - find them all...</span>' +
+    '<span style="color:gold">secret bags - find them all...</span>' +
     '</div>';
 
   html += '<div class="howto-intro" style="margin-top:10px;">collect immense & powerful bags.\nsonically benefit yourself.\nprosper greatly.</div>';

@@ -1119,8 +1119,23 @@ body{
     max-width: 100% !important;
   }
 }
-/* ===== PWA/standalone: kill excess bottom padding (no browser chrome) ===== */
+/* ===== PWA/standalone: match browser tray appearance (no browser chrome) ===== */
 @media (max-width: 768px) and (display-mode: standalone) {
+  /* hide add-to-home button (already installed) */
+  .add-home-btn{ display: none !important; }
+
+  /* tray should fit its content, not stretch to fill the taller standalone viewport */
+  .password-box{
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+
+  /* let the row shrink to content too */
+  .password-row{
+    height: auto !important;
+  }
+
+  /* keep screen padding tight */
   .password-screen{
     padding-bottom: max(16px, calc(16px + env(safe-area-inset-bottom))) !important;
   }
