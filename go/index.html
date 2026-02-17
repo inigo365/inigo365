@@ -1120,25 +1120,20 @@ body{
   }
 }
 /* ===== PWA/standalone: match browser tray appearance (no browser chrome) ===== */
-@media (max-width: 768px) and (display-mode: standalone) {
-  /* hide add-to-home button (already installed) */
-  .add-home-btn{ display: none !important; }
+/* JS adds .is-standalone to <html> — works on iOS + Android */
+.is-standalone .add-home-btn{ display: none !important; }
 
-  /* tray should fit its content, not stretch to fill the taller standalone viewport */
-  .password-box{
-    height: auto !important;
-    overflow-y: visible !important;
-  }
+.is-standalone .password-box{
+  height: auto !important;
+  overflow-y: visible !important;
+}
 
-  /* let the row shrink to content too */
-  .password-row{
-    height: auto !important;
-  }
+.is-standalone .password-row{
+  height: auto !important;
+}
 
-  /* keep screen padding tight */
-  .password-screen{
-    padding-bottom: max(16px, calc(16px + env(safe-area-inset-bottom))) !important;
-  }
+.is-standalone .password-screen{
+  padding-bottom: max(16px, calc(16px + env(safe-area-inset-bottom))) !important;
 }
 
 /* ===== iOS/mobile: tray border always on-screen + scroll INSIDE tray ===== */
@@ -1328,6 +1323,11 @@ body{
 </div>
 
 <script>
+  // Detect standalone/PWA mode (iOS + Android)
+  if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+    document.documentElement.classList.add('is-standalone');
+  }
+
   // iOS Safari: make a reliable viewport unit
   (function () {
     const setVh = () => {
