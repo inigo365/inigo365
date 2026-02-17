@@ -52,7 +52,8 @@ html, body {
 }
 
 html, body { cursor: url("../images/cursor/cursor.png"), auto; }
-button, input, label { cursor: url("../images/cursor/cursor-hover.png"), pointer; }
+button, input { cursor: url("../images/cursor/cursor-hover.png"), pointer; }
+label { cursor: url("../images/cursor/cursor.png"), auto; }
 /* never allow sideways scroll/pan */
 html, body {
   overflow-x: hidden;
@@ -652,11 +653,14 @@ video {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .portal-title{
   font-size: 24px;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .portal-sub{
@@ -668,6 +672,18 @@ video {
 .portal-right{
   font-size: 22px;
   opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.portal-sprite{
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .portal-hint{
@@ -1103,6 +1119,13 @@ body{
     max-width: 100% !important;
   }
 }
+/* ===== PWA/standalone: kill excess bottom padding (no browser chrome) ===== */
+@media (max-width: 768px) and (display-mode: standalone) {
+  .password-screen{
+    padding-bottom: max(16px, calc(16px + env(safe-area-inset-bottom))) !important;
+  }
+}
+
 /* ===== iOS/mobile: tray border always on-screen + scroll INSIDE tray ===== */
 @media (max-width: 768px){
 
@@ -1501,35 +1524,50 @@ const SFX = (() => {
 })();
 
 /* ===========================
-   GLOBAL CLICK SFX (simple, no doubles)
-   - plays on "main" buttons only
-   - NOT on enterButton
-   - NOT on cheat pad buttons (.cheat-btn)
-=========================== 
-
+   GLOBAL CLICK SFX
+   - portal tiles (creative portfolio, bag, frogs)
+   - secret button, add to home, home overlay close
+   - cheat/vault/mini overlay buttons EXCEPT .cheat-btn (dpad + a/b)
+   - vault-item passwords keep their own password.mp3 (excluded here)
+=========================== */
 (function setupClickSfx() {
   let lastAt = 0;
 
   function shouldPlayClick(btn) {
     if (!btn || btn.disabled) return false;
 
-    // whitelist ONLY:
-    // - the secret button
-    // - the add to home page button
-    // - anything inside the cheat/add-to-home overlays (including cheat pad buttons)
+    // portal tiles on the main page
+    if (btn.classList.contains("portal-tile")) return true;
+
+    // secret button + add to home button
     if (btn.id === "hintHelp") return true;
     if (btn.id === "addHomeBtn") return true;
 
-    if (btn.closest("#cheatOverlay, #vaultOverlay, #miniOverlay, #homeOverlay")) return true;
+    // home overlay close button
+    if (btn.id === "homeClose") return true;
 
-    return false; // everything else (portal tiles etc) = silent
+    // cheat overlay buttons — EXCEPT the d-pad/a/b entry buttons
+    if (btn.closest("#cheatOverlay")) {
+      if (btn.classList.contains("cheat-btn")) return false; // arrows + a + b = silent
+      return true; // clear, submit, cheatcodes, code vault, close
+    }
+
+    // vault overlay — EXCEPT vault-item passwords (those play password.mp3)
+    if (btn.closest("#vaultOverlay")) {
+      if (btn.classList.contains("vault-item")) return false;
+      return true; // back, close
+    }
+
+    // mini overlay (cheatcodes list close)
+    if (btn.closest("#miniOverlay")) return true;
+
+    return false;
   }
 
   function handler(e) {
     const btn = e.target.closest("button");
     if (!shouldPlayClick(btn)) return;
 
-    // small debounce
     const now = performance.now();
     if (now - lastAt < 120) return;
     lastAt = now;
@@ -1538,25 +1576,8 @@ const SFX = (() => {
     SFX.play("click");
   }
 
-  // IMPORTANT: use CLICK (not pointerdown/touchstart) so scrolling doesn't trigger sounds
   document.addEventListener("click", handler, true);
 })();
-
-
-
-document.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter" && e.key !== " ") return;
-  const el = document.activeElement;
-  if (!el || el.tagName !== "BUTTON") return;
-  if (el.disabled) return;
-  if (el.id === "enterButton") return;
-
-  SFX.unlockNow();
-  SFX.play("click");
-}, true);
-
-
- =========================== */
 
 
 let currentAction = null;
@@ -1582,9 +1603,9 @@ const actions = {
 };
 // ===== PUBLIC DOCK (always visible) =====
 const PUBLIC_ACTIONS = [
-  { key: "home",          title: "creative portfolio",sub: "main page",        glyph: "→" },
-  { key: "bag",           title: "put the bag in the bag",sub: "game",             glyph: "→" },
-  { key: "1millionfrogs", title: "1millionfrogs",sub: "game",             glyph: "→" }
+  { key: "home",          title: "creative portfolio",sub: "main page",        glyph: "→", sprite: "images/portfoliosprite.png" },
+  { key: "bag",           title: "put the bag in the bag",sub: "game",             glyph: "→", sprite: "images/bagsprite.png" },
+  { key: "1millionfrogs", title: "1millionfrogs",sub: "game",             glyph: "→", sprite: "images/frogsprite.png" }
 ];
 
 const portalDock = document.getElementById("portalDock");
@@ -1600,12 +1621,16 @@ function renderPortalDock() {
     btn.className = "portal-tile";
     btn.setAttribute("data-key", item.key);
 
+    const spriteHTML = item.sprite
+      ? `<img class="portal-sprite" src="${item.sprite}" alt="">`
+      : "";
+
     btn.innerHTML = `
       <div class="portal-left">
         <div class="portal-title">${item.title}</div>
         <div class="portal-sub">${item.sub}</div>
       </div>
-      <div class="portal-right">${item.glyph}</div>
+      <div class="portal-right">${spriteHTML}${item.glyph}</div>
     `;
 
     btn.addEventListener("click", () => {
