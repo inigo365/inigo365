@@ -1540,10 +1540,11 @@ const SFX = (() => {
 
 /* ===========================
    GLOBAL CLICK SFX
-   - portal tiles (creative portfolio, bag, frogs)
-   - secret button, add to home, home overlay close
+   - add to home button, home overlay close
    - cheat/vault/mini overlay buttons EXCEPT .cheat-btn (dpad + a/b)
    - vault-item passwords keep their own password.mp3 (excluded here)
+   - secret button handled separately (uses pointerdown)
+   - portal tiles are silent
 =========================== */
 (function setupClickSfx() {
   let lastAt = 0;
@@ -1551,11 +1552,7 @@ const SFX = (() => {
   function shouldPlayClick(btn) {
     if (!btn || btn.disabled) return false;
 
-    // portal tiles on the main page
-    if (btn.classList.contains("portal-tile")) return true;
-
-    // secret button + add to home button
-    if (btn.id === "hintHelp") return true;
+    // add to home button
     if (btn.id === "addHomeBtn") return true;
 
     // home overlay close button
@@ -1886,7 +1883,10 @@ function renderVault() {
     btn.className = "vault-item";
     btn.type = "button";
     btn.textContent = code;
-    btn.addEventListener("click", () => runActionByKey(code));
+    btn.addEventListener("click", () => {
+      SFX.play("correct");
+      runActionByKey(code);
+    });
     vaultList.appendChild(btn);
   }
 }
@@ -1981,6 +1981,7 @@ if (hintHelp) {
     if (!hintHelp.classList.contains("show")) return;
     e.preventDefault();
     SFX.unlockNow();
+    SFX.play("click");
     try { passwordInput.blur(); } catch {}
     openCheatOverlay();
   });
@@ -2033,8 +2034,8 @@ function tryPassword() {
 }
 
 
-  // only play "correct" if we won't immediately navigate away in same tab
-  if (shouldPlayCorrectForAction(action)) SFX.play("correct");
+  // correct password entered
+  SFX.play("correct");
 
   runActionByKey(key);
 }
