@@ -106,12 +106,20 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 .panel2{
   width:min(640px, calc(100vw - 24px));
   border:2px solid #000; padding:16px;
-  background:#fff; text-align:center;
+  background:rgba(255,255,255,0.82);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  text-align:center;
 }
 .panel2-title{ font-size:30px; text-transform:lowercase; margin-bottom:10px; }
 .panel2-sub{
   font-size:18px; text-transform:lowercase;
   line-height:1.35; margin-bottom:12px;
+}
+.start-frog{
+  display:block; margin:8px auto 10px;
+  width:80px; height:auto;
+  image-rendering:pixelated; image-rendering:crisp-edges;
 }
 .name-row{
   display:flex; gap:10px; justify-content:center;
@@ -324,7 +332,10 @@ button{
       don't run into other frogs.<br>
       if a frog runs into you, they perish.<br>
       encircle smaller frogs to trap them.<br>
-      become the almightiest frog.<br><br>
+      become the almightiest frog.
+    </div>
+    <img src="../images/frogsprite.png" alt="frog" class="start-frog">
+    <div class="panel2-sub">
       mobile: use the joystick to move &bull; tap/hold anywhere to boost<br>
       desktop: follow your mouse &bull; click/hold to boost
     </div>
@@ -411,6 +422,7 @@ const highScoreHint  = document.getElementById("highScoreHint");
 /* =========================================================
    CONFIGURATION (all tunables in one place)
 ========================================================= */
+const _isMobile = matchMedia("(pointer:coarse)").matches || ("ontouchstart" in window);
 const CFG = {
   // world
   worldRadius: 9500,
@@ -450,7 +462,7 @@ const CFG = {
   cellSize: 110,
 
   // pellets
-  pelletTarget: 1200,
+  pelletTarget: _isMobile ? 600 : 1200,
 
   // gold
   goldenMax: 18,
@@ -483,7 +495,9 @@ const SFX_GOLD_SRC = "assets/sfx_gold.mp3";
 ========================================================= */
 let dpr = 1, W = 0, H = 0;
 function resize(){
-  dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  // cap DPR lower on mobile to avoid rendering at huge resolutions
+  const maxDpr = _isMobile ? 1.5 : 2;
+  dpr = Math.max(1, Math.min(maxDpr, window.devicePixelRatio || 1));
   W = innerWidth; H = innerHeight;
   c.width  = Math.floor(W * dpr);
   c.height = Math.floor(H * dpr);
@@ -691,7 +705,7 @@ function drawKillFeed(){
 /* =========================================================
    PARTICLES (lightweight pool)
 ========================================================= */
-const MAX_PARTICLES = 350;
+const MAX_PARTICLES = _isMobile ? 120 : 350;
 const particles = [];
 
 function spawnParticle(x, y, vx, vy, life, color, size){
@@ -714,7 +728,8 @@ function spawnDeathBurst(body, color){
 }
 
 function spawnEatPop(x, y){
-  for(let i = 0; i < 5; i++){
+  const n = _isMobile ? 2 : 5;
+  for(let i = 0; i < n; i++){
     const a = Math.random() * Math.PI * 2;
     const spd = 40 + Math.random() * 70;
     spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.35 + Math.random() * 0.2, "rgba(55,180,90,0.95)", 4 + Math.random() * 3);
@@ -722,7 +737,8 @@ function spawnEatPop(x, y){
 }
 
 function spawnGoldEatPop(x, y){
-  for(let i = 0; i < 8; i++){
+  const n = _isMobile ? 4 : 8;
+  for(let i = 0; i < n; i++){
     const a = Math.random() * Math.PI * 2;
     const spd = 50 + Math.random() * 100;
     spawnParticle(x, y, Math.cos(a) * spd, Math.sin(a) * spd, 0.5 + Math.random() * 0.3, "rgba(255,215,0,0.95)", 5 + Math.random() * 5);
@@ -762,9 +778,7 @@ function drawParticles(){
     ctx.globalAlpha = alpha;
     ctx.fillStyle = p.color;
     const r = p.size * z * (0.6 + alpha * 0.4);
-    ctx.beginPath();
-    ctx.arc(sx, sy, r * 0.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(sx - r * 0.5, sy - r * 0.5, r, r);
   }
   ctx.restore();
 }
@@ -1377,7 +1391,7 @@ function updateMovement(s, dt){
       updateRadius(s);
     }
     // boost trail particles (player only)
-    if(s.isPlayer && Math.random() < 0.7){
+    if(s.isPlayer && Math.random() < (_isMobile ? 0.35 : 0.7)){
       const tx = s.x - Math.cos(s.angle) * (s.radius * 1.8);
       const ty = s.y - Math.sin(s.angle) * (s.radius * 1.8);
       spawnBoostTrail(tx, ty, s.angle, s.color);
@@ -2082,16 +2096,17 @@ function drawWorld(){
   }
 
   // golden pellets
-  for(let i = 0; i < golden.length; i++){
-    const g0 = golden[i];
-    const sx = g0.x * z + ox, sy = g0.y * z + oy;
-    if(sx < -80 || sx > W + 80 || sy < -80 || sy > H + 80) continue;
+  if(golden.length > 0){
     const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.006);
-    ctx.save();
     ctx.globalAlpha = 0.75 + pulse * 0.25;
-    const dw = SPRITES.gold.width * z, dh = SPRITES.gold.height * z;
-    ctx.drawImage(SPRITES.gold, sx - dw * 0.5, sy - dh * 0.5, dw, dh);
-    ctx.restore();
+    const gdw = SPRITES.gold.width * z, gdh = SPRITES.gold.height * z;
+    for(let i = 0; i < golden.length; i++){
+      const g0 = golden[i];
+      const sx = g0.x * z + ox, sy = g0.y * z + oy;
+      if(sx < -80 || sx > W + 80 || sy < -80 || sy > H + 80) continue;
+      ctx.drawImage(SPRITES.gold, sx - gdw * 0.5, sy - gdh * 0.5, gdw, gdh);
+    }
+    ctx.globalAlpha = 1;
   }
 
   // snakes
@@ -2122,17 +2137,22 @@ function drawWorld(){
     const spr = getSnakeSprite(size, s.color, isLeader);
     const dw = spr.width * z, dh = spr.height * z;
 
-    // draw all body segments (no skipping - prevents gaps on big snakes)
+    // draw body segments — on mobile, skip every other segment on non-player tail sections
+    const skipTail = _isMobile && !s.isPlayer && b.length > 40;
+    const skipAfter = skipTail ? 12 : b.length; // draw every segment for first 12 (near head)
     for(let i = b.length - 1; i >= 0; i--){
+      if(i >= skipAfter && (i & 1)) continue; // skip odd indices in tail section
       const pt = b[i];
       const sx = pt.x * z + ox, sy = pt.y * z + oy;
       if(sx < -90 || sx > W + 90 || sy < -90 || sy > H + 90) continue;
       ctx.drawImage(spr, sx - dw * 0.5, sy - dh * 0.5, dw, dh);
     }
 
-    // always draw name tag at head (outside body loop so it never gets skipped)
+    // draw name tag at head — on mobile only for nearby snakes to reduce fillText calls
     const headSx = b[0].x * z + ox, headSy = b[0].y * z + oy;
-    if(headSx >= -200 && headSx <= W + 200 && headSy >= -200 && headSy <= H + 200){
+    const nameVisible = headSx >= -200 && headSx <= W + 200 && headSy >= -200 && headSy <= H + 200;
+    const showName = nameVisible && (!_isMobile || s.isPlayer || (headSx > -50 && headSx < W + 50 && headSy > -50 && headSy < H + 50));
+    if(showName){
       ctx.font = '18px "RuneScape UF", Arial, sans-serif';
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
