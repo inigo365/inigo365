@@ -890,6 +890,22 @@ function makeFrogSprite(size, variant, color){
   return s;
 }
 
+/* body-only sprite: just the coloured circle + outline, no face details */
+function makeBodySprite(size, color){
+  const s = document.createElement("canvas");
+  s.width = s.height = size;
+  const g = s.getContext("2d");
+  const cx = size / 2, cy = size / 2, r = size * 0.33;
+  g.beginPath();
+  g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fillStyle = color || "rgba(55,180,90,0.95)";
+  g.fill();
+  g.lineWidth = Math.max(2, size * 0.05);
+  g.strokeStyle = "rgba(0,0,0,0.35)";
+  g.stroke();
+  return s;
+}
+
 function makeCrownSprite(size){
   const s = document.createElement("canvas");
   s.width = s.height = size;
@@ -937,9 +953,19 @@ function getSnakeSprite(size, color, gold){
   return spr;
 }
 
+const BODY_CACHE = new Map();
+function getBodySprite(size, color){
+  const key = `${size}_${color}`;
+  let spr = BODY_CACHE.get(key);
+  if(spr) return spr;
+  spr = makeBodySprite(size, color);
+  BODY_CACHE.set(key, spr);
+  return spr;
+}
+
 const SPRITES = {
-  pellet: makeFrogSprite(34, "normal", "#37b45a"),
-  pelletSmall: makeFrogSprite(26, "normal", "#37b45a"),
+  pellet: _isMobile ? makeBodySprite(34, "#37b45a") : makeFrogSprite(34, "normal", "#37b45a"),
+  pelletSmall: _isMobile ? makeBodySprite(26, "#37b45a") : makeFrogSprite(26, "normal", "#37b45a"),
   gold: makeFrogSprite(56, "gold"),
   crown: makeCrownSprite(56),
 };
@@ -2134,19 +2160,19 @@ function drawWorld(){
     const isLeader = leader && s === leader;
     // sprite size scales with length: 42 at length 100, up to 80 at length 10000+
     const size = Math.round(clamp(42 + (s.length - 100) * 0.004, 42, 80));
-    const spr = getSnakeSprite(size, s.color, isLeader);
-    const dw = spr.width * z, dh = spr.height * z;
+    const headSpr = getSnakeSprite(size, s.color, isLeader);
+    const bodySpr = getBodySprite(size, s.color);
+    const dw = headSpr.width * z, dh = headSpr.height * z;
 
-    // draw every visible body segment — off-screen segments skipped in big jumps
+    // draw body segments (tail→neck) as simple circles — off-screen jump optimisation
     const segWorld = CFG.segSpacing * z;
-    for(let i = b.length - 1; i >= 0;){
+    for(let i = b.length - 1; i >= 1;){
       const pt = b[i];
       const sx = pt.x * z + ox, sy = pt.y * z + oy;
       if(sx >= -90 && sx <= W + 90 && sy >= -90 && sy <= H + 90){
-        ctx.drawImage(spr, sx - dw * 0.5, sy - dh * 0.5, dw, dh);
+        ctx.drawImage(bodySpr, sx - dw * 0.5, sy - dh * 0.5, dw, dh);
         i--;
       } else {
-        // how far off screen — jump proportionally
         const offX = sx < -90 ? -90 - sx : sx > W + 90 ? sx - W - 90 : 0;
         const offY = sy < -90 ? -90 - sy : sy > H + 90 ? sy - H - 90 : 0;
         const off = Math.max(offX, offY);
@@ -2154,8 +2180,13 @@ function drawWorld(){
       }
     }
 
-    // draw name tag at head — on mobile only for nearby snakes to reduce fillText calls
+    // draw head with full face sprite
     const headSx = b[0].x * z + ox, headSy = b[0].y * z + oy;
+    if(headSx >= -90 && headSx <= W + 90 && headSy >= -90 && headSy <= H + 90){
+      ctx.drawImage(headSpr, headSx - dw * 0.5, headSy - dh * 0.5, dw, dh);
+    }
+
+    // draw name tag at head — on mobile only for nearby snakes to reduce fillText calls
     const nameVisible = headSx >= -200 && headSx <= W + 200 && headSy >= -200 && headSy <= H + 200;
     const showName = nameVisible && (!_isMobile || s.isPlayer || (headSx > -50 && headSx < W + 50 && headSy > -50 && headSy < H + 50));
     if(showName){
@@ -2173,7 +2204,7 @@ function drawWorld(){
         ctx.save();
         ctx.globalAlpha = pulse * 0.35;
         ctx.beginPath();
-        ctx.arc(headSx, headSy, spr.width * 0.62, 0, Math.PI * 2);
+        ctx.arc(headSx, headSy, headSpr.width * 0.62, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(255,215,0,1)";
         ctx.fill();
         ctx.restore();
