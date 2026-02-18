@@ -462,7 +462,7 @@ const CFG = {
   cellSize: 110,
 
   // pellets
-  pelletTarget: _isMobile ? 600 : 1200,
+  pelletTarget: _isMobile ? 350 : 1200,
 
   // gold
   goldenMax: 18,
@@ -494,6 +494,7 @@ const SFX_GOLD_SRC = "assets/sfx_gold.mp3";
    CANVAS
 ========================================================= */
 let dpr = 1, W = 0, H = 0;
+let _bgCache = null, _bgCacheW = 0, _bgCacheH = 0;
 function resize(){
   // cap DPR lower on mobile to avoid rendering at huge resolutions
   const maxDpr = _isMobile ? 1.5 : 2;
@@ -504,6 +505,7 @@ function resize(){
   c.style.width  = W + "px";
   c.style.height = H + "px";
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  _bgCacheW = 0; // invalidate bg cache
 }
 addEventListener("resize", resize);
 resize();
@@ -513,6 +515,7 @@ resize();
 ========================================================= */
 const bgImg = new Image();
 bgImg.decoding = "async";
+bgImg.onload = () => { _bgCacheW = 0; };
 bgImg.src = BG_SRC;
 
 /* =========================================================
@@ -753,15 +756,17 @@ function spawnBoostTrail(x, y, angle, color){
 }
 
 function updateParticles(dt){
-  for(let i = particles.length - 1; i >= 0; i--){
+  let w = 0;
+  for(let i = 0; i < particles.length; i++){
     const p = particles[i];
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.vx *= 0.95;
     p.vy *= 0.95;
     p.life -= dt;
-    if(p.life <= 0) particles.splice(i, 1);
+    if(p.life > 0) particles[w++] = p;
   }
+  particles.length = w;
 }
 
 function drawParticles(){
@@ -890,22 +895,6 @@ function makeFrogSprite(size, variant, color){
   return s;
 }
 
-/* body-only sprite: just the coloured circle + outline, no face details */
-function makeBodySprite(size, color){
-  const s = document.createElement("canvas");
-  s.width = s.height = size;
-  const g = s.getContext("2d");
-  const cx = size / 2, cy = size / 2, r = size * 0.33;
-  g.beginPath();
-  g.arc(cx, cy, r, 0, Math.PI * 2);
-  g.fillStyle = color || "rgba(55,180,90,0.95)";
-  g.fill();
-  g.lineWidth = Math.max(2, size * 0.05);
-  g.strokeStyle = "rgba(0,0,0,0.35)";
-  g.stroke();
-  return s;
-}
-
 function makeCrownSprite(size){
   const s = document.createElement("canvas");
   s.width = s.height = size;
@@ -953,19 +942,7 @@ function getSnakeSprite(size, color, gold){
   return spr;
 }
 
-const BODY_CACHE = new Map();
-function getBodySprite(size, color){
-  const key = `${size}_${color}`;
-  let spr = BODY_CACHE.get(key);
-  if(spr) return spr;
-  spr = makeBodySprite(size, color);
-  BODY_CACHE.set(key, spr);
-  return spr;
-}
-
 const SPRITES = {
-  pellet: _isMobile ? makeBodySprite(34, "#37b45a") : makeFrogSprite(34, "normal", "#37b45a"),
-  pelletSmall: _isMobile ? makeBodySprite(26, "#37b45a") : makeFrogSprite(26, "normal", "#37b45a"),
   gold: makeFrogSprite(56, "gold"),
   crown: makeCrownSprite(56),
 };
@@ -1165,6 +1142,7 @@ const bodyGrid   = new Grid(CFG.cellSize);
    SNAKES
 ========================================================= */
 let nextSnakeId = 1;
+const snakeById = new Map();
 
 function makeSnake(opts){
   const baseLen = opts.length || 120;
@@ -1239,7 +1217,7 @@ function spawnPlayer(name){
   updateRadius(s);
   seedBody(s);
   player = s;
-  snakes.push(s);
+  snakes.push(s); snakeById.set(s.id, s);
 }
 
 function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, usedNames){
@@ -1259,7 +1237,7 @@ function spawnBots(count, baseId, lengthMin, lengthMax, speedMin, speedMax, used
     s.eaten = Math.floor(len / 8);
     updateRadius(s);
     seedBody(s);
-    snakes.push(s);
+    snakes.push(s); snakeById.set(s.id, s);
   }
 }
 
@@ -1328,11 +1306,13 @@ function ensurePellets(camX, camY){
   }
   WORLD.pellets.length = w;
 
-  for(let i = golden.length - 1; i >= 0; i--){
+  let gw = 0;
+  for(let i = 0; i < golden.length; i++){
     const g0 = golden[i];
     const dx = g0.x - camX, dy = g0.y - camY;
-    if(dx * dx + dy * dy > maxD2) golden.splice(i, 1);
+    if(dx * dx + dy * dy <= maxD2) golden[gw++] = g0;
   }
+  golden.length = gw;
 }
 
 function rebuildPelletGrid(){
@@ -1652,9 +1632,11 @@ function rebuildBodyGrid(){
     if(!s.alive) continue;
     const b = s.body;
     const start = Math.min(6, b.length);
+    const sid = s.id, sr = s.radius;
     for(let i = start; i < b.length; i++){
       const pt = b[i];
-      bodyGrid.add(pt.x, pt.y, { x: pt.x, y: pt.y, sid: s.id, r: s.radius });
+      pt.sid = sid; pt.r = sr;
+      bodyGrid.add(pt.x, pt.y, pt);
     }
   }
 }
@@ -1688,7 +1670,7 @@ function checkPop(s){
     // hit distance = attacker head radius + defender body segment radius, scaled
     const hitR = (s.radius + (pt.r || 10)) * CFG.headBodyHitMul;
     if(dist2(pt.x, pt.y, s.x, s.y) < hitR * hitR){
-      const killer = snakes.find(k => k.id === pt.sid) || null;
+      const killer = snakeById.get(pt.sid) || null;
       return popSnake(s, killer);
     }
   }
@@ -1903,7 +1885,7 @@ function quickRespawn(){
   updateRadius(s);
   seedBody(s);
   player = s;
-  snakes.push(s);
+  snakes.push(s); snakeById.set(s.id, s);
 
   cam.x = player.x;
   cam.y = player.y;
@@ -2004,22 +1986,32 @@ function updateLeaderboard(dt){
 /* =========================================================
    DRAW
 ========================================================= */
-function drawPinnedBackground(){
-  ctx.fillStyle = "white";
-  ctx.fillRect(0, 0, W, H);
-
+function rebuildBgCache(){
+  _bgCacheW = W; _bgCacheH = H;
+  if(!_bgCache) _bgCache = document.createElement("canvas");
+  _bgCache.width = Math.floor(W * dpr);
+  _bgCache.height = Math.floor(H * dpr);
+  const g2 = _bgCache.getContext("2d");
+  g2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g2.fillStyle = "white";
+  g2.fillRect(0, 0, W, H);
   if(bgImg.complete && bgImg.naturalWidth > 0){
     const iw = bgImg.naturalWidth, ih = bgImg.naturalHeight;
-    const scale = Math.max(W / iw, H / ih);
-    const dw = iw * scale, dh = ih * scale;
-    ctx.drawImage(bgImg, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    const sc = Math.max(W / iw, H / ih);
+    const dw2 = iw * sc, dh2 = ih * sc;
+    g2.drawImage(bgImg, (W - dw2) / 2, (H - dh2) / 2, dw2, dh2);
   }
-
-  const g = ctx.createRadialGradient(W * 0.5, H * 0.42, 60, W * 0.5, H * 0.5, Math.max(W, H));
-  g.addColorStop(0, "rgba(45,147,234,0.07)");
-  g.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
+  const gr = g2.createRadialGradient(W * 0.5, H * 0.42, 60, W * 0.5, H * 0.5, Math.max(W, H));
+  gr.addColorStop(0, "rgba(45,147,234,0.07)");
+  gr.addColorStop(1, "rgba(255,255,255,0)");
+  g2.fillStyle = gr;
+  g2.fillRect(0, 0, W, H);
+}
+function drawPinnedBackground(){
+  if(!_bgCache || _bgCacheW !== W || _bgCacheH !== H) rebuildBgCache();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(_bgCache, 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 function drawWorldBoundary(){
@@ -2042,7 +2034,7 @@ function drawWorldBoundary(){
     const dFromCenter = Math.hypot(player.x, player.y);
     if(dFromCenter > CFG.worldRadius - CFG.boundaryWarning){
       const alpha = clamp((dFromCenter - (CFG.worldRadius - CFG.boundaryWarning)) / CFG.boundaryWarning, 0, 0.3);
-      const pulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);
+      const pulse = 0.5 + 0.5 * Math.sin(_frameNow * 0.005);
       ctx.beginPath();
       ctx.arc(ox, oy, CFG.worldRadius * z, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(200,30,30,${alpha * pulse})`;
@@ -2111,19 +2103,28 @@ function drawWorld(){
   const ox = W * 0.5 - cam.x * z;
   const oy = H * 0.5 - cam.y * z;
 
-  // pellets (skip offscreen)
-  for(let i = 0; i < WORLD.pellets.length; i++){
-    const p = WORLD.pellets[i];
-    const sx = p.x * z + ox, sy = p.y * z + oy;
-    if(sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) continue;
-    const spr = p.r <= 14 ? SPRITES.pelletSmall : SPRITES.pellet;
-    const dw = spr.width * z, dh = spr.height * z;
-    ctx.drawImage(spr, sx - dw * 0.5, sy - dh * 0.5, dw, dh);
+  // pellets — batched as arcs (one fill + one stroke for all)
+  {
+    const smallR = 26 * 0.33 * z, bigR = 34 * 0.33 * z;
+    ctx.beginPath();
+    for(let i = 0; i < WORLD.pellets.length; i++){
+      const p = WORLD.pellets[i];
+      const sx = p.x * z + ox, sy = p.y * z + oy;
+      if(sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) continue;
+      const r = p.r <= 14 ? smallR : bigR;
+      ctx.moveTo(sx + r, sy);
+      ctx.arc(sx, sy, r, 0, 6.2832);
+    }
+    ctx.fillStyle = "#37b45a";
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, 2 * z);
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.stroke();
   }
 
   // golden pellets
   if(golden.length > 0){
-    const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.006);
+    const pulse = 0.55 + 0.45 * Math.sin(_frameNow * 0.006);
     ctx.globalAlpha = 0.75 + pulse * 0.25;
     const gdw = SPRITES.gold.width * z, gdh = SPRITES.gold.height * z;
     for(let i = 0; i < golden.length; i++){
@@ -2135,7 +2136,10 @@ function drawWorld(){
     ctx.globalAlpha = 1;
   }
 
-  // snakes
+  // snakes — set font once for all name tags
+  ctx.font = '18px "RuneScape UF", Arial, sans-serif';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
   for(let si = 0; si < snakes.length; si++){
     const s = snakes[si];
     if(!s.alive) continue;
@@ -2161,16 +2165,18 @@ function drawWorld(){
     // sprite size scales with length: 42 at length 100, up to 80 at length 10000+
     const size = Math.round(clamp(42 + (s.length - 100) * 0.004, 42, 80));
     const headSpr = getSnakeSprite(size, s.color, isLeader);
-    const bodySpr = getBodySprite(size, s.color);
     const dw = headSpr.width * z, dh = headSpr.height * z;
+    const bodyR = size * 0.33 * z;
 
-    // draw body segments (tail→neck) as simple circles — off-screen jump optimisation
+    // draw body segments as batched arc() — one fill + one stroke per snake
     const segWorld = CFG.segSpacing * z;
+    ctx.beginPath();
     for(let i = b.length - 1; i >= 1;){
       const pt = b[i];
       const sx = pt.x * z + ox, sy = pt.y * z + oy;
       if(sx >= -90 && sx <= W + 90 && sy >= -90 && sy <= H + 90){
-        ctx.drawImage(bodySpr, sx - dw * 0.5, sy - dh * 0.5, dw, dh);
+        ctx.moveTo(sx + bodyR, sy);
+        ctx.arc(sx, sy, bodyR, 0, 6.2832);
         i--;
       } else {
         const offX = sx < -90 ? -90 - sx : sx > W + 90 ? sx - W - 90 : 0;
@@ -2179,6 +2185,11 @@ function drawWorld(){
         i -= Math.max(1, (off / (segWorld * 2)) | 0);
       }
     }
+    ctx.fillStyle = s.color || "rgba(55,180,90,0.95)";
+    ctx.fill();
+    ctx.lineWidth = Math.max(2, size * 0.05) * z;
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.stroke();
 
     // draw head with full face sprite
     const headSx = b[0].x * z + ox, headSy = b[0].y * z + oy;
@@ -2190,9 +2201,6 @@ function drawWorld(){
     const nameVisible = headSx >= -200 && headSx <= W + 200 && headSy >= -200 && headSy <= H + 200;
     const showName = nameVisible && (!_isMobile || s.isPlayer || (headSx > -50 && headSx < W + 50 && headSy > -50 && headSy < H + 50));
     if(showName){
-      ctx.font = '18px "RuneScape UF", Arial, sans-serif';
-      ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
       ctx.fillStyle = "black";
       ctx.fillText(s.name, headSx, headSy - dh * 0.55);
 
@@ -2200,7 +2208,7 @@ function drawWorld(){
         const crown = SPRITES.crown;
         const cw = crown.width * z, ch = crown.height * z;
         ctx.drawImage(crown, headSx - cw * 0.5, headSy - dh * 0.95 - ch * 0.5, cw, ch);
-        const pulse = 0.45 + 0.35 * Math.sin(performance.now() * 0.006);
+        const pulse = 0.45 + 0.35 * Math.sin(_frameNow * 0.006);
         ctx.save();
         ctx.globalAlpha = pulse * 0.35;
         ctx.beginPath();
@@ -2327,6 +2335,9 @@ function drawMinimap(){
    GAME LOOP
 ========================================================= */
 let last = performance.now();
+let _frameNow = 0;
+let _minimapFrame = 0;
+let _statsThrottle = 0;
 let rafId = null;
 let paused = false;
 let gameRunning = false;
@@ -2356,6 +2367,7 @@ function setPaused(on){
 
 function tick(now){
   if(paused || !gameRunning){ rafId = null; return; }
+  _frameNow = now;
   const dt = Math.min(0.033, (now - last) / 1000);
   last = now;
   huntersNow = 0;
@@ -2436,13 +2448,13 @@ function tick(now){
   drawWorld();
   drawParticles();
   drawLeaderArrow(leader);
-  drawMinimap();
+  if(!_isMobile || (++_minimapFrame % 3 === 0)) drawMinimap();
   drawKillFeed();
 
-  // stats bar
-  if(player){
+  // stats bar (throttled — every 6th frame)
+  if(player && (++_statsThrottle % 6 === 0)){
     const b = player.boost ? "on" : "off";
-    statsEl.textContent = `length: ${Math.round(player.length)} \u2022 eaten: ${player.eaten.toLocaleString()} \u2022 boost: ${b}`;
+    statsEl.textContent = `length: ${Math.round(player.length)} \u2022 eaten: ${player.eaten} \u2022 boost: ${b}`;
   }
 
   requestAnimationFrame(tick);
@@ -2458,7 +2470,7 @@ async function startGame(){
 
   WORLD.seed = (WORLD.seed + ((Math.random() * 1e9) | 0)) >>> 0;
   nextSnakeId = 1;
-  snakes.length = 0;
+  snakes.length = 0; snakeById.clear();
   WORLD.pellets.length = 0;
   golden = [];
   leader = null;
