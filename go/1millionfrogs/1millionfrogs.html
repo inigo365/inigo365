@@ -238,7 +238,7 @@ button{
 
 .joy{
   position:fixed; width:140px; height:120px;
-  left:50%; bottom:calc(10px - 3vh); transform:translateX(-50%);
+  left:50%; bottom:10px; transform:translateX(-50%);
   pointer-events:auto; touch-action:none;
 }
 .joy-base{
@@ -783,7 +783,9 @@ function drawParticles(){
     ctx.globalAlpha = alpha;
     ctx.fillStyle = p.color;
     const r = p.size * z * (0.6 + alpha * 0.4);
-    ctx.fillRect(sx - r * 0.5, sy - r * 0.5, r, r);
+    ctx.beginPath();
+    ctx.arc(sx, sy, r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.restore();
 }
@@ -943,6 +945,8 @@ function getSnakeSprite(size, color, gold){
 }
 
 const SPRITES = {
+  pellet: makeFrogSprite(34, "normal", "#37b45a"),
+  pelletSmall: makeFrogSprite(26, "normal", "#37b45a"),
   gold: makeFrogSprite(56, "gold"),
   crown: makeCrownSprite(56),
 };
@@ -2103,23 +2107,14 @@ function drawWorld(){
   const ox = W * 0.5 - cam.x * z;
   const oy = H * 0.5 - cam.y * z;
 
-  // pellets — batched as arcs (one fill + one stroke for all)
-  {
-    const smallR = 26 * 0.33 * z, bigR = 34 * 0.33 * z;
-    ctx.beginPath();
-    for(let i = 0; i < WORLD.pellets.length; i++){
-      const p = WORLD.pellets[i];
-      const sx = p.x * z + ox, sy = p.y * z + oy;
-      if(sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) continue;
-      const r = p.r <= 14 ? smallR : bigR;
-      ctx.moveTo(sx + r, sy);
-      ctx.arc(sx, sy, r, 0, 6.2832);
-    }
-    ctx.fillStyle = "#37b45a";
-    ctx.fill();
-    ctx.lineWidth = Math.max(1, 2 * z);
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.stroke();
+  // pellets (skip offscreen)
+  for(let i = 0; i < WORLD.pellets.length; i++){
+    const p = WORLD.pellets[i];
+    const sx = p.x * z + ox, sy = p.y * z + oy;
+    if(sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) continue;
+    const spr = p.r <= 14 ? SPRITES.pelletSmall : SPRITES.pellet;
+    const dw = spr.width * z, dh = spr.height * z;
+    ctx.drawImage(spr, sx - dw * 0.5, sy - dh * 0.5, dw, dh);
   }
 
   // golden pellets
@@ -2187,9 +2182,6 @@ function drawWorld(){
     }
     ctx.fillStyle = s.color || "rgba(55,180,90,0.95)";
     ctx.fill();
-    ctx.lineWidth = Math.max(2, size * 0.05) * z;
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.stroke();
 
     // draw head with full face sprite
     const headSx = b[0].x * z + ox, headSy = b[0].y * z + oy;
@@ -2448,7 +2440,7 @@ function tick(now){
   drawWorld();
   drawParticles();
   drawLeaderArrow(leader);
-  if(!_isMobile || (++_minimapFrame % 3 === 0)) drawMinimap();
+  drawMinimap();
   drawKillFeed();
 
   // stats bar (throttled — every 6th frame)
