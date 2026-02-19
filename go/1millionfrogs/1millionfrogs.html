@@ -334,7 +334,6 @@ button{
       encircle smaller frogs to trap them.<br>
       become the almightiest frog.
     </div>
-    <img src="../images/frogsprite.png" alt="frog" class="start-frog">
     <div class="panel2-sub">
       mobile: use the joystick to move &bull; tap/hold anywhere to boost<br>
       desktop: follow your mouse &bull; click/hold to boost
@@ -462,7 +461,7 @@ const CFG = {
   cellSize: 110,
 
   // pellets
-  pelletTarget: _isMobile ? 350 : 1200,
+  pelletTarget: _isMobile ? 550 : 1200,
 
   // gold
   goldenMax: 18,
@@ -2163,15 +2162,21 @@ function drawWorld(){
     const dw = headSpr.width * z, dh = headSpr.height * z;
     const bodyR = size * 0.33 * z;
 
-    // draw body segments as batched arc() — one fill + one stroke per snake
+    // draw body segments tail→head so front segments paint over back outlines
     const segWorld = CFG.segSpacing * z;
-    ctx.beginPath();
+    const bodyFill = s.color || "rgba(55,180,90,0.95)";
+    const bodyLW = Math.max(2, size * 0.05) * z;
     for(let i = b.length - 1; i >= 1;){
       const pt = b[i];
       const sx = pt.x * z + ox, sy = pt.y * z + oy;
       if(sx >= -90 && sx <= W + 90 && sy >= -90 && sy <= H + 90){
-        ctx.moveTo(sx + bodyR, sy);
+        ctx.beginPath();
         ctx.arc(sx, sy, bodyR, 0, 6.2832);
+        ctx.fillStyle = bodyFill;
+        ctx.fill();
+        ctx.lineWidth = bodyLW;
+        ctx.strokeStyle = "rgba(0,0,0,0.35)";
+        ctx.stroke();
         i--;
       } else {
         const offX = sx < -90 ? -90 - sx : sx > W + 90 ? sx - W - 90 : 0;
@@ -2180,8 +2185,6 @@ function drawWorld(){
         i -= Math.max(1, (off / (segWorld * 2)) | 0);
       }
     }
-    ctx.fillStyle = s.color || "rgba(55,180,90,0.95)";
-    ctx.fill();
 
     // draw head with full face sprite
     const headSx = b[0].x * z + ox, headSy = b[0].y * z + oy;
