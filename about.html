@@ -569,7 +569,15 @@
 
   </div>
 
+<script src="js/click-sfx.js"></script>
 <script>
+  // Click SFX: section headers + back button
+  document.addEventListener('click', function(e) {
+    const header = e.target.closest('.section-header');
+    const back = e.target.closest('.back');
+    if (header || back) clickSFX.play();
+  }, true);
+
   // Expandable sections
   document.querySelectorAll('.section-header').forEach(header => {
     header.addEventListener('click', () => {
@@ -666,6 +674,7 @@
         track.classList.add('unlocked');
         label.textContent = 'go';
         label.style.opacity = '1';
+        try { const a = new Audio('go/sounds/correct.mp3'); a.volume = 0.75; a.play(); } catch {}
 
         setTimeout(() => {
           document.body.classList.add('fade-out');
