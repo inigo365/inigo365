@@ -1959,7 +1959,7 @@ function hardResetPasswordUI() {
 window.addEventListener("pageshow", () => hardResetPasswordUI());
 window.addEventListener("pagehide", () => { passwordInput.disabled = false; });
 
-backButton.onclick = resetToPassword;
+backButton.onclick = () => { SFX.play("click"); resetToPassword(); };
 
 function setButtonsForInputState() {
   const hasText = passwordInput.value.length > 0;
