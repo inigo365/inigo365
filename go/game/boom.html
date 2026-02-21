@@ -212,51 +212,34 @@ input,
   padding: 0;
 }
 
-/* ===================== HOME SCREEN CENTRE STACK ===================== */
-#homeUI {
+/* ===================== HOME BAR (inside playWrap, below play.png) ===================== */
+#homeBar {
   position: fixed;
-  top: 69%;
+  top: 75%;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 61;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(45, 147, 234, 0.18);
+  border-radius: 10px;
+  z-index: 61;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   opacity: 0;
   transition: opacity 0.5s;
   pointer-events: none;
 }
-
-#homeUI.active {
+#homeBar.active {
   opacity: 1;
   pointer-events: auto;
-  /* Pulse in sync with playWrap — uncomment to re-enable */
-  /* animation: homeUiPulse 1.2s ease-in-out infinite; */
 }
 
-@keyframes homeUiPulse {
-  0%, 100% { transform: translateX(-50%) scale(1); }
-  50%      { transform: translateX(-50%) scale(1.025); }
-}
-
-#startSplash {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: clamp(18px, 4.5vw, 36px);
-  color: #2d93ea;
-  /*text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);*/
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-#homeToggles {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-#homeToggles button {
+#homeBar button {
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 22px;
   background: transparent;
@@ -264,88 +247,34 @@ input,
   color: #2d93ea;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
-  padding: 4px 8px;
+  padding: 2px 6px;
   text-align: center;
   transition: opacity 0.2s;
   -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  line-height: 1;
 }
-#homeMusicBtn {
-  margin-left: 18px;
+
+#homeBar button:hover {
+  opacity: 0.7;
 }
+
+#homeBar button:active {
+  transform: scale(0.95);
+}
+
+.bar-sep {
+  color: rgba(45, 147, 234, 0.25);
+  font-size: 18px;
+  user-select: none;
+  line-height: 1;
+}
+
 #musicState,
 #sfxState {
   display: inline-block;
   width: 2.1em;
   text-align: left;
-}
-
-#homeToggles button:hover {
-  opacity: 0.8;
-}
-
-#homeToggles button:active {
-  transform: scale(0.95);
-}
-
-#homeToggles .home-sep {
-  display: none;
-}
-
-#homeHowToBtn {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 22px;
-  background: transparent;
-  border: none;
-  color: #2d93ea;
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  text-transform: lowercase;
-  padding: 4px 8px;
-  transition: opacity 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-#homeHowToBtn:hover {
-  opacity: 0.8;
-}
-
-#homeHowToBtn:active {
-  transform: scale(0.95);
-}
-
-#homeBottomRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-}
-
-#homeBottomRow button {
-  margin: 0;
-  line-height: 1;
-  vertical-align: baseline;
-}
-
-/* Back button on play screen — matches name modal back button exactly */
-#homeBackBtn {
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 22px;
-  background: transparent;
-  border: none;
-  color: #2d93ea;
-  /*text-shadow: 0 1px 4px rgba(45, 147, 234, 0.5);*/
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  text-transform: lowercase;
-  padding: 4px 8px;
-  transition: opacity 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-#homeBackBtn:hover {
-  opacity: 0.8;
-}
-
-#homeBackBtn:active {
-  transform: scale(0.95);
 }
 
 canvas {
@@ -993,12 +922,12 @@ canvas {
   white-space: pre-line;
 }
 
-/* One stable overlay "unit" */
+/* One stable overlay "unit" — play image + buttons as one group */
 #playWrap{
   position: absolute;
-  top: 44%;
-  left: calc(50% + 8px);
-  transform: translate(-50%, -50%) scale(0.8);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
   opacity: 0;
   transition: opacity 0.5s, transform 0.5s;
   z-index: 60;
@@ -1008,11 +937,16 @@ canvas {
   will-change: transform, opacity;
 }
 
+/* Image + splash wrapper — relative so splash text stays anchored to image */
+#playImageWrap {
+  position: relative;
+}
+
 /* play.png sizing */
 #playWrap #playOverlay{
   display: block;
-  max-width: 78vw;
-  max-height: 78vh;
+  max-width: 84vw;
+  max-height: 84vh;
   width: auto;
   height: auto;
 }
@@ -1021,9 +955,9 @@ canvas {
 #playSplashText{
   position: absolute;
 
-  /* ✅ THIS is the “same place forever” part */
+  /* ✅ THIS is the "same place forever" part */
   left: 71.4%;
-  top: 61.1%;
+  top: 57%;
 
   transform: translate(-50%, -50%) rotate(-18deg);
   pointer-events: none;
@@ -1036,14 +970,12 @@ canvas {
   /* ✅ bigger on mobile, smaller on desktop */
   font-size: clamp(18px, 5.2vw, 44px);
 
-  /* ✅ cheap shadow (avoid blur) */
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.14);
+  text-shadow: 0 0 8px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
 }
 @keyframes playPulse {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
   50%      { transform: translate(-50%, -50%) scale(1.05); }
 }
-
 #playWrap.pulsing{
   animation: playPulse 1.2s ease-in-out infinite;
 }
@@ -1054,7 +986,9 @@ canvas {
 }
 #pageBg{
   position: fixed;
-  inset: 0;
+  inset: -10%;
+  width: 120%;
+  height: 120%;
   z-index: 0;            /* behind everything */
   pointer-events: none;
 
@@ -1063,13 +997,23 @@ canvas {
   background-position: center;
   background-repeat: no-repeat;
 
-  will-change: opacity, filter;
+  will-change: transform;
   transition: opacity 0.4s ease, filter 0.4s ease;
+  animation: bgDrift 25s ease-in-out infinite;
+}
+
+@keyframes bgDrift {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-5%, -3%); }
+  50%  { transform: translate(-2%, -6%); }
+  75%  { transform: translate(-6%, -1.5%); }
+  100% { transform: translate(0, 0); }
 }
 
 #pageBg.gameplay {
   opacity: 0.35;
   filter: blur(2px) saturate(0.5);
+  animation-play-state: paused;
 }
 
 /* White vignette — fades center clean during gameplay */
@@ -1126,39 +1070,30 @@ canvas {
 /* ===================== DESKTOP ===================== */
 @media (min-width: 769px) {
   #playWrap {
-    top: 44%;
+    top: 53%;
   }
 }
 
 /* ===================== MOBILE ===================== */
 @media (max-width: 768px) {
   #playWrap {
-    top: 48%;
+    top: 54%;
   }
   #playWrap #playOverlay {
     max-width: 86vw;
   }
-  #homeUI {
-    top: 62%;
-    gap: 6px;
+  #homeBar {
+    top: 70%;
+    padding: 4px 10px;
+    gap: 2px;
+    flex-wrap: nowrap;
   }
-  #homeToggles button {
-    font-size: 18px;
-    padding: 2px 6px;
+  #homeBar button {
+    font-size: 15px;
+    padding: 2px 4px;
   }
-  #homeHowToBtn {
-    font-size: 18px;
-    padding: 2px 6px;
-  }
-  #homeBackBtn {
-    font-size: 18px;
-    padding: 2px 6px;
-  }
-  #homeBottomRow {
-    gap: 4px;
-  }
-  #startSplash {
-    font-size: clamp(24px, 6vw, 38px);
+  .bar-sep {
+    font-size: 12px;
   }
 }
 
@@ -1173,26 +1108,26 @@ canvas {
 <button class="music-button game-btn" id="musicToggle" style="bottom:8px; left:8px;">music toggle</button>
 <button id="goodybagBtn" class="soundcloud-btn game-btn">goodybag</button>
 
-<div id="homeUI">
-  <div id="startSplash">tap/click anywhere to start!</div>
-  <div id="homeToggles">
-    <button id="homeMusicBtn">music: <span id="musicState">off</span></button>
-    <span class="home-sep">·</span>
-    <button id="homeSfxBtn">sfx: <span id="sfxState">off</span></button>
-  </div>
-  <div id="homeBottomRow">
-    <button id="homeBackBtn" onclick="goBack()">← back</button>
-    <button id="homeHowToBtn" onclick="openHowTo()">how to play</button>
-  </div>
-</div>
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
 <audio id="sfxGold" src="sfx_gold.mp3" preload="auto"></audio>
 <audio id="sfxDie" src="sfx_die.mp3" preload="auto"></audio>
 <audio id="sfxPower" src="sfx_power.mp3" preload="auto"></audio>
 
 <div id="playWrap">
-  <img id="playOverlay" src="play.png" alt="play">
-  <div id="playSplashText"></div>
+  <div id="playImageWrap">
+    <img id="playOverlay" src="play.png" alt="play">
+    <div id="playSplashText"></div>
+  </div>
+</div>
+
+<div id="homeBar">
+  <button id="homeBackBtn" onclick="goBack()">← back</button>
+  <span class="bar-sep">·</span>
+  <button id="homeHowToBtn" onclick="openHowTo()">how to play</button>
+  <span class="bar-sep">·</span>
+  <button id="homeMusicBtn">music: <span id="musicState">off</span></button>
+  <span class="bar-sep">·</span>
+  <button id="homeSfxBtn">sfx: <span id="sfxState">off</span></button>
 </div>
 
 <div id="overlayHighscore"></div>
@@ -2074,6 +2009,9 @@ function showOverlay(showLastScore = false) {
   // Remove white overlay on home screen
   document.getElementById('homeOverlay').classList.remove('active');
 
+  // Resume bg drift on home screen
+  document.getElementById('pageBg').classList.remove('gameplay');
+
   // ✅ Show play overlay
   playWrap.style.opacity = 1;
   playWrap.style.transform = "translate(-50%, -50%) scale(1)";
@@ -2092,14 +2030,13 @@ function showOverlay(showLastScore = false) {
 
   gameStarted = false;
 
-  // ✅ Hide fixed back button (homeUI has its own back button)
+  // ✅ Hide fixed back button (playWrap bar has its own back button)
   backButton.style.opacity = 0;
 
-  // Update toggle labels and show homeUI
-  const homeUI = document.getElementById('homeUI');
+  // Update toggle labels and show homeBar
   document.getElementById('musicState').textContent = (bgMusic.readyState > 2 && !bgMusic.paused) ? 'on' : 'off';
   document.getElementById('sfxState').textContent = sfxEnabled ? 'on' : 'off';
-  homeUI.classList.add('active');
+  document.getElementById('homeBar').classList.add('active');
 
 }
 
@@ -2108,13 +2045,12 @@ function hideOverlay() {
   playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
   playWrap.style.pointerEvents = "none";
   playWrap.classList.remove('pulsing');
+  document.getElementById('homeBar').classList.remove('active');
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
   showTopScores();
   hideMusicButton();
 
-  // Hide home screen UI
-  document.getElementById('homeUI').classList.remove('active');
   backButton.style.opacity = 0;
   backButton.style.color = '#2d93ea';
   backButton.style.textShadow = 'none';
@@ -2136,6 +2072,9 @@ function startGame() {
   hideOverlay();
   gameStarted = true;
   dying = false;
+
+  // Pause bg drift during gameplay
+  document.getElementById('pageBg').classList.add('gameplay');
 
   // Show single white overlay for gameplay (behind sprites)
   const overlay = document.getElementById('homeOverlay');
@@ -2879,7 +2818,6 @@ function goBack() { window.location.href = "../index.html"; }
     leaderboardBtn.style.display = 'none';
     setTimeout(() => playerNameInput.focus(), 100);
     hideMusicButton();
-    document.getElementById('homeUI').classList.remove('active');
 
     if (goodybagBtn) goodybagBtn.style.display = 'none';
 
