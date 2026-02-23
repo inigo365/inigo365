@@ -6,6 +6,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
 
+/* ===================== FONTS ===================== */
+@font-face {
+  font-family: 'RuneScape';
+  src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+       url('../../fonts/RuneScape-UF.woff') format('woff'),
+       url('../../fonts/runescape.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 /* ===================== BASE ===================== */
 html, body {
   margin: 0;
@@ -13,7 +23,14 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #1a1a1a;
+  background: url('assets/background.png') center center / cover no-repeat;
+  background-color: #1a1a1a;
+  cursor: url('../../images/cursor/cursor.png'), auto;
+}
+
+/* Hover cursor on all interactive elements */
+button, a, .nokia-key, #nokiaScreen {
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
 }
 
 /* ===================== PHONE WRAP ===================== */
@@ -28,10 +45,12 @@ html, body {
   z-index: 10;
 }
 
-/* Phone body image — defines the wrapper's intrinsic size */
+/* Phone body image — defines the wrapper's intrinsic size.
+   Image is 1364 × 2048 (portrait). On narrow viewports, width is the
+   binding constraint: max height = 95vw × (2048/1364) ≈ 95vw × 1.502 */
 #nokiaFrame {
   display: block;
-  height: min(90vh, 760px);
+  height: min(90vh, 760px, calc(95vw * 1.502));
   width: auto;
   pointer-events: none;
   user-select: none;
@@ -69,8 +88,10 @@ html, body {
   /* Classic Nokia LCD — dark base, content sets the look */
   background: #0d0d0d;
   color: #4dff91;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: clamp(7px, 1.6vw, 13px);
+  font-family: 'RuneScape', monospace;
+  /* Scale with viewport width so text stays readable on mobile.
+     Phone screen width ≈ 61.9% of phone frame ≈ 58.8vw on mobile. */
+  font-size: clamp(9px, 2.5vw, 14px);
   letter-spacing: 0.04em;
   line-height: 1.35;
   image-rendering: pixelated;
@@ -197,29 +218,32 @@ html, body {
   #nokiaFrame { height: min(92vh, 760px); }
 }
 
-/* ===================== DEBUG OVERLAY (Step 2 only) ===================== */
-#debugBadge {
+/* ===================== BACK BUTTON ===================== */
+#siteBackBtn {
   position: fixed;
-  bottom: 12px;
-  right: 12px;
-  background: rgba(0,0,0,0.6);
-  color: #4dff91;
-  font-family: monospace;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  pointer-events: none;
+  top: 8px;
+  left: 8px;
+  font-size: 28px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #000;
+  font-family: 'RuneScape', monospace;
+  text-transform: lowercase;
+  text-decoration: none;
   z-index: 100;
-  opacity: 0;
-  transition: opacity 0.15s;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  line-height: 1;
 }
+#siteBackBtn:hover { text-decoration: underline; }
+
 
 </style>
 </head>
 <body>
 
-<!-- ===================== DEBUG BADGE ===================== -->
-<div id="debugBadge"></div>
+<!-- ===================== BACK BUTTON ===================== -->
+<a id="siteBackBtn" href="../index.html">← back</a>
 
 <!-- ===================== PHONE ===================== -->
 <div id="nokiaPhoneWrap">
@@ -270,13 +294,13 @@ html, body {
 // ── CONFIG ────────────────────────────────────────────────────────────
 const CONFIG = {
   UNLOCK_PIN: "2001",          // CHANGE THIS before going live
-  HINT_TEXT: "secret password...",            // IDLE SCREEN CRYPTIC HINT
-  REVEAL_MESSAGE: "...",       // MESSAGE SHOWN AFTER PUZZLE COMPLETE
+  HINT_TEXT: "locked",            // IDLE SCREEN CRYPTIC HINT
+  REVEAL_MESSAGE: "song unlocked!",       // MESSAGE SHOWN AFTER PUZZLE COMPLETE
   ARTIST_NAME: "inigo365",          // YOUR ARTIST NAME
   TRACKS: [
     {
-      title: "KINTSUGI",
-      audioSrc: "",            // PATH TO AUDIO FILE
+      title: "Man of the Match",
+      audioSrc: "assets/man%20of%20the%20match.mp3",
       unlockDate: new Date("2025-01-01"), // SET REAL DATE
       unlockedByPuzzle: true
     }
@@ -287,7 +311,6 @@ const CONFIG = {
 // ── DOM refs ──────────────────────────────────────────────────────────
 const nokiaKeypad = document.getElementById('nokiaKeypad');
 const nokiaScreen = document.getElementById('nokiaScreen');
-const debugBadge  = document.getElementById('debugBadge');
 
 // ── App state ─────────────────────────────────────────────────────────
 let STATE       = 'idle';
@@ -313,8 +336,8 @@ function screenBase() {
   nokiaScreen.style.cssText =
     'position:absolute;left:19.8%;top:19.0%;width:61.9%;height:22.8%;' +
     'background:#0d0d0d;color:#4dff91;' +
-    'font-family:\'Courier New\',Courier,monospace;' +
-    'font-size:clamp(7px,1.6vw,13px);letter-spacing:0.04em;line-height:1.35;' +
+    'font-family:\'RuneScape\',monospace;' +
+    'font-size:clamp(9px,2.5vw,14px);letter-spacing:0.04em;line-height:1.35;' +
     'overflow:hidden;z-index:1;box-sizing:border-box;padding:3% 4%;' +
     'display:flex;flex-direction:column;align-items:center;' +
     'justify-content:center;text-align:center;';
@@ -418,7 +441,7 @@ function renderMenu() {
     { label: '2. MUSIC',  enabled: puzzleComplete }
   ];
   let html =
-    '<div style="opacity:0.4;font-size:0.7em;margin-bottom:5px;align-self:flex-start">MENU</div>';
+    '<div style="opacity:0.4;font-size:0.7em;margin-bottom:5px">MENU</div>';
   items.forEach((item, i) => {
     const sel    = i === menuIndex;
     const dimmed = !item.enabled;
@@ -432,6 +455,7 @@ function renderMenu() {
         (sel ? '► ' : '  ') + item.label +
       '</div>';
   });
+  html += '<div style="opacity:0.35;font-size:0.6em;margin-top:5px">[#] MOVE  [0] SELECT  [*] BACK</div>';
   nokiaScreen.innerHTML = html;
   // Direct item clicks (stopPropagation prevents screen handler)
   nokiaScreen.querySelectorAll('.m-item').forEach(el => {
@@ -445,9 +469,9 @@ function renderMenu() {
 
 function handleMenu(action) {
   if (action === 'up')   { menuIndex = Math.max(0, menuIndex - 1); renderMenu(); return; }
-  if (action === 'down') { menuIndex = Math.min(1, menuIndex + 1); renderMenu(); return; }
+  if (action === 'down') { menuIndex = (menuIndex + 1) % 2; renderMenu(); return; }  // wraps so # cycles
   if (action === 'ok' || action === 'rsoft' || action === 'screen') { selectMenuItem(); return; }
-  if (action === 'lsoft') { renderIdle(); return; }
+  if (action === 'lsoft') { menuIndex = 0; renderIdle(); return; }
 }
 
 function selectMenuItem() {
@@ -465,7 +489,7 @@ function renderPuzzle() {
   nokiaScreen.innerHTML =
     '<div style="opacity:0.4;font-size:0.7em;margin-bottom:4px">PUZZLE</div>' +
     '<div style="font-size:0.9em">COMING SOON</div>' +
-    '<div style="opacity:0.45;font-size:0.65em;margin-top:7px">[OK] MARK DONE · [←] BACK</div>';
+    '<div style="opacity:0.45;font-size:0.65em;margin-top:7px">[0] DONE  [*] BACK</div>';
 }
 
 function handlePuzzle(action) {
@@ -542,7 +566,7 @@ function renderMusic() {
         'animation:nokiaProgress 1.8s linear infinite;' +
         'animation-play-state:' + animState + '"></div>' +
     '</div>' +
-    '<div style="opacity:0.3;font-size:0.6em;margin-top:4px">[OK] PLAY/PAUSE · [←] BACK</div>';
+    '<div style="opacity:0.3;font-size:0.6em;margin-top:4px">[0] PLAY/PAUSE  [*] BACK</div>';
 }
 
 function handleMusic(action) {
@@ -594,6 +618,11 @@ document.addEventListener('keydown', (e) => {
 // =====================================================================
 function handleButton(action) {
   showDebug(action);
+  // Remap physical keys → logical actions
+  // * = back, # = navigate (cycle down with wrap), 0 = ok (except in PIN so digit 0 still works)
+  if (action === 'star')                       action = 'lsoft';
+  if (action === 'hash')                       action = 'down';
+  if (action === 'key0' && STATE !== 'pin')    action = 'ok';
   switch (STATE) {
     case 'idle':
       if (action === 'lsoft') return; // ignore back on lock screen
@@ -612,14 +641,8 @@ function handleButton(action) {
   }
 }
 
-// ── Debug badge ───────────────────────────────────────────────────────
-let _dbgTimer = null;
-function showDebug(action) {
-  debugBadge.textContent = '▶ ' + action.toUpperCase();
-  debugBadge.style.opacity = '1';
-  clearTimeout(_dbgTimer);
-  _dbgTimer = setTimeout(() => { debugBadge.style.opacity = '0'; }, 1800);
-}
+// ── Debug (no-op — badge removed) ────────────────────────────────────
+function showDebug(action) {}
 
 // ── Boot ──────────────────────────────────────────────────────────────
 (function boot() {
