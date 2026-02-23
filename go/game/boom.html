@@ -212,36 +212,45 @@ input,
   padding: 0;
 }
 
-/* ===================== HOME BAR (inside playWrap, below play.png) ===================== */
-#homeBar {
+/* ===================== HOME BAR GROUP (wrapper for both bars) ===================== */
+#homeBarGroup {
   position: fixed;
-  top: 75%;
+  top: 71%;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 61;
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+}
+#homeBarGroup.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===================== HOME BAR TOP (back · how to play · tap to start) ===================== */
+#homeBar {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 4px 0px;
-  padding: 6px 16px;
+  padding: 6px 18px;
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(45, 147, 234, 0.18);
   border-radius: 10px;
-  z-index: 61;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  opacity: 0;
-  transition: opacity 0.5s;
-  pointer-events: none;
-}
-#homeBar.active {
-  opacity: 1;
-  pointer-events: auto;
+  white-space: nowrap;
 }
 
 #homeBar button {
   font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 22px;
+  font-size: 25px;
   background: transparent;
   border: none;
   color: #2d93ea;
@@ -260,6 +269,45 @@ input,
 }
 
 #homeBar button:active {
+  transform: scale(0.95);
+}
+
+/* ===================== SOUND BAR (music · sfx) ===================== */
+#soundBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 0px;
+  padding: 5px 16px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(45, 147, 234, 0.18);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+
+#soundBar button {
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 22px;
+  background: transparent;
+  border: none;
+  color: #2d93ea;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  text-transform: lowercase;
+  padding: 2px 6px;
+  text-align: center;
+  transition: opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+#soundBar button:hover {
+  opacity: 0.7;
+}
+
+#soundBar button:active {
   transform: scale(0.95);
 }
 
@@ -973,9 +1021,12 @@ canvas {
 
   text-shadow: 0 0 8px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
 }
+:root { --play-base-scale: 1; }
+@media (min-width: 769px) { :root { --play-base-scale: 0.96; } }
+
 @keyframes playPulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50%      { transform: translate(-50%, -50%) scale(1.05); }
+  0%, 100% { transform: translate(-50%, -50%) scale(var(--play-base-scale)); }
+  50%      { transform: translate(-50%, -50%) scale(calc(var(--play-base-scale) + 0.05)); }
 }
 #playWrap.pulsing{
   animation: playPulse 1.2s ease-in-out infinite;
@@ -1073,24 +1124,36 @@ canvas {
   #playWrap {
     top: 53%;
   }
+  /* 4% smaller on desktop — JS show/hide also respects this via getViewportW() check */
 }
 
 /* ===================== MOBILE ===================== */
 @media (max-width: 768px) {
   #playWrap {
-    top: 54%;
+    top: 50%;
   }
   #playWrap #playOverlay {
     max-width: 86vw;
   }
+  #homeBarGroup {
+    top: 64%;
+    gap: 6px;
+  }
   #homeBar {
-    top: 70%;
     padding: 4px 10px;
     gap: 2px;
     flex-wrap: nowrap;
   }
   #homeBar button {
-    font-size: 15px;
+    font-size: 18px;
+    padding: 2px 4px;
+  }
+  #soundBar {
+    padding: 4px 10px;
+    gap: 2px;
+  }
+  #soundBar button {
+    font-size: 18px;
     padding: 2px 4px;
   }
   .bar-sep {
@@ -1121,14 +1184,19 @@ canvas {
   </div>
 </div>
 
-<div id="homeBar">
-  <button id="homeBackBtn" onclick="goBack()">← back</button>
-  <span class="bar-sep">·</span>
-  <button id="homeHowToBtn" onclick="openHowTo()">how to play</button>
-  <span class="bar-sep">·</span>
-  <button id="homeMusicBtn">music: <span id="musicState">off</span></button>
-  <span class="bar-sep">·</span>
-  <button id="homeSfxBtn">sfx: <span id="sfxState">off</span></button>
+<div id="homeBarGroup">
+  <div id="homeBar">
+    <button id="homeBackBtn" onclick="goBack()">← back</button>
+    <span class="bar-sep">·</span>
+    <button id="homeHowToBtn" onclick="openHowTo()">how to play</button>
+    <span class="bar-sep">·</span>
+    <button id="homeTapBtn" onclick="tapToStart()">tap to start →</button>
+  </div>
+  <div id="soundBar">
+    <button id="homeMusicBtn">music: <span id="musicState">off</span></button>
+    <span class="bar-sep">·</span>
+    <button id="homeSfxBtn">sfx: <span id="sfxState">off</span></button>
+  </div>
 </div>
 
 <div id="overlayHighscore"></div>
@@ -2015,7 +2083,8 @@ function showOverlay(showLastScore = false) {
 
   // ✅ Show play overlay
   playWrap.style.opacity = 1;
-  playWrap.style.transform = "translate(-50%, -50%) scale(1)";
+  const _playScale = getViewportW() > 768 ? 0.96 : 1;
+  playWrap.style.transform = `translate(-50%, -50%) scale(${_playScale})`;
   playWrap.style.pointerEvents = "none";
   playWrap.classList.add('pulsing');
 
@@ -2037,7 +2106,7 @@ function showOverlay(showLastScore = false) {
   // Update toggle labels and show homeBar
   document.getElementById('musicState').textContent = (bgMusic.readyState > 2 && !bgMusic.paused) ? 'on' : 'off';
   document.getElementById('sfxState').textContent = sfxEnabled ? 'on' : 'off';
-  document.getElementById('homeBar').classList.add('active');
+  document.getElementById('homeBarGroup').classList.add('active');
 
 }
 
@@ -2046,7 +2115,7 @@ function hideOverlay() {
   playWrap.style.transform = "translate(-50%, -50%) scale(0.8)";
   playWrap.style.pointerEvents = "none";
   playWrap.classList.remove('pulsing');
-  document.getElementById('homeBar').classList.remove('active');
+  document.getElementById('homeBarGroup').classList.remove('active');
   overlayHighscore.style.opacity = 0;
   overlayLastScore.style.opacity = 0;
   showTopScores();
@@ -2131,6 +2200,12 @@ function jump() {
   }
 }
 
+
+function tapToStart() {
+  if (dying || gameStarted) return;
+  startGame();
+  requestAnimationFrame(() => jump());
+}
 
 // Handles taps/clicks on canvas
 function handleInput(e) {
