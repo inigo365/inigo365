@@ -289,8 +289,6 @@ button{
 #splashScreen{
   position:fixed; inset:0; z-index:10001;
   background:#000;
-  display:flex; align-items:center; justify-content:center;
-  flex-direction:column;
 }
 #splashScreen::before{
   content:""; position:absolute; inset:0;
@@ -299,13 +297,15 @@ button{
   background-repeat:no-repeat;
 }
 #splashWrap{
-  position:relative; z-index:1;
+  position:absolute; z-index:1;
+  top:48%; left:50%;
+  transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center;
 }
 #splashPlay{
-  max-width:min(431px, 86vw);
+  max-width:84vw; max-height:84vh;
+  width:auto; height:auto;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  height:auto;
   animation:playPulse 1.2s ease-in-out infinite;
   image-rendering:pixelated; image-rendering:crisp-edges;
 }
@@ -314,14 +314,22 @@ button{
   50%{ transform:scale(1.05); }
 }
 #splashBar{
+  position:fixed; z-index:2;
+  top:75%; left:50%;
+  transform:translateX(-50%);
   display:flex; align-items:center; justify-content:center;
-  gap:0; margin-top:18px;
+  gap:0;
   padding:6px 16px;
   background:rgba(255,255,255,0.18);
   border:1px solid rgba(255,255,255,0.18);
   border-radius:10px;
   backdrop-filter:blur(6px);
   -webkit-backdrop-filter:blur(6px);
+}
+@media (max-width:768px){
+  #splashWrap{ top:47%; }
+  #splashPlay{ max-width:89vw; }
+  #splashBar{ top:69%; }
 }
 #splashBar button{
   font-family:"RuneScape UF", Arial, sans-serif;
@@ -363,11 +371,11 @@ button{
 <div id="splashScreen">
   <div id="splashWrap">
     <img id="splashPlay" src="assets/play.png" alt="play">
-    <div id="splashBar">
-      <button id="splashBackBtn">&larr; back</button>
-      <span class="bar-sep">&middot;</span>
-      <button id="splashStartBtn">start game &rarr;</button>
-    </div>
+  </div>
+  <div id="splashBar">
+    <button id="splashBackBtn">&larr; back</button>
+    <span class="bar-sep">&middot;</span>
+    <button id="splashStartBtn">start game &rarr;</button>
   </div>
 </div>
 
