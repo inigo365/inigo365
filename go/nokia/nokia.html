@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nokia 3310</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+
+/* ===================== BASE ===================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+/* ===================== PHONE WRAP ===================== */
+/* position:fixed creates the containing block for all absolute children.
+   width:fit-content shrink-wraps to the #nokiaFrame image size. */
+#nokiaPhoneWrap {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: fit-content;
+  z-index: 10;
+}
+
+/* Phone body image — defines the wrapper's intrinsic size */
+#nokiaFrame {
+  display: block;
+  height: min(90vh, 760px);
+  width: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Button label overlay — identical pixel dimensions to nokia3310.png.
+   Covers the frame exactly so the printed button graphics align. */
+#nokiaButtonOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  user-select: none;
+}
+
+/* ===================== LCD SCREEN ===================== */
+/* Pixel-sampled boundaries from nokia3310.png (1364 × 2048):
+     left edge  x ≈ 270 px  →  19.8%
+     top edge   y ≈ 390 px  →  19.0%
+     right edge x ≈ 1115 px →  81.7%  (width 61.9%)
+     bot edge   y ≈ 856 px  →  41.8%  (height 22.8%)         */
+#nokiaScreen {
+  position: absolute;
+  left:   19.8%;
+  top:    19.0%;
+  width:  61.9%;
+  height: 22.8%;
+  overflow: hidden;
+  z-index: 1;
+  box-sizing: border-box;
+
+  /* Classic Nokia LCD — dark base, content sets the look */
+  background: #0d0d0d;
+  color: #4dff91;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: clamp(7px, 1.6vw, 13px);
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  image-rendering: pixelated;
+}
+
+/* ===================== KEYPAD — transparent hit areas ===================== */
+/* The keypad div covers the full phone image.
+   Each .nokia-key is absolutely positioned over its physical button.
+   Coordinates are % of the wrapper (= % of the phone image). */
+#nokiaKeypad {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;   /* only the child buttons receive events */
+  z-index: 3;
+}
+
+.nokia-key {
+  position: absolute;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+  user-select: none;
+  touch-action: manipulation;
+  transition: background 0.06s ease;
+  outline: none;
+}
+
+.nokia-key:active {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.nokia-key.deco {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ===================== NAV AREA ===================== */
+/* Pixel-sampled from nokia3310.png — two softkey ovals and round D-pad ring.
+   Softkeys:  dark button mass at y ≈ 940–1050 / 2048  (45.9 – 51.3 %)
+   D-pad:     dark blue ring  at y ≈ 1080–1235 / 2048  (52.7 – 60.3 %)
+              x ≈ 480–880 / 1364                       (35.2 – 64.5 %) */
+
+/* Left softkey — "back / menu" */
+.nokia-key[data-action="lsoft"] {
+  left: 14.8%;  top: 45.5%;
+  width: 14.0%; height: 5.9%;
+  border-radius: 40%;
+}
+
+/* Right softkey — "select / forward" */
+.nokia-key[data-action="rsoft"] {
+  left: 71.4%;  top: 45.5%;
+  width: 14.0%; height: 5.9%;
+  border-radius: 40%;
+}
+
+/* D-pad up */
+.nokia-key[data-action="up"] {
+  left: 37.2%;  top: 52.7%;
+  width: 25.0%; height: 2.5%;
+  border-radius: 30% 30% 0 0;
+}
+
+/* D-pad left */
+.nokia-key[data-action="left"] {
+  left: 35.2%;  top: 55.0%;
+  width:  7.5%; height: 2.9%;
+  border-radius: 0;
+}
+
+/* Centre / OK button */
+.nokia-key[data-action="ok"] {
+  left: 42.2%;  top: 54.4%;
+  width: 15.2%; height: 3.8%;
+  border-radius: 50%;
+}
+
+/* D-pad right */
+.nokia-key[data-action="right"] {
+  left: 57.4%;  top: 55.0%;
+  width:  7.5%; height: 2.9%;
+  border-radius: 0;
+}
+
+/* D-pad down */
+.nokia-key[data-action="down"] {
+  left: 37.2%;  top: 57.5%;
+  width: 25.0%; height: 2.5%;
+  border-radius: 0 0 30% 30%;
+}
+
+/* ===================== NUMPAD ===================== */
+/* Exact same % coordinates as boom2-nokia-backup.html, semantically renamed.
+   Source image: nokia3310buttons.png 1364 × 2048 px               */
+
+/* Row 1 — 1 / 2 / 3 */
+.nokia-key[data-action="key1"] { left: 16.35%; top: 59.81%; width: 17.96%; height: 5.37%; border-radius: 50%; }
+.nokia-key[data-action="key2"] { left: 41.28%; top: 61.08%; width: 19.57%; height: 5.37%; border-radius: 50%; }
+.nokia-key[data-action="key3"] { left: 68.18%; top: 59.81%; width: 17.96%; height: 5.37%; border-radius: 50%; }
+
+/* Row 2 — 4 / 5 / 6 */
+.nokia-key[data-action="key4"] { left: 17.01%; top: 66.06%; width: 17.96%; height: 5.42%; border-radius: 50%; }
+.nokia-key[data-action="key5"] { left: 41.86%; top: 67.92%; width: 18.91%; height: 4.69%; border-radius: 50%; }
+.nokia-key[data-action="key6"] { left: 67.52%; top: 66.06%; width: 17.96%; height: 5.42%; border-radius: 50%; }
+
+/* Row 3 — 7 / 8 / 9 */
+.nokia-key[data-action="key7"] { left: 17.96%; top: 72.41%; width: 17.96%; height: 5.42%; border-radius: 50%; }
+.nokia-key[data-action="key8"] { left: 41.57%; top: 74.27%; width: 19.79%; height: 4.64%; border-radius: 50%; }
+.nokia-key[data-action="key9"] { left: 66.57%; top: 72.41%; width: 17.96%; height: 5.42%; border-radius: 50%; }
+
+/* Row 4 — * / 0 / # */
+.nokia-key[data-action="star"] { left: 18.70%; top: 78.71%; width: 17.96%; height: 5.42%; border-radius: 50%; }
+.nokia-key[data-action="key0"] { left: 41.86%; top: 80.52%; width: 19.43%; height: 4.64%; border-radius: 50%; }
+.nokia-key[data-action="hash"] { left: 65.84%; top: 78.71%; width: 17.96%; height: 5.42%; border-radius: 50%; }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 768px) {
+  #nokiaFrame { height: min(92vh, 760px); }
+}
+
+/* ===================== DEBUG OVERLAY (Step 2 only) ===================== */
+#debugBadge {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(0,0,0,0.6);
+  color: #4dff91;
+  font-family: monospace;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ===================== DEBUG BADGE ===================== -->
+<div id="debugBadge"></div>
+
+<!-- ===================== PHONE ===================== -->
+<div id="nokiaPhoneWrap">
+
+  <!-- Layer 0: phone body (provides the visual frame and real button shapes) -->
+  <img id="nokiaFrame" src="assets/nokia3310.png" alt="Nokia 3310">
+
+  <!-- Layer 2: custom button-label overlay (printed text on keys) -->
+  <img id="nokiaButtonOverlay" src="assets/nokia3310buttons.png" alt="">
+
+  <!-- Layer 1: LCD screen — all states render inside here -->
+  <div id="nokiaScreen"></div>
+
+  <!-- Layer 3: invisible hit areas — identical event delegation pattern to backup -->
+  <div id="nokiaKeypad">
+
+    <!-- ── Nav row ── -->
+    <button class="nokia-key" data-action="lsoft" aria-label="Left softkey"></button>
+    <button class="nokia-key" data-action="rsoft" aria-label="Right softkey"></button>
+    <button class="nokia-key" data-action="up"    aria-label="D-pad up"></button>
+    <button class="nokia-key" data-action="left"  aria-label="D-pad left"></button>
+    <button class="nokia-key" data-action="ok"    aria-label="OK / select"></button>
+    <button class="nokia-key" data-action="right" aria-label="D-pad right"></button>
+    <button class="nokia-key" data-action="down"  aria-label="D-pad down"></button>
+
+    <!-- ── Numpad ── -->
+    <button class="nokia-key" data-action="key1"  aria-label="1"></button>
+    <button class="nokia-key" data-action="key2"  aria-label="2"></button>
+    <button class="nokia-key" data-action="key3"  aria-label="3"></button>
+    <button class="nokia-key" data-action="key4"  aria-label="4"></button>
+    <button class="nokia-key" data-action="key5"  aria-label="5"></button>
+    <button class="nokia-key" data-action="key6"  aria-label="6"></button>
+    <button class="nokia-key" data-action="key7"  aria-label="7"></button>
+    <button class="nokia-key" data-action="key8"  aria-label="8"></button>
+    <button class="nokia-key" data-action="key9"  aria-label="9"></button>
+    <button class="nokia-key" data-action="star"  aria-label="*"></button>
+    <button class="nokia-key" data-action="key0"  aria-label="0"></button>
+    <button class="nokia-key" data-action="hash"  aria-label="#"></button>
+
+  </div>
+</div>
+
+<script>
+// =====================================================================
+//  NOKIA 3310 — SCREEN LOGIC  (Step 3)
+// =====================================================================
+
+// ── CONFIG ────────────────────────────────────────────────────────────
+const CONFIG = {
+  UNLOCK_PIN: "2001",          // CHANGE THIS before going live
+  HINT_TEXT: "secret password...",            // IDLE SCREEN CRYPTIC HINT
+  REVEAL_MESSAGE: "...",       // MESSAGE SHOWN AFTER PUZZLE COMPLETE
+  ARTIST_NAME: "inigo365",          // YOUR ARTIST NAME
+  TRACKS: [
+    {
+      title: "KINTSUGI",
+      audioSrc: "",            // PATH TO AUDIO FILE
+      unlockDate: new Date("2025-01-01"), // SET REAL DATE
+      unlockedByPuzzle: true
+    }
+    // Add future tracks here
+  ]
+};
+
+// ── DOM refs ──────────────────────────────────────────────────────────
+const nokiaKeypad = document.getElementById('nokiaKeypad');
+const nokiaScreen = document.getElementById('nokiaScreen');
+const debugBadge  = document.getElementById('debugBadge');
+
+// ── App state ─────────────────────────────────────────────────────────
+let STATE       = 'idle';
+let pinBuffer   = '';
+const PIN_LENGTH = 4;
+let menuIndex   = 0;
+let puzzleComplete = false;
+let audioEl     = null;
+let isPlaying   = false;
+let revealTimer = null;
+
+// ── Persistence ───────────────────────────────────────────────────────
+function loadProgress() {
+  puzzleComplete = localStorage.getItem('puzzleComplete') === 'true';
+}
+function saveProgress() {
+  localStorage.setItem('puzzleComplete', 'true');
+  puzzleComplete = true;
+}
+
+// ── Screen base styles ────────────────────────────────────────────────
+function screenBase() {
+  nokiaScreen.style.cssText =
+    'position:absolute;left:19.8%;top:19.0%;width:61.9%;height:22.8%;' +
+    'background:#0d0d0d;color:#4dff91;' +
+    'font-family:\'Courier New\',Courier,monospace;' +
+    'font-size:clamp(7px,1.6vw,13px);letter-spacing:0.04em;line-height:1.35;' +
+    'overflow:hidden;z-index:1;box-sizing:border-box;padding:3% 4%;' +
+    'display:flex;flex-direction:column;align-items:center;' +
+    'justify-content:center;text-align:center;';
+}
+
+// ── Cleanup helpers ───────────────────────────────────────────────────
+function clearTimers() {
+  if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+}
+function stopAudio() {
+  if (audioEl) { audioEl.pause(); audioEl = null; }
+  isPlaying = false;
+}
+
+// ── CSS animations injected once ──────────────────────────────────────
+const _anim = document.createElement('style');
+_anim.textContent =
+  '@keyframes nokiaShake{' +
+    '0%,100%{transform:translateX(0)}' +
+    '15%{transform:translateX(-5px)}' +
+    '30%{transform:translateX(5px)}' +
+    '45%{transform:translateX(-4px)}' +
+    '60%{transform:translateX(4px)}' +
+    '75%{transform:translateX(-2px)}' +
+    '90%{transform:translateX(2px)}' +
+  '}' +
+  '.nokia-shake{animation:nokiaShake 0.35s ease;}' +
+  '@keyframes nokiaProgress{' +
+    '0%{left:-35%}100%{left:100%}' +
+  '}';
+document.head.appendChild(_anim);
+
+// =====================================================================
+//  STATE 1 — IDLE / LOCK SCREEN
+// =====================================================================
+function renderIdle() {
+  clearTimers();
+  stopAudio();
+  STATE = 'idle';
+  screenBase();
+  nokiaScreen.innerHTML =
+    '<div style="opacity:0.5;font-size:0.75em;margin-bottom:5px">◆ ◆ ◆</div>' +
+    '<div style="opacity:0.9;font-size:0.9em;line-height:1.45;padding:0 3px">' +
+      CONFIG.HINT_TEXT +
+    '</div>' +
+    '<div style="opacity:0.3;font-size:0.7em;margin-top:6px">_ _ _ _</div>';
+}
+
+// =====================================================================
+//  STATE 2 — PIN ENTRY
+// =====================================================================
+function renderPin(shake) {
+  STATE = 'pin';
+  screenBase();
+  const dots = Array.from({ length: PIN_LENGTH }, (_, i) =>
+    i < pinBuffer.length ? '●' : '○'
+  ).join(' ');
+  nokiaScreen.innerHTML =
+    '<div style="opacity:0.45;font-size:0.75em;margin-bottom:6px">ENTER PIN</div>' +
+    '<div style="font-size:1.2em;letter-spacing:0.18em">' + dots + '</div>';
+  if (shake) {
+    nokiaScreen.classList.remove('nokia-shake');
+    void nokiaScreen.offsetWidth; // force reflow
+    nokiaScreen.classList.add('nokia-shake');
+    setTimeout(() => nokiaScreen.classList.remove('nokia-shake'), 400);
+  }
+}
+
+function handlePin(action) {
+  if (action === 'lsoft') { pinBuffer = ''; renderIdle(); return; }
+  const NUM = {
+    key0:'0',key1:'1',key2:'2',key3:'3',key4:'4',
+    key5:'5',key6:'6',key7:'7',key8:'8',key9:'9'
+  };
+  const n = NUM[action];
+  if (n === undefined || pinBuffer.length >= PIN_LENGTH) return;
+  pinBuffer += n;
+  renderPin(false);
+  if (pinBuffer.length === PIN_LENGTH) {
+    setTimeout(() => {
+      if (pinBuffer === CONFIG.UNLOCK_PIN) {
+        pinBuffer = '';
+        renderMenu();
+      } else {
+        pinBuffer = '';
+        renderPin(true);
+      }
+    }, 200);
+  }
+}
+
+// =====================================================================
+//  STATE 3 — MAIN MENU
+// =====================================================================
+function renderMenu() {
+  clearTimers();
+  STATE = 'menu';
+  screenBase();
+  const items = [
+    { label: '1. PUZZLE', enabled: true },
+    { label: '2. MUSIC',  enabled: puzzleComplete }
+  ];
+  let html =
+    '<div style="opacity:0.4;font-size:0.7em;margin-bottom:5px;align-self:flex-start">MENU</div>';
+  items.forEach((item, i) => {
+    const sel    = i === menuIndex;
+    const dimmed = !item.enabled;
+    html +=
+      '<div class="m-item" data-mi="' + i + '" style="' +
+        'align-self:flex-start;width:100%;' +
+        'cursor:' + (item.enabled ? 'pointer' : 'default') + ';' +
+        (dimmed ? 'opacity:0.3;' : '') +
+        (sel    ? 'font-weight:bold;' : '') +
+        'margin:1px 0">' +
+        (sel ? '► ' : '  ') + item.label +
+      '</div>';
+  });
+  nokiaScreen.innerHTML = html;
+  // Direct item clicks (stopPropagation prevents screen handler)
+  nokiaScreen.querySelectorAll('.m-item').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      menuIndex = +el.dataset.mi;
+      selectMenuItem();
+    });
+  });
+}
+
+function handleMenu(action) {
+  if (action === 'up')   { menuIndex = Math.max(0, menuIndex - 1); renderMenu(); return; }
+  if (action === 'down') { menuIndex = Math.min(1, menuIndex + 1); renderMenu(); return; }
+  if (action === 'ok' || action === 'rsoft' || action === 'screen') { selectMenuItem(); return; }
+  if (action === 'lsoft') { renderIdle(); return; }
+}
+
+function selectMenuItem() {
+  if (menuIndex === 0)                      { renderPuzzle(); return; }
+  if (menuIndex === 1 && puzzleComplete)    { renderReveal(); return; }
+}
+
+// =====================================================================
+//  STATE 4 — PUZZLE (PLACEHOLDER — self-contained, easy to swap later)
+// =====================================================================
+function renderPuzzle() {
+  clearTimers();
+  STATE = 'puzzle';
+  screenBase();
+  nokiaScreen.innerHTML =
+    '<div style="opacity:0.4;font-size:0.7em;margin-bottom:4px">PUZZLE</div>' +
+    '<div style="font-size:0.9em">COMING SOON</div>' +
+    '<div style="opacity:0.45;font-size:0.65em;margin-top:7px">[OK] MARK DONE · [←] BACK</div>';
+}
+
+function handlePuzzle(action) {
+  if (action === 'lsoft') { renderMenu(); return; }
+  if (action === 'ok' || action === 'rsoft') { saveProgress(); renderReveal(); return; }
+}
+
+// =====================================================================
+//  STATE 5 — REVEAL (letter-by-letter typewriter)
+// =====================================================================
+function renderReveal() {
+  clearTimers();
+  STATE = 'reveal';
+  screenBase();
+  nokiaScreen.innerHTML =
+    '<div id="rvTxt" style="font-size:0.9em;line-height:1.45;padding:0 2px"></div>';
+  const el  = nokiaScreen.querySelector('#rvTxt');
+  const msg = CONFIG.REVEAL_MESSAGE;
+  let i = 0;
+  (function tick() {
+    if (i <= msg.length) {
+      el.textContent = msg.slice(0, i++);
+      revealTimer = setTimeout(tick, 65);
+    } else {
+      revealTimer = setTimeout(renderMusic, 1800);
+    }
+  })();
+}
+
+// =====================================================================
+//  STATE 6 — MUSIC PLAYER
+// =====================================================================
+function getAvailableTracks() {
+  const now = new Date();
+  return CONFIG.TRACKS.filter(t => {
+    if (t.unlockDate > now) return false;
+    if (t.unlockedByPuzzle && !puzzleComplete) return false;
+    return true;
+  });
+}
+
+let trackIndex = 0;
+
+function renderMusic() {
+  clearTimers();
+  STATE = 'music';
+  screenBase();
+
+  const tracks = getAvailableTracks();
+  if (!tracks.length) {
+    nokiaScreen.innerHTML =
+      '<div style="opacity:0.6;font-size:0.85em;line-height:1.5">NO TRACKS<br>AVAILABLE</div>';
+    return;
+  }
+
+  const t = tracks[Math.min(trackIndex, tracks.length - 1)];
+
+  // Build audio element once per track
+  if (!audioEl && t.audioSrc) {
+    audioEl = new Audio(t.audioSrc);
+    audioEl.loop = true;
+  }
+
+  const icon      = isPlaying ? '▐ ▐' : '▶';
+  const animState = isPlaying ? 'running' : 'paused';
+  nokiaScreen.innerHTML =
+    '<div style="opacity:0.35;font-size:0.7em;margin-bottom:2px">' + CONFIG.ARTIST_NAME + '</div>' +
+    '<div style="font-size:0.95em;margin-bottom:4px">' + t.title + '</div>' +
+    '<div style="font-size:1.0em;margin-bottom:5px">' + icon + '</div>' +
+    '<div style="position:relative;width:90%;height:4px;' +
+      'background:#1a3a22;border-radius:2px;overflow:hidden">' +
+      '<div style="position:absolute;top:0;left:-35%;width:35%;height:100%;' +
+        'background:#4dff91;border-radius:2px;' +
+        'animation:nokiaProgress 1.8s linear infinite;' +
+        'animation-play-state:' + animState + '"></div>' +
+    '</div>' +
+    '<div style="opacity:0.3;font-size:0.6em;margin-top:4px">[OK] PLAY/PAUSE · [←] BACK</div>';
+}
+
+function handleMusic(action) {
+  if (action === 'lsoft') { stopAudio(); renderMenu(); return; }
+  if (action === 'ok' || action === 'rsoft' || action === 'screen') {
+    isPlaying = !isPlaying;
+    if (audioEl) isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
+    renderMusic();
+    return;
+  }
+}
+
+// =====================================================================
+//  EVENT SYSTEM  (structure identical to Step 2 — unchanged)
+// =====================================================================
+
+nokiaKeypad.addEventListener('touchstart', (e) => {
+  const key = e.target.closest('.nokia-key');
+  if (!key) return;
+  e.stopPropagation();
+}, { passive: false });
+
+nokiaKeypad.addEventListener('click', (e) => {
+  const key = e.target.closest('.nokia-key');
+  if (!key) return;
+  e.stopPropagation();
+  handleButton(key.dataset.action);
+});
+
+nokiaScreen.addEventListener('click', (e) => {
+  e.stopPropagation();
+  handleButton('screen');
+});
+
+document.addEventListener('keydown', (e) => {
+  const map = {
+    ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+    Enter:'ok', Backspace:'lsoft', Escape:'lsoft',
+    '0':'key0','1':'key1','2':'key2','3':'key3','4':'key4',
+    '5':'key5','6':'key6','7':'key7','8':'key8','9':'key9',
+    '*':'star','#':'hash',
+  };
+  const action = map[e.key];
+  if (action) { e.preventDefault(); handleButton(action); }
+});
+
+// =====================================================================
+//  CENTRAL DISPATCH
+// =====================================================================
+function handleButton(action) {
+  showDebug(action);
+  switch (STATE) {
+    case 'idle':
+      if (action === 'lsoft') return; // ignore back on lock screen
+      pinBuffer = '';
+      renderPin(false);
+      // Forward the digit if the first press was a number key
+      { const NUM = {key0:'0',key1:'1',key2:'2',key3:'3',key4:'4',
+                     key5:'5',key6:'6',key7:'7',key8:'8',key9:'9'};
+        if (NUM[action] !== undefined) handlePin(action); }
+      break;
+    case 'pin':    handlePin(action);    break;
+    case 'menu':   handleMenu(action);   break;
+    case 'puzzle': handlePuzzle(action); break;
+    case 'reveal': /* input locked during typewriter */ break;
+    case 'music':  handleMusic(action);  break;
+  }
+}
+
+// ── Debug badge ───────────────────────────────────────────────────────
+let _dbgTimer = null;
+function showDebug(action) {
+  debugBadge.textContent = '▶ ' + action.toUpperCase();
+  debugBadge.style.opacity = '1';
+  clearTimeout(_dbgTimer);
+  _dbgTimer = setTimeout(() => { debugBadge.style.opacity = '0'; }, 1800);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────
+(function boot() {
+  loadProgress();
+  renderIdle();
+})();
+</script>
+
+</body>
+</html>

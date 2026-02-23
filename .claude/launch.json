@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nokia",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "4321", "/Users/iggymacdonald/Documents/GitHub/inigo365/go/nokia"],
+      "port": 4321
+    }
+  ]
+}
