@@ -285,13 +285,67 @@ button{
 }
 .boost-btn:active{transform:translateY(2px);}
 
+/* ===== Splash screen ===== */
+#splashScreen{
+  position:fixed; inset:0; z-index:10001;
+  background:#000;
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column;
+}
+#splashScreen::before{
+  content:""; position:absolute; inset:0;
+  background-image:url("assets/background.png");
+  background-size:cover; background-position:center;
+  background-repeat:no-repeat;
+}
+#splashWrap{
+  position:relative; z-index:1;
+  display:flex; flex-direction:column; align-items:center;
+}
+#splashPlay{
+  max-width:min(431px, 86vw);
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  height:auto;
+  animation:playPulse 1.2s ease-in-out infinite;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+}
+@keyframes playPulse{
+  0%,100%{ transform:scale(1); }
+  50%{ transform:scale(1.05); }
+}
+#splashBar{
+  display:flex; align-items:center; justify-content:center;
+  gap:0; margin-top:18px;
+  padding:6px 16px;
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:10px;
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+#splashBar button{
+  font-family:"RuneScape UF", Arial, sans-serif;
+  font-size:22px; background:transparent; border:none;
+  color:#111; padding:2px 6px;
+  text-transform:lowercase; white-space:nowrap; line-height:1;
+  text-shadow:1px 1px 0 rgba(255,255,255,0.5);
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  transition:opacity 0.2s;
+}
+#splashBar button:hover{ opacity:0.7; }
+#splashBar button:active{ transform:scale(0.95); }
+#splashBar .bar-sep{
+  color:rgba(0,0,0,0.2); font-size:18px;
+  user-select:none; line-height:1; padding:0 6px;
+}
+
 /* ===== Name overlay background ===== */
 #nameOverlay{
   background:transparent; position:fixed; overflow:hidden;
 }
 #nameOverlay::before{
   content:""; position:absolute; inset:0;
-  background-image: url("../images/background.png");
+  background-image: url("assets/background.png");
   background-size:cover; background-position:center;
   background-repeat:no-repeat; background-attachment:fixed;
   z-index:-1;
@@ -305,6 +359,17 @@ button{
 
 <body>
 <canvas id="c"></canvas>
+
+<div id="splashScreen">
+  <div id="splashWrap">
+    <img id="splashPlay" src="assets/play.png" alt="play">
+    <div id="splashBar">
+      <button id="splashBackBtn">&larr; back</button>
+      <span class="bar-sep">&middot;</span>
+      <button id="splashStartBtn">start game &rarr;</button>
+    </div>
+  </div>
+</div>
 
 <div class="topbar" id="topbar">
   <div class="ui">
@@ -323,8 +388,7 @@ button{
   </div>
 </div>
 
-<div class="overlay" id="nameOverlay" aria-hidden="false">
-  <button class="back-button overlay-back" id="backBtnOverlay">&larr; back</button>
+<div class="overlay" id="nameOverlay" aria-hidden="true" style="display:none">
   <div class="panel2" role="dialog" aria-modal="true" aria-label="name entry">
     <div class="panel2-title">1millionfrogs</div>
     <div class="panel2-sub">
@@ -343,6 +407,7 @@ button{
       <button class="boxbtn" id="startBtn" type="button">start</button>
     </div>
     <div class="hint" id="highScoreHint">tip: boosting sheds mass behind you</div>
+    <button class="linkish" id="backBtnOverlay" type="button" style="margin-top:10px">&larr; back</button>
   </div>
 </div>
 
@@ -410,6 +475,17 @@ const joy            = document.getElementById("joy");
 const joyStem        = document.getElementById("joyStem");
 const joyBall        = document.getElementById("joyBall");
 const playPanelEl    = document.getElementById("playPanel");
+
+const splashScreen   = document.getElementById("splashScreen");
+function dismissSplash(){
+  splashScreen.style.display = "none";
+  nameOverlay.style.display = "flex";
+  nameOverlay.setAttribute("aria-hidden", "false");
+  try{ nameInput.focus(); }catch{}
+}
+document.getElementById("splashStartBtn").addEventListener("click", dismissSplash);
+document.getElementById("splashPlay").addEventListener("click", dismissSplash);
+document.getElementById("splashBackBtn").addEventListener("click", () => { location.href = "../index.html"; });
 
 const deathOverlay   = document.getElementById("deathOverlay");
 const deathTitle     = document.getElementById("deathTitle");
@@ -2521,7 +2597,7 @@ backBtn.addEventListener("click", () => {
   try{ nameInput.focus(); }catch{}
 });
 
-backBtnOverlay.addEventListener("click", () => history.back());
+backBtnOverlay.addEventListener("click", () => { location.href = "../index.html"; });
 
 startBtn.addEventListener("click", startGame);
 nameInput.addEventListener("keydown", e => { if(e.key === "Enter") startGame(); });
