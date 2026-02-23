@@ -215,7 +215,10 @@ button, a, .nokia-key, #nokiaScreen {
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 768px) {
-  #nokiaFrame { height: min(92vh, 760px); }
+  /* 10% smaller than the desktop baseline */
+  #nokiaFrame { height: min(81vh, 684px, calc(85vw * 1.502)); }
+  /* ~20% larger text to stay readable at the reduced size */
+  #nokiaScreen { font-size: clamp(11px, 3vw, 14px) !important; }
 }
 
 /* ===================== BACK BUTTON ===================== */
