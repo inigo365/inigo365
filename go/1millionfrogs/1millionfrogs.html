@@ -345,7 +345,7 @@ button{
 #splashBar button{
   font-family:"RuneScape UF", Arial, sans-serif;
   font-size:22px; background:transparent; border:none;
-  color:#2d93ea; padding:2px 6px;
+  color:#111; padding:2px 6px;
   text-transform:lowercase; white-space:nowrap; line-height:1;
   text-shadow:2px 2px 0 rgba(255,255,255,0.5);
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
@@ -677,7 +677,6 @@ async function initSfx(){
 async function unlockAudio(){
   const actx = getAudioCtx();
   if(actx.state !== "running") try{ await actx.resume(); }catch{}
-  tryStartMusic();
   await initSfx();
 }
 
@@ -2534,10 +2533,10 @@ function tick(now){
   // === DRAW ===
   drawPinnedBackground();
   drawWorldBoundary();
-  drawLeaderboardLayer();
   drawWorld();
   drawParticles();
   drawLeaderArrow(leader);
+  drawLeaderboardLayer();
   drawMinimap();
   drawKillFeed();
 
