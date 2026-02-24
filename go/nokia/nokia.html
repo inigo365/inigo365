@@ -580,12 +580,12 @@ function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT,
   // pad = extra hit-test radius in image pixels (useful for small fragments).
   // At scale ≈ 0.2, pad:20 = ~4 screen pixels of extra tap tolerance.
   var targets = [
-    { x: 0.30, y: 0.35, pad:  0 },  // piece1.png
+    { x: 0.30, y: 0.35, pad: 10 },  // piece1.png
     { x: 0.30, y: 0.60, pad: 20 },  // piece2.png — small fragment; slightly wider hit zone
     { x: 0.25, y: 0.85, pad:  0 },  // piece3.png
     { x: 0.72, y: 0.20, pad:  0 },  // piece4.png
-    { x: 0.70, y: 0.50, pad:  0 },  // piece5.png
-    { x: 0.60, y: 0.60, pad:  0 },  // piece6.png
+    { x: 0.70, y: 0.50, pad: 10 },  // piece5.png
+    { x: 0.60, y: 0.60, pad:  5 },  // piece6.png
   ];
 
   const GF = 'grayscale(1) brightness(1.8) sepia(1) hue-rotate(85deg) saturate(4)';

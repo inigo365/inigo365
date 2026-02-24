@@ -806,7 +806,7 @@ body{
 
 @media (min-width: 769px){
   .portal-dock{
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -1615,22 +1615,29 @@ const actions = {
   "mediaplayer":   { redirect: "nokia/nokia.html", sameTab: true, useGate: false },
   "heavychest": { src: "videos/andre.mp4", mobileFill: true }
 };
-// ===== PUBLIC DOCK (always visible) =====
-const PUBLIC_ACTIONS = [
-  { key: "home",          title: "creative portfolio",  sub: "main page", glyph: "→", sprite: "images/portfoliosprite.png" },
-  { key: "mediaplayer",   title: "media player",        sub: "music",      glyph: "→", sprite: "images/mediasprite.png" },
-  { key: "bag",           title: "put the bag in the bag", sub: "game",   glyph: "→", sprite: "images/bagsprite.png" },
-  { key: "1millionfrogs", title: "1millionfrogs",       sub: "game",      glyph: "→", sprite: "images/frogsprite.png" }
-];
+// ===== PUBLIC DOCK (two views: main / games) =====
+const DOCK_VIEWS = {
+  main: [
+    { key: "home",        title: "creative portfolio",    sub: "main page", glyph: "→", sprite: "images/portfoliosprite.png" },
+    { key: "mediaplayer", title: "media player",          sub: "music",      glyph: "→", sprite: "images/mediasprite.png" },
+    { key: "games",       title: "games",                 sub: "inigo365",  glyph: "→", sprite: "images/gamesprite.png",      viewSwitch: "games" }
+  ],
+  games: [
+    { key: "bag",           title: "put the bag in the bag", sub: "game",  glyph: "→", sprite: "images/bagsprite.png" },
+    { key: "1millionfrogs", title: "1millionfrogs",          sub: "game",  glyph: "→", sprite: "images/frogsprite.png" },
+    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/portfoliosprite.png", viewSwitch: "main" }
+  ]
+};
 
 const portalDock = document.getElementById("portalDock");
 const portalHint = document.getElementById("portalHint");
 
-function renderPortalDock() {
+function renderPortalDock(viewName) {
   if (!portalDock) return;
+  const items = DOCK_VIEWS[viewName] || DOCK_VIEWS.main;
   portalDock.innerHTML = "";
 
-  for (const item of PUBLIC_ACTIONS) {
+  for (const item of items) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "portal-tile";
@@ -1648,16 +1655,25 @@ function renderPortalDock() {
       <div class="portal-right">${spriteHTML}${item.glyph}</div>
     `;
 
-    btn.addEventListener("click", () => {
-      SFX.unlockNow();
-      runActionByKey(item.key);
-    });
+    if (item.viewSwitch) {
+      const target = item.viewSwitch;
+      btn.addEventListener("click", () => {
+        SFX.unlockNow();
+        SFX.play("click");
+        renderPortalDock(target);
+      });
+    } else {
+      btn.addEventListener("click", () => {
+        SFX.unlockNow();
+        runActionByKey(item.key);
+      });
+    }
 
     portalDock.appendChild(btn);
   }
 }
 
-renderPortalDock();
+renderPortalDock("main");
 
 /**
  * Cheat sequences -> unlocks.
@@ -1921,6 +1937,7 @@ function resetToPassword() {
   closeAllOverlays();
   if (portalHint) portalHint.textContent = "hint: find hidden passwords around the site...";
 
+  renderPortalDock("main");
   setButtonsForInputState();
   passwordInput.focus();
 }
@@ -1955,6 +1972,7 @@ function hardResetPasswordUI() {
   hasWrongAttempt = false;
   closeAllOverlays();
 
+  renderPortalDock("main");
   setButtonsForInputState();
   requestAnimationFrame(() => passwordInput.focus());
 }
