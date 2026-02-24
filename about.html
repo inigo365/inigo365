@@ -672,13 +672,13 @@
         unlocked = true;
         setPos(max);
         track.classList.add('unlocked');
-        label.textContent = 'go';
+        label.textContent = '2001';
         label.style.opacity = '1';
         try { const a = new Audio('go/sounds/correct.mp3'); a.volume = 0.75; a.play(); } catch {}
 
         setTimeout(() => {
           document.body.classList.add('fade-out');
-          setTimeout(() => { window.location.href = 'go/index.html'; }, 1000);
+          setTimeout(() => { window.location.href = 'go/nokia/nokia.html'; }, 1000);
         }, 400);
       } else {
         // snap back
