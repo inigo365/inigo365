@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Nokia 3310</title>
+<title>inigo365</title>
+<link rel="icon" type="image/png" href="../../images/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
 
@@ -47,6 +48,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
   transform: translate(-50%, -50%);
   width: fit-content;
   z-index: 10;
+  touch-action: none; /* prevent iOS pinch-zoom on the phone container */
 }
 
 /* Phone body image — defines the wrapper's intrinsic size.
@@ -957,6 +959,15 @@ function handleMusic(action) {
 // Block right-click context menu and drag-selection on the entire page
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('selectstart',  (e) => e.preventDefault());
+
+// Disable iOS pinch-to-zoom and gesture-zoom.
+// iOS 10+ ignores the viewport user-scalable=no meta, so JS is required.
+document.addEventListener('gesturestart',  (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gestureend',    (e) => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', (e) => {
+  if (e.touches.length > 1) e.preventDefault(); // block two-finger zoom/scroll
+}, { passive: false });
 
 nokiaKeypad.addEventListener('touchstart', (e) => {
   const key = e.target.closest('.nokia-key');
