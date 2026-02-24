@@ -28,8 +28,8 @@ html, body {
   cursor: url('../../images/cursor/cursor.png'), auto;
 }
 
-/* Hover cursor on all interactive elements */
-button, a, .nokia-key, #nokiaScreen {
+/* Hover cursor on all interactive elements (incl. dynamically-created puzzle pieces) */
+button, a, .nokia-key, #nokiaScreen, .pz-piece {
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
 }
 
@@ -116,7 +116,7 @@ button, a, .nokia-key, #nokiaScreen {
   background: transparent;
   border: none;
   box-shadow: none;
-  cursor: pointer;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
   -webkit-tap-highlight-color: transparent;
   pointer-events: auto;
   user-select: none;
@@ -130,7 +130,7 @@ button, a, .nokia-key, #nokiaScreen {
 }
 
 .nokia-key.deco {
-  cursor: default;
+  cursor: url('../../images/cursor/cursor.png'), auto;
   pointer-events: none;
 }
 
@@ -303,7 +303,7 @@ const CONFIG = {
   TRACKS: [
     {
       title: "Man of the Match",
-      audioSrc: "assets/man%20of%20the%20match.mp3",
+      audioSrc: "assets/music/man%20of%20the%20match.mp3",
       unlockDate: new Date("2025-01-01"), // SET REAL DATE
       unlockedByPuzzle: true
     }
@@ -479,7 +479,7 @@ function handleMenu(action) {
 
 function selectMenuItem() {
   if (menuIndex === 0)                      { renderPuzzle(); return; }
-  if (menuIndex === 1 && puzzleComplete)    { renderReveal(); return; }
+  if (menuIndex === 1 && puzzleComplete)    { renderMusicList(); return; } // skip reveal on revisit
 }
 
 // =====================================================================
@@ -487,43 +487,136 @@ function selectMenuItem() {
 // =====================================================================
 
 let _pzDrag = null; // { piece, origLeft, origTop, startX, startY }
+let _pzZTop = 20;   // monotonically increasing z-index — ensures last-touched piece is always topmost
 
 function renderPuzzle() {
   clearTimers();
   STATE = 'puzzle';
   _pzDrag = null;
+  _pzZTop = 20;
 
-  // Puzzle needs block layout with no padding so the canvas fills the screen cleanly
+  // Show a brief loading indicator while images are measured
   nokiaScreen.style.cssText =
     'position:absolute;left:19.8%;top:19.0%;width:61.9%;height:22.8%;' +
     'background:#0d0d0d;overflow:hidden;z-index:1;box-sizing:border-box;' +
-    'display:block;padding:0;';
+    'display:flex;align-items:center;justify-content:center;padding:0;';
+  nokiaScreen.innerHTML =
+    '<span style="font-family:\'RuneScape\',monospace;color:#4dff91;' +
+    'font-size:0.6em;opacity:0.4">...</span>';
 
   const sw = nokiaScreen.offsetWidth;
   const sh = nokiaScreen.offsetHeight;
-  // Scale the 600×400 canvas to fit the screen, preserving aspect ratio
-  const scale = Math.min(sw / 600, sh / 400);
+  const scale = Math.min(sw / 600, sh / 400) * 0.9;
   const cw    = 600 * scale;
   const ch    = 400 * scale;
   const offX  = Math.round((sw - cw) / 2);
   const offY  = Math.round((sh - ch) / 2);
 
-  // LCD green filter — converts any image colours to the Nokia green-on-black palette
+  // Screen edges expressed in canvas-coordinate space
+  const edgeL = -offX / scale;
+  const edgeR = (sw - offX) / scale;
+  const edgeT = -offY / scale;
+  const edgeB = (sh - offY) / scale;
+
+  // Load all 6 pieces, measure their actual opaque-content centre via pixel sampling,
+  // then build the puzzle with correct per-piece positions and clamp bounds.
+  var imgData    = new Array(6).fill(null);
+  var remaining  = 6;
+
+  function onPieceReady(idx, cx, cy) {
+    imgData[idx] = { cx: cx, cy: cy };
+    if (--remaining === 0 && STATE === 'puzzle') {
+      _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT, edgeB);
+    }
+  }
+
+  for (var i = 0; i < 6; i++) {
+    (function(idx) {
+      var img = new Image();
+      img.onload = function() {
+        var cx = 300, cy = 200; // fallback if pixel sampling fails
+        try {
+          var tmp = document.createElement('canvas');
+          tmp.width = 600; tmp.height = 400;
+          var c = tmp.getContext('2d');
+          c.drawImage(img, 0, 0);
+          var d = c.getImageData(0, 0, 600, 400).data;
+          var x0=600, x1=0, y0=400, y1=0, found=false;
+          // Sample every 2nd pixel for speed
+          for (var py=0; py<400; py+=2) {
+            for (var px=0; px<600; px+=2) {
+              if (d[(py*600+px)*4+3] > 20) {
+                if (px<x0) x0=px; if (px>x1) x1=px;
+                if (py<y0) y0=py; if (py>y1) y1=py;
+                found = true;
+              }
+            }
+          }
+          if (found) { cx = (x0+x1)/2; cy = (y0+y1)/2; }
+        } catch(e) { /* tainted canvas on file:// — use fallback */ }
+        onPieceReady(idx, cx, cy);
+      };
+      img.onerror = function() { onPieceReady(idx, 300, 200); };
+      img.src = 'assets/brain/piece' + (idx + 1) + '.png';
+    })(i);
+  }
+}
+
+// Called once all 6 piece images have been loaded and their opaque-content centres measured.
+// Each piece is positioned so its measured content centre lands at a target screen location,
+// and per-piece drag clamp bounds are stored in dataset so the fragment cannot leave the screen.
+function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT, edgeB) {
+  if (STATE !== 'puzzle') return;
+
+  // Reset screen to proper block layout (clears the loading-indicator cssText)
+  nokiaScreen.style.cssText =
+    'position:absolute;left:19.8%;top:19.0%;width:61.9%;height:22.8%;' +
+    'background:#0d0d0d;overflow:hidden;z-index:1;box-sizing:border-box;' +
+    'display:block;padding:0;';
+
+  // ─── SCATTER TARGETS ─────────────────────────────────────────────────────────
+  // Desired screen position (fraction 0–1) for each piece's opaque content centre.
+  // To reposition a piece, edit its x/y values below — 0 = screen edge, 1 = opposite edge.
+  // Pieces are assigned in order: [0]=left-top [1]=left-mid [2]=left-bot
+  //                               [3]=right-top [4]=right-mid [5]=right-bot
+  var targets = [
+    { x: 0.30, y: 0.35 },  // piece1.png
+    { x: 0.30, y: 0.60 },  // piece2.png
+    { x: 0.25, y: 0.85 },  // piece3.png
+    { x: 0.72, y: 0.20 },  // piece4.png
+    { x: 0.70, y: 0.50 },  // piece5.png
+    { x: 0.60, y: 0.60 },  // piece6.png
+  ];
+
   const GF = 'grayscale(1) brightness(1.8) sepia(1) hue-rotate(85deg) saturate(4)';
+  var piecesHTML = '';
 
-  // Random scatter: 6 positions evenly around (0,0) so pieces start clearly misplaced
-  const scatter = _pzScatterPositions();
+  for (var i = 0; i < 6; i++) {
+    var d   = imgData[i];
+    var t   = targets[i];
+    var tsx = sw * t.x;   // convert fraction → screen pixels
+    var tsy = sh * t.y;
+    // canvas left/top so that this fragment's measured centre lands at target screen position
+    var L   = Math.round((tsx - offX) / scale - d.cx);
+    var T   = Math.round((tsy - offY) / scale - d.cy);
+    // Per-piece drag bounds: keep this fragment's centre within screen
+    var lMin = Math.ceil(edgeL  - d.cx);
+    var lMax = Math.floor(edgeR - d.cx);
+    var tMin = Math.ceil(edgeT  - d.cy);
+    var tMax = Math.floor(edgeB - d.cy);
+    // Clamp initial scatter position to its own bounds
+    L = Math.max(lMin, Math.min(lMax, L));
+    T = Math.max(tMin, Math.min(tMax, T));
 
-  let piecesHTML = '';
-  for (let i = 1; i <= 6; i++) {
-    const s = scatter[i - 1];
     piecesHTML +=
-      '<img class="pz-piece" data-piece="' + i + '" data-snapped="false"' +
-      ' src="assets/brain/piece' + i + '.png" draggable="false"' +
+      '<img class="pz-piece" data-piece="' + (i+1) + '" data-snapped="false"' +
+      ' data-lmin="' + lMin + '" data-lmax="' + lMax + '"' +
+      ' data-tmin="' + tMin + '" data-tmax="' + tMax + '"' +
+      ' src="assets/brain/piece' + (i+1) + '.png" draggable="false"' +
       ' style="position:absolute;width:600px;height:400px;' +
-      'left:' + s.x + 'px;top:' + s.y + 'px;z-index:' + (10 + i) + ';' +
+      'left:' + L + 'px;top:' + T + 'px;z-index:' + (10 + i + 1) + ';' +
       'filter:' + GF + ';touch-action:none;user-select:none;' +
-      '-webkit-user-drag:none;cursor:grab;">';
+      '-webkit-user-drag:none;pointer-events:visiblePainted;">';
   }
 
   nokiaScreen.innerHTML =
@@ -542,34 +635,13 @@ function renderPuzzle() {
       'font-family:\'RuneScape\',monospace;font-size:0.55em;' +
       'color:#4dff91;opacity:0.35;pointer-events:none;">[*] BACK</div>';
 
-  // Attach pointer-capture drag handlers — no document-level listeners needed
   nokiaScreen.querySelectorAll('.pz-piece').forEach(function(piece) {
     piece.addEventListener('pointerdown',  _pzPointerDown,  { passive: false });
     piece.addEventListener('pointermove',  _pzPointerMove,  { passive: false });
     piece.addEventListener('pointerup',    _pzPointerUp,    { passive: false });
     piece.addEventListener('pointercancel',_pzPointerCancel,{ passive: false });
-    // Stop click from bubbling to nokiaScreen → handleButton('screen')
     piece.addEventListener('click', function(e) { e.stopPropagation(); });
   });
-}
-
-// Six scatter positions evenly distributed around (0,0) with random jitter
-function _pzScatterPositions() {
-  var pos = [];
-  for (var i = 0; i < 6; i++) {
-    var angle = (i / 6) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-    var r     = 60 + Math.random() * 60; // 60–120 canvas px from centre
-    pos.push({
-      x: Math.round(Math.cos(angle) * r * 1.5),
-      y: Math.round(Math.sin(angle) * r * 0.7)
-    });
-  }
-  // Shuffle so the same piece doesn't always start in the same sector
-  for (var j = 5; j > 0; j--) {
-    var k = Math.floor(Math.random() * (j + 1));
-    var tmp = pos[j]; pos[j] = pos[k]; pos[k] = tmp;
-  }
-  return pos;
 }
 
 function _pzPointerDown(e) {
@@ -586,19 +658,26 @@ function _pzPointerDown(e) {
     startY:   e.clientY
   };
   piece.setPointerCapture(e.pointerId);
-  piece.style.zIndex = 30;
-  piece.style.cursor = 'grabbing';
+  piece.style.zIndex = ++_pzZTop;  // always bring touched piece to front
 }
 
 function _pzPointerMove(e) {
   if (!_pzDrag || _pzDrag.piece !== e.currentTarget) return;
   e.preventDefault();
-  var canvas = document.getElementById('pzCanvas');
-  var scale  = canvas ? (parseFloat(canvas.dataset.scale) || 1) : 1;
-  var dx = (e.clientX - _pzDrag.startX) / scale;
-  var dy = (e.clientY - _pzDrag.startY) / scale;
-  _pzDrag.piece.style.left = (_pzDrag.origLeft + dx) + 'px';
-  _pzDrag.piece.style.top  = (_pzDrag.origTop  + dy) + 'px';
+  var piece    = _pzDrag.piece;
+  var canvas   = document.getElementById('pzCanvas');
+  var scale    = canvas ? (parseFloat(canvas.dataset.scale) || 1) : 1;
+  // Per-piece bounds keep this fragment's centre within the screen
+  var leftMin  = parseFloat(piece.dataset.lmin);
+  var leftMax  = parseFloat(piece.dataset.lmax);
+  var topMin   = parseFloat(piece.dataset.tmin);
+  var topMax   = parseFloat(piece.dataset.tmax);
+  var dx   = (e.clientX - _pzDrag.startX) / scale;
+  var dy   = (e.clientY - _pzDrag.startY) / scale;
+  var newL = _pzDrag.origLeft + dx;
+  var newT = _pzDrag.origTop  + dy;
+  piece.style.left = Math.max(leftMin, Math.min(leftMax, newL)) + 'px';
+  piece.style.top  = Math.max(topMin,  Math.min(topMax,  newT)) + 'px';
 }
 
 function _pzPointerUp(e) {
@@ -620,12 +699,10 @@ function _pzPointerUp(e) {
     piece.style.top  = '0px';
     piece.dataset.snapped = 'true';
     piece.style.zIndex = 2;
-    piece.style.cursor = 'default';
     setTimeout(function() { if (piece.style) piece.style.transition = ''; }, 220);
     _pzCheckComplete();
   } else {
     piece.style.zIndex = 5;
-    piece.style.cursor = 'grab';
   }
   _pzDrag = null;
 }
@@ -635,7 +712,6 @@ function _pzPointerCancel(e) {
   if (!_pzDrag || _pzDrag.piece !== piece) return;
   piece.releasePointerCapture(e.pointerId);
   piece.style.zIndex = 5;
-  piece.style.cursor = 'grab';
   _pzDrag = null;
 }
 
@@ -673,13 +749,71 @@ function renderReveal() {
       el.textContent = msg.slice(0, i++);
       revealTimer = setTimeout(tick, 65);
     } else {
-      revealTimer = setTimeout(renderMusic, 1800);
+      revealTimer = setTimeout(renderMusicList, 1800);
     }
   })();
 }
 
 // =====================================================================
-//  STATE 6 — MUSIC PLAYER
+//  STATE 6 — MUSIC LIST  (file-directory tree)
+// =====================================================================
+function renderMusicList() {
+  clearTimers();
+  STATE = 'musiclist';
+  stopAudio();
+  screenBase();
+
+  const tracks = getAvailableTracks();
+  if (trackIndex >= tracks.length) trackIndex = 0;
+
+  // Wrap header + tracks in one left-aligned column so they form a single centred group
+  let html = '<div style="display:flex;flex-direction:column;align-items:flex-start;">';
+
+  // INIGO365/ sits directly above the └ entries
+  html += '<div style="opacity:0.75;font-size:0.82em;' +
+    'margin-bottom:2px;letter-spacing:0.06em">INIGO365/</div>';
+
+  // Each track as a └ directory entry
+  tracks.forEach(function(t, i) {
+    const sel = (i === trackIndex);
+    html +=
+      '<div class="tl-item" data-ti="' + i + '" style="' +
+        'width:100%;margin:1px 0;font-size:0.82em;' +
+        (sel ? 'opacity:1;font-weight:bold;' : 'opacity:0.42;') + '">' +
+        (sel ? '└ ▸ ' : '└ ') + t.title.toUpperCase() +
+      '</div>';
+  });
+
+  html += '</div>';
+
+  // Hint pinned to bottom-left
+  html += '<div style="position:absolute;bottom:2px;left:4px;' +
+    'opacity:0.28;font-size:0.6em;font-family:\'RuneScape\',monospace;' +
+    'color:#4dff91;">[#] MOVE  [0] PLAY  [*] BACK</div>';
+
+  nokiaScreen.innerHTML = html;
+
+  // Direct tap/click on a track row
+  nokiaScreen.querySelectorAll('.tl-item').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      trackIndex = +el.dataset.ti;
+      renderMusic();
+    });
+  });
+}
+
+function handleMusicList(action) {
+  const tracks = getAvailableTracks();
+  const len = Math.max(1, tracks.length);
+  if (action === 'up')   { trackIndex = Math.max(0, trackIndex - 1); renderMusicList(); return; }
+  if (action === 'down') { trackIndex = (trackIndex + 1) % len; renderMusicList(); return; }
+  if (action === 'ok' || action === 'rsoft' || action === 'screen') { renderMusic(); return; }
+  if (action === 'lsoft') { trackIndex = 0; renderMenu(); return; }
+}
+
+// =====================================================================
+//  STATE 7 — MUSIC PLAYER
 // =====================================================================
 function getAvailableTracks() {
   const now = new Date();
@@ -725,11 +859,11 @@ function renderMusic() {
         'animation:nokiaProgress 1.8s linear infinite;' +
         'animation-play-state:' + animState + '"></div>' +
     '</div>' +
-    '<div style="opacity:0.3;font-size:0.6em;margin-top:4px">[0] PLAY/PAUSE  [*] BACK</div>';
+    '<div style="opacity:0.3;font-size:0.6em;margin-top:4px">[0] PLAY/PAUSE  [*] LIST</div>';
 }
 
 function handleMusic(action) {
-  if (action === 'lsoft') { stopAudio(); renderMenu(); return; }
+  if (action === 'lsoft') { stopAudio(); renderMusicList(); return; }
   if (action === 'ok' || action === 'rsoft' || action === 'screen') {
     isPlaying = !isPlaying;
     if (audioEl) isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
@@ -793,10 +927,11 @@ function handleButton(action) {
         if (NUM[action] !== undefined) handlePin(action); }
       break;
     case 'pin':    handlePin(action);    break;
-    case 'menu':   handleMenu(action);   break;
-    case 'puzzle': handlePuzzle(action); break;
-    case 'reveal': /* input locked during typewriter */ break;
-    case 'music':  handleMusic(action);  break;
+    case 'menu':       handleMenu(action);      break;
+    case 'puzzle':     handlePuzzle(action);    break;
+    case 'reveal':     /* locked during typewriter */ break;
+    case 'musiclist':  handleMusicList(action); break;
+    case 'music':      handleMusic(action);     break;
   }
 }
 
