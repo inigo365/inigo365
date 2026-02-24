@@ -311,7 +311,7 @@ const CONFIG = {
   ARTIST_NAME: "inigo365",          // YOUR ARTIST NAME
   TRACKS: [
     {
-      title: "MAN OF THE MATCH",
+      title: "man of the match",
       audioSrc: "assets/music/man%20of%20the%20match.mp3",
       unlockDate: new Date("2025-01-01"), // SET REAL DATE
       unlockedByPuzzle: true
@@ -907,7 +907,7 @@ function renderMusic() {
       artist: CONFIG.ARTIST_NAME,
       album:  CONFIG.ARTIST_NAME,
       artwork: [
-        { src: '../../images/icon.png', sizes: '512x512', type: 'image/png' }
+        { src: 'assets/mediaplayer.png', sizes: '512x512', type: 'image/png' }
       ]
     });
     navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
