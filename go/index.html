@@ -1395,11 +1395,12 @@ const SFX = (() => {
   let ctx = null;
   let master = null;
   let unlocked = false;
+  let heartbeatTimer = null;
 
   const fetched = new Map();   // name -> ArrayBuffer
   const buffers = new Map();   // name -> AudioBuffer
 
-  // pooled HTMLAudio (reduces "clunky" / delayed feeling on iOS)
+  // pooled HTMLAudio fallback
   const pools = new Map();     // name -> { els: HTMLAudioElement[], i: number }
   const POOL_SIZES = { click: 8, password: 3, correct: 3 };
 
@@ -1419,13 +1420,16 @@ const SFX = (() => {
     return obj;
   }
 
+  // Pre-build all pools immediately — no gesture needed.
+  // This lets iOS start buffering the audio files right away.
+  for (const n of Object.keys(paths)) ensurePool(n);
+
   function playFromPool(name) {
     const pool = ensurePool(name);
     const a = pool.els[pool.i];
     pool.i = (pool.i + 1) % pool.els.length;
 
     try {
-      // restart fast
       a.pause();
       a.currentTime = 0;
       const p = a.play();
@@ -1440,7 +1444,6 @@ const SFX = (() => {
         const arr = await res.arrayBuffer();
         fetched.set(name, arr);
       } catch {
-        // fallback pool still exists
         ensurePool(name);
       }
     }));
@@ -1455,6 +1458,21 @@ const SFX = (() => {
     master.gain.value = 1;
     master.connect(ctx.destination);
     return ctx;
+  }
+
+  // Plays a silent node every 25 s to stop iOS suspending the context.
+  function startHeartbeat() {
+    if (heartbeatTimer) return;
+    heartbeatTimer = setInterval(() => {
+      if (!ctx || !master || ctx.state !== "running") return;
+      try {
+        const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(master);
+        src.start(0);
+      } catch {}
+    }, 25000);
   }
 
   async function decodeAllIfPossible() {
@@ -1484,7 +1502,6 @@ const SFX = (() => {
     unlocked = true;
 
     ensureContext();
-    for (const n of Object.keys(paths)) ensurePool(n);
 
     await decodeAllIfPossible();
 
@@ -1500,6 +1517,8 @@ const SFX = (() => {
         osc.stop(ctx.currentTime + 0.01);
       } catch {}
     }
+
+    startHeartbeat();
   }
 
   function playWebAudio(name) {
@@ -1522,10 +1541,21 @@ const SFX = (() => {
   }
 
   function play(name) {
-    // WebAudio if ready, else pooled <audio> (fast on iOS)
+    // If the context got suspended (e.g. iOS backgrounded the page),
+    // kick a synchronous resume before attempting to play.
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
     const ok = playWebAudio(name);
     if (!ok) playFromPool(name);
   }
+
+  // Resume context the instant the page becomes visible again.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+  });
 
   // start fetching early
   fetchAll();
