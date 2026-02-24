@@ -622,15 +622,20 @@ function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT,
       'font-family:\'RuneScape\',monospace;font-size:0.55em;' +
       'color:#4dff91;opacity:0.35;pointer-events:none;">[*] BACK</div>';
 
-  // Single set of pointer listeners on pzCanvas — _pzPointerDown uses pixel masks
-  // to decide which piece was actually clicked; pieces themselves are non-interactive.
-  var pzCanvasEl = nokiaScreen.querySelector('#pzCanvas');
-  if (pzCanvasEl) {
-    pzCanvasEl.addEventListener('pointerdown',   _pzPointerDown,   { passive: false });
-    pzCanvasEl.addEventListener('pointermove',   _pzPointerMove,   { passive: false });
-    pzCanvasEl.addEventListener('pointerup',     _pzPointerUp,     { passive: false });
-    pzCanvasEl.addEventListener('pointercancel', _pzPointerCancel, { passive: false });
-  }
+  // Transparent full-screen overlay on nokiaScreen — captures every pointer event
+  // across the whole LCD area.  This is necessary because pieces are positioned in
+  // pzCanvas coordinate space and can overflow pzCanvas's own hit-test boundary;
+  // attaching events to pzCanvas alone misses pieces that visually sit to its left.
+  var pzOverlay = document.createElement('div');
+  pzOverlay.id = 'pzOverlay';
+  pzOverlay.style.cssText =
+    'position:absolute;left:0;top:0;width:100%;height:100%;' +
+    'z-index:50;touch-action:none;';
+  pzOverlay.addEventListener('pointerdown',   _pzPointerDown,   { passive: false });
+  pzOverlay.addEventListener('pointermove',   _pzPointerMove,   { passive: false });
+  pzOverlay.addEventListener('pointerup',     _pzPointerUp,     { passive: false });
+  pzOverlay.addEventListener('pointercancel', _pzPointerCancel, { passive: false });
+  nokiaScreen.appendChild(pzOverlay);
   // Kick off async mask loading (succeeds on HTTP/HTTPS; silently skipped on file://)
   _pzLoadMasks();
 }
