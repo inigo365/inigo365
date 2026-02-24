@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>inigo365</title>
 <link rel="icon" type="image/png" href="../../images/icon.png">
+<link rel="apple-touch-icon" href="../../images/icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
 
@@ -31,6 +32,8 @@ html, body {
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   user-select: none;
+  /* Prevent all browser-native touch gestures (pan, zoom) at root level */
+  touch-action: none;
 }
 
 /* Hover cursor on all interactive elements (incl. dynamically-created puzzle pieces) */
@@ -359,6 +362,13 @@ function clearTimers() {
 function stopAudio() {
   if (audioEl) { audioEl.pause(); audioEl = null; }
   isPlaying = false;
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = 'none';
+    // Clear action handlers so the lock-screen controls vanish cleanly
+    ['play','pause','stop'].forEach(a => {
+      try { navigator.mediaSession.setActionHandler(a, null); } catch(e) {}
+    });
+  }
 }
 
 // ── CSS animations injected once ──────────────────────────────────────
@@ -567,13 +577,15 @@ function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT,
   // To reposition a piece, edit its x/y values below — 0 = screen edge, 1 = opposite edge.
   // Pieces are assigned in order: [0]=left-top [1]=left-mid [2]=left-bot
   //                               [3]=right-top [4]=right-mid [5]=right-bot
+  // pad = extra hit-test radius in image pixels (useful for small fragments).
+  // At scale ≈ 0.2, pad:20 = ~4 screen pixels of extra tap tolerance.
   var targets = [
-    { x: 0.30, y: 0.35 },  // piece1.png
-    { x: 0.30, y: 0.60 },  // piece2.png
-    { x: 0.25, y: 0.85 },  // piece3.png
-    { x: 0.72, y: 0.20 },  // piece4.png
-    { x: 0.70, y: 0.50 },  // piece5.png
-    { x: 0.60, y: 0.60 },  // piece6.png
+    { x: 0.30, y: 0.35, pad:  0 },  // piece1.png
+    { x: 0.30, y: 0.60, pad: 20 },  // piece2.png — small fragment; slightly wider hit zone
+    { x: 0.25, y: 0.85, pad:  0 },  // piece3.png
+    { x: 0.72, y: 0.20, pad:  0 },  // piece4.png
+    { x: 0.70, y: 0.50, pad:  0 },  // piece5.png
+    { x: 0.60, y: 0.60, pad:  0 },  // piece6.png
   ];
 
   const GF = 'grayscale(1) brightness(1.8) sepia(1) hue-rotate(85deg) saturate(4)';
@@ -603,6 +615,7 @@ function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT,
       '<svg class="pz-piece" data-piece="' + (i+1) + '" data-snapped="false"' +
       ' data-lmin="' + lMin + '" data-lmax="' + lMax + '"' +
       ' data-tmin="' + tMin + '" data-tmax="' + tMax + '"' +
+      ' data-pad="' + (t.pad || 0) + '"' +
       ' style="position:absolute;left:' + L + 'px;top:' + T + 'px;' +
       'width:600px;height:400px;z-index:' + (10 + i + 1) + ';overflow:visible;' +
       'pointer-events:none;filter:' + GF + ';">' +
@@ -667,9 +680,18 @@ function _pzPointerDown(e) {
     var _py   = Math.round((e.clientY - _r.top)  * (400 / _r.height));
     var _inBox = (_px >= 0 && _px < 600 && _py >= 0 && _py < 400);
     if (!_inBox) continue;
+    var _pad = parseInt(_p.dataset.pad, 10) || 0;
     if (_mask) {
-      // Pixel-accurate: only count hit if alpha ≥ 32 (non-transparent pixel)
-      if (_mask[_py * 600 + _px] >= 32) { targetPiece = _p; break; }
+      // Check the exact pixel first; if pad > 0 also scan a neighbourhood box.
+      var _hit = false;
+      outerLoop: for (var _dy = -_pad; _dy <= _pad; _dy++) {
+        for (var _dx = -_pad; _dx <= _pad; _dx++) {
+          var _sy = _py + _dy, _sx = _px + _dx;
+          if (_sy >= 0 && _sy < 400 && _sx >= 0 && _sx < 600 &&
+              _mask[_sy * 600 + _sx] >= 32) { _hit = true; break outerLoop; }
+        }
+      }
+      if (_hit) { targetPiece = _p; break; }
     } else {
       // No mask loaded yet (file:// / CORS) — bounding-box fallback
       targetPiece = _p; break;
@@ -875,6 +897,38 @@ function renderMusic() {
     audioEl.loop = true;
   }
 
+  // ── Media Session API ─────────────────────────────────────────────────
+  // Populates the iOS/Android lock-screen "now playing" card and control
+  // strip.  Requires an active <audio> element (which we have above) and
+  // iOS 15+ / Chrome 73+ — silently no-ops on older browsers.
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  t.title,
+      artist: CONFIG.ARTIST_NAME,
+      album:  CONFIG.ARTIST_NAME,
+      artwork: [
+        { src: '../../images/icon.png', sizes: '512x512', type: 'image/png' }
+      ]
+    });
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    // Wire hardware/lock-screen controls back into the player
+    navigator.mediaSession.setActionHandler('play', () => {
+      isPlaying = true;
+      if (audioEl) audioEl.play().catch(() => {});
+      navigator.mediaSession.playbackState = 'playing';
+      renderMusic();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      isPlaying = false;
+      if (audioEl) audioEl.pause();
+      navigator.mediaSession.playbackState = 'paused';
+      renderMusic();
+    });
+    navigator.mediaSession.setActionHandler('stop', () => {
+      stopAudio(); renderMusicList();
+    });
+  }
+
   const icon      = isPlaying ? '▐ ▐' : '▶';
   const animState = isPlaying ? 'running' : 'paused';
   nokiaScreen.innerHTML =
@@ -961,12 +1015,16 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('selectstart',  (e) => e.preventDefault());
 
 // Disable iOS pinch-to-zoom and gesture-zoom.
-// iOS 10+ ignores the viewport user-scalable=no meta, so JS is required.
+// iOS 10+ ignores viewport user-scalable=no, so JS is required at every stage.
 document.addEventListener('gesturestart',  (e) => e.preventDefault(), { passive: false });
 document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
 document.addEventListener('gestureend',    (e) => e.preventDefault(), { passive: false });
+// Block any two-finger touch at start (before it can register as a zoom gesture)
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
 document.addEventListener('touchmove', (e) => {
-  if (e.touches.length > 1) e.preventDefault(); // block two-finger zoom/scroll
+  if (e.touches.length > 1) e.preventDefault(); // belt-and-braces: block mid-gesture too
 }, { passive: false });
 
 nokiaKeypad.addEventListener('touchstart', (e) => {
