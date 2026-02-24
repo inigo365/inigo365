@@ -806,7 +806,7 @@ body{
 
 @media (min-width: 769px){
   .portal-dock{
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1612,13 +1612,15 @@ const actions = {
   "gold": { redirect: "nokia/nokia.html", sameTab: true },
 
   "1millionfrogs": { redirect: "1millionfrogs/1millionfrogs.html", sameTab: true, useGate: false },
+  "mediaplayer":   { redirect: "nokia/nokia.html", sameTab: true, useGate: false },
   "heavychest": { src: "videos/andre.mp4", mobileFill: true }
 };
 // ===== PUBLIC DOCK (always visible) =====
 const PUBLIC_ACTIONS = [
   { key: "home",          title: "creative portfolio",sub: "main page",        glyph: "→", sprite: "images/portfoliosprite.png" },
   { key: "bag",           title: "put the bag in the bag",sub: "game",             glyph: "→", sprite: "images/bagsprite.png" },
-  { key: "1millionfrogs", title: "1millionfrogs",sub: "game",             glyph: "→", sprite: "images/frogsprite.png" }
+  { key: "1millionfrogs", title: "1millionfrogs",     sub: "game",  glyph: "→", sprite: "images/frogsprite.png" },
+  { key: "mediaplayer",   title: "media player",      sub: "music",  glyph: "→", sprite: "images/mediasprite.png" }
 ];
 
 const portalDock = document.getElementById("portalDock");
