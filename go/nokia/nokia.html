@@ -483,21 +483,177 @@ function selectMenuItem() {
 }
 
 // =====================================================================
-//  STATE 4 — PUZZLE (PLACEHOLDER — self-contained, easy to swap later)
+//  STATE 4 — PUZZLE  (brain fragment drag-and-drop)
 // =====================================================================
+
+let _pzDrag = null; // { piece, origLeft, origTop, startX, startY }
+
 function renderPuzzle() {
   clearTimers();
   STATE = 'puzzle';
-  screenBase();
+  _pzDrag = null;
+
+  // Puzzle needs block layout with no padding so the canvas fills the screen cleanly
+  nokiaScreen.style.cssText =
+    'position:absolute;left:19.8%;top:19.0%;width:61.9%;height:22.8%;' +
+    'background:#0d0d0d;overflow:hidden;z-index:1;box-sizing:border-box;' +
+    'display:block;padding:0;';
+
+  const sw = nokiaScreen.offsetWidth;
+  const sh = nokiaScreen.offsetHeight;
+  // Scale the 600×400 canvas to fit the screen, preserving aspect ratio
+  const scale = Math.min(sw / 600, sh / 400);
+  const cw    = 600 * scale;
+  const ch    = 400 * scale;
+  const offX  = Math.round((sw - cw) / 2);
+  const offY  = Math.round((sh - ch) / 2);
+
+  // LCD green filter — converts any image colours to the Nokia green-on-black palette
+  const GF = 'grayscale(1) brightness(1.8) sepia(1) hue-rotate(85deg) saturate(4)';
+
+  // Random scatter: 6 positions evenly around (0,0) so pieces start clearly misplaced
+  const scatter = _pzScatterPositions();
+
+  let piecesHTML = '';
+  for (let i = 1; i <= 6; i++) {
+    const s = scatter[i - 1];
+    piecesHTML +=
+      '<img class="pz-piece" data-piece="' + i + '" data-snapped="false"' +
+      ' src="assets/brain/piece' + i + '.png" draggable="false"' +
+      ' style="position:absolute;width:600px;height:400px;' +
+      'left:' + s.x + 'px;top:' + s.y + 'px;z-index:' + (10 + i) + ';' +
+      'filter:' + GF + ';touch-action:none;user-select:none;' +
+      '-webkit-user-drag:none;cursor:grab;">';
+  }
+
   nokiaScreen.innerHTML =
-    '<div style="opacity:0.4;font-size:0.7em;margin-bottom:4px">PUZZLE</div>' +
-    '<div style="font-size:0.9em">COMING SOON</div>' +
-    '<div style="opacity:0.45;font-size:0.65em;margin-top:7px">[0] DONE  [*] BACK</div>';
+    '<div id="pzCanvas"' +
+      ' data-scale="' + scale + '" data-snap="100"' +
+      ' style="position:absolute;' +
+        'left:' + offX + 'px;top:' + offY + 'px;' +
+        'width:600px;height:400px;' +
+        'transform:scale(' + scale + ');transform-origin:top left;">' +
+      '<img id="pzOutline" src="assets/brain/brain_outline.png" draggable="false"' +
+        ' style="position:absolute;left:0;top:0;width:600px;height:400px;' +
+        'opacity:0.22;pointer-events:none;filter:' + GF + ';">' +
+      piecesHTML +
+    '</div>' +
+    '<div style="position:absolute;bottom:2px;right:4px;' +
+      'font-family:\'RuneScape\',monospace;font-size:0.55em;' +
+      'color:#4dff91;opacity:0.35;pointer-events:none;">[*] BACK</div>';
+
+  // Attach pointer-capture drag handlers — no document-level listeners needed
+  nokiaScreen.querySelectorAll('.pz-piece').forEach(function(piece) {
+    piece.addEventListener('pointerdown',  _pzPointerDown,  { passive: false });
+    piece.addEventListener('pointermove',  _pzPointerMove,  { passive: false });
+    piece.addEventListener('pointerup',    _pzPointerUp,    { passive: false });
+    piece.addEventListener('pointercancel',_pzPointerCancel,{ passive: false });
+    // Stop click from bubbling to nokiaScreen → handleButton('screen')
+    piece.addEventListener('click', function(e) { e.stopPropagation(); });
+  });
+}
+
+// Six scatter positions evenly distributed around (0,0) with random jitter
+function _pzScatterPositions() {
+  var pos = [];
+  for (var i = 0; i < 6; i++) {
+    var angle = (i / 6) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    var r     = 60 + Math.random() * 60; // 60–120 canvas px from centre
+    pos.push({
+      x: Math.round(Math.cos(angle) * r * 1.5),
+      y: Math.round(Math.sin(angle) * r * 0.7)
+    });
+  }
+  // Shuffle so the same piece doesn't always start in the same sector
+  for (var j = 5; j > 0; j--) {
+    var k = Math.floor(Math.random() * (j + 1));
+    var tmp = pos[j]; pos[j] = pos[k]; pos[k] = tmp;
+  }
+  return pos;
+}
+
+function _pzPointerDown(e) {
+  var piece = e.currentTarget;
+  if (STATE !== 'puzzle') return;
+  if (piece.dataset.snapped === 'true') return;
+  e.stopPropagation();
+  e.preventDefault();
+  _pzDrag = {
+    piece:    piece,
+    origLeft: parseFloat(piece.style.left) || 0,
+    origTop:  parseFloat(piece.style.top)  || 0,
+    startX:   e.clientX,
+    startY:   e.clientY
+  };
+  piece.setPointerCapture(e.pointerId);
+  piece.style.zIndex = 30;
+  piece.style.cursor = 'grabbing';
+}
+
+function _pzPointerMove(e) {
+  if (!_pzDrag || _pzDrag.piece !== e.currentTarget) return;
+  e.preventDefault();
+  var canvas = document.getElementById('pzCanvas');
+  var scale  = canvas ? (parseFloat(canvas.dataset.scale) || 1) : 1;
+  var dx = (e.clientX - _pzDrag.startX) / scale;
+  var dy = (e.clientY - _pzDrag.startY) / scale;
+  _pzDrag.piece.style.left = (_pzDrag.origLeft + dx) + 'px';
+  _pzDrag.piece.style.top  = (_pzDrag.origTop  + dy) + 'px';
+}
+
+function _pzPointerUp(e) {
+  var piece = e.currentTarget;
+  if (!_pzDrag || _pzDrag.piece !== piece) return;
+  piece.releasePointerCapture(e.pointerId);
+  e.stopPropagation();
+
+  var canvas     = document.getElementById('pzCanvas');
+  var snapRadius = canvas ? (parseFloat(canvas.dataset.snap) || 100) : 100;
+  var curL = parseFloat(piece.style.left) || 0;
+  var curT = parseFloat(piece.style.top)  || 0;
+  var dist = Math.sqrt(curL * curL + curT * curT);
+
+  if (dist < snapRadius) {
+    // Snap into correct position with a quick ease animation
+    piece.style.transition = 'left 0.18s ease, top 0.18s ease';
+    piece.style.left = '0px';
+    piece.style.top  = '0px';
+    piece.dataset.snapped = 'true';
+    piece.style.zIndex = 2;
+    piece.style.cursor = 'default';
+    setTimeout(function() { if (piece.style) piece.style.transition = ''; }, 220);
+    _pzCheckComplete();
+  } else {
+    piece.style.zIndex = 5;
+    piece.style.cursor = 'grab';
+  }
+  _pzDrag = null;
+}
+
+function _pzPointerCancel(e) {
+  var piece = e.currentTarget;
+  if (!_pzDrag || _pzDrag.piece !== piece) return;
+  piece.releasePointerCapture(e.pointerId);
+  piece.style.zIndex = 5;
+  piece.style.cursor = 'grab';
+  _pzDrag = null;
+}
+
+function _pzCheckComplete() {
+  if (STATE !== 'puzzle') return;
+  var pieces = nokiaScreen.querySelectorAll('.pz-piece');
+  if (!pieces.length) return;
+  var allDone = Array.prototype.every.call(pieces, function(p) {
+    return p.dataset.snapped === 'true';
+  });
+  if (allDone) {
+    revealTimer = setTimeout(function() { saveProgress(); renderReveal(); }, 800);
+  }
 }
 
 function handlePuzzle(action) {
-  if (action === 'lsoft') { renderMenu(); return; }
-  if (action === 'ok' || action === 'rsoft') { saveProgress(); renderReveal(); return; }
+  if (action === 'lsoft') { _pzDrag = null; renderMenu(); return; }
+  // All other input is consumed by the drag system
 }
 
 // =====================================================================
