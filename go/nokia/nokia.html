@@ -488,8 +488,9 @@ function selectMenuItem() {
 //  STATE 4 — PUZZLE  (brain fragment drag-and-drop)
 // =====================================================================
 
-let _pzDrag = null; // { piece, origLeft, origTop, startX, startY }
-let _pzZTop = 20;   // monotonically increasing z-index — ensures last-touched piece is always topmost
+let _pzDrag  = null; // { piece, origLeft, origTop, startX, startY }
+let _pzZTop  = 20;   // monotonically increasing z-index — ensures last-touched piece is always topmost
+let _pzMasks = new Array(6).fill(null); // per-piece alpha masks for pixel-accurate hit testing
 
 function renderPuzzle() {
   clearTimers();
@@ -515,6 +516,32 @@ function renderPuzzle() {
   // identical scatter positions on file://, HTTP and mobile (no pixel sampling).
   var imgData = [0,1,2,3,4,5].map(function() { return { cx: 300, cy: 200 }; });
   _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT, edgeB);
+}
+
+// Loads per-piece alpha masks for pixel-accurate click detection.
+// Uses crossOrigin="anonymous" so it works on HTTP/HTTPS (e.g. GitHub Pages).
+// Silently falls back to bounding-box selection on file:// (canvas taint) — no user impact.
+function _pzLoadMasks() {
+  _pzMasks = new Array(6).fill(null);
+  for (var _mi = 0; _mi < 6; _mi++) {
+    (function(idx) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        try {
+          var cv  = document.createElement('canvas');
+          cv.width = 600; cv.height = 400;
+          var c2d = cv.getContext('2d');
+          c2d.drawImage(img, 0, 0, 600, 400);
+          var data  = c2d.getImageData(0, 0, 600, 400).data;
+          var alpha = new Uint8Array(600 * 400);
+          for (var p = 0; p < 600 * 400; p++) alpha[p] = data[p * 4 + 3];
+          _pzMasks[idx] = alpha;
+        } catch(err) { /* file:// / CORS — leave null, use bounding-box fallback */ }
+      };
+      img.src = 'assets/brain/piece' + (idx + 1) + '.png';
+    })(_mi);
+  }
 }
 
 // Builds the puzzle DOM synchronously.
@@ -563,20 +590,18 @@ function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT,
     L = Math.max(lMin, Math.min(lMax, L));
     T = Math.max(tMin, Math.min(tMax, T));
 
-    // SVG <image> with pointer-events="visiblePainted" gives true per-pixel hit
-    // testing on transparent PNGs — the SVG spec guarantees this, unlike <img>.
+    // pointer-events:none on pieces — pzCanvas handles all events; pixel-mask
+    // logic in _pzPointerDown selects the correct piece.
+    // filter on <svg> container (not <image> child) for reliable iOS/WebKit support.
     piecesHTML +=
       '<svg class="pz-piece" data-piece="' + (i+1) + '" data-snapped="false"' +
       ' data-lmin="' + lMin + '" data-lmax="' + lMax + '"' +
       ' data-tmin="' + tMin + '" data-tmax="' + tMax + '"' +
-      ' pointer-events="visiblePainted"' +
       ' style="position:absolute;left:' + L + 'px;top:' + T + 'px;' +
       'width:600px;height:400px;z-index:' + (10 + i + 1) + ';overflow:visible;' +
-      'touch-action:none;user-select:none;-webkit-user-select:none;">' +
+      'pointer-events:none;filter:' + GF + ';">' +
       '<image href="assets/brain/piece' + (i+1) + '.png"' +
-      ' x="0" y="0" width="600" height="400"' +
-      ' pointer-events="visiblePainted"' +
-      ' style="filter:' + GF + '"/>' +
+      ' x="0" y="0" width="600" height="400"/>' +
       '</svg>';
   }
 
@@ -586,7 +611,8 @@ function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT,
       ' style="position:absolute;' +
         'left:' + offX + 'px;top:' + offY + 'px;' +
         'width:600px;height:400px;' +
-        'transform:scale(' + scale + ');transform-origin:top left;">' +
+        'transform:scale(' + scale + ');transform-origin:top left;' +
+        'touch-action:none;">' +
       '<img id="pzOutline" src="assets/brain/brain_outline.png" draggable="false"' +
         ' style="position:absolute;left:0;top:0;width:600px;height:400px;' +
         'opacity:0.22;pointer-events:none;filter:' + GF + ';">' +
@@ -596,34 +622,66 @@ function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT,
       'font-family:\'RuneScape\',monospace;font-size:0.55em;' +
       'color:#4dff91;opacity:0.35;pointer-events:none;">[*] BACK</div>';
 
-  nokiaScreen.querySelectorAll('.pz-piece').forEach(function(piece) {
-    piece.addEventListener('pointerdown',  _pzPointerDown,  { passive: false });
-    piece.addEventListener('pointermove',  _pzPointerMove,  { passive: false });
-    piece.addEventListener('pointerup',    _pzPointerUp,    { passive: false });
-    piece.addEventListener('pointercancel',_pzPointerCancel,{ passive: false });
-    piece.addEventListener('click', function(e) { e.stopPropagation(); });
-  });
+  // Single set of pointer listeners on pzCanvas — _pzPointerDown uses pixel masks
+  // to decide which piece was actually clicked; pieces themselves are non-interactive.
+  var pzCanvasEl = nokiaScreen.querySelector('#pzCanvas');
+  if (pzCanvasEl) {
+    pzCanvasEl.addEventListener('pointerdown',   _pzPointerDown,   { passive: false });
+    pzCanvasEl.addEventListener('pointermove',   _pzPointerMove,   { passive: false });
+    pzCanvasEl.addEventListener('pointerup',     _pzPointerUp,     { passive: false });
+    pzCanvasEl.addEventListener('pointercancel', _pzPointerCancel, { passive: false });
+  }
+  // Kick off async mask loading (succeeds on HTTP/HTTPS; silently skipped on file://)
+  _pzLoadMasks();
 }
 
 function _pzPointerDown(e) {
-  var piece = e.currentTarget;
   if (STATE !== 'puzzle') return;
-  if (piece.dataset.snapped === 'true') return;
+
+  // Sort pieces highest-z first — visually topmost piece wins the hit test.
+  var pieces = Array.prototype.slice.call(nokiaScreen.querySelectorAll('.pz-piece'));
+  pieces.sort(function(a, b) {
+    return (parseInt(b.style.zIndex, 10) || 0) - (parseInt(a.style.zIndex, 10) || 0);
+  });
+
+  var targetPiece = null;
+  for (var _pi = 0; _pi < pieces.length; _pi++) {
+    var _p    = pieces[_pi];
+    if (_p.dataset.snapped === 'true') continue;
+    var _idx  = parseInt(_p.dataset.piece, 10) - 1;
+    var _mask = _pzMasks[_idx];
+    var _r    = _p.getBoundingClientRect();
+    // Convert viewport click → piece image coordinates (0–600, 0–400)
+    var _px   = Math.round((e.clientX - _r.left) * (600 / _r.width));
+    var _py   = Math.round((e.clientY - _r.top)  * (400 / _r.height));
+    var _inBox = (_px >= 0 && _px < 600 && _py >= 0 && _py < 400);
+    if (!_inBox) continue;
+    if (_mask) {
+      // Pixel-accurate: only count hit if alpha ≥ 32 (non-transparent pixel)
+      if (_mask[_py * 600 + _px] >= 32) { targetPiece = _p; break; }
+    } else {
+      // No mask loaded yet (file:// / CORS) — bounding-box fallback
+      targetPiece = _p; break;
+    }
+  }
+
+  if (!targetPiece) return;
+
   e.stopPropagation();
   e.preventDefault();
   _pzDrag = {
-    piece:    piece,
-    origLeft: parseFloat(piece.style.left) || 0,
-    origTop:  parseFloat(piece.style.top)  || 0,
+    piece:    targetPiece,
+    origLeft: parseFloat(targetPiece.style.left) || 0,
+    origTop:  parseFloat(targetPiece.style.top)  || 0,
     startX:   e.clientX,
     startY:   e.clientY
   };
-  piece.setPointerCapture(e.pointerId);
-  piece.style.zIndex = ++_pzZTop;  // always bring touched piece to front
+  e.currentTarget.setPointerCapture(e.pointerId); // capture on pzCanvas
+  targetPiece.style.zIndex = ++_pzZTop;           // bring touched piece to front
 }
 
 function _pzPointerMove(e) {
-  if (!_pzDrag || _pzDrag.piece !== e.currentTarget) return;
+  if (!_pzDrag) return;
   e.preventDefault();
   var piece    = _pzDrag.piece;
   var canvas   = document.getElementById('pzCanvas');
@@ -642,11 +700,11 @@ function _pzPointerMove(e) {
 }
 
 function _pzPointerUp(e) {
-  var piece = e.currentTarget;
-  if (!_pzDrag || _pzDrag.piece !== piece) return;
-  piece.releasePointerCapture(e.pointerId);
+  if (!_pzDrag) return;
+  e.currentTarget.releasePointerCapture(e.pointerId); // release from pzCanvas
   e.stopPropagation();
 
+  var piece      = _pzDrag.piece;
   var canvas     = document.getElementById('pzCanvas');
   var snapRadius = canvas ? (parseFloat(canvas.dataset.snap) || 100) : 100;
   var curL = parseFloat(piece.style.left) || 0;
@@ -654,7 +712,7 @@ function _pzPointerUp(e) {
   var dist = Math.sqrt(curL * curL + curT * curT);
 
   if (dist < snapRadius) {
-    // Snap into correct position with a quick ease animation
+    sfxPlay('click'); // audible confirmation of snap
     piece.style.transition = 'left 0.18s ease, top 0.18s ease';
     piece.style.left = '0px';
     piece.style.top  = '0px';
@@ -662,17 +720,14 @@ function _pzPointerUp(e) {
     piece.style.zIndex = 2;
     setTimeout(function() { if (piece.style) piece.style.transition = ''; }, 220);
     _pzCheckComplete();
-  } else {
-    // Leave z-index at the value set on pointerdown — last-touched piece stays on top
   }
+  // Leave z-index as-is — last-touched ordering preserved
   _pzDrag = null;
 }
 
 function _pzPointerCancel(e) {
-  var piece = e.currentTarget;
-  if (!_pzDrag || _pzDrag.piece !== piece) return;
-  piece.releasePointerCapture(e.pointerId);
-  // Leave z-index as-is — preserve last-touched ordering
+  if (!_pzDrag) return;
+  e.currentTarget.releasePointerCapture(e.pointerId);
   _pzDrag = null;
 }
 
