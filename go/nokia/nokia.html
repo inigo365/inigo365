@@ -297,7 +297,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
 // ── CONFIG ────────────────────────────────────────────────────────────
 const CONFIG = {
   UNLOCK_PIN: "2001",          // CHANGE THIS before going live
-  HINT_TEXT: "locked",            // IDLE SCREEN CRYPTIC HINT
+  HINT_TEXT: "enter pincode to unlock",            // IDLE SCREEN CRYPTIC HINT
   REVEAL_MESSAGE: "song unlocked!",       // MESSAGE SHOWN AFTER PUZZLE COMPLETE
   ARTIST_NAME: "inigo365",          // YOUR ARTIST NAME
   TRACKS: [
@@ -563,15 +563,21 @@ function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT,
     L = Math.max(lMin, Math.min(lMax, L));
     T = Math.max(tMin, Math.min(tMax, T));
 
+    // SVG <image> with pointer-events="visiblePainted" gives true per-pixel hit
+    // testing on transparent PNGs — the SVG spec guarantees this, unlike <img>.
     piecesHTML +=
-      '<img class="pz-piece" data-piece="' + (i+1) + '" data-snapped="false"' +
+      '<svg class="pz-piece" data-piece="' + (i+1) + '" data-snapped="false"' +
       ' data-lmin="' + lMin + '" data-lmax="' + lMax + '"' +
       ' data-tmin="' + tMin + '" data-tmax="' + tMax + '"' +
-      ' src="assets/brain/piece' + (i+1) + '.png" draggable="false"' +
-      ' style="position:absolute;width:600px;height:400px;' +
-      'left:' + L + 'px;top:' + T + 'px;z-index:' + (10 + i + 1) + ';' +
-      'filter:' + GF + ';touch-action:none;user-select:none;' +
-      '-webkit-user-drag:none;pointer-events:visiblePainted;">';
+      ' pointer-events="visiblePainted"' +
+      ' style="position:absolute;left:' + L + 'px;top:' + T + 'px;' +
+      'width:600px;height:400px;z-index:' + (10 + i + 1) + ';overflow:visible;' +
+      'touch-action:none;user-select:none;-webkit-user-select:none;">' +
+      '<image href="assets/brain/piece' + (i+1) + '.png"' +
+      ' x="0" y="0" width="600" height="400"' +
+      ' pointer-events="visiblePainted"' +
+      ' style="filter:' + GF + '"/>' +
+      '</svg>';
   }
 
   nokiaScreen.innerHTML =
@@ -657,7 +663,7 @@ function _pzPointerUp(e) {
     setTimeout(function() { if (piece.style) piece.style.transition = ''; }, 220);
     _pzCheckComplete();
   } else {
-    piece.style.zIndex = 5;
+    // Leave z-index at the value set on pointerdown — last-touched piece stays on top
   }
   _pzDrag = null;
 }
@@ -666,7 +672,7 @@ function _pzPointerCancel(e) {
   var piece = e.currentTarget;
   if (!_pzDrag || _pzDrag.piece !== piece) return;
   piece.releasePointerCapture(e.pointerId);
-  piece.style.zIndex = 5;
+  // Leave z-index as-is — preserve last-touched ordering
   _pzDrag = null;
 }
 
