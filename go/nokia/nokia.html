@@ -497,15 +497,6 @@ function renderPuzzle() {
   _pzDrag = null;
   _pzZTop = 20;
 
-  // Show a brief loading indicator while images are measured
-  nokiaScreen.style.cssText =
-    'position:absolute;left:19.8%;top:19.0%;width:61.9%;height:22.8%;' +
-    'background:#0d0d0d;overflow:hidden;z-index:1;box-sizing:border-box;' +
-    'display:flex;align-items:center;justify-content:center;padding:0;';
-  nokiaScreen.innerHTML =
-    '<span style="font-family:\'RuneScape\',monospace;color:#4dff91;' +
-    'font-size:0.6em;opacity:0.4">...</span>';
-
   const sw = nokiaScreen.offsetWidth;
   const sh = nokiaScreen.offsetHeight;
   const scale = Math.min(sw / 600, sh / 400) * 0.9;
@@ -520,53 +511,15 @@ function renderPuzzle() {
   const edgeT = -offY / scale;
   const edgeB = (sh - offY) / scale;
 
-  // Load all 6 pieces, measure their actual opaque-content centre via pixel sampling,
-  // then build the puzzle with correct per-piece positions and clamp bounds.
-  var imgData    = new Array(6).fill(null);
-  var remaining  = 6;
-
-  function onPieceReady(idx, cx, cy) {
-    imgData[idx] = { cx: cx, cy: cy };
-    if (--remaining === 0 && STATE === 'puzzle') {
-      _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT, edgeB);
-    }
-  }
-
-  for (var i = 0; i < 6; i++) {
-    (function(idx) {
-      var img = new Image();
-      img.onload = function() {
-        var cx = 300, cy = 200; // fallback if pixel sampling fails
-        try {
-          var tmp = document.createElement('canvas');
-          tmp.width = 600; tmp.height = 400;
-          var c = tmp.getContext('2d');
-          c.drawImage(img, 0, 0);
-          var d = c.getImageData(0, 0, 600, 400).data;
-          var x0=600, x1=0, y0=400, y1=0, found=false;
-          // Sample every 2nd pixel for speed
-          for (var py=0; py<400; py+=2) {
-            for (var px=0; px<600; px+=2) {
-              if (d[(py*600+px)*4+3] > 20) {
-                if (px<x0) x0=px; if (px>x1) x1=px;
-                if (py<y0) y0=py; if (py>y1) y1=py;
-                found = true;
-              }
-            }
-          }
-          if (found) { cx = (x0+x1)/2; cy = (y0+y1)/2; }
-        } catch(e) { /* tainted canvas on file:// — use fallback */ }
-        onPieceReady(idx, cx, cy);
-      };
-      img.onerror = function() { onPieceReady(idx, 300, 200); };
-      img.src = 'assets/brain/piece' + (idx + 1) + '.png';
-    })(i);
-  }
+  // Use the image bounding-box centre (300, 200) for every piece — guarantees
+  // identical scatter positions on file://, HTTP and mobile (no pixel sampling).
+  var imgData = [0,1,2,3,4,5].map(function() { return { cx: 300, cy: 200 }; });
+  _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT, edgeB);
 }
 
-// Called once all 6 piece images have been loaded and their opaque-content centres measured.
-// Each piece is positioned so its measured content centre lands at a target screen location,
-// and per-piece drag clamp bounds are stored in dataset so the fragment cannot leave the screen.
+// Builds the puzzle DOM synchronously.
+// Each piece is positioned so canvas point (cx,cy) lands at the target screen location,
+// and per-piece drag clamp bounds are stored in dataset so no fragment can leave the screen.
 function _pzFinishBuild(imgData, sw, sh, offX, offY, scale, edgeL, edgeR, edgeT, edgeB) {
   if (STATE !== 'puzzle') return;
 
@@ -725,7 +678,9 @@ function _pzCheckComplete() {
     return p.dataset.snapped === 'true';
   });
   if (allDone) {
-    revealTimer = setTimeout(function() { saveProgress(); renderReveal(); }, 800);
+    sfxPlay('ringtone');
+    // Hold the completed brain on screen for 2.5 s before transitioning to reveal
+    revealTimer = setTimeout(function() { saveProgress(); renderReveal(); }, 2500);
   }
 }
 
