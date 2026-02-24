@@ -26,6 +26,10 @@ html, body {
   background: url('assets/background.png') center center / cover no-repeat;
   background-color: #1a1a1a;
   cursor: url('../../images/cursor/cursor.png'), auto;
+  /* Prevent iOS callout / blue text-selection highlight during drag */
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 /* Hover cursor on all interactive elements (incl. dynamically-created puzzle pieces) */
@@ -949,6 +953,10 @@ function handleMusic(action) {
 // =====================================================================
 //  EVENT SYSTEM  (structure identical to Step 2 — unchanged)
 // =====================================================================
+
+// Block right-click context menu and drag-selection on the entire page
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener('selectstart',  (e) => e.preventDefault());
 
 nokiaKeypad.addEventListener('touchstart', (e) => {
   const key = e.target.closest('.nokia-key');
