@@ -423,9 +423,11 @@ function handlePin(action) {
     setTimeout(() => {
       if (pinBuffer === CONFIG.UNLOCK_PIN) {
         pinBuffer = '';
+        sfxPlay('ringtone');
         renderMenu();
       } else {
         pinBuffer = '';
+        sfxPlay('password');
         renderPin(true);
       }
     }, 200);
@@ -873,6 +875,57 @@ function handleMusic(action) {
 }
 
 // =====================================================================
+//  SFX ENGINE  (Web Audio API — reliable on iOS + desktop)
+// =====================================================================
+// AudioContext is created on first user gesture (iOS requirement).
+// Decode is triggered immediately so buffers are ready by the time
+// the user interacts. resume() is re-called on every gesture so the
+// context stays live after the app is backgrounded on iOS.
+;(function() {
+  var _ctx  = null;
+  var _bufs = {};
+
+  function _load() {
+    ['click', 'ringtone', 'password'].forEach(function(n) {
+      fetch('assets/' + n + '.mp3')
+        .then(function(r)   { return r.arrayBuffer(); })
+        .then(function(ab)  { return _ctx.decodeAudioData(ab); })
+        .then(function(buf) { _bufs[n] = buf; })
+        .catch(function()   { /* silently skip if file missing */ });
+    });
+  }
+
+  function _unlock() {
+    if (!_ctx) {
+      try { _ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e) { return; }
+      _load(); // start fetching + decoding now
+    }
+    // Always resume — keeps ctx live after iOS backgrounding
+    if (_ctx.state === 'suspended') _ctx.resume().catch(function() {});
+  }
+
+  // Attach to every gesture type so iOS re-unlock happens automatically
+  ['touchstart', 'mousedown', 'keydown'].forEach(function(ev) {
+    document.addEventListener(ev, _unlock, { passive: true });
+  });
+
+  // Expose globally
+  window.sfxPlay = function(name) {
+    if (!_ctx || !_bufs[name]) return;
+    try {
+      var src = _ctx.createBufferSource();
+      src.buffer = _bufs[name];
+      src.connect(_ctx.destination);
+      src.start(0);
+    } catch(e) {}
+  };
+
+  // Eager init on desktop (no-op if AudioContext needs gesture on iOS)
+  _unlock();
+})();
+
+// =====================================================================
 //  EVENT SYSTEM  (structure identical to Step 2 — unchanged)
 // =====================================================================
 
@@ -911,6 +964,8 @@ document.addEventListener('keydown', (e) => {
 // =====================================================================
 function handleButton(action) {
   showDebug(action);
+  // Play click for every keypad/keyboard press (not screen taps)
+  if (action !== 'screen') sfxPlay('click');
   // Remap physical keys → logical actions
   // * = back, # = navigate (cycle down with wrap), 0 = ok (except in PIN so digit 0 still works)
   if (action === 'star')                       action = 'lsoft';
