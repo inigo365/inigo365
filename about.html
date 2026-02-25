@@ -646,6 +646,7 @@
     function onStart(e) {
       if (unlocked) return;
       dragging = true;
+      clickSFX.unlockNow(); // prime Web Audio inside the gesture so correct.mp3 is ready
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       startX = clientX - thumbX;
       thumb.style.transition = 'none';
@@ -674,7 +675,7 @@
         track.classList.add('unlocked');
         label.textContent = '2001';
         label.style.opacity = '1';
-        try { const a = new Audio('go/sounds/correct.mp3'); a.volume = 0.75; a.play(); } catch {}
+        clickSFX.playCorrect();
 
         setTimeout(() => {
           document.body.classList.add('fade-out');
