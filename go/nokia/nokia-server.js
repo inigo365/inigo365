@@ -1,9 +1,17 @@
-// Minimal static file server for the nokia directory
+// Minimal static file server for the nokia directory.
+// Run: node nokia-server.js
+// Then open: http://localhost:4321
+//
+// Needed for local development — canvas.getImageData() (used by the puzzle
+// pixel-mask system) throws a security error on file:// URLs, so serving
+// over HTTP ensures the masks load and piece-clicking works identically to
+// the live site.
+
 const http = require('http');
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '../nokia');
+const ROOT = path.resolve(__dirname); // serves this folder (go/nokia/)
 const PORT = 4321;
 
 const MIME = {
@@ -36,4 +44,4 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': mime });
     res.end(data);
   });
-}).listen(PORT, () => console.log('Nokia server on http://localhost:' + PORT));
+}).listen(PORT, () => console.log('Nokia server running at http://localhost:' + PORT));

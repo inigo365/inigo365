@@ -331,6 +331,7 @@ let pinBuffer   = '';
 const PIN_LENGTH = 4;
 let menuIndex   = 0;
 let puzzleComplete = false;
+let pinUnlocked = false; // true once correct PIN entered this session — resets on page refresh
 let audioEl     = null;
 let isPlaying   = false;
 let revealTimer = null;
@@ -403,7 +404,7 @@ function renderIdle() {
     '<div style="opacity:0.9;font-size:0.9em;line-height:1.45;padding:0 3px">' +
       CONFIG.HINT_TEXT +
     '</div>' +
-    '<div style="opacity:0.3;font-size:0.9em;margin-top:6px">_ _ _ _</div>';
+    (CONFIG.PIN_HINT ? '<div style="opacity:0.35;font-size:0.6em;margin-top:6px">' + CONFIG.PIN_HINT + '</div>' : '');
 }
 
 // =====================================================================
@@ -417,8 +418,7 @@ function renderPin(shake) {
   ).join(' ');
   nokiaScreen.innerHTML =
     '<div style="opacity:0.45;font-size:0.75em;margin-bottom:6px">ENTER PIN</div>' +
-    '<div style="font-size:1.2em;letter-spacing:0.18em">' + dots + '</div>' +
-    (CONFIG.PIN_HINT ? '<div style="opacity:0.35;font-size:0.6em;margin-top:6px">' + CONFIG.PIN_HINT + '</div>' : '');
+    '<div style="font-size:1.2em;letter-spacing:0.18em">' + dots + '</div>';
   if (shake) {
     nokiaScreen.classList.remove('nokia-shake');
     void nokiaScreen.offsetWidth; // force reflow
@@ -441,6 +441,7 @@ function handlePin(action) {
     setTimeout(() => {
       if (pinBuffer === CONFIG.UNLOCK_PIN) {
         pinBuffer = '';
+        pinUnlocked = true;
         sfxPlay('ringtone');
         renderMenu();
       } else {
@@ -495,12 +496,34 @@ function handleMenu(action) {
   if (action === 'up')   { menuIndex = Math.max(0, menuIndex - 1); renderMenu(); return; }
   if (action === 'down') { menuIndex = (menuIndex + 1) % 2; renderMenu(); return; }  // wraps so # cycles
   if (action === 'ok' || action === 'rsoft' || action === 'screen') { selectMenuItem(); return; }
-  if (action === 'lsoft') { menuIndex = 0; renderIdle(); return; }
+  if (action === 'lsoft') { if (!pinUnlocked) { menuIndex = 0; renderIdle(); } return; }
 }
 
 function selectMenuItem() {
-  if (menuIndex === 0)                      { renderPuzzle(); return; }
+  if (menuIndex === 0)                      { renderPuzzleIntro(); return; }
   if (menuIndex === 1 && puzzleComplete)    { renderMusicList(); return; } // skip reveal on revisit
+}
+
+// =====================================================================
+//  STATE 4a — PUZZLE INTRO (typewriter before puzzle starts)
+// =====================================================================
+function renderPuzzleIntro() {
+  clearTimers();
+  STATE = 'puzzleintro';
+  screenBase();
+  nokiaScreen.innerHTML =
+    '<div id="piTxt" style="font-size:0.9em;line-height:1.45;padding:0 2px"></div>';
+  const el  = nokiaScreen.querySelector('#piTxt');
+  const msg = 'drag the puzzle pieces into place.';
+  let i = 0;
+  (function tick() {
+    if (i <= msg.length) {
+      el.textContent = msg.slice(0, i++);
+      revealTimer = setTimeout(tick, 38); // ← TYPING SPEED in ms per character (lower = faster)
+    } else {
+      revealTimer = setTimeout(renderPuzzle, 900);
+    }
+  })();
 }
 
 // =====================================================================
@@ -1092,6 +1115,7 @@ function handleButton(action) {
       break;
     case 'pin':    handlePin(action);    break;
     case 'menu':       handleMenu(action);      break;
+    case 'puzzleintro': /* locked during typewriter */ break;
     case 'puzzle':     handlePuzzle(action);    break;
     case 'reveal':     /* locked during typewriter */ break;
     case 'musiclist':  handleMusicList(action); break;
