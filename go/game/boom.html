@@ -246,6 +246,7 @@ input,
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
 }
 
 #homeBar button {
@@ -285,6 +286,7 @@ input,
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
 }
 
 #soundBar button {
@@ -1021,8 +1023,8 @@ canvas {
 
   text-shadow: 0 0 8px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
 }
-:root { --play-base-scale: 1; }
-@media (min-width: 769px) { :root { --play-base-scale: 0.96; } }
+:root { --play-base-scale: 1.10; }
+@media (min-width: 769px) { :root { --play-base-scale: 1.104; } }
 
 @keyframes playPulse {
   0%, 100% { transform: translate(-50%, -50%) scale(var(--play-base-scale)); }
@@ -1090,11 +1092,12 @@ canvas {
 }
 
 /* Single white overlay — visible during gameplay & game-over, hidden on home screen */
+/* ↓↓↓ EDIT OVERLAY OPACITY HERE — change the last value (0–1) in rgba() below ↓↓↓ */
 #homeOverlay {
   position: fixed;
   inset: 0;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.35); /* ↑↑↑ EDIT OVERLAY OPACITY HERE (0–1) ↑↑↑ */
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.4s ease;
@@ -1130,13 +1133,13 @@ canvas {
 /* ===================== MOBILE ===================== */
 @media (max-width: 768px) {
   #playWrap {
-    top: 51%;
+    top: 54%;
   }
   #playWrap #playOverlay {
     max-width: 86vw;
   }
   #homeBarGroup {
-    top: 64%;
+    top: 66%;
     gap: 6px;
   }
   #homeBar {
@@ -1173,9 +1176,6 @@ canvas {
 <button id="goodybagBtn" class="soundcloud-btn game-btn">goodybag</button>
 
 <audio id="bgMusic" src="/go/game/soundtrack01.mp3" loop></audio>
-<audio id="sfxGold" src="sfx_gold.mp3" preload="auto"></audio>
-<audio id="sfxDie" src="sfx_die.mp3" preload="auto"></audio>
-<audio id="sfxPower" src="sfx_power.mp3" preload="auto"></audio>
 
 <div id="playWrap">
   <div id="playImageWrap">
@@ -1297,7 +1297,7 @@ canvas.width = getViewportW();
 canvas.height = getViewportH();
 
 // Toggle: set to true to show white overlay during gameplay & name modal
-const USE_GAMEPLAY_OVERLAY = false;
+const USE_GAMEPLAY_OVERLAY = true;
 
 const POP_TEXT_OFFSET_Y  = 50;  // fun text / "rare bag" line
 const POP_POINT_OFFSET_Y = 20;  // +1/+2/+3 line
@@ -2083,7 +2083,7 @@ function showOverlay(showLastScore = false) {
 
   // ✅ Show play overlay
   playWrap.style.opacity = 1;
-  const _playScale = getViewportW() > 768 ? 0.96 : 1;
+  const _playScale = getViewportW() > 768 ? 1.104 : 1.10;
   playWrap.style.transform = `translate(-50%, -50%) scale(${_playScale})`;
   playWrap.style.pointerEvents = "none";
   playWrap.classList.add('pulsing');
@@ -2091,12 +2091,7 @@ function showOverlay(showLastScore = false) {
   // random every time
   playSplashText.textContent = pickRandomFunText();
 
-  overlayLastScore.style.opacity = showLastScore ? 1 : 0;
-  overlayLastScore.style.color = 'white';
-  overlayLastScore.style.textShadow = '1px 1px 0 rgba(0,0,0,0.25)';
-  if (showLastScore) {
-    overlayLastScore.textContent = "last score: " + score;
-  }
+  overlayLastScore.style.opacity = 0;
 
   gameStarted = false;
 
@@ -2129,7 +2124,9 @@ function hideOverlay() {
 
 //setInterval(updateTopScores, 100);
 window.addEventListener('load', () => {
-  showOverlay(false);
+  // Double-rAF ensures the browser paints opacity:0 before transitioning in,
+  // giving playWrap and homeBarGroup a clean fade-in on page load.
+  requestAnimationFrame(() => requestAnimationFrame(() => showOverlay(false)));
 });
 
 // function was never used, safely removed: openSoundCloud()
@@ -2154,7 +2151,8 @@ function startGame() {
   // Auto-enable SFX on first play (unless user manually toggled it off)
   if (!sfxUserToggled && !sfxEnabled) {
     sfxEnabled = true;
-
+    const ss = document.getElementById('sfxState');
+    if (ss) ss.textContent = 'on';
   }
   SPEED = 3;
   hoops = [];
@@ -2728,12 +2726,10 @@ function handleFirstUserGesture() {
     }).catch(() => { });
   }
 
-  // Enable SFX by default on first interaction (unless user already toggled it off)
-  if (!sfxUserToggled) {
-    sfxEnabled = true;
-    const ss = document.getElementById('sfxState'); if (ss) ss.textContent = 'on';
+  // Unlock the WebAudio context on first gesture so SFX are ready to fire instantly
+  SFX.unlockNow();
 
-  }
+  // SFX stays off unless user manually enabled it on the home screen
 
   window.removeEventListener('touchstart', handleFirstUserGesture);
   window.removeEventListener('mousedown', handleFirstUserGesture);
@@ -2761,6 +2757,7 @@ const musicStateEl = document.getElementById('musicState');
 const sfxStateEl = document.getElementById('sfxState');
 
 homeMusicBtn.addEventListener('click', () => {
+  SFX.play('click');
   if (bgMusic.paused) {
     ensureSoundtrackLoadedOnce();
     bgMusic.play().catch(() => {});
@@ -2777,7 +2774,34 @@ homeSfxBtn.addEventListener('click', () => {
   sfxEnabled = !sfxEnabled;
   sfxUserToggled = true;
   sfxStateEl.textContent = sfxEnabled ? 'on' : 'off';
+  SFX.play('click'); // play after toggling so it fires if just turned on
 });
+
+// Click SFX for home bar buttons (back, how to play, tap to start)
+document.getElementById('homeBackBtn').addEventListener('click', () => SFX.play('click'));
+document.getElementById('homeHowToBtn').addEventListener('click', () => SFX.play('click'));
+document.getElementById('homeTapBtn').addEventListener('click', () => SFX.play('click'));
+
+// Click SFX for name modal buttons
+(function hookModalClickSfx() {
+  const modalBtns = [
+    document.querySelector('.name-modal .btn-primary'),
+    document.querySelector('.name-modal .btn-secondary'),
+    document.querySelector('.name-modal .modal-back-btn'),
+  ];
+  modalBtns.forEach(btn => { if (btn) btn.addEventListener('click', () => SFX.play('click')); });
+  document.querySelectorAll('.name-modal .modal-link-btn').forEach(btn => {
+    btn.addEventListener('click', () => SFX.play('click'));
+  });
+})();
+
+// Click SFX for leaderboard, goodybag, and how-to static buttons
+document.querySelectorAll('.leaderboard-close').forEach(btn => {
+  btn.addEventListener('click', () => SFX.play('click'));
+});
+document.getElementById('soundtrackBtn').addEventListener('click', () => SFX.play('click'));
+document.getElementById('passwordBtn').addEventListener('click', () => SFX.play('click'));
+document.getElementById('collectionBtn').addEventListener('click', () => SFX.play('click'));
 
 // ------------------- PAUSE ON HIDE / CLOSE -------------------
 document.addEventListener('visibilitychange', () => {
@@ -3040,7 +3064,7 @@ function closeGoodybag() {
   goodybagBackdrop.classList.remove('active');
 }
 
-goodybagBtn.addEventListener('click', openGoodybag);
+goodybagBtn.addEventListener('click', () => { SFX.play('click'); openGoodybag(); });
 
 let soundtrackPageIndex = 0;
 
@@ -3071,7 +3095,7 @@ function renderSoundtrackPage() {
   const linkBtn = document.createElement('button');
   linkBtn.textContent = 'link';
   linkBtn.className = 'soundtrack-link-btn';
-  linkBtn.onclick = () => window.open(s.link, '_blank');
+  linkBtn.onclick = () => { SFX.play('click'); window.open(s.link, '_blank'); };
 
   headerRow.appendChild(header);
   headerRow.appendChild(linkBtn);
@@ -3099,13 +3123,13 @@ function renderSoundtrackPage() {
   backBtn.textContent = 'back';
   backBtn.className = 'soundtrack-nav-btn';
   backBtn.style.display = (soundtrackPageIndex === 0) ? 'none' : 'inline-block';
-  backBtn.onclick = () => { soundtrackPageIndex--; renderSoundtrackPage(); };
+  backBtn.onclick = () => { SFX.play('click'); soundtrackPageIndex--; renderSoundtrackPage(); };
 
   const nextBtn = document.createElement('button');
   nextBtn.textContent = 'next';
   nextBtn.className = 'soundtrack-nav-btn';
   nextBtn.style.display = (soundtrackPageIndex >= unlocked - 1) ? 'none' : 'inline-block';
-  nextBtn.onclick = () => { soundtrackPageIndex++; renderSoundtrackPage(); };
+  nextBtn.onclick = () => { SFX.play('click'); soundtrackPageIndex++; renderSoundtrackPage(); };
 
   leftControls.appendChild(backBtn);
   leftControls.appendChild(nextBtn);
@@ -3114,6 +3138,7 @@ function renderSoundtrackPage() {
   selectBtn.textContent = 'select';
   selectBtn.className = 'soundtrack-select-btn';
   selectBtn.onclick = () => {
+    SFX.play('click');
     setSelectedSoundtrackIndex(soundtrackPageIndex);
     setSoundtrackByIndex(soundtrackPageIndex, true);
   };
@@ -3243,43 +3268,178 @@ passwordBtn.addEventListener('click', () => {
     link.style.textDecoration = 'none';
     link.style.color = 'inherit';
     link.innerHTML = '<img src="' + PASSWORD_SPRITES[p] + '" alt="' + p + '"><strong>' + p + '</strong>';
+    link.addEventListener('click', () => SFX.play('click'));
     goodybagContent.appendChild(link);
   });
 });
 
-// ===== NOKIA KEYPAD =====
+// ===== SFX ENGINE (WebAudio + HTMLAudio fallback, mirrors go/index.html) =====
 let sfxEnabled = false;
-let sfxUserToggled = false; // tracks if user manually toggled sfx
+let sfxUserToggled = false;
 
-// SFX audio elements
-const sfxGold  = document.getElementById('sfxGold');
-const sfxDie   = document.getElementById('sfxDie');
-const sfxPower = document.getElementById('sfxPower');
-sfxGold.volume = 0.6;
+const SFX = (() => {
+  const paths = {
+    gold:  'sfx_gold.mp3',
+    die:   'sfx_die.mp3',
+    power: 'sfx_power.mp3',
+    click: 'sfx_click.mp3',
+  };
+  const volumes = { gold: 0.6, die: 1.0, power: 1.0, click: 0.7 };
+  const POOL_SIZES = { gold: 6, die: 3, power: 3, click: 8 };
 
-// Audio pool to avoid expensive cloneNode() on every SFX play
-const sfxPools = new Map();
-const SFX_POOL_SIZE = 4;
+  let ctx = null;
+  let master = null;
+  let unlocked = false;
+  let heartbeatTimer = null;
 
-function getSfxPool(sound) {
-  if (sfxPools.has(sound)) return sfxPools.get(sound);
-  const pool = [];
-  for (let i = 0; i < SFX_POOL_SIZE; i++) {
-    const a = new Audio(sound.src);
-    a.volume = sound.volume;
-    pool.push(a);
+  const fetched = new Map();  // name -> ArrayBuffer
+  const buffers = new Map();  // name -> AudioBuffer
+  const pools   = new Map();  // name -> { els, i }
+
+  function ensurePool(name) {
+    if (pools.has(name)) return pools.get(name);
+    const n = POOL_SIZES[name] ?? 3;
+    const els = Array.from({ length: n }, () => {
+      const a = new Audio(paths[name]);
+      a.preload = 'auto';
+      a.volume = volumes[name] ?? 1;
+      return a;
+    });
+    const obj = { els, i: 0 };
+    pools.set(name, obj);
+    return obj;
   }
-  sfxPools.set(sound, { pool, idx: 0 });
-  return sfxPools.get(sound);
-}
 
+  // Pre-build all pools immediately so iOS starts buffering right away
+  for (const n of Object.keys(paths)) ensurePool(n);
+
+  function playFromPool(name) {
+    const pool = ensurePool(name);
+    const a = pool.els[pool.i];
+    pool.i = (pool.i + 1) % pool.els.length;
+    try {
+      a.pause();
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch {}
+  }
+
+  async function fetchAll() {
+    await Promise.all(Object.keys(paths).map(async (name) => {
+      try {
+        const res = await fetch(paths[name], { cache: 'force-cache' });
+        const arr = await res.arrayBuffer();
+        fetched.set(name, arr);
+      } catch { ensurePool(name); }
+    }));
+  }
+
+  function ensureContext() {
+    if (ctx) return ctx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 1;
+    master.connect(ctx.destination);
+    return ctx;
+  }
+
+  function startHeartbeat() {
+    if (heartbeatTimer) return;
+    heartbeatTimer = setInterval(() => {
+      if (!ctx || !master || ctx.state !== 'running') return;
+      try {
+        const buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(master);
+        src.start(0);
+      } catch {}
+    }, 25000);
+  }
+
+  async function decodeAllIfPossible() {
+    if (!ctx) return;
+    if (ctx.state === 'suspended') { try { await ctx.resume(); } catch {} }
+    for (const name of Object.keys(paths)) {
+      if (buffers.has(name)) continue;
+      const arr = fetched.get(name);
+      if (!arr) continue;
+      try {
+        const buf = await ctx.decodeAudioData(arr.slice(0));
+        buffers.set(name, buf);
+      } catch { ensurePool(name); }
+    }
+  }
+
+  async function unlockNow() {
+    if (unlocked) return;
+    unlocked = true;
+    ensureContext();
+    await decodeAllIfPossible();
+    // iOS warm-up blip
+    if (ctx && master && ctx.state === 'running') {
+      try {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        g.gain.value = 0.0001;
+        osc.connect(g);
+        g.connect(master);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.01);
+      } catch {}
+    }
+    startHeartbeat();
+  }
+
+  function playWebAudio(name) {
+    if (!ctx || !master) return false;
+    const buf = buffers.get(name);
+    if (!buf) return false;
+    try {
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const g = ctx.createGain();
+      g.gain.value = volumes[name] ?? 1;
+      src.connect(g);
+      g.connect(master);
+      src.start(0);
+      return true;
+    } catch { return false; }
+  }
+
+  function play(name) {
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const ok = playWebAudio(name);
+    if (!ok) playFromPool(name);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  });
+
+  // Start fetching immediately — no gesture needed for fetch
+  fetchAll();
+
+  const primeHandler = () => { unlockNow(); };
+  window.addEventListener('touchstart', primeHandler, { capture: true, once: true });
+  window.addEventListener('pointerdown', primeHandler, { capture: true, once: true });
+  window.addEventListener('keydown',     primeHandler, { capture: true, once: true });
+
+  return { play, unlockNow };
+})();
+
+// Convenience wrappers — drop-in replacements for the old playSfx(sfxGold) calls
+const sfxGold  = { _name: 'gold' };
+const sfxDie   = { _name: 'die' };
+const sfxPower = { _name: 'power' };
 function playSfx(sound) {
   if (!sfxEnabled) return;
-  const entry = getSfxPool(sound);
-  const a = entry.pool[entry.idx];
-  entry.idx = (entry.idx + 1) % entry.pool.length;
-  a.currentTime = 0;
-  a.play().catch(() => {});
+  SFX.play(sound._name);
 }
 
 
