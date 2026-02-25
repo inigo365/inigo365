@@ -654,13 +654,15 @@ video {
   gap: 4px;
   flex: 1;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .portal-title{
   font-size: 24px;
   line-height: 1;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .portal-sub{
@@ -676,6 +678,8 @@ video {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 0;
 }
 
 .portal-sprite{
