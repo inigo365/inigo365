@@ -18,6 +18,9 @@
   font-style: normal;
 }
 
+/* ===================== PAGE TRANSITIONS ===================== */
+body { opacity: 0; }
+
 /* ===================== BASE ===================== */
 html, body {
   margin: 0;
@@ -25,7 +28,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: url('assets/background.png') center center / cover no-repeat;
+  background: url('assets/background.png') center center / cover no-repeat fixed;
   background-color: #1a1a1a;
   cursor: url('../../images/cursor/cursor.png'), auto;
   /* Prevent iOS callout / blue text-selection highlight during drag */
@@ -104,6 +107,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
   letter-spacing: 0.04em;
   line-height: 1.35;
   image-rendering: pixelated;
+  touch-action: none;
 }
 
 /* ===================== KEYPAD — transparent hit areas ===================== */
@@ -824,7 +828,7 @@ function renderReveal() {
   (function tick() {
     if (i <= msg.length) {
       el.textContent = msg.slice(0, i++);
-      revealTimer = setTimeout(tick, 65);
+      revealTimer = setTimeout(tick, 52); // ← REVEAL TYPEWRITER SPEED ms/char
     } else {
       revealTimer = setTimeout(renderMusicList, 1800);
     }
@@ -1050,7 +1054,8 @@ document.addEventListener('touchstart', (e) => {
   if (e.touches.length > 1) e.preventDefault();
 }, { passive: false });
 document.addEventListener('touchmove', (e) => {
-  if (e.touches.length > 1) e.preventDefault(); // belt-and-braces: block mid-gesture too
+  // Block multi-touch always; block single-touch during puzzle (prevents iOS zoom-on-drag)
+  if (e.touches.length > 1 || STATE === 'puzzle') e.preventDefault();
 }, { passive: false });
 
 nokiaKeypad.addEventListener('touchstart', (e) => {
@@ -1083,12 +1088,29 @@ document.addEventListener('keydown', (e) => {
   if (action) { e.preventDefault(); handleButton(action); }
 });
 
-// Back button — play click sound then navigate
+// Fade in only after background image is loaded — prevents black flash on arrival
+(function() {
+  var img = new Image();
+  img.onload = function() {
+    document.body.style.transition = 'opacity 0.4s ease';
+    document.body.style.opacity = '1';
+  };
+  img.onerror = function() {
+    // Fallback: show page anyway if image fails
+    document.body.style.transition = 'opacity 0.4s ease';
+    document.body.style.opacity = '1';
+  };
+  img.src = 'assets/background.png';
+})();
+
+// Back button — play click sound, fade body out, then navigate
 document.getElementById('siteBackBtn').addEventListener('click', function(e) {
   e.preventDefault();
   var dest = this.href;
   try { new Audio('../sounds/click.mp3').play(); } catch(err) {}
-  setTimeout(function() { window.location.href = dest; }, 120);
+  document.body.style.transition = 'opacity 0.35s ease';
+  document.body.style.opacity = '0';
+  setTimeout(function() { window.location.href = dest; }, 350);
 });
 
 // =====================================================================

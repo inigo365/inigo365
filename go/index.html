@@ -26,9 +26,8 @@
 }
 
 
-/* Force white everywhere (helps iOS "grey" behind bounce) */
-html { background: white; height: 100%; }
-body { background: white; min-height: 100%; }
+html { height: 100%; }
+body { min-height: 100%; }
 
 html, body {
   margin: 0;
@@ -700,11 +699,21 @@ video {
   margin-top: 6px;
   margin-bottom: 6px;
 }
+/* ===================== PAGE TRANSITIONS ===================== */
+@keyframes pgFadeIn { from { opacity: 0; } to { opacity: 1; } }
+body { animation: pgFadeIn 0.4s ease forwards; }
+
 /* =========================
    BACKGROUND IMAGE
    Put the file at: images/background.jpg
    ========================= */
-html, body { background: transparent; }
+html {
+  background-image: url("images/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
 
 body{
   background-image: url("images/background.png");
@@ -1846,7 +1855,9 @@ if (action.redirect && action.useGate === false) {
   const sameTab = action.sameTab !== false;
 
   if (sameTab) {
-    window.location.href = action.redirect;
+    document.body.style.transition = 'opacity 0.4s ease';
+    document.body.style.opacity = '0';
+    setTimeout(() => { window.location.href = action.redirect; }, 400);
   } else {
     window.open(action.redirect, "_blank");
   }
@@ -2007,7 +2018,14 @@ function hardResetPasswordUI() {
   requestAnimationFrame(() => passwordInput.focus());
 }
 
-window.addEventListener("pageshow", () => hardResetPasswordUI());
+window.addEventListener("pageshow", (e) => {
+  hardResetPasswordUI();
+  if (e.persisted) {
+    // BFCache restore — body opacity may have been faded out before navigating away
+    document.body.style.transition = 'none';
+    document.body.style.opacity = '1';
+  }
+});
 window.addEventListener("pagehide", () => { passwordInput.disabled = false; });
 
 backButton.onclick = () => { SFX.play("click"); resetToPassword(); };
