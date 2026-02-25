@@ -660,6 +660,7 @@ video {
   font-size: 24px;
   line-height: 1;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .portal-sub{
@@ -815,7 +816,7 @@ body{
 
 @media (min-width: 769px){
   .portal-dock{
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1143,6 +1144,14 @@ body{
 
 .is-standalone .password-screen{
   padding-bottom: max(16px, calc(16px + env(safe-area-inset-bottom))) !important;
+}
+
+/* PWA/standalone on mobile: center the tray vertically */
+@media (max-width: 768px){
+  .is-standalone .password-screen{
+    align-items: center !important;
+    padding-top: max(16px, env(safe-area-inset-top)) !important;
+  }
 }
 
 /* ===== iOS/mobile: tray border always on-screen + scroll INSIDE tray ===== */
