@@ -441,7 +441,10 @@ document.addEventListener("touchcancel", stopMining, { passive: true });
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
 function goBack() {
-  window.location.href = "../index.html";
+  const params = new URLSearchParams(window.location.search);
+  window.location.href = params.get('from') === 'game'
+    ? '../game/boom.html'
+    : '../index.html';
 }
 
 animate();

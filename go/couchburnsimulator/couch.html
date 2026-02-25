@@ -477,7 +477,10 @@ window.addEventListener("pointercancel", onUp, { passive: false });
 window.addEventListener("pointerleave", onUp, { passive: false });
 
 function goBack() {
-  window.location.href = "../index.html";
+  const params = new URLSearchParams(window.location.search);
+  window.location.href = params.get('from') === 'game'
+    ? '../game/boom.html'
+    : '../index.html';
 }
 </script>
 </body>

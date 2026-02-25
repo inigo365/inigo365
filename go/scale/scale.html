@@ -220,7 +220,10 @@ document.addEventListener("touchend", () => {
 
 /* NAVIGATION */
 function goBack() {
-  window.location.href = "../index.html";
+  const params = new URLSearchParams(window.location.search);
+  window.location.href = params.get('from') === 'game'
+    ? '../game/boom.html'
+    : '../index.html';
 }
 
 /* START ANIMATION */

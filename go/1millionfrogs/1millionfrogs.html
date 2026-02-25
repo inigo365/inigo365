@@ -348,13 +348,6 @@ button{
   from{ opacity:0; }
   to{ opacity:1; }
 }
-@media (max-width:768px){
-  #splashWrap{ top:47%; }
-  #splashPlay{ max-width:119vw; max-height:119vh; }
-  #splashBar{ top:66%; padding:3px 10px; }              /* ← mobile bar size */
-  #splashBar button{ font-size:14px; padding:2px 3px; } /* ← mobile button text size */
-  #splashBar .bar-sep{ font-size:12px; padding:0 3px; } /* ← mobile separator size */
-}
 #splashBar button{
   font-family:"RuneScape UF", Arial, sans-serif;
   font-size:24px; background:transparent; border:none;
@@ -369,6 +362,13 @@ button{
 #splashBar .bar-sep{
   color:rgba(0,0,0,0.2); font-size:18px;
   user-select:none; line-height:1; padding:0 6px;
+}
+@media (max-width:768px){
+  #splashWrap{ top:47%; }
+  #splashPlay{ max-width:119vw; max-height:119vh; }
+  #splashBar{ top:66%; padding:2px 8px; }              /* ← mobile bar size */
+  #splashBar button{ font-size:18px; padding:1px 2px; } /* ← mobile button text size */
+  #splashBar .bar-sep{ font-size:18px; padding:0 2px; } /* ← mobile separator size */
 }
 
 /* ===== Name overlay background ===== */
@@ -420,6 +420,7 @@ button{
       </div>
     </div>
   </div>
+  <button class="back-button" id="mainMenuBtn" style="margin-left:auto; pointer-events:auto;">main menu &rarr;</button>
 </div>
 
 <div class="overlay" id="nameOverlay" aria-hidden="true" style="display:none">
@@ -496,6 +497,7 @@ const ctx = c.getContext("2d", { alpha:false });
 
 const statsEl        = document.getElementById("stats");
 const backBtn        = document.getElementById("backBtn");
+const mainMenuBtn    = document.getElementById("mainMenuBtn");
 const backBtnOverlay = document.getElementById("backBtnOverlay");
 const nameOverlay    = document.getElementById("nameOverlay");
 const nameInput      = document.getElementById("nameInput");
@@ -2636,7 +2638,15 @@ backBtn.addEventListener("click", () => {
   try{ nameInput.focus(); }catch{}
 });
 
-backBtnOverlay.addEventListener("click", () => { location.href = "../index.html"; });
+mainMenuBtn.addEventListener("click", () => { location.href = "../index.html"; });
+
+backBtnOverlay.addEventListener("click", () => {
+  nameOverlay.style.display = "none";
+  nameOverlay.setAttribute("aria-hidden", "true");
+  nameOverlay.classList.remove("visible");
+  splashScreen.style.display = "";
+  splashScreen.style.opacity = "1";
+});
 
 startBtn.addEventListener("click", startGame);
 nameInput.addEventListener("keydown", e => { if(e.key === "Enter") startGame(); });
