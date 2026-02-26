@@ -127,7 +127,7 @@ input,
   gap: 6px;
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: clamp(14px, 1.8vw, 18px);
-  color: #ffd400;
+  color: #2d93ea;
   opacity: 0;
   max-height: 0;
   overflow: hidden;
@@ -1637,7 +1637,7 @@ let toastPoolIdx = 0;
 })();
 
 function showPickupNotification(spriteSrc, text, color, duration) {
-  color = color || '#ffd400';
+  color = color || '#2d93ea';
   duration = duration || 3000;
 
   const entry = toastPool[toastPoolIdx];
@@ -1679,7 +1679,7 @@ let baghettiToastEl = null;
   img.alt = '';
   const span = document.createElement('span');
   span.textContent = 'baghetti found!';
-  span.style.color = '#ffd400'; // baghetti toast colour
+  span.style.color = '#2d93ea'; // baghetti toast colour
   toast.appendChild(img);
   toast.appendChild(span);
   container.appendChild(toast);
@@ -2387,7 +2387,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
     lvl++;
     localStorage.setItem(SOUNDTRACK_UNLOCK_LEVEL_KEY, String(lvl));
     localStorage.setItem(UNLOCK_KEYS.soundtracks, "true"); // legacy flag
-    showPickupNotification(unlockImg ? unlockImg.src : '', 'new soundtrack unlocked!', '#ffd400', 3000);
+    showPickupNotification(unlockImg ? unlockImg.src : '', 'new soundtrack unlocked!', '#2d93ea', 3000);
   }
 
 } else {
@@ -2397,7 +2397,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
   }
   const pwNames = { 0: 'tinny', 1: 'onway', 3: 'deathstar' };
   const pwName = pwNames[h.spriteIndex - UNLOCK_START] || 'secret bag';
-  showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', '#ffd400', 3000);
+  showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', '#2d93ea', 3000);
 }
 
   playSfx(sfxPower);
@@ -2692,8 +2692,22 @@ function setSoundtrackByIndex(idx, tryPlay = true) {
   if (tryPlay) {
     bgMusic.play().then(() => {
       musicToggle.textContent = "music: on";
+      updateMediaSession();
     }).catch(() => {});
   }
+}
+
+function updateMediaSession() {
+  if (!('mediaSession' in navigator)) return;
+  const s = SOUNDTRACKS[currentSoundtrackIndex];
+  if (!s) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: s.title,
+    artist: 'inigo365',
+    artwork: [{ src: '/go/game/artwork.png', sizes: '512x512', type: 'image/png' }]
+  });
+  navigator.mediaSession.setActionHandler('play',  () => { bgMusic.play().catch(() => {}); navigator.mediaSession.playbackState = 'playing'; });
+  navigator.mediaSession.setActionHandler('pause', () => { bgMusic.pause();                navigator.mediaSession.playbackState = 'paused';  });
 }
 
 function pickRandomSoundtrackIndex() {
@@ -2723,6 +2737,7 @@ function handleFirstUserGesture() {
     bgMusic.play().then(() => {
       musicToggle.textContent = "music: on";
       const ms = document.getElementById('musicState'); if (ms) ms.textContent = "on";
+      updateMediaSession();
     }).catch(() => { });
   }
 
@@ -2803,19 +2818,16 @@ document.getElementById('soundtrackBtn').addEventListener('click', () => SFX.pla
 document.getElementById('passwordBtn').addEventListener('click', () => SFX.play('click'));
 document.getElementById('collectionBtn').addEventListener('click', () => SFX.play('click'));
 
-// ------------------- PAUSE ON HIDE / CLOSE -------------------
+// ------------------- VISIBILITY CHANGE -------------------
+// Music intentionally keeps playing when the tab is hidden or the page is left —
+// the MediaSession lock-screen controls let the user pause from outside the page.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    bgMusic.pause();
+  if (!document.hidden && bgMusic.paused) {
+    // Page came back into view and music was paused — update the UI label to match
     musicToggle.textContent = "music: off";
-  } else if (!bgMusic.paused) {
-    bgMusic.play().catch(() => { });
+  } else if (!document.hidden && !bgMusic.paused) {
     musicToggle.textContent = "music: on";
   }
-});
-
-window.addEventListener('beforeunload', () => {
-  bgMusic.pause();
 });
 
 // ------------------- NAVIGATION -------------------

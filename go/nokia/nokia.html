@@ -986,54 +986,179 @@ function handleMusic(action) {
 }
 
 // =====================================================================
-//  SFX ENGINE  (Web Audio API — reliable on iOS + desktop)
+//  SFX ENGINE  (Web Audio API + pooled <audio> fallback)
 // =====================================================================
-// AudioContext is created on first user gesture (iOS requirement).
-// Decode is triggered immediately so buffers are ready by the time
-// the user interacts. resume() is re-called on every gesture so the
-// context stays live after the app is backgrounded on iOS.
+// Mirrors the system used in go/index.html for consistent behaviour.
+//
+// Key improvements over the old engine:
+//  • MP3s are fetched immediately on page load (no gesture required for fetch)
+//  • AudioContext + decode happen on first gesture, so buffers are always
+//    ready before the user can trigger a sound
+//  • Pooled <audio> fallback fires if Web Audio isn't ready yet
+//  • Per-sound gain nodes for independent volume control
+//  • Silent heartbeat every 25 s keeps iOS from suspending the context
+//  • visibilitychange resume when the page comes back into focus
 ;(function() {
-  var _ctx  = null;
-  var _bufs = {};
+  var SOUNDS  = { click: 0.6, ringtone: 0.9, password: 0.75 };
+  var POOL_SZ = { click: 6,   ringtone: 2,   password: 3    };
 
-  function _load() {
-    ['click', 'ringtone', 'password'].forEach(function(n) {
-      fetch('assets/' + n + '.mp3')
-        .then(function(r)   { return r.arrayBuffer(); })
-        .then(function(ab)  { return _ctx.decodeAudioData(ab); })
-        .then(function(buf) { _bufs[n] = buf; })
-        .catch(function()   { /* silently skip if file missing */ });
+  var ctx            = null;
+  var master         = null;
+  var unlocked       = false;
+  var heartbeatTimer = null;
+  var fetched        = {};   // name -> ArrayBuffer
+  var buffers        = {};   // name -> AudioBuffer
+  var pools          = {};   // name -> { els: [], i: 0 }
+
+  // ── HTMLAudio pool (fallback) ───────────────────────────────────────
+  function ensurePool(name) {
+    if (pools[name]) return pools[name];
+    var n = POOL_SZ[name] || 3;
+    var els = [];
+    for (var i = 0; i < n; i++) {
+      var a = new Audio('assets/' + name + '.mp3');
+      a.preload = 'auto';
+      a.volume  = SOUNDS[name] || 1;
+      els.push(a);
+    }
+    pools[name] = { els: els, i: 0 };
+    return pools[name];
+  }
+  // Pre-build all pools immediately — iOS starts buffering right away
+  Object.keys(SOUNDS).forEach(function(n) { ensurePool(n); });
+
+  function playFromPool(name) {
+    var pool = ensurePool(name);
+    var a = pool.els[pool.i];
+    pool.i = (pool.i + 1) % pool.els.length;
+    try {
+      a.pause();
+      a.currentTime = 0;
+      var p = a.play();
+      if (p && typeof p.catch === 'function') p.catch(function() {});
+    } catch(e) {}
+  }
+
+  // ── Web Audio ───────────────────────────────────────────────────────
+  function fetchAll() {
+    Object.keys(SOUNDS).forEach(function(name) {
+      fetch('assets/' + name + '.mp3', { cache: 'force-cache' })
+        .then(function(r) { return r.arrayBuffer(); })
+        .then(function(ab) { fetched[name] = ab; })
+        .catch(function() {});
     });
   }
 
-  function _unlock() {
-    if (!_ctx) {
-      try { _ctx = new (window.AudioContext || window.webkitAudioContext)(); }
-      catch(e) { return; }
-      _load(); // start fetching + decoding now
-    }
-    // Always resume — keeps ctx live after iOS backgrounding
-    if (_ctx.state === 'suspended') _ctx.resume().catch(function() {});
+  function ensureContext() {
+    if (ctx) return ctx;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = 1;
+    master.connect(ctx.destination);
+    return ctx;
   }
 
-  // Attach to every gesture type so iOS re-unlock happens automatically
-  ['touchstart', 'mousedown', 'keydown'].forEach(function(ev) {
-    document.addEventListener(ev, _unlock, { passive: true });
+  function startHeartbeat() {
+    if (heartbeatTimer) return;
+    heartbeatTimer = setInterval(function() {
+      if (!ctx || !master || ctx.state !== 'running') return;
+      try {
+        var buf = ctx.createBuffer(1, 1, ctx.sampleRate);
+        var src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(master);
+        src.start(0);
+      } catch(e) {}
+    }, 25000);
+  }
+
+  function decodeAll(cb) {
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(function() {});
+    }
+    var names = Object.keys(SOUNDS);
+    var pending = 0;
+    names.forEach(function(name) {
+      if (buffers[name]) return;
+      var ab = fetched[name];
+      if (!ab) return;
+      pending++;
+      ctx.decodeAudioData(ab.slice(0),
+        function(buf) { buffers[name] = buf; pending--; if (pending === 0 && cb) cb(); },
+        function()    { pending--;            if (pending === 0 && cb) cb(); }
+      );
+    });
+    if (pending === 0 && cb) cb();
+  }
+
+  function unlockNow() {
+    if (unlocked) return;
+    unlocked = true;
+    ensureContext();
+    decodeAll(function() {
+      // iOS warm-up blip — kicks context into "running" state
+      if (ctx && master && ctx.state === 'running') {
+        try {
+          var osc = ctx.createOscillator();
+          var g   = ctx.createGain();
+          g.gain.value = 0.0001;
+          osc.connect(g);
+          g.connect(master);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.01);
+        } catch(e) {}
+      }
+      startHeartbeat();
+    });
+    // Also always resume in case context was suspended
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(function() {});
+  }
+
+  function playWebAudio(name) {
+    if (!ctx || !master || !buffers[name]) return false;
+    try {
+      var src = ctx.createBufferSource();
+      src.buffer = buffers[name];
+      var g = ctx.createGain();
+      g.gain.value = SOUNDS[name] || 1;
+      src.connect(g);
+      g.connect(master);
+      src.start(0);
+      return true;
+    } catch(e) { return false; }
+  }
+
+  // Resume context when page comes back into focus
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(function() {});
+    }
   });
 
-  // Expose globally
+  // Fetch immediately — no gesture required
+  fetchAll();
+
+  // Unlock on first gesture (whichever fires first)
+  var _gestureEvents = ['touchstart', 'pointerdown', 'mousedown', 'keydown'];
+  _gestureEvents.forEach(function(ev) {
+    document.addEventListener(ev, function _prime() {
+      unlockNow();
+      _gestureEvents.forEach(function(e2) {
+        document.removeEventListener(e2, _prime, true);
+      });
+    }, { capture: true, passive: true });
+  });
+
+  // ── Public API ──────────────────────────────────────────────────────
   window.sfxPlay = function(name) {
-    if (!_ctx || !_bufs[name]) return;
-    try {
-      var src = _ctx.createBufferSource();
-      src.buffer = _bufs[name];
-      src.connect(_ctx.destination);
-      src.start(0);
-    } catch(e) {}
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(function() {});
+    var ok = playWebAudio(name);
+    if (!ok) playFromPool(name);
   };
 
-  // Eager init on desktop (no-op if AudioContext needs gesture on iOS)
-  _unlock();
 })();
 
 // =====================================================================
