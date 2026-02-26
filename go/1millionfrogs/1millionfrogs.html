@@ -633,8 +633,19 @@ bgImg.onload = () => { _bgCacheW = 0; };
 bgImg.src = BG_SRC;
 
 /* =========================================================
-   MUSIC
+   MUSIC + SFX  (Web Audio API + pooled <audio> fallback)
 ========================================================= */
+// Mirrors the system used across go/index.html and go/game/boom.html.
+//
+// Key points:
+//  • MP3s are fetched immediately on page load — no gesture needed for fetch()
+//  • AudioContext + decode happen on first gesture so buffers are always
+//    ready before the first sound needs to fire
+//  • Pooled <audio> fallback fires instantly if Web Audio isn't decoded yet
+//  • Silent heartbeat every 25 s keeps iOS from suspending the context
+//  • visibilitychange no longer pauses music — lock-screen controls handle that
+
+// ── Music (HTMLAudio — simpler for a single looping track) ─────────────
 const music = new Audio(MUSIC_SRC);
 music.loop = true;
 music.preload = "auto";
@@ -643,12 +654,8 @@ music.volume = 0.9;
 let musicOn = true;
 let musicUnlocked = false;
 
-function stopMusic(){ try{ music.pause(); music.currentTime = 0; }catch{} }
-window.addEventListener("pagehide", stopMusic);
-window.addEventListener("beforeunload", stopMusic);
-document.addEventListener("visibilitychange", () => { if(document.hidden) stopMusic(); });
-
 function updateMusicButton(){ musicBtn.textContent = musicOn ? "music: on" : "music: off"; }
+
 async function tryStartMusic(){
   if(!musicOn) return;
   try{
@@ -658,70 +665,7 @@ async function tryStartMusic(){
   }catch{}
 }
 
-/* =========================================================
-   SFX (WebAudio)
-========================================================= */
-let sfxOn = true;
-let audioCtx = null;
-let sfxBuffers = { die: null, gold: null };
-let sfxReady = false;
-
-function getAudioCtx(){
-  if(!audioCtx){
-    const AC = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AC();
-  }
-  return audioCtx;
-}
-
-async function loadSfxBuffer(url){
-  const actx = getAudioCtx();
-  const res = await fetch(url);
-  const arr = await res.arrayBuffer();
-  return await actx.decodeAudioData(arr);
-}
-
-async function initSfx(){
-  if(sfxReady) return;
-  try{
-    const [dieBuf, goldBuf] = await Promise.all([
-      loadSfxBuffer(SFX_DIE_SRC),
-      loadSfxBuffer(SFX_GOLD_SRC)
-    ]);
-    sfxBuffers.die = dieBuf;
-    sfxBuffers.gold = goldBuf;
-    sfxReady = true;
-  }catch(e){ console.warn("SFX init failed:", e); }
-}
-
-async function unlockAudio(){
-  const actx = getAudioCtx();
-  if(actx.state !== "running") try{ await actx.resume(); }catch{}
-  await initSfx();
-}
-
-function playSfx(name, vol = 1){
-  if(!sfxOn) return;
-  const actx = getAudioCtx();
-  // try to resume if suspended
-  if(actx.state === "suspended") try{ actx.resume(); }catch{}
-  const buf = sfxBuffers[name];
-  if(!buf) return;
-  try{
-    const src = actx.createBufferSource();
-    src.buffer = buf;
-    const gain = actx.createGain();
-    gain.gain.value = vol;
-    src.connect(gain);
-    gain.connect(actx.destination);
-    src.start(0);
-  }catch{}
-}
-
-const SFX = {
-  die(){ playSfx("die", 0.95); },
-  gold(){ playSfx("gold", 0.85); },
-};
+function stopMusic(){ try{ music.pause(); music.currentTime = 0; }catch{} }
 
 function setMusic(on){
   musicOn = !!on;
@@ -730,12 +674,156 @@ function setMusic(on){
   else tryStartMusic();
 }
 
+// Sync the music-off button label when returning to the tab
+document.addEventListener("visibilitychange", () => {
+  if(!document.hidden) updateMusicButton();
+});
+
+// ── SFX engine ─────────────────────────────────────────────────────────
+let sfxOn = true;
+
+const _sfxPaths   = { die: SFX_DIE_SRC, gold: SFX_GOLD_SRC };
+const _sfxVolumes = { die: 0.95, gold: 0.85 };
+const _sfxPoolSz  = { die: 4, gold: 4 };
+
+let _sfxCtx            = null;
+let _sfxMaster         = null;
+let _sfxUnlocked       = false;
+let _sfxHeartbeat      = null;
+const _sfxFetched      = {};   // name -> ArrayBuffer
+const _sfxBuffers      = {};   // name -> AudioBuffer
+const _sfxPools        = {};   // name -> { els: [], i: 0 }
+
+// Pre-build <audio> pools immediately so iOS starts buffering straight away
+Object.keys(_sfxPaths).forEach(function(name){
+  const n = _sfxPoolSz[name] || 3;
+  const els = [];
+  for(let i = 0; i < n; i++){
+    const a = new Audio(_sfxPaths[name]);
+    a.preload = "auto";
+    a.volume  = _sfxVolumes[name] || 1;
+    els.push(a);
+  }
+  _sfxPools[name] = { els, i: 0 };
+});
+
+function _sfxPlayFromPool(name){
+  const pool = _sfxPools[name];
+  if(!pool) return;
+  const a = pool.els[pool.i];
+  pool.i = (pool.i + 1) % pool.els.length;
+  try{ a.pause(); a.currentTime = 0; const p = a.play(); if(p && typeof p.catch==="function") p.catch(()=>{}); }catch{}
+}
+
+// Fetch all SFX immediately — no gesture required
+(function _sfxFetchAll(){
+  Object.keys(_sfxPaths).forEach(function(name){
+    fetch(_sfxPaths[name], { cache: "force-cache" })
+      .then(r => r.arrayBuffer())
+      .then(ab => { _sfxFetched[name] = ab; })
+      .catch(() => {});
+  });
+})();
+
+function _sfxEnsureContext(){
+  if(_sfxCtx) return _sfxCtx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return null;
+  _sfxCtx = new AC();
+  _sfxMaster = _sfxCtx.createGain();
+  _sfxMaster.gain.value = 1;
+  _sfxMaster.connect(_sfxCtx.destination);
+  return _sfxCtx;
+}
+
+function _sfxStartHeartbeat(){
+  if(_sfxHeartbeat) return;
+  _sfxHeartbeat = setInterval(function(){
+    if(!_sfxCtx || !_sfxMaster || _sfxCtx.state !== "running") return;
+    try{
+      const buf = _sfxCtx.createBuffer(1, 1, _sfxCtx.sampleRate);
+      const src = _sfxCtx.createBufferSource();
+      src.buffer = buf; src.connect(_sfxMaster); src.start(0);
+    }catch{}
+  }, 25000);
+}
+
+function _sfxDecodeAll(cb){
+  if(!_sfxCtx) return;
+  if(_sfxCtx.state === "suspended") _sfxCtx.resume().catch(()=>{});
+  const names = Object.keys(_sfxPaths);
+  let pending = 0;
+  names.forEach(function(name){
+    if(_sfxBuffers[name]) return;
+    const ab = _sfxFetched[name];
+    if(!ab) return;
+    pending++;
+    _sfxCtx.decodeAudioData(ab.slice(0),
+      function(buf){ _sfxBuffers[name] = buf; pending--; if(pending===0 && cb) cb(); },
+      function(){                              pending--; if(pending===0 && cb) cb(); }
+    );
+  });
+  if(pending === 0 && cb) cb();
+}
+
+async function unlockAudio(){
+  // kept async for back-compat with callers that await it
+  if(_sfxUnlocked) return;
+  _sfxUnlocked = true;
+  _sfxEnsureContext();
+  _sfxDecodeAll(function(){
+    if(_sfxCtx && _sfxMaster && _sfxCtx.state === "running"){
+      try{
+        const osc = _sfxCtx.createOscillator();
+        const g   = _sfxCtx.createGain();
+        g.gain.value = 0.0001;
+        osc.connect(g); g.connect(_sfxMaster);
+        osc.start(); osc.stop(_sfxCtx.currentTime + 0.01);
+      }catch{}
+    }
+    _sfxStartHeartbeat();
+  });
+  if(_sfxCtx && _sfxCtx.state === "suspended") _sfxCtx.resume().catch(()=>{});
+}
+
+// kept for back-compat — unlockAudio now handles everything
+async function initSfx(){ await unlockAudio(); }
+
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && _sfxCtx && _sfxCtx.state === "suspended")
+    _sfxCtx.resume().catch(()=>{});
+});
+
+function playSfx(name, vol = 1){
+  if(!sfxOn) return;
+  if(_sfxCtx && _sfxCtx.state === "suspended") _sfxCtx.resume().catch(()=>{});
+  if(_sfxCtx && _sfxMaster && _sfxBuffers[name]){
+    try{
+      const src = _sfxCtx.createBufferSource();
+      src.buffer = _sfxBuffers[name];
+      const gain = _sfxCtx.createGain();
+      gain.gain.value = vol;
+      src.connect(gain); gain.connect(_sfxMaster); src.start(0);
+      return;
+    }catch{}
+  }
+  // fallback to pool if Web Audio not ready yet
+  _sfxPlayFromPool(name);
+}
+
+const SFX = {
+  die(){  playSfx("die",  0.95); },
+  gold(){ playSfx("gold", 0.85); },
+};
+
+// Unlock on first gesture (whichever fires first)
+;(function(){
+  const evts = ["pointerdown", "touchstart", "keydown"];
+  function _prime(){ unlockAudio(); evts.forEach(e => window.removeEventListener(e, _prime, true)); }
+  evts.forEach(e => window.addEventListener(e, _prime, { capture:true, passive:true }));
+})();
+
 musicBtn.addEventListener("pointerdown", e => { e.preventDefault(); unlockAudio(); setMusic(!musicOn); });
-window.addEventListener("pointerdown", unlockAudio, { capture:true });
-window.addEventListener("touchstart", unlockAudio, { capture:true, passive:true });
-window.addEventListener("keydown", unlockAudio, { capture:true });
-startBtn.addEventListener("pointerdown", unlockAudio, { capture:true });
-startBtn.addEventListener("touchstart", unlockAudio, { capture:true, passive:true });
 updateMusicButton();
 
 /* =========================================================
