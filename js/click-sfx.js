@@ -23,11 +23,12 @@ const clickSFX = (() => {
   const base = getBase();
 
   const paths = {
-    click:   base + 'go/sounds/click.mp3',
-    correct: base + 'go/sounds/correct.mp3',
+    click:    base + 'go/sounds/click.mp3',
+    correct:  base + 'go/sounds/correct.mp3',
+    password: base + 'go/sounds/password.mp3',
   };
-  const volumes = { click: 0.55, correct: 0.75 };
-  const POOL_SIZES = { click: 6, correct: 3 };
+  const volumes = { click: 0.55, correct: 0.75, password: 0.75 };
+  const POOL_SIZES = { click: 6, correct: 3, password: 4 };
 
   /* ── State ──────────────────────────────────────────────────────── */
   let ctx             = null;
@@ -179,8 +180,9 @@ const clickSFX = (() => {
   window.addEventListener('keydown',     prime, { capture: true, once: true });
 
   return {
-    play:         ()  => play('click'),
-    playCorrect:  ()  => play('correct'),
+    play:          ()  => play('click'),
+    playCorrect:   ()  => play('correct'),
+    playPassword:  ()  => play('password'),
     unlockNow,
   };
 })();

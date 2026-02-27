@@ -24,14 +24,175 @@
     </p>
 
     <img src="../images/projects/minecraft/01.jpg" alt="Minecraft project image 1" loading="lazy">
-    <div class="pw-wrap" style="position:relative;margin-bottom:40px;">
-      <img src="../images/projects/minecraft/02.jpg" alt="Minecraft project image 2" loading="lazy" style="margin-bottom:0;">
-      <span class="pw-hint" style="position:absolute;bottom:14px;right:16px;font-size:clamp(13px,2.2vw,16px);color:rgba(255,255,255,0.06);transition:color 0.5s ease;pointer-events:auto;letter-spacing:0.06em;font-family:'RuneScape UF',Arial,sans-serif;cursor:default;">password: onway</span>
+    <img src="../images/projects/minecraft/02.jpg" alt="Minecraft project image 2" loading="lazy">
+
+    <!-- ⛏ Mine the block to reveal the password -->
+    <div class="mc-section">
+      <div class="mc-mine-wrap" id="mcMineWrap">
+        <div class="mc-ore-block" id="mcOreBlock" role="button" tabindex="0" aria-label="Mine this block">
+          <span class="o" style="top:12%;left:18%"></span>
+          <span class="o" style="top:12%;left:30%"></span>
+          <span class="o" style="top:22%;left:18%"></span>
+          <span class="o" style="top:54%;left:58%"></span>
+          <span class="o" style="top:64%;left:58%"></span>
+          <span class="o" style="top:54%;left:70%"></span>
+          <span class="o" style="top:76%;left:36%"></span>
+          <div class="mc-dmg" id="mcDmg" data-hits="0"></div>
+        </div>
+        <div class="mc-dur-bar"><div class="mc-dur-fill" id="mcDurFill"></div></div>
+      </div>
+
+      <div class="mc-sign-reveal" id="mcSignReveal" aria-hidden="true">
+        <div class="mc-sign-row">
+          <div class="mc-sign-col">
+            <div class="mc-sign-board">
+              <p class="mc-sign-line mc-sign-key">password</p>
+              <p class="mc-sign-line mc-sign-pw">onway</p>
+            </div>
+            <div class="mc-sign-post-wrap"><div class="mc-sign-post"></div></div>
+          </div>
+          <a class="mc-go-link" href="../go/index.html">go →</a>
+        </div>
+      </div>
     </div>
+
     <style>
-      .pw-wrap:hover .pw-hint{color:rgba(255,255,255,0.28)!important;}
-      @media (hover: none){.pw-hint{-webkit-tap-highlight-color:transparent;}.pw-wrap:active .pw-hint,.pw-hint:active{color:rgba(255,255,255,0.28)!important;}}
+      .mc-section { text-align:center; margin-bottom:40px; position:relative; min-height:200px; }
+      .mc-mine-wrap {
+        position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+        transition:opacity 0.3s ease;
+      }
+      .mc-mine-wrap.gone { opacity:0; pointer-events:none; }
+
+      /* ─── ore block ─── */
+      .mc-ore-block {
+        display:inline-block; position:relative;
+        width:80px; height:80px;
+        background:#767676;
+        box-shadow: inset -4px -4px 0 0 #4a4a4a, inset 4px 4px 0 0 #9e9e9e;
+        border:2px solid #2a2a2a;
+        cursor:crosshair; user-select:none;
+        image-rendering:pixelated;
+        transition:transform 0.07s;
+      }
+      .mc-ore-block:active { transform:scale(0.93); }
+      .mc-ore-block .o {
+        position:absolute; width:10px; height:10px;
+        background:#5de8e4; border:1px solid #28b4b0; display:block;
+        image-rendering:pixelated;
+      }
+
+      /* ─── crack overlay ─── */
+      .mc-dmg {
+        position:absolute; inset:0; pointer-events:none;
+        background:rgba(0,0,0,0); transition:background 0.12s;
+      }
+      .mc-dmg[data-hits="1"] { background:rgba(0,0,0,0.12); }
+      .mc-dmg[data-hits="2"] { background:rgba(0,0,0,0.24); }
+      .mc-dmg[data-hits="3"] { background:rgba(0,0,0,0.38); }
+      .mc-dmg[data-hits="4"] { background:rgba(0,0,0,0.54); }
+      .mc-dmg[data-hits="5"] { background:rgba(0,0,0,0.70); }
+
+      /* ─── durability bar ─── */
+      .mc-dur-bar {
+        width:80px; height:6px; background:#111;
+        border:1px solid #000; margin:8px auto 6px;
+      }
+      .mc-dur-fill {
+        height:100%; width:100%; background:#5bff5b;
+        transition:width 0.18s, background 0.25s;
+      }
+      /* ─── block-break animation ─── */
+      @keyframes mc-break {
+        0%   { transform:scale(1);    opacity:1; }
+        40%  { transform:scale(1.18); opacity:0.6; }
+        100% { transform:scale(0);    opacity:0; }
+      }
+      .mc-ore-block.breaking { animation:mc-break 0.35s ease forwards; }
+
+      /* ─── shake on hit ─── */
+      @keyframes mc-shake {
+        0%,100% { transform:translate(0,0); }
+        30%     { transform:translate(-3px,1px); }
+        70%     { transform:translate(3px,-1px); }
+      }
+      .mc-ore-block.shaking { animation:mc-shake 0.13s ease; }
+
+      /* ─── sign reveal ─── */
+      .mc-sign-reveal {
+        position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+        opacity:0; pointer-events:none; transition:opacity 0.5s ease;
+      }
+      .mc-sign-reveal.visible { opacity:1; pointer-events:auto; }
+      .mc-sign-board {
+        display:inline-block;
+        background:#b08040;
+        border:3px solid #6b4e20;
+        padding:14px 28px 12px;
+        box-shadow: inset -3px -3px 0 #6b4e20, inset 3px 3px 0 #d4a860;
+        min-width:160px;
+      }
+      .mc-sign-line { margin:0; letter-spacing:0.08em; line-height:1.5; }
+      .mc-sign-key  { font-size:11px; color:#4a2e00; text-transform:uppercase; margin-bottom:4px; }
+      .mc-sign-pw   { font-size:22px; color:#2a1400; font-weight:bold; letter-spacing:0.14em; }
+      .mc-sign-row { display:inline-flex; align-items:center; gap:18px; }
+      .mc-sign-col { display:flex; flex-direction:column; align-items:center; }
+      .mc-go-link {
+        font-size:26px; color:#2a1400; text-decoration:none;
+        letter-spacing:0.1em; opacity:0.75;
+        transition:opacity 0.2s, transform 0.2s, color 0.2s;
+        display:inline-block;
+        padding:16px 20px;
+      }
+      @media (hover:hover) {
+        .mc-go-link:hover { opacity:1; color:#6b4e20; transform:translateX(4px); }
+      }
+      .mc-sign-post-wrap { display:flex; justify-content:center; }
+      .mc-sign-post {
+        width:16px; height:30px; background:#7a5830;
+        border-left:2px solid #5a3e1a; border-right:2px solid #9a7040;
+      }
     </style>
+
+    <script>
+      (function(){
+        var MAX = 5, hits = 0;
+        var ore  = document.getElementById('mcOreBlock');
+        var dmg  = document.getElementById('mcDmg');
+        var fill = document.getElementById('mcDurFill');
+        var wrap = document.getElementById('mcMineWrap');
+        var sign = document.getElementById('mcSignReveal');
+
+        function mine(){
+          if(hits >= MAX) return;
+          hits++;
+          dmg.dataset.hits = hits;
+
+          var pct = (MAX - hits) / MAX * 100;
+          fill.style.width = pct + '%';
+          fill.style.background = pct > 60 ? '#5bff5b' : pct > 30 ? '#ffdd00' : '#ff4444';
+
+          clickSFX.playPassword();
+
+          ore.classList.add('shaking');
+          setTimeout(function(){ ore.classList.remove('shaking'); }, 140);
+
+          if(hits >= MAX){
+            ore.classList.add('breaking');
+            wrap.classList.add('gone');
+            setTimeout(function(){
+              sign.classList.add('visible');
+              clickSFX.playCorrect();
+            }, 350);
+          }
+        }
+
+        ore.addEventListener('click', mine);
+        ore.addEventListener('keydown', function(e){
+          if(e.key === 'Enter' || e.key === ' ') mine();
+        });
+      })();
+    </script>
 
   </section>
 
