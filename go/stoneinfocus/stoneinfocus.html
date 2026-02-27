@@ -291,6 +291,32 @@ video {
   margin: 16px 0 20px;
   line-height: 1.4;
 }
+.popup-link {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  opacity: 0.85;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+#popupDownload {
+  display: block;
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 0.95rem;
+  text-transform: lowercase;
+  padding: 10px;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  transition: background 0.2s, border-color 0.2s;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+  margin-top: 18px;
+}
+@media (hover: hover) {
+  #popupDownload:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.65); }
+}
 #popupClose {
   display: block;
   width: 100%;
@@ -335,7 +361,7 @@ video {
     <div class="overlay-text" id="progressText"></div>
     <div id="progressBarWrap"><div id="progressBarFill"></div></div>
     <div id="modDownload">
-      <a class="mod-download-btn" href="stoneinfocus-mod.jar" download>⬇ download the mod</a>
+      <button class="mod-download-btn" id="modDownloadBtn">⬇ download the mod</button>
     </div>
   </div>
 
@@ -351,10 +377,10 @@ video {
     <hr class="popup-divider" />
     <p class="popup-desc">"takes ten minutes to mine a stone block. completely pointless, but somewhat meditative. use at own risk."</p>
     <p class="popup-section-title">how to install</p>
-    <p class="popup-step">install fabric loader for minecraft [version tbd]</p>
-    <p class="popup-step">move stoneinfocus-mod.jar into your mods folder</p>
+    <p class="popup-step">install <a href="https://fabricmc.net/use/installer/" target="_blank" rel="noopener" class="popup-link">fabric loader</a> for minecraft 1.21.11</p>
+    <p class="popup-step">move stoneinfocus-1.0.0.jar into your mods folder</p>
     <p class="popup-step">launch minecraft with the fabric profile</p>
-    <p class="popup-note">mod coming soon</p>
+    <button id="popupDownload">⬇ download stoneinfocus-1.0.0.jar</button>
     <button id="popupClose">close</button>
   </div>
 </div>
@@ -630,33 +656,38 @@ document.addEventListener("visibilitychange", () => {
 
 // ── MOD INSTALL POPUP ──
 
-// Stop mining events from propagating through the popup and download button
-const modDownloadBtn = document.querySelector('.mod-download-btn');
+const modDownloadBtn = document.getElementById('modDownloadBtn');
+const popupDownload  = document.getElementById('popupDownload');
 
+// Stop mining events from bubbling through the popup overlay and its buttons
 modPopupOverlay.addEventListener('mousedown',  (e) => e.stopPropagation());
 modPopupOverlay.addEventListener('mouseup',    (e) => e.stopPropagation());
 modPopupOverlay.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
 modPopupOverlay.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
 
+// Outer "download the mod" button — opens the popup
 modDownloadBtn.addEventListener('mousedown',  (e) => e.stopPropagation());
 modDownloadBtn.addEventListener('mouseup',    (e) => e.stopPropagation());
 modDownloadBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
 modDownloadBtn.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
+modDownloadBtn.addEventListener('click', () => modPopupOverlay.classList.add('visible'));
 
-modDownloadBtn.addEventListener('click', (e) => {
-  e.preventDefault();
-  // TODO: re-enable download once stoneinfocus-mod.jar exists
-  // const a = document.createElement('a');
-  // a.href     = 'stoneinfocus-mod.jar';
-  // a.download = 'stoneinfocus-mod.jar';
-  // document.body.appendChild(a);
-  // a.click();
-  // document.body.removeChild(a);
-  modPopupOverlay.classList.add('visible');
+// Inner popup download button — triggers the actual file download
+popupDownload.addEventListener('mousedown',  (e) => e.stopPropagation());
+popupDownload.addEventListener('mouseup',    (e) => e.stopPropagation());
+popupDownload.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+popupDownload.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
+popupDownload.addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href     = 'https://github.com/iggymacdonald/stoneinfocus/releases/download/v1.0.0/stoneinfocus-1.0.0.jar';
+  a.download = 'stoneinfocus-1.0.0.jar';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 });
 
-// Close popup: button click or backdrop click
-popupClose.addEventListener('click',   () => modPopupOverlay.classList.remove('visible'));
+// Close popup: close button or backdrop click
+popupClose.addEventListener('click', () => modPopupOverlay.classList.remove('visible'));
 modPopupOverlay.addEventListener('click', (e) => {
   if (e.target === modPopupOverlay) modPopupOverlay.classList.remove('visible');
 });
