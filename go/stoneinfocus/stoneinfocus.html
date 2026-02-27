@@ -13,20 +13,33 @@
        url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
-html, body {
-  margin: 0;
-  padding: 0;
+/* ── PAGE FADE IN ── */
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+html {
+  margin: 0; padding: 0;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body {
+  margin: 0; padding: 0;
   width: 100%;
   height: 100%;
-  background: white;
+  background: #000;
   font-family: "RuneScape UF", Arial, sans-serif;
   -webkit-user-select: none;
   user-select: none;
   cursor: url("../../images/cursor/cursor.png"), auto;
   overflow: hidden;
+  animation: page-fade-in 0.7s ease both;
 }
 
-/* BACK BUTTON */
+/* ── BACK BUTTON ── */
 .back-button {
   position: fixed;
   top: 8px;
@@ -34,7 +47,7 @@ html, body {
   font-size: 28px;
   background: transparent;
   border: none;
-  color: #2d93ea;
+  color: #fff;
   font-family: "RuneScape UF", Arial, sans-serif;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
@@ -42,69 +55,72 @@ html, body {
   z-index: 50;
 }
 
-/* VIDEO CONTAINER */
+/* ── VIDEO CONTAINER ── */
 #video-container {
   position: relative;
   width: 100%;
   height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end; /* bottom aligned */
-  background: white;
+  background: #000;
   overflow: hidden;
 }
 
-/* VIDEO */
-video {
+/* Hold glow — white inner pulse while mining */
+#video-container::after {
+  content: '';
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  height: 100%;
-  object-fit: cover; /* mobile: cover entire area */
-  max-height: 100%;
-  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+#video-container.mining::after {
+  animation: hold-pulse 2.5s ease-in-out infinite;
+}
+@keyframes hold-pulse {
+  0%,100% { box-shadow: inset 0 0 20px 0px rgba(255,255,255,0.0); }
+  50%      { box-shadow: inset 0 0 60px 6px rgba(255,255,255,0.12); }
 }
 
-/* POSTER IMAGE (always present, fades out when first real frame renders) */
-#poster {
+/* ── VIDEO ── */
+video {
+  display: block; /* removes inline descender gap */
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0; left: 50%;
+  transform: translateX(-50%) scale(1.01);
+  transform-origin: 50% 0%; /* anchor scale to top — pushes black bar down and out */
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 3; /* above video until we fade it */
-  pointer-events: none;
+  z-index: 2;
+}
 
+/* ── POSTER ── */
+#poster {
+  display: block; /* removes inline descender gap */
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%) scale(1.01);
+  transform-origin: 50% 0%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 3;
+  pointer-events: none;
   opacity: 1;
   transition: opacity 220ms ease;
   will-change: opacity;
 }
-#poster.is-hidden {
-  opacity: 0;
-}
+#poster.is-hidden { opacity: 0; }
 
-/* DESKTOP: preserve aspect ratio */
+/* Desktop: preserve aspect ratio */
 @media (min-width: 769px) {
-  video {
-    object-fit: contain;
-    width: auto;
-    height: 100%;
-  }
-  #poster {
-    object-fit: contain;
-    width: auto;
-    height: 100%;
-  }
+  video   { object-fit: contain; width: auto; }
+  #poster { object-fit: contain; width: auto; }
 }
 
-/* OVERLAY */
+/* ── MAIN OVERLAY ── */
 #overlay {
   position: absolute;
-  top: 50%;
+  top: 55%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
@@ -115,17 +131,185 @@ video {
 
 .overlay-text {
   filter: blur(0.5px);
-  text-shadow:
-    1px 1px 0 rgba(255,255,255,0.12),
-   -1px -1px 0 rgba(255,255,255,0.06);
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.12), -1px -1px 0 rgba(255,255,255,0.06);
   word-wrap: break-word;
   white-space: pre-line;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
   color: #fff;
 }
 
-#overlay .title { font-size: 1.5rem; margin-bottom: 8px; line-height: 1.35; }
-#overlay .progress { font-size: 1rem; opacity: 0; line-height: 1.4; }
+#overlayTitle {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+
+#progressText {
+  font-size: 1.05rem;
+  opacity: 0;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+/* ── PROGRESS BAR — Minecraft style ── */
+#progressBarWrap {
+  width: min(260px, 72vw);
+  height: 6px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.22);
+  margin: 12px auto 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  /* No border-radius — sharp pixelated edges */
+}
+#progressBarWrap.visible { opacity: 1; }
+#progressBarFill {
+  height: 100%;
+  width: 0%;
+  background: rgba(255,255,255,0.82);
+  transition: width 0.7s linear;
+}
+
+/* ── MOD DOWNLOAD BUTTON ── */
+#modDownload {
+  margin-top: 22px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+#modDownload.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.mod-download-btn {
+  display: inline-block;
+  color: #fff;
+  text-decoration: none;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 9px 20px;
+  opacity: 0.7;
+  transition: opacity 0.2s, border-color 0.2s;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+@media (hover: hover) {
+  .mod-download-btn:hover { opacity: 1; border-color: rgba(255,255,255,0.7); }
+}
+
+/* ── FLASH OVERLAY ── */
+#flashOverlay {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 20;
+}
+#flashOverlay.flash {
+  animation: flash-anim 1s ease forwards;
+}
+@keyframes flash-anim {
+  0%   { opacity: 0; }
+  7%   { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+
+/* ── MOD INSTALL POPUP ── */
+#modPopupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+#modPopupOverlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+#modPopup {
+  background: #080808;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 26px 28px 22px;
+  max-width: 380px;
+  width: 90%;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  color: #fff;
+  text-align: left;
+}
+#modPopup h2 {
+  font-size: 1.25rem;
+  margin: 0 0 14px;
+  font-weight: normal;
+  letter-spacing: 0.03em;
+  text-transform: lowercase;
+}
+.popup-divider {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  margin: 0 0 16px;
+}
+.popup-desc {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  opacity: 0.65;
+  margin: 0 0 18px;
+  font-style: italic;
+}
+.popup-section-title {
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  opacity: 0.4;
+  margin: 0 0 10px;
+}
+.popup-step {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  opacity: 0.8;
+  margin: 0 0 4px;
+  padding-left: 1.1em;
+  position: relative;
+}
+.popup-step::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  opacity: 0.45;
+}
+.popup-note {
+  font-size: 0.8rem;
+  opacity: 0.35;
+  margin: 16px 0 20px;
+  line-height: 1.4;
+}
+#popupClose {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 0.95rem;
+  text-transform: lowercase;
+  padding: 10px;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  transition: border-color 0.2s, opacity 0.2s;
+  opacity: 0.65;
+  letter-spacing: 0.04em;
+}
+@media (hover: hover) {
+  #popupClose:hover { opacity: 1; border-color: rgba(255,255,255,0.55); }
+}
+
 </style>
 </head>
 
@@ -134,10 +318,8 @@ video {
 
 <div id="video-container">
 
-  <!-- Poster image (screenshot of first frame) -->
   <img id="poster" src="stoneinfocus.jpg" alt="First frame" />
 
-  <!-- Video element -->
   <video
     id="video"
     preload="auto"
@@ -147,193 +329,209 @@ video {
     controlslist="nodownload noplaybackrate nofullscreen"
   ></video>
 
-  <!-- Overlay -->
+  <!-- Main overlay -->
   <div id="overlay">
-    <div class="title overlay-text" id="overlayTitle">click/tap & hold to start mining</div>
-    <div class="progress overlay-text" id="progressText">0% COMPLETE</div>
+    <div class="overlay-text" id="overlayTitle">hold to mine</div>
+    <div class="overlay-text" id="progressText"></div>
+    <div id="progressBarWrap"><div id="progressBarFill"></div></div>
+    <div id="modDownload">
+      <a class="mod-download-btn" href="stoneinfocus-mod.jar" download>⬇ download the mod</a>
+    </div>
   </div>
 
 </div>
 
+<!-- Flash overlay -->
+<div id="flashOverlay"></div>
+
+<!-- Mod install popup -->
+<div id="modPopupOverlay">
+  <div id="modPopup">
+    <h2>stone in focus mod</h2>
+    <hr class="popup-divider" />
+    <p class="popup-desc">"takes ten minutes to mine a stone block. completely pointless, but somewhat meditative. use at own risk."</p>
+    <p class="popup-section-title">how to install</p>
+    <p class="popup-step">install fabric loader for minecraft [version tbd]</p>
+    <p class="popup-step">move stoneinfocus-mod.jar into your mods folder</p>
+    <p class="popup-step">launch minecraft with the fabric profile</p>
+    <p class="popup-note">mod coming soon</p>
+    <button id="popupClose">close</button>
+  </div>
+</div>
+
+<script src="../../js/click-sfx.js"></script>
 <script>
-const video = document.getElementById("video");
-const poster = document.getElementById("poster");
-const overlayTitle = document.getElementById("overlayTitle");
-const progressText = document.getElementById("progressText");
+const video           = document.getElementById("video");
+const poster          = document.getElementById("poster");
+const overlayTitle    = document.getElementById("overlayTitle");
+const progressText    = document.getElementById("progressText");
+const progressBarWrap = document.getElementById("progressBarWrap");
+const progressBarFill = document.getElementById("progressBarFill");
+const flashOverlay    = document.getElementById("flashOverlay");
+const videoContainer  = document.getElementById("video-container");
+const modDownload     = document.getElementById("modDownload");
+const modPopupOverlay = document.getElementById("modPopupOverlay");
+const popupClose      = document.getElementById("popupClose");
 
-let holding = false;
-let finished = false;
-
-// A "start attempt" token. Every time we start/stop, increment it.
-// Any async callbacks (play promises, frame callbacks) check token
-// to ensure they belong to the latest attempt.
-let startToken = 0;
-
-// Track whether we've actually shown a real video frame for this start attempt.
+let holding         = false;
+let finished        = false;
+let startToken      = 0;
 let firstFrameShown = false;
-
-// iOS detection (simple + practical)
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-function showPoster() {
-  poster.classList.remove("is-hidden");
+// ── Wake lock (prevent screen sleep during hold) ──
+let wakeLock = null;
+async function acquireWakeLock() {
+  if ('wakeLock' in navigator) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (_) {}
+  }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
 }
 
-function hidePosterSmooth() {
-  poster.classList.add("is-hidden");
+// ── Back button: align to top-left of actual video on desktop ──
+const backBtn = document.querySelector('.back-button');
+function positionBackBtn() {
+  if (window.innerWidth < 769) { backBtn.style.left = '8px'; return; }
+  const rect = poster.getBoundingClientRect();
+  if (rect.width > 0) backBtn.style.left = Math.round(rect.left + 8) + 'px';
 }
+poster.addEventListener('load', positionBackBtn);
+video.addEventListener('loadedmetadata', positionBackBtn);
+window.addEventListener('resize', positionBackBtn);
+positionBackBtn();
+
+// ── Helpers ──
+function showPoster() { poster.classList.remove("is-hidden"); }
+function hidePosterSmooth() { poster.classList.add("is-hidden"); }
 
 function resetUIToStart() {
-  overlayTitle.textContent = "click/tap & hold to start mining";
-  progressText.textContent = "0% COMPLETE";
+  overlayTitle.textContent   = "hold to mine";
   overlayTitle.style.opacity = "1";
+  progressText.textContent   = "";
   progressText.style.opacity = "0";
+
+  // Instant bar reset (no transition flash)
+  progressBarFill.style.transition = 'none';
+  progressBarFill.style.width = '0%';
+  void progressBarFill.offsetWidth;
+  progressBarFill.style.transition = '';
+
+  progressBarWrap.classList.remove("visible");
+  videoContainer.classList.remove("mining");
+  modDownload.classList.remove("visible");
+  releaseWakeLock();
 }
 
-// Ensure poster shows immediately on all devices
+// ── Completion reveal — all content fades in simultaneously ──
+function showCompletionUI() {
+  // Fade out current mining title immediately
+  overlayTitle.style.opacity = "0";
+  // progressText already hidden at this point (opacity 0'd at completion trigger)
+
+  // After brief pause (lets flash peak), show everything at once
+  setTimeout(() => {
+    overlayTitle.textContent   = "you have generated:\n0.0000000000000013 bitcoin";
+    progressText.textContent   = "tap/click & hold again to keep mining";
+    overlayTitle.style.opacity = "1";
+    progressText.style.opacity = "1";
+    modDownload.classList.add("visible");
+  }, 400);
+}
+
+// ── Poster / first-frame logic ──
 showPoster();
 video.pause();
 video.currentTime = 0;
 
-// --- BULLETPROOF: wait for FIRST RENDERED FRAME ---
-// Uses requestVideoFrameCallback where available.
-// Falls back to "playing" + "timeupdate" + painted-frame heuristics.
 function waitForFirstRenderedFrame(myToken) {
   firstFrameShown = false;
 
-  // If the browser supports requestVideoFrameCallback, it's the best signal.
   if (typeof video.requestVideoFrameCallback === "function") {
     const onFrame = () => {
-      // stale attempt? ignore
       if (myToken !== startToken) return;
-
-      // If user already let go, ignore
       if (!holding || finished) return;
-
-      // We got a frame. Fade poster out.
       firstFrameShown = true;
       hidePosterSmooth();
     };
-
-    // Register a frame callback. If playback hasn't produced a frame yet,
-    // this will trigger when it does.
     video.requestVideoFrameCallback(onFrame);
-
-    // Also add a safety fallback in case some browsers don't fire promptly:
-    // if we are already advancing time and have data, hide.
-    // (This runs once after a short delay and re-checks.)
     setTimeout(() => {
       if (myToken !== startToken) return;
       if (!holding || finished) return;
       if (!firstFrameShown && video.readyState >= 2 && !video.paused) {
-        // If time is moving, we're effectively rendering.
         hidePosterSmooth();
       }
     }, 250);
-
     return;
   }
 
-  // Fallback path: Use events + time progression.
-  // We'll hide poster only once:
-  // - video is not paused
-  // - readyState indicates current data
-  // - and we see currentTime advance (via timeupdate)
   let lastTime = video.currentTime;
-
   const cleanup = () => {
     video.removeEventListener("timeupdate", onTimeUpdate);
-    video.removeEventListener("playing", onPlaying);
+    video.removeEventListener("playing",    onPlaying);
   };
-
   const tryHideIfAdvancing = () => {
     if (myToken !== startToken) return cleanup();
     if (!holding || finished) return cleanup();
     if (video.paused) return;
-
-    // Needs some data available.
     if (video.readyState < 2) return;
-
-    // Check if time has advanced.
     if (video.currentTime > lastTime + 0.001) {
       firstFrameShown = true;
       hidePosterSmooth();
       cleanup();
-    } else {
-      lastTime = video.currentTime;
-    }
+    } else { lastTime = video.currentTime; }
   };
-
   const onTimeUpdate = () => tryHideIfAdvancing();
-
   const onPlaying = () => {
-    // Sometimes timeupdate is slow; do a quick poll loop for a few frames.
     let checks = 0;
     const poll = () => {
       if (myToken !== startToken) return cleanup();
       if (!holding || finished) return cleanup();
       if (firstFrameShown) return cleanup();
-
       tryHideIfAdvancing();
-      checks++;
-      if (!firstFrameShown && checks < 20) requestAnimationFrame(poll);
+      if (!firstFrameShown && ++checks < 20) requestAnimationFrame(poll);
     };
     requestAnimationFrame(poll);
   };
-
   video.addEventListener("timeupdate", onTimeUpdate);
-  video.addEventListener("playing", onPlaying);
+  video.addEventListener("playing",    onPlaying);
 }
 
-// TAP/HOLD START
-function startMining(e) {
-  // Prevent long-press selection / context menu behaviour on some mobile browsers
-  // (safe even when passive touch handlers are used elsewhere)
-  if (e && typeof e.preventDefault === "function") {
-    // Only prevent for mouse/touch down; not needed for all.
-    // We won't call preventDefault for touchstart because our listener is passive.
-  }
-
+// ── START ──
+function startMining() {
   if (holding) return;
-  holding = true;
-  finished = false;
+  if (finished) resetUIToStart();
 
-  // New start attempt
+  holding  = true;
+  finished = false;
   startToken++;
   const myToken = startToken;
 
-  // Keep poster visible until first real frame renders
   showPoster();
 
   overlayTitle.style.opacity = "0";
   setTimeout(() => {
-    // stale?
     if (myToken !== startToken) return;
-    overlayTitle.textContent = "generating bitcoin...";
+    overlayTitle.textContent   = "mining bitcoin...";
     overlayTitle.style.opacity = "1";
-  }, 300);
+  }, 280);
 
   progressText.style.opacity = "1";
+  progressBarWrap.classList.add("visible");
+  videoContainer.classList.add("mining");
 
-  // Always reset to 0 for the sim
+  acquireWakeLock();
+
   try { video.currentTime = 0; } catch (_) {}
-
-  // Kick off wait-for-first-frame before play, so we never flash white
   waitForFirstRenderedFrame(myToken);
 
-  // iOS autoplay quirks:
-  // - play() must be triggered by a user gesture (we are)
-  // - unmuted play may fail; start muted then unmute
   if (isIOS) {
     video.muted = true;
-
     video.play().then(() => {
       if (myToken !== startToken) return;
-      // If still holding, unmute after playback begins
-      // (If your video has no audio, you can delete this line.)
       video.muted = false;
     }).catch(() => {
-      // If play fails, keep poster, reset holding state gracefully
       if (myToken !== startToken) return;
       holding = false;
       showPoster();
@@ -349,102 +547,149 @@ function startMining(e) {
   }
 }
 
-// TAP/HOLD STOP
+// ── STOP ──
 function stopMining() {
   if (finished) return;
   holding = false;
-
-  // Invalidate any pending async callbacks
   startToken++;
-
   video.pause();
   try { video.currentTime = 0; } catch (_) {}
-
-  // Immediately show poster (no flashes, no waiting)
   showPoster();
   resetUIToStart();
 }
 
-// Animate progress
+// ── ANIMATION LOOP ──
 function animate() {
   if (holding && !finished) {
     const dur = video.duration;
-    const ct = video.currentTime;
+    const ct  = video.currentTime;
 
     if (Number.isFinite(dur) && dur > 0) {
       const percent = Math.min((ct / dur) * 100, 100);
-      progressText.textContent = Math.floor(percent) + "% COMPLETE";
+      progressText.textContent    = Math.floor(percent) + "% COMPLETE";
+      progressBarFill.style.width = percent + "%";
 
+      // ── Completion ──
       if (ct >= dur - 0.05) {
         finished = true;
-        holding = false;
-
+        holding  = false;
         video.pause();
         try { video.currentTime = dur; } catch (_) {}
 
-        overlayTitle.textContent = "you have generated:\n0.0000000000000013 bitcoin";
-        progressText.textContent = "tap/click & hold again to keep mining";
-        progressText.style.opacity = "1";
+        videoContainer.classList.remove("mining");
+        progressBarWrap.classList.remove("visible");
+        progressText.style.opacity = "0";
+        releaseWakeLock();
 
-        // At finish, we want the video visible.
+        // White flash
+        flashOverlay.classList.remove("flash");
+        void flashOverlay.offsetWidth;
+        flashOverlay.classList.add("flash");
+
+        // Sound
+        clickSFX.playCorrect();
+
+        // All completion content fades in simultaneously
+        showCompletionUI();
+
         hidePosterSmooth();
       }
+
     } else {
-      // Duration not ready yet; keep UI stable
       progressText.textContent = "0% COMPLETE";
     }
   }
   requestAnimationFrame(animate);
 }
 
-// Buffering protection:
-// If the browser stalls (waiting), bring poster back to hide any blank frame.
-// When it resumes, hide poster again once frames are flowing.
-video.addEventListener("waiting", () => {
-  if (holding && !finished) showPoster();
-});
-
-// Some browsers fire "stalled" separately
-video.addEventListener("stalled", () => {
-  if (holding && !finished) showPoster();
-});
-
+// ── Video event handlers (buffering protection) ──
+video.addEventListener("waiting", () => { if (holding && !finished) showPoster(); });
+video.addEventListener("stalled", () => { if (holding && !finished) showPoster(); });
 video.addEventListener("playing", () => {
-  // If we're holding, ensure we hide poster once playback is actually running.
-  // (First frame callback handles the real "bulletproof" hide; this is extra.)
-  if (holding && !finished) {
-    // Don't force-hide if we haven't shown a frame yet; requestVideoFrameCallback will.
-    // But if we already have enough data and time is advancing, hide.
-    if (video.readyState >= 2 && !video.paused) {
-      // Tiny delay helps Safari sometimes
-      setTimeout(() => {
-        if (holding && !finished && video.readyState >= 2 && !video.paused) {
-          hidePosterSmooth();
-        }
-      }, 0);
-    }
+  if (holding && !finished && video.readyState >= 2 && !video.paused) {
+    setTimeout(() => {
+      if (holding && !finished && video.readyState >= 2 && !video.paused) {
+        hidePosterSmooth();
+      }
+    }, 0);
   }
 });
 
-// Input events
-document.addEventListener("mousedown", startMining);
-document.addEventListener("mouseup", stopMining);
-
-// Touch: keep your passive listeners (fast, no scroll-blocking)
-document.addEventListener("touchstart", startMining, { passive: true });
-document.addEventListener("touchend", stopMining, { passive: true });
-
-// Optional: if touch is cancelled (incoming call / gesture / scroll), stop cleanly
-document.addEventListener("touchcancel", stopMining, { passive: true });
-
-// Prevent right-click context menu from interrupting hold on desktop
+// ── Input events ──
+document.addEventListener("mousedown",   startMining);
+document.addEventListener("mouseup",     stopMining);
+document.addEventListener("touchstart",  startMining, { passive: true });
+document.addEventListener("touchend",    stopMining,  { passive: true });
+document.addEventListener("touchcancel", stopMining,  { passive: true });
 document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+// Re-acquire wake lock if tab regains visibility mid-hold
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && holding && !finished) acquireWakeLock();
+});
+
+// ── MOD INSTALL POPUP ──
+
+// Stop mining events from propagating through the popup and download button
+const modDownloadBtn = document.querySelector('.mod-download-btn');
+
+modPopupOverlay.addEventListener('mousedown',  (e) => e.stopPropagation());
+modPopupOverlay.addEventListener('mouseup',    (e) => e.stopPropagation());
+modPopupOverlay.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+modPopupOverlay.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
+
+modDownloadBtn.addEventListener('mousedown',  (e) => e.stopPropagation());
+modDownloadBtn.addEventListener('mouseup',    (e) => e.stopPropagation());
+modDownloadBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+modDownloadBtn.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
+
+modDownloadBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  // TODO: re-enable download once stoneinfocus-mod.jar exists
+  // const a = document.createElement('a');
+  // a.href     = 'stoneinfocus-mod.jar';
+  // a.download = 'stoneinfocus-mod.jar';
+  // document.body.appendChild(a);
+  // a.click();
+  // document.body.removeChild(a);
+  modPopupOverlay.classList.add('visible');
+});
+
+// Close popup: button click or backdrop click
+popupClose.addEventListener('click',   () => modPopupOverlay.classList.remove('visible'));
+modPopupOverlay.addEventListener('click', (e) => {
+  if (e.target === modPopupOverlay) modPopupOverlay.classList.remove('visible');
+});
 
 function goBack() {
   const params = new URLSearchParams(window.location.search);
   window.location.href = params.get('from') === 'game'
     ? '../game/boom.html'
     : '../index.html';
+}
+
+// ── DEBUG: press 'D' to instantly trigger the completion sequence ──
+// Remove this block before going live
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'd' || e.key === 'D') debugComplete();
+});
+function debugComplete() {
+  finished = true;
+  holding  = false;
+  startToken++;
+  video.pause();
+  videoContainer.classList.remove("mining");
+  progressBarWrap.classList.remove("visible");
+  progressText.style.opacity = "0";
+  releaseWakeLock();
+
+  flashOverlay.classList.remove("flash");
+  void flashOverlay.offsetWidth;
+  flashOverlay.classList.add("flash");
+
+  clickSFX.playCorrect();
+  showCompletionUI();
+  hidePosterSmooth();
 }
 
 animate();
