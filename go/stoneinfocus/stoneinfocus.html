@@ -184,20 +184,47 @@ video {
 }
 .mod-download-btn {
   display: inline-block;
-  color: #fff;
+  color: #2d93ea;
   text-decoration: none;
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 1rem;
   letter-spacing: 0.06em;
   text-transform: lowercase;
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(45,147,234,0.4);
   padding: 9px 20px;
-  opacity: 0.7;
-  transition: opacity 0.2s, border-color 0.2s;
+  background: transparent;
+  transition: background 0.2s, border-color 0.2s;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
 @media (hover: hover) {
-  .mod-download-btn:hover { opacity: 1; border-color: rgba(255,255,255,0.7); }
+  .mod-download-btn:hover { background: rgba(45,147,234,0.08); border-color: rgba(45,147,234,0.8); }
+}
+
+/* ── AUTO MINE BUTTON ── */
+#autoMineWrap {
+  margin-top: 12px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+#autoMineWrap.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+#autoMineBtn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 0.9rem;
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+@media (hover: hover) {
+  #autoMineBtn:hover { color: rgba(255,255,255,0.75); }
 }
 
 /* ── FLASH OVERLAY ── */
@@ -301,9 +328,9 @@ video {
 #popupDownload {
   display: block;
   width: 100%;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.35);
-  color: #fff;
+  background: transparent;
+  border: 1px solid rgba(45,147,234,0.45);
+  color: #2d93ea;
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 0.95rem;
   text-transform: lowercase;
@@ -315,7 +342,7 @@ video {
   margin-top: 18px;
 }
 @media (hover: hover) {
-  #popupDownload:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.65); }
+  #popupDownload:hover { background: rgba(45,147,234,0.08); border-color: rgba(45,147,234,0.8); }
 }
 #popupClose {
   display: block;
@@ -358,6 +385,7 @@ video {
   <!-- Main overlay -->
   <div id="overlay">
     <div class="overlay-text" id="overlayTitle">hold to mine</div>
+    <div id="autoMineWrap"><button id="autoMineBtn">or auto mine</button></div>
     <div class="overlay-text" id="progressText"></div>
     <div id="progressBarWrap"><div id="progressBarFill"></div></div>
     <div id="modDownload">
@@ -398,11 +426,12 @@ const videoContainer  = document.getElementById("video-container");
 const modDownload     = document.getElementById("modDownload");
 const modPopupOverlay = document.getElementById("modPopupOverlay");
 const popupClose      = document.getElementById("popupClose");
+const autoMineWrap    = document.getElementById("autoMineWrap");
 
-let holding         = false;
-let finished        = false;
-let startToken      = 0;
-let firstFrameShown = false;
+let holding    = false;
+let finished   = false;
+let startToken = 0;
+let autoMining = false;
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
 // ── Wake lock (prevent screen sleep during hold) ──
@@ -433,6 +462,7 @@ function showPoster() { poster.classList.remove("is-hidden"); }
 function hidePosterSmooth() { poster.classList.add("is-hidden"); }
 
 function resetUIToStart() {
+  autoMining = false;
   overlayTitle.textContent   = "hold to mine";
   overlayTitle.style.opacity = "1";
   progressText.textContent   = "";
@@ -447,6 +477,7 @@ function resetUIToStart() {
   progressBarWrap.classList.remove("visible");
   videoContainer.classList.remove("mining");
   modDownload.classList.remove("visible");
+  autoMineWrap.classList.add("visible");
   releaseWakeLock();
 }
 
@@ -470,59 +501,7 @@ function showCompletionUI() {
 showPoster();
 video.pause();
 video.currentTime = 0;
-
-function waitForFirstRenderedFrame(myToken) {
-  firstFrameShown = false;
-
-  if (typeof video.requestVideoFrameCallback === "function") {
-    const onFrame = () => {
-      if (myToken !== startToken) return;
-      if (!holding || finished) return;
-      firstFrameShown = true;
-      hidePosterSmooth();
-    };
-    video.requestVideoFrameCallback(onFrame);
-    setTimeout(() => {
-      if (myToken !== startToken) return;
-      if (!holding || finished) return;
-      if (!firstFrameShown && video.readyState >= 2 && !video.paused) {
-        hidePosterSmooth();
-      }
-    }, 250);
-    return;
-  }
-
-  let lastTime = video.currentTime;
-  const cleanup = () => {
-    video.removeEventListener("timeupdate", onTimeUpdate);
-    video.removeEventListener("playing",    onPlaying);
-  };
-  const tryHideIfAdvancing = () => {
-    if (myToken !== startToken) return cleanup();
-    if (!holding || finished) return cleanup();
-    if (video.paused) return;
-    if (video.readyState < 2) return;
-    if (video.currentTime > lastTime + 0.001) {
-      firstFrameShown = true;
-      hidePosterSmooth();
-      cleanup();
-    } else { lastTime = video.currentTime; }
-  };
-  const onTimeUpdate = () => tryHideIfAdvancing();
-  const onPlaying = () => {
-    let checks = 0;
-    const poll = () => {
-      if (myToken !== startToken) return cleanup();
-      if (!holding || finished) return cleanup();
-      if (firstFrameShown) return cleanup();
-      tryHideIfAdvancing();
-      if (!firstFrameShown && ++checks < 20) requestAnimationFrame(poll);
-    };
-    requestAnimationFrame(poll);
-  };
-  video.addEventListener("timeupdate", onTimeUpdate);
-  video.addEventListener("playing",    onPlaying);
-}
+autoMineWrap.classList.add("visible");
 
 // ── START ──
 function startMining() {
@@ -534,7 +513,9 @@ function startMining() {
   startToken++;
   const myToken = startToken;
 
-  showPoster();
+  // Hide poster immediately — video is preloaded, no delay needed
+  hidePosterSmooth();
+  autoMineWrap.classList.remove("visible");
 
   overlayTitle.style.opacity = "0";
   setTimeout(() => {
@@ -550,7 +531,6 @@ function startMining() {
   acquireWakeLock();
 
   try { video.currentTime = 0; } catch (_) {}
-  waitForFirstRenderedFrame(myToken);
 
   if (isIOS) {
     video.muted = true;
@@ -576,6 +556,7 @@ function startMining() {
 // ── STOP ──
 function stopMining() {
   if (finished) return;
+  if (autoMining) return;  // let auto mine run uninterrupted
   holding = false;
   startToken++;
   video.pause();
@@ -654,6 +635,17 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden && holding && !finished) acquireWakeLock();
 });
 
+// ── AUTO MINE BUTTON ──
+const autoMineBtn = document.getElementById('autoMineBtn');
+autoMineBtn.addEventListener('mousedown',  (e) => e.stopPropagation());
+autoMineBtn.addEventListener('mouseup',    (e) => e.stopPropagation());
+autoMineBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+autoMineBtn.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
+autoMineBtn.addEventListener('click', () => {
+  autoMining = true;
+  startMining();
+});
+
 // ── MOD INSTALL POPUP ──
 
 const modDownloadBtn = document.getElementById('modDownloadBtn');
@@ -705,8 +697,9 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'd' || e.key === 'D') debugComplete();
 });
 function debugComplete() {
-  finished = true;
-  holding  = false;
+  finished   = true;
+  holding    = false;
+  autoMining = false;
   startToken++;
   video.pause();
   videoContainer.classList.remove("mining");
