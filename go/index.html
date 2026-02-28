@@ -2165,9 +2165,21 @@ async function tryPassword() {
     return;
   }
 
-  // correct password — let the sound finish completely before redirecting
+  // For same-tab direct redirects, kick off the body fade NOW so it runs
+  // in parallel with the sound — navigate the instant the sound finishes.
+  const isSameTabRedirect = action.redirect && action.useGate === false && action.sameTab !== false;
+  if (isSameTabRedirect) {
+    document.body.style.transition = 'opacity 0.4s ease';
+    document.body.style.opacity = '0';
+  }
+
   await SFX.playAndWait("correct");
-  runActionByKey(key);
+
+  if (isSameTabRedirect) {
+    window.location.href = action.redirect;
+  } else {
+    runActionByKey(key);
+  }
 }
 
 passwordInput.addEventListener("input", () => { if (!enterLock) setButtonsForInputState(); });
