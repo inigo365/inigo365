@@ -1669,16 +1669,15 @@ const actions = {
   "gambosi": { src: "videos/skud.mp4" },
   "wasted":  { src: "videos/litty.mp4" },
 
-  "tinny": { redirect: "scale/scale.html", sameTab: true },
-  "bag":   { redirect: "game/boom.html", sameTab: true, useGate: false },
-  "home":  { redirect: "../home.html", sameTab: true, useGate: false },
+  "tinny": { redirect: "scale/scale.html", sameTab: true, useGate: false, noSound: true },
+  "bag":   { redirect: "game/boom.html", sameTab: true, useGate: false, noSound: true },
+  "home":  { redirect: "../home.html", sameTab: true, useGate: false, noSound: true },
   "rick":  { redirect: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", sameTab: false },
-  "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true, useGate: false },
-  "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true },
-  "gold": { redirect: "nokia/nokia.html", sameTab: true },
+  "onway": { redirect: "stoneinfocus/stoneinfocus.html", sameTab: true, useGate: false, noSound: true },
+  "deathstar": { redirect: "couchburnsimulator/couch.html", sameTab: true, useGate: false, noSound: true },
+  "gold": { redirect: "nokia/nokia.html", sameTab: true, useGate: false, noSound: true },
 
-  "1millionfrogs": { redirect: "1millionfrogs/1millionfrogs.html", sameTab: true, useGate: false },
-  "mediaplayer":   { redirect: "nokia/nokia.html", sameTab: true, useGate: false },
+  "1millionfrogs": { redirect: "1millionfrogs/1millionfrogs.html", sameTab: true, useGate: false, noSound: true },
   "heavychest": { src: "videos/andre.mp4", mobileFill: true }
 };
 // ===== PUBLIC DOCK (two views: main / games) =====
@@ -2125,6 +2124,12 @@ function tryPassword() {
     passwordInput.value = "";
     flashNope(520);
     if (portalHint) portalHint.textContent = "hint: find hidden passwords around the site...";
+    return;
+  }
+
+  // noSound: true — skip the correct sfx and redirect immediately
+  if (action.noSound) {
+    runActionByKey(key);
     return;
   }
 
