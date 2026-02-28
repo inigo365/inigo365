@@ -403,6 +403,9 @@ video {
 
 </div>
 
+<!-- Hidden audio element — keeps playing when screen locks; video is muted/visual only -->
+<audio id="bgAudio" src="stoneinfocus.mp4" preload="auto"></audio>
+
 <!-- Flash overlay -->
 <div id="flashOverlay"></div>
 
@@ -435,6 +438,10 @@ const modDownload     = document.getElementById("modDownload");
 const modPopupOverlay = document.getElementById("modPopupOverlay");
 const popupClose      = document.getElementById("popupClose");
 const autoMineWrap    = document.getElementById("autoMineWrap");
+const bgAudio         = document.getElementById("bgAudio");
+
+// Video is always muted — bgAudio handles all sound so it survives screen lock
+video.muted = true;
 
 let holding    = false;
 let finished   = false;
@@ -521,7 +528,6 @@ function startMining() {
   startToken++;
   const myToken = startToken;
 
-  // Hide poster immediately — video is preloaded, no delay needed
   hidePosterSmooth();
   autoMineWrap.classList.remove("visible");
 
@@ -538,27 +544,20 @@ function startMining() {
 
   acquireWakeLock();
 
-  try { video.currentTime = 0; } catch (_) {}
+  // Start both from zero — bgAudio carries the sound, video is muted visuals
+  bgAudio.currentTime = 0;
+  video.currentTime   = 0;
 
-  if (isIOS) {
-    video.muted = true;
-    video.play().then(() => {
-      if (myToken !== startToken) return;
-      video.muted = false;
-    }).catch(() => {
-      if (myToken !== startToken) return;
-      holding = false;
-      showPoster();
-      resetUIToStart();
-    });
-  } else {
-    video.play().catch(() => {
-      if (myToken !== startToken) return;
-      holding = false;
-      showPoster();
-      resetUIToStart();
-    });
-  }
+  bgAudio.play().catch(() => {
+    // Audio failed (e.g. no user gesture) — abort
+    if (myToken !== startToken) return;
+    holding = false;
+    showPoster();
+    resetUIToStart();
+  });
+
+  // Video is muted so no iOS unmute dance needed; play it for visuals
+  video.play().catch(() => {});
 }
 
 // ── STOP ──
@@ -568,47 +567,48 @@ function stopMining() {
   holding = false;
   startToken++;
   video.pause();
-  try { video.currentTime = 0; } catch (_) {}
+  bgAudio.pause();
+  try { video.currentTime = 0; bgAudio.currentTime = 0; } catch (_) {}
   showPoster();
   resetUIToStart();
 }
 
-// ── ANIMATION LOOP ──
+// ── COMPLETION — shared by animate loop and bgAudio 'ended' event ──
+function triggerCompletion() {
+  if (finished) return; // guard against double-trigger
+  finished   = true;
+  holding    = false;
+  autoMining = false;
+
+  video.pause();
+  bgAudio.pause();
+
+  videoContainer.classList.remove("mining");
+  progressBarWrap.classList.remove("visible");
+  progressText.style.opacity = "0";
+  releaseWakeLock();
+
+  flashOverlay.classList.remove("flash");
+  void flashOverlay.offsetWidth;
+  flashOverlay.classList.add("flash");
+
+  clickSFX.playCorrect();
+  showCompletionUI();
+  hidePosterSmooth();
+}
+
+// ── ANIMATION LOOP — progress driven by bgAudio so it stays accurate ──
 function animate() {
   if (holding && !finished) {
-    const dur = video.duration;
-    const ct  = video.currentTime;
+    const dur = bgAudio.duration || video.duration;
+    const ct  = bgAudio.currentTime;
 
     if (Number.isFinite(dur) && dur > 0) {
       const percent = Math.min((ct / dur) * 100, 100);
       progressText.textContent    = Math.floor(percent) + "% COMPLETE";
       progressBarFill.style.width = percent + "%";
 
-      // ── Completion ──
-      if (ct >= dur - 0.05) {
-        finished = true;
-        holding  = false;
-        video.pause();
-        try { video.currentTime = dur; } catch (_) {}
-
-        videoContainer.classList.remove("mining");
-        progressBarWrap.classList.remove("visible");
-        progressText.style.opacity = "0";
-        releaseWakeLock();
-
-        // White flash
-        flashOverlay.classList.remove("flash");
-        void flashOverlay.offsetWidth;
-        flashOverlay.classList.add("flash");
-
-        // Sound
-        clickSFX.playCorrect();
-
-        // All completion content fades in simultaneously
-        showCompletionUI();
-
-        hidePosterSmooth();
-      }
+      if (ct >= dur - 0.05) triggerCompletion();
 
     } else {
       progressText.textContent = "0% COMPLETE";
@@ -616,6 +616,11 @@ function animate() {
   }
   requestAnimationFrame(animate);
 }
+
+// Detect completion when screen is locked (RAF is suspended, but audio events still fire)
+bgAudio.addEventListener('ended', () => {
+  if ((holding || autoMining) && !finished) triggerCompletion();
+});
 
 // ── Video event handlers (buffering protection) ──
 video.addEventListener("waiting", () => { if (holding && !finished) showPoster(); });
@@ -638,9 +643,14 @@ document.addEventListener("touchend",    stopMining,  { passive: true });
 document.addEventListener("touchcancel", stopMining,  { passive: true });
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
-// Re-acquire wake lock if tab regains visibility mid-hold
+// When returning from lock screen / background tab — sync muted video back to audio
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && holding && !finished) acquireWakeLock();
+  if (!document.hidden && (holding || autoMining) && !finished) {
+    acquireWakeLock();
+    // bgAudio kept playing; catch the muted video back up to it
+    video.currentTime = bgAudio.currentTime;
+    video.play().catch(() => {});
+  }
 });
 
 // ── AUTO MINE BUTTON ──
@@ -705,23 +715,10 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'd' || e.key === 'D') debugComplete();
 });
 function debugComplete() {
-  finished   = true;
-  holding    = false;
-  autoMining = false;
   startToken++;
-  video.pause();
-  videoContainer.classList.remove("mining");
-  progressBarWrap.classList.remove("visible");
-  progressText.style.opacity = "0";
-  releaseWakeLock();
-
-  flashOverlay.classList.remove("flash");
-  void flashOverlay.offsetWidth;
-  flashOverlay.classList.add("flash");
-
-  clickSFX.playCorrect();
-  showCompletionUI();
-  hidePosterSmooth();
+  bgAudio.pause();
+  bgAudio.currentTime = 0;
+  triggerCompletion();
 }
 
 // ── MEDIA SESSION (lock screen controls + background audio) ──
@@ -732,17 +729,19 @@ if ('mediaSession' in navigator) {
     artwork: [{ src: 'artwork.png', sizes: '512x512', type: 'image/png' }]
   });
 
-  // Play/pause from lock screen
+  // Lock screen controls drive bgAudio (the actual sound source)
   navigator.mediaSession.setActionHandler('play', () => {
-    video.play();
+    bgAudio.play().catch(() => {});
+    video.play().catch(() => {});
   });
   navigator.mediaSession.setActionHandler('pause', () => {
+    bgAudio.pause();
     video.pause();
   });
 
-  // Keep OS playback state in sync with the actual video
-  video.addEventListener('play',  () => { navigator.mediaSession.playbackState = 'playing'; });
-  video.addEventListener('pause', () => { navigator.mediaSession.playbackState = 'paused';  });
+  // Keep OS playback indicator in sync with bgAudio (not the muted video)
+  bgAudio.addEventListener('play',  () => { navigator.mediaSession.playbackState = 'playing'; });
+  bgAudio.addEventListener('pause', () => { navigator.mediaSession.playbackState = 'paused';  });
 }
 
 animate();
