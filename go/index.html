@@ -1580,47 +1580,10 @@ const SFX = (() => {
     if (!ok) playFromPool(name);
   }
 
-  // Plays a sound and returns a Promise that resolves when it finishes.
-  function playAndWait(name) {
-    if (ctx && ctx.state === "suspended") {
-      ctx.resume().catch(() => {});
-    }
-
-    return new Promise((resolve) => {
-      // Safety net: resolve after 3 s regardless, so we never get stuck.
-      const timer = setTimeout(resolve, 3000);
-      const done = () => { clearTimeout(timer); resolve(); };
-
-      // WebAudio path — BufferSource has a reliable onended callback.
-      if (ctx && master && buffers.has(name)) {
-        try {
-          const src = ctx.createBufferSource();
-          src.buffer = buffers.get(name);
-          const g = ctx.createGain();
-          g.gain.value = volumes[name] ?? 1;
-          src.connect(g);
-          g.connect(master);
-          src.onended = done;
-          src.start(0);
-          return;
-        } catch {}
-      }
-
-      // Pool <audio> fallback — listen for the ended event.
-      const pool = ensurePool(name);
-      const a = pool.els[pool.i];
-      pool.i = (pool.i + 1) % pool.els.length;
-
-      try {
-        a.pause();
-        a.currentTime = 0;
-        a.addEventListener("ended", done, { once: true });
-        const p = a.play();
-        if (p && typeof p.catch === "function") p.catch(done);
-      } catch {
-        done();
-      }
-    });
+  // Returns the duration of a decoded sound in ms, or a fallback.
+  function getDuration(name, fallback = 400) {
+    const buf = buffers.get(name);
+    return buf ? Math.ceil(buf.duration * 1000) : fallback;
   }
 
   // Resume context the instant the page becomes visible again.
@@ -1638,7 +1601,7 @@ const SFX = (() => {
   window.addEventListener("pointerdown", primeHandler, { capture: true, once: true });
   window.addEventListener("keydown", primeHandler, { capture: true, once: true });
 
-  return { play, playAndWait, unlockNow };
+  return { play, getDuration, unlockNow };
 })();
 
 /* ===========================
@@ -2152,7 +2115,7 @@ function shouldPlayCorrectForAction(action) {
 }
 
 
-async function tryPassword() {
+function tryPassword() {
   const key = passwordInput.value.toLowerCase().trim();
   const action = actions[key];
 
@@ -2165,18 +2128,16 @@ async function tryPassword() {
     return;
   }
 
-  // For same-tab direct redirects, kick off the body fade NOW so it runs
-  // in parallel with the sound — navigate the instant the sound finishes.
+  SFX.play("correct");
+
+  // For same-tab direct redirects: fade the page and navigate after exactly
+  // as long as the sound lasts — feels instant while the full sound plays out.
   const isSameTabRedirect = action.redirect && action.useGate === false && action.sameTab !== false;
   if (isSameTabRedirect) {
-    document.body.style.transition = 'opacity 0.4s ease';
+    const delay = SFX.getDuration("correct");
+    document.body.style.transition = `opacity ${delay}ms ease`;
     document.body.style.opacity = '0';
-  }
-
-  await SFX.playAndWait("correct");
-
-  if (isSameTabRedirect) {
-    window.location.href = action.redirect;
+    setTimeout(() => { window.location.href = action.redirect; }, delay);
   } else {
     runActionByKey(key);
   }
