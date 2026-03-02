@@ -391,7 +391,7 @@ function releaseWakeLock() {
 function showPoster()       { poster.classList.remove("is-hidden"); }
 function hidePosterSmooth() { poster.classList.add("is-hidden"); }
 
-// ── Start playback (requires user gesture for audio) ──
+// ── Start playback ──
 function startPlayback() {
   state = 'playing';
   hidePosterSmooth();
@@ -402,13 +402,15 @@ function startPlayback() {
   bgAudio.currentTime = 0;
   video.currentTime   = 0;
 
-  bgAudio.play().catch(() => {
-    // Audio blocked — reset to idle so user can tap again
+  // If audio fails (network / format issue) continue with video-only — don't reset
+  bgAudio.play().catch(() => {});
+
+  // If video itself fails to start, reset so the user can tap again
+  video.play().catch(() => {
     state = 'idle';
     showPoster();
     overlayTitle.style.opacity = "1";
   });
-  video.play().catch(() => {});
 }
 
 // ── Completion UI ──
@@ -453,8 +455,13 @@ function restartFromBeginning() {
   releaseWakeLock();
 }
 
-// ── Audio ended — fires even when screen is locked ──
+// ── Completion detection ──
+// bgAudio.ended fires even when screen is locked
+// video.ended is a backup in case audio fails to load
 bgAudio.addEventListener('ended', () => {
+  if (state === 'playing') triggerCompletion();
+});
+video.addEventListener('ended', () => {
   if (state === 'playing') triggerCompletion();
 });
 
