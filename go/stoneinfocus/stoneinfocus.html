@@ -167,12 +167,12 @@ video {
   text-transform: lowercase;
   border: 1px solid rgba(45,147,234,0.4);
   padding: 9px 20px;
-  background: transparent;
+  background: rgba(0,0,0,0.82);
   transition: background 0.2s, border-color 0.2s;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
 @media (hover: hover) {
-  .mod-download-btn:hover { background: rgba(45,147,234,0.08); border-color: rgba(45,147,234,0.8); }
+  .mod-download-btn:hover { background: rgba(0,0,0,0.95); border-color: rgba(45,147,234,0.8); }
 }
 
 /* ── FLASH OVERLAY ── */
@@ -375,6 +375,13 @@ video.muted = true;
 // State: 'idle' → 'playing' → 'finished' → 'idle' (on restart)
 let state = 'idle';
 
+// Mobile stability — track position, retry on error, delay stall UI
+let lastKnownTime = 0;
+let retryCount    = 0;
+const MAX_RETRIES = 2;
+let stallTimer    = null;
+function clearStallTimer() { if (stallTimer) { clearTimeout(stallTimer); stallTimer = null; } }
+
 // ── Wake lock ──
 let wakeLock = null;
 async function acquireWakeLock() {
@@ -393,24 +400,41 @@ function hidePosterSmooth() { poster.classList.add("is-hidden"); }
 // ── Start playback ──
 function startPlayback() {
   state = 'playing';
+  retryCount    = 0;
+  lastKnownTime = 0;
+  clearStallTimer();
   hidePosterSmooth();
   overlayTitle.style.opacity = "0";
   progressText.style.opacity = "0";
   acquireWakeLock();
 
-  bgAudio.currentTime = 0;
-  video.currentTime   = 0;
+  // If elements are in error state (e.g. after exhausted retries) we must
+  // reload them before play() will work. Use canplay to seek + play.
+  const needsLoad = video.error || bgAudio.error
+    || video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE;
 
-  // Both fail silently — error handler below catches real load failures
-  bgAudio.play().catch(() => {});
-  video.play().catch(() => {});
+  if (needsLoad) {
+    video.load();
+    bgAudio.load();
+    video.addEventListener('canplay', function onCanPlay() {
+      video.removeEventListener('canplay', onCanPlay);
+      if (state !== 'playing') return;
+      video.currentTime = 0; bgAudio.currentTime = 0;
+      bgAudio.play().catch(() => {}); video.play().catch(() => {});
+    }, { once: true });
+  } else {
+    bgAudio.currentTime = 0;
+    video.currentTime   = 0;
+    bgAudio.play().catch(() => {});
+    video.play().catch(() => {});
+  }
 }
 
 // ── Completion UI ──
 function showCompletionUI() {
   setTimeout(() => {
-    overlayTitle.textContent   = "you have generated:\n0.0000000000000013 bitcoin";
-    progressText.textContent   = "tap to watch again";
+    overlayTitle.textContent   = "you have generated:\n0.00000000000013 bitcoin";
+    progressText.textContent   = "tap to generate again";
     overlayTitle.style.opacity = "1";
     progressText.style.opacity = "1";
     modDownload.classList.add("visible");
@@ -436,6 +460,8 @@ function triggerCompletion() {
 // ── Restart ──
 function restartFromBeginning() {
   state = 'idle';
+  retryCount = 0;
+  clearStallTimer();
   showPoster();
   overlayTitle.textContent   = "tap to begin";
   overlayTitle.style.opacity = "1";
@@ -444,7 +470,8 @@ function restartFromBeginning() {
   modDownload.classList.remove("visible");
   video.pause();
   bgAudio.pause();
-  try { video.currentTime = 0; bgAudio.currentTime = 0; } catch (_) {}
+  // load() resets a broken media element so future play() works reliably
+  try { video.load(); bgAudio.load(); } catch (_) {}
   releaseWakeLock();
 }
 
@@ -458,25 +485,61 @@ video.addEventListener('ended', () => {
   if (state === 'playing') triggerCompletion();
 });
 
-// ── Video load error — show message so we can diagnose ──
-video.addEventListener('error', () => {
+// ── Track playback position (used by error recovery) ──
+video.addEventListener("timeupdate", () => {
   if (state === 'playing') {
-    state = 'idle';
-    showPoster();
-    overlayTitle.textContent   = "video failed to load\ncheck console for details";
-    overlayTitle.style.opacity = "1";
-    console.error('Video error:', video.error);
+    lastKnownTime = video.currentTime;
+    clearStallTimer(); // actively progressing — cancel any pending stall UI
   }
 });
 
-// ── Buffering protection (show poster while rebuffering) ──
-video.addEventListener("waiting", () => { if (state === 'playing') showPoster(); });
-video.addEventListener("stalled", () => { if (state === 'playing') showPoster(); });
+// ── Buffering protection — delay poster so single-frame hiccups don't flash ──
+video.addEventListener("waiting", () => {
+  if (state !== 'playing') return;
+  clearStallTimer();
+  stallTimer = setTimeout(() => { if (state === 'playing') showPoster(); }, 1500);
+});
+video.addEventListener("stalled", () => {
+  if (state !== 'playing') return;
+  clearStallTimer();
+  stallTimer = setTimeout(() => { if (state === 'playing') showPoster(); }, 1500);
+});
 video.addEventListener("playing", () => {
+  clearStallTimer();
   if (state === 'playing' && video.readyState >= 2 && !video.paused) {
     setTimeout(() => {
       if (state === 'playing' && video.readyState >= 2 && !video.paused) hidePosterSmooth();
     }, 0);
+  }
+});
+
+// ── Video error — auto-recover up to MAX_RETRIES, then ask user to retry ──
+video.addEventListener('error', () => {
+  if (state !== 'playing') return;
+  console.error('Video error:', video.error);
+  clearStallTimer();
+  showPoster();
+
+  if (retryCount < MAX_RETRIES) {
+    retryCount++;
+    const resumeAt = lastKnownTime;
+    // Reset broken media elements, then seek back and resume
+    video.load();
+    bgAudio.load();
+    video.addEventListener('canplay', function onCanPlay() {
+      video.removeEventListener('canplay', onCanPlay);
+      if (state !== 'playing') return;
+      video.currentTime   = resumeAt;
+      bgAudio.currentTime = resumeAt;
+      video.play().catch(() => {});
+      bgAudio.play().catch(() => {});
+    }, { once: true });
+  } else {
+    // Exhausted retries — let user manually restart
+    state      = 'idle';
+    retryCount = 0;
+    overlayTitle.textContent   = "tap to retry";
+    overlayTitle.style.opacity = "1";
   }
 });
 
