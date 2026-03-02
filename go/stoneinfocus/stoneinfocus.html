@@ -319,10 +319,9 @@ video {
     id="video"
     preload="auto"
     playsinline
-    src="https://github.com/inigo365/stoneinfocus/releases/download/v1.1.0/stoneinfocus.mp4"
     disablepictureinpicture
     controlslist="nodownload noplaybackrate nofullscreen"
-  ></video>
+  ><source src="https://github.com/inigo365/stoneinfocus/releases/download/v1.1.0/stoneinfocus.mp4" type="video/mp4"></video>
 
 
 </div>
@@ -337,7 +336,7 @@ video {
 </div>
 
 <!-- Hidden audio element — keeps playing when screen locks; video is muted/visual only -->
-<audio id="bgAudio" src="https://github.com/inigo365/stoneinfocus/releases/download/v1.1.0/stoneinfocus.mp4" preload="auto"></audio>
+<audio id="bgAudio" preload="auto"><source src="https://github.com/inigo365/stoneinfocus/releases/download/v1.1.0/stoneinfocus.mp4" type="video/mp4"></audio>
 
 <!-- Flash overlay -->
 <div id="flashOverlay"></div>
@@ -402,15 +401,9 @@ function startPlayback() {
   bgAudio.currentTime = 0;
   video.currentTime   = 0;
 
-  // If audio fails (network / format issue) continue with video-only — don't reset
+  // Both fail silently — error handler below catches real load failures
   bgAudio.play().catch(() => {});
-
-  // If video itself fails to start, reset so the user can tap again
-  video.play().catch(() => {
-    state = 'idle';
-    showPoster();
-    overlayTitle.style.opacity = "1";
-  });
+  video.play().catch(() => {});
 }
 
 // ── Completion UI ──
@@ -463,6 +456,17 @@ bgAudio.addEventListener('ended', () => {
 });
 video.addEventListener('ended', () => {
   if (state === 'playing') triggerCompletion();
+});
+
+// ── Video load error — show message so we can diagnose ──
+video.addEventListener('error', () => {
+  if (state === 'playing') {
+    state = 'idle';
+    showPoster();
+    overlayTitle.textContent   = "video failed to load\ncheck console for details";
+    overlayTitle.style.opacity = "1";
+    console.error('Video error:', video.error);
+  }
 });
 
 // ── Buffering protection (show poster while rebuffering) ──
