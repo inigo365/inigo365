@@ -21,7 +21,6 @@
        url("../../fonts/RuneScape-UF.woff") format("woff");
 }
 
-/* ── PAGE FADE IN ── */
 @keyframes page-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -45,6 +44,7 @@ body {
   cursor: url("../../images/cursor/cursor.png"), auto;
   overflow: hidden;
   animation: page-fade-in 0.7s ease both;
+  touch-action: manipulation; /* removes 300ms tap delay on mobile */
 }
 
 /* ── BACK BUTTON ── */
@@ -72,45 +72,31 @@ body {
   overflow: hidden;
 }
 
-/* Hold glow — white inner pulse while mining */
-#video-container::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 4;
-}
-#video-container.mining::after {
-  animation: hold-pulse 2.5s ease-in-out infinite;
-}
-@keyframes hold-pulse {
-  0%,100% { box-shadow: inset 0 0 20px 0px rgba(255,255,255,0.0); }
-  50%      { box-shadow: inset 0 0 60px 6px rgba(255,255,255,0.12); }
-}
-
-/* ── VIDEO ── */
+/* ── VIDEO ──
+   object-position: center bottom — anchors the bottom of the video to the
+   bottom of the viewport. If cropping is needed (e.g. ultrawide monitor),
+   it crops from the top only, never the bottom. Mobile overrides to center. */
 video {
-  display: block; /* removes inline descender gap */
+  display: block;
   position: absolute;
-  top: 0; left: 50%;
-  transform: translateX(-50%) scale(1.01);
-  transform-origin: 50% 0%; /* anchor scale to top — pushes black bar down and out */
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center bottom;
   z-index: 2;
+  pointer-events: none; /* let touches pass through to the container */
 }
 
 /* ── POSTER ── */
 #poster {
-  display: block; /* removes inline descender gap */
+  display: block;
   position: absolute;
-  top: 0; left: 50%;
-  transform: translateX(-50%) scale(1.01);
-  transform-origin: 50% 0%;
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center bottom;
   z-index: 3;
   pointer-events: none;
   opacity: 1;
@@ -119,21 +105,22 @@ video {
 }
 #poster.is-hidden { opacity: 0; }
 
-/* Desktop: preserve aspect ratio */
-@media (min-width: 769px) {
-  video   { object-fit: contain; width: auto; }
-  #poster { object-fit: contain; width: auto; }
+/* Mobile: centre-crop (landscape video in portrait viewport) */
+@media (max-width: 768px) {
+  video   { object-position: center center; }
+  #poster { object-position: center center; }
 }
 
 /* ── MAIN OVERLAY ── */
 #overlay {
-  position: absolute;
+  position: fixed; /* fixed so it's never clipped by the video container */
   top: 55%;
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
   pointer-events: none;
   max-width: 90%;
+  width: 90%;
   z-index: 10;
 }
 
@@ -157,26 +144,6 @@ video {
   opacity: 0;
   line-height: 1.4;
   letter-spacing: 0.04em;
-}
-
-/* ── PROGRESS BAR — Minecraft style ── */
-#progressBarWrap {
-  width: min(260px, 72vw);
-  height: 6px;
-  background: rgba(0,0,0,0.55);
-  border: 1px solid rgba(255,255,255,0.22);
-  margin: 12px auto 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  /* No border-radius — sharp pixelated edges */
-}
-#progressBarWrap.visible { opacity: 1; }
-#progressBarFill {
-  height: 100%;
-  width: 0%;
-  background: rgba(255,255,255,0.82);
-  transition: width 0.7s linear;
 }
 
 /* ── MOD DOWNLOAD BUTTON ── */
@@ -206,33 +173,6 @@ video {
 }
 @media (hover: hover) {
   .mod-download-btn:hover { background: rgba(45,147,234,0.08); border-color: rgba(45,147,234,0.8); }
-}
-
-/* ── AUTO MINE BUTTON ── */
-#autoMineWrap {
-  margin-top: 12px;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-}
-#autoMineWrap.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-#autoMineBtn {
-  background: transparent;
-  border: none;
-  color: rgba(255,255,255,0.35);
-  font-family: "RuneScape UF", Arial, sans-serif;
-  font-size: 0.9rem;
-  text-transform: lowercase;
-  letter-spacing: 0.05em;
-  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
-  padding: 4px 8px;
-  transition: color 0.2s;
-}
-@media (hover: hover) {
-  #autoMineBtn:hover { color: rgba(255,255,255,0.75); }
 }
 
 /* ── FLASH OVERLAY ── */
@@ -320,12 +260,6 @@ video {
   left: 0;
   opacity: 0.45;
 }
-.popup-note {
-  font-size: 0.8rem;
-  opacity: 0.35;
-  margin: 16px 0 20px;
-  line-height: 1.4;
-}
 .popup-link {
   color: #fff;
   text-decoration: underline;
@@ -385,26 +319,25 @@ video {
     id="video"
     preload="auto"
     playsinline
-    src="stoneinfocus.mp4"
+    src="https://github.com/inigo365/stoneinfocus/releases/download/v1.1.0/stoneinfocus.mp4"
     disablepictureinpicture
     controlslist="nodownload noplaybackrate nofullscreen"
   ></video>
 
-  <!-- Main overlay -->
-  <div id="overlay">
-    <div class="overlay-text" id="overlayTitle">hold to mine</div>
-    <div id="autoMineWrap"><button id="autoMineBtn">or auto mine</button></div>
-    <div class="overlay-text" id="progressText"></div>
-    <div id="progressBarWrap"><div id="progressBarFill"></div></div>
-    <div id="modDownload">
-      <button class="mod-download-btn" id="modDownloadBtn">⬇ download the mod</button>
-    </div>
-  </div>
 
 </div>
 
+<!-- Overlay: outside video-container so it's never clipped by overflow:hidden -->
+<div id="overlay">
+  <div class="overlay-text" id="overlayTitle">tap to begin</div>
+  <div class="overlay-text" id="progressText"></div>
+  <div id="modDownload">
+    <button class="mod-download-btn" id="modDownloadBtn">⬇ download the mod</button>
+  </div>
+</div>
+
 <!-- Hidden audio element — keeps playing when screen locks; video is muted/visual only -->
-<audio id="bgAudio" src="stoneinfocus.mp4" preload="auto"></audio>
+<audio id="bgAudio" src="https://github.com/inigo365/stoneinfocus/releases/download/v1.1.0/stoneinfocus.mp4" preload="auto"></audio>
 
 <!-- Flash overlay -->
 <div id="flashOverlay"></div>
@@ -430,26 +363,20 @@ const video           = document.getElementById("video");
 const poster          = document.getElementById("poster");
 const overlayTitle    = document.getElementById("overlayTitle");
 const progressText    = document.getElementById("progressText");
-const progressBarWrap = document.getElementById("progressBarWrap");
-const progressBarFill = document.getElementById("progressBarFill");
 const flashOverlay    = document.getElementById("flashOverlay");
 const videoContainer  = document.getElementById("video-container");
 const modDownload     = document.getElementById("modDownload");
 const modPopupOverlay = document.getElementById("modPopupOverlay");
 const popupClose      = document.getElementById("popupClose");
-const autoMineWrap    = document.getElementById("autoMineWrap");
 const bgAudio         = document.getElementById("bgAudio");
 
-// Video is always muted — bgAudio handles all sound so it survives screen lock
+// Video always muted — bgAudio carries the sound so it survives screen lock
 video.muted = true;
 
-let holding    = false;
-let finished   = false;
-let startToken = 0;
-let autoMining = false;
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+// State: 'idle' → 'playing' → 'finished' → 'idle' (on restart)
+let state = 'idle';
 
-// ── Wake lock (prevent screen sleep during hold) ──
+// ── Wake lock ──
 let wakeLock = null;
 async function acquireWakeLock() {
   if ('wakeLock' in navigator) {
@@ -460,132 +387,46 @@ function releaseWakeLock() {
   if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
 }
 
-// ── Back button: align to top-left of actual video on desktop ──
-const backBtn = document.querySelector('.back-button');
-function positionBackBtn() {
-  if (window.innerWidth < 769) { backBtn.style.left = '8px'; return; }
-  const rect = poster.getBoundingClientRect();
-  if (rect.width > 0) backBtn.style.left = Math.round(rect.left + 8) + 'px';
-}
-poster.addEventListener('load', positionBackBtn);
-video.addEventListener('loadedmetadata', positionBackBtn);
-window.addEventListener('resize', positionBackBtn);
-positionBackBtn();
-
-// ── Helpers ──
-function showPoster() { poster.classList.remove("is-hidden"); }
+// ── Poster ──
+function showPoster()       { poster.classList.remove("is-hidden"); }
 function hidePosterSmooth() { poster.classList.add("is-hidden"); }
 
-function resetUIToStart() {
-  autoMining = false;
-  overlayTitle.textContent   = "hold to mine";
-  overlayTitle.style.opacity = "1";
-  progressText.textContent   = "";
+// ── Start playback (requires user gesture for audio) ──
+function startPlayback() {
+  state = 'playing';
+  hidePosterSmooth();
+  overlayTitle.style.opacity = "0";
   progressText.style.opacity = "0";
+  acquireWakeLock();
 
-  // Instant bar reset (no transition flash)
-  progressBarFill.style.transition = 'none';
-  progressBarFill.style.width = '0%';
-  void progressBarFill.offsetWidth;
-  progressBarFill.style.transition = '';
+  bgAudio.currentTime = 0;
+  video.currentTime   = 0;
 
-  progressBarWrap.classList.remove("visible");
-  videoContainer.classList.remove("mining");
-  modDownload.classList.remove("visible");
-  autoMineWrap.classList.add("visible");
-  releaseWakeLock();
+  bgAudio.play().catch(() => {
+    // Audio blocked — reset to idle so user can tap again
+    state = 'idle';
+    showPoster();
+    overlayTitle.style.opacity = "1";
+  });
+  video.play().catch(() => {});
 }
 
-// ── Completion reveal — all content fades in simultaneously ──
+// ── Completion UI ──
 function showCompletionUI() {
-  // Fade out current mining title immediately
-  overlayTitle.style.opacity = "0";
-  // progressText already hidden at this point (opacity 0'd at completion trigger)
-
-  // After brief pause (lets flash peak), show everything at once
   setTimeout(() => {
     overlayTitle.textContent   = "you have generated:\n0.0000000000000013 bitcoin";
-    progressText.textContent   = "tap/click & hold again to keep mining";
+    progressText.textContent   = "tap to watch again";
     overlayTitle.style.opacity = "1";
     progressText.style.opacity = "1";
     modDownload.classList.add("visible");
   }, 400);
 }
 
-// ── Poster / first-frame logic ──
-showPoster();
-video.pause();
-video.currentTime = 0;
-autoMineWrap.classList.add("visible");
-
-// ── START ──
-function startMining() {
-  if (holding) return;
-  if (finished) resetUIToStart();
-
-  holding  = true;
-  finished = false;
-  startToken++;
-  const myToken = startToken;
-
-  hidePosterSmooth();
-  autoMineWrap.classList.remove("visible");
-
-  overlayTitle.style.opacity = "0";
-  setTimeout(() => {
-    if (myToken !== startToken) return;
-    overlayTitle.textContent   = "mining bitcoin...";
-    overlayTitle.style.opacity = "1";
-  }, 280);
-
-  progressText.style.opacity = "1";
-  progressBarWrap.classList.add("visible");
-  videoContainer.classList.add("mining");
-
-  acquireWakeLock();
-
-  // Start both from zero — bgAudio carries the sound, video is muted visuals
-  bgAudio.currentTime = 0;
-  video.currentTime   = 0;
-
-  bgAudio.play().catch(() => {
-    // Audio failed (e.g. no user gesture) — abort
-    if (myToken !== startToken) return;
-    holding = false;
-    showPoster();
-    resetUIToStart();
-  });
-
-  // Video is muted so no iOS unmute dance needed; play it for visuals
-  video.play().catch(() => {});
-}
-
-// ── STOP ──
-function stopMining() {
-  if (finished) return;
-  if (autoMining) return;  // let auto mine run uninterrupted
-  holding = false;
-  startToken++;
-  video.pause();
-  bgAudio.pause();
-  try { video.currentTime = 0; bgAudio.currentTime = 0; } catch (_) {}
-  showPoster();
-  resetUIToStart();
-}
-
-// ── COMPLETION — shared by animate loop and bgAudio 'ended' event ──
 function triggerCompletion() {
-  if (finished) return; // guard against double-trigger
-  finished   = true;
-  holding    = false;
-  autoMining = false;
-
+  if (state === 'finished') return;
+  state = 'finished';
   video.pause();
   bgAudio.pause();
-
-  videoContainer.classList.remove("mining");
-  progressBarWrap.classList.remove("visible");
-  progressText.style.opacity = "0";
   releaseWakeLock();
 
   flashOverlay.classList.remove("flash");
@@ -597,96 +438,78 @@ function triggerCompletion() {
   hidePosterSmooth();
 }
 
-// ── ANIMATION LOOP — progress driven by bgAudio so it stays accurate ──
-function animate() {
-  if (holding && !finished) {
-    const dur = bgAudio.duration || video.duration;
-    const ct  = bgAudio.currentTime;
-
-    if (Number.isFinite(dur) && dur > 0) {
-      const percent = Math.min((ct / dur) * 100, 100);
-      progressText.textContent    = Math.floor(percent) + "% COMPLETE";
-      progressBarFill.style.width = percent + "%";
-
-      if (ct >= dur - 0.05) triggerCompletion();
-
-    } else {
-      progressText.textContent = "0% COMPLETE";
-    }
-  }
-  requestAnimationFrame(animate);
+// ── Restart ──
+function restartFromBeginning() {
+  state = 'idle';
+  showPoster();
+  overlayTitle.textContent   = "tap to begin";
+  overlayTitle.style.opacity = "1";
+  progressText.style.opacity = "0";
+  progressText.textContent   = "";
+  modDownload.classList.remove("visible");
+  video.pause();
+  bgAudio.pause();
+  try { video.currentTime = 0; bgAudio.currentTime = 0; } catch (_) {}
+  releaseWakeLock();
 }
 
-// Detect completion when screen is locked (RAF is suspended, but audio events still fire)
+// ── Audio ended — fires even when screen is locked ──
 bgAudio.addEventListener('ended', () => {
-  if ((holding || autoMining) && !finished) triggerCompletion();
+  if (state === 'playing') triggerCompletion();
 });
 
-// ── Video event handlers (buffering protection) ──
-video.addEventListener("waiting", () => { if (holding && !finished) showPoster(); });
-video.addEventListener("stalled", () => { if (holding && !finished) showPoster(); });
+// ── Buffering protection (show poster while rebuffering) ──
+video.addEventListener("waiting", () => { if (state === 'playing') showPoster(); });
+video.addEventListener("stalled", () => { if (state === 'playing') showPoster(); });
 video.addEventListener("playing", () => {
-  if (holding && !finished && video.readyState >= 2 && !video.paused) {
+  if (state === 'playing' && video.readyState >= 2 && !video.paused) {
     setTimeout(() => {
-      if (holding && !finished && video.readyState >= 2 && !video.paused) {
-        hidePosterSmooth();
-      }
+      if (state === 'playing' && video.readyState >= 2 && !video.paused) hidePosterSmooth();
     }, 0);
   }
 });
 
-// ── Input events ──
-document.addEventListener("mousedown",   startMining);
-document.addEventListener("mouseup",     stopMining);
-document.addEventListener("touchstart",  startMining, { passive: true });
-document.addEventListener("touchend",    stopMining,  { passive: true });
-document.addEventListener("touchcancel", stopMining,  { passive: true });
+// ── Tap / click to start or restart ──
+// Listen to both touchend and click; debounce to prevent double-firing
+let lastInteractionTime = 0;
+function handleInteraction() {
+  const now = Date.now();
+  if (now - lastInteractionTime < 400) return;
+  lastInteractionTime = now;
+  if      (state === 'idle')     startPlayback();
+  else if (state === 'finished') restartFromBeginning();
+  // 'playing': do nothing — let the video run uninterrupted
+}
+document.addEventListener("touchend", handleInteraction, { passive: true });
+document.addEventListener("click",    handleInteraction);
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
-// When returning from lock screen / background tab — sync muted video back to audio
+// ── Return from lock screen / background tab — sync video back to audio ──
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && (holding || autoMining) && !finished) {
+  if (!document.hidden && state === 'playing') {
     acquireWakeLock();
-    // bgAudio kept playing; catch the muted video back up to it
     video.currentTime = bgAudio.currentTime;
     video.play().catch(() => {});
   }
 });
 
-// ── AUTO MINE BUTTON ──
-const autoMineBtn = document.getElementById('autoMineBtn');
-autoMineBtn.addEventListener('mousedown',  (e) => e.stopPropagation());
-autoMineBtn.addEventListener('mouseup',    (e) => e.stopPropagation());
-autoMineBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
-autoMineBtn.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
-autoMineBtn.addEventListener('click', () => {
-  autoMining = true;
-  startMining();
-});
-
 // ── MOD INSTALL POPUP ──
-
 const modDownloadBtn = document.getElementById('modDownloadBtn');
 const popupDownload  = document.getElementById('popupDownload');
 
-// Stop mining events from bubbling through the popup overlay and its buttons
-modPopupOverlay.addEventListener('mousedown',  (e) => e.stopPropagation());
-modPopupOverlay.addEventListener('mouseup',    (e) => e.stopPropagation());
-modPopupOverlay.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
-modPopupOverlay.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
+// All clicks inside the popup stop propagation so they don't trigger start/restart
+modPopupOverlay.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (e.target === modPopupOverlay) modPopupOverlay.classList.remove('visible');
+});
 
-// Outer "download the mod" button — opens the popup
-modDownloadBtn.addEventListener('mousedown',  (e) => e.stopPropagation());
-modDownloadBtn.addEventListener('mouseup',    (e) => e.stopPropagation());
-modDownloadBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
-modDownloadBtn.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
-modDownloadBtn.addEventListener('click', () => modPopupOverlay.classList.add('visible'));
+// "download the mod" button opens popup
+modDownloadBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  modPopupOverlay.classList.add('visible');
+});
 
-// Inner popup download button — triggers the actual file download
-popupDownload.addEventListener('mousedown',  (e) => e.stopPropagation());
-popupDownload.addEventListener('mouseup',    (e) => e.stopPropagation());
-popupDownload.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
-popupDownload.addEventListener('touchend',   (e) => e.stopPropagation(), { passive: false });
+// Inner popup download button
 popupDownload.addEventListener('click', () => {
   const a = document.createElement('a');
   a.href     = 'https://github.com/inigo365/stoneinfocus/releases/download/v1.0.0/stoneinfocus-1.0.0.jar';
@@ -696,12 +519,10 @@ popupDownload.addEventListener('click', () => {
   document.body.removeChild(a);
 });
 
-// Close popup: close button or backdrop click
+// Close popup
 popupClose.addEventListener('click', () => modPopupOverlay.classList.remove('visible'));
-modPopupOverlay.addEventListener('click', (e) => {
-  if (e.target === modPopupOverlay) modPopupOverlay.classList.remove('visible');
-});
 
+// ── Back button ──
 function goBack() {
   const params = new URLSearchParams(window.location.search);
   window.location.href = params.get('from') === 'game'
@@ -709,27 +530,22 @@ function goBack() {
     : '../index.html';
 }
 
-// ── DEBUG: press 'D' to instantly trigger the completion sequence ──
+// ── DEBUG: press 'D' to instantly trigger completion ──
 // Remove this block before going live
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'd' || e.key === 'D') debugComplete();
+  if (e.key === 'd' || e.key === 'D') {
+    if (state === 'idle') startPlayback();
+    setTimeout(() => triggerCompletion(), 100);
+  }
 });
-function debugComplete() {
-  startToken++;
-  bgAudio.pause();
-  bgAudio.currentTime = 0;
-  triggerCompletion();
-}
 
-// ── MEDIA SESSION (lock screen controls + background audio) ──
+// ── MEDIA SESSION (lock screen controls) ──
 if ('mediaSession' in navigator) {
   navigator.mediaSession.metadata = new MediaMetadata({
     title:  'Stone in Focus',
     artist: 'Aphex Twin',
     artwork: [{ src: 'artwork.png', sizes: '512x512', type: 'image/png' }]
   });
-
-  // Lock screen controls drive bgAudio (the actual sound source)
   navigator.mediaSession.setActionHandler('play', () => {
     bgAudio.play().catch(() => {});
     video.play().catch(() => {});
@@ -738,13 +554,14 @@ if ('mediaSession' in navigator) {
     bgAudio.pause();
     video.pause();
   });
-
-  // Keep OS playback indicator in sync with bgAudio (not the muted video)
   bgAudio.addEventListener('play',  () => { navigator.mediaSession.playbackState = 'playing'; });
   bgAudio.addEventListener('pause', () => { navigator.mediaSession.playbackState = 'paused';  });
 }
 
-animate();
+// ── Initial state ──
+showPoster();
+video.pause();
+video.currentTime = 0;
 </script>
 </body>
 </html>
