@@ -167,12 +167,12 @@ video {
   text-transform: lowercase;
   border: 1px solid rgba(45,147,234,0.4);
   padding: 9px 20px;
-  background: rgba(0,0,0,0.82);
+  background: rgba(255, 255, 255, 0.82);
   transition: background 0.2s, border-color 0.2s;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
 @media (hover: hover) {
-  .mod-download-btn:hover { background: rgba(0,0,0,0.95); border-color: rgba(45,147,234,0.8); }
+  .mod-download-btn:hover { background: rgba(255, 255, 255, 0.92); border-color: rgba(45,147,234,0.8); }
 }
 
 /* ── FLASH OVERLAY ── */
@@ -328,7 +328,7 @@ video {
 
 <!-- Overlay: outside video-container so it's never clipped by overflow:hidden -->
 <div id="overlay">
-  <div class="overlay-text" id="overlayTitle">tap to begin</div>
+  <div class="overlay-text" id="overlayTitle">tap to mine</div>
   <div class="overlay-text" id="progressText"></div>
   <div id="modDownload">
     <button class="mod-download-btn" id="modDownloadBtn">⬇ download the mod</button>
@@ -433,8 +433,8 @@ function startPlayback() {
 // ── Completion UI ──
 function showCompletionUI() {
   setTimeout(() => {
-    overlayTitle.textContent   = "you have generated:\n0.00000000000013 bitcoin";
-    progressText.textContent   = "tap to generate again";
+    overlayTitle.textContent   = "you have generated:\n0.0000000000013 bitcoin";
+    progressText.textContent   = "tap to go again";
     overlayTitle.style.opacity = "1";
     progressText.style.opacity = "1";
     modDownload.classList.add("visible");
@@ -463,7 +463,7 @@ function restartFromBeginning() {
   retryCount = 0;
   clearStallTimer();
   showPoster();
-  overlayTitle.textContent   = "tap to begin";
+  overlayTitle.textContent   = "tap to mine";
   overlayTitle.style.opacity = "1";
   progressText.style.opacity = "0";
   progressText.textContent   = "";
