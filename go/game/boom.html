@@ -2147,6 +2147,7 @@ function startGame() {
   hideOverlay();
   gameStarted = true;
   dying = false;
+  if (window.startGameSession) window.startGameSession();
 
   // Pause bg drift during gameplay
   document.getElementById('pageBg').classList.add('gameplay');
@@ -2851,7 +2852,9 @@ function goBack() { window.location.href = "../index.html"; }
 
   const SUPABASE_URL = 'https://rlxtggsefecwcpgkjern.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_4mNOVz4GqFxtlJWOtzfXIQ_OaI1hLGT';
+  const EDGE_BASE = 'https://rlxtggsefecwcpgkjern.supabase.co/functions/v1';
   let supabaseClient = null;
+  let currentSessionId = null;
 
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
@@ -2873,9 +2876,24 @@ function goBack() { window.location.href = "../index.html"; }
   }
 
   async function saveScoreToDb(name, scoreVal) {
-    if (!supabaseClient) return;
-    try { await supabaseClient.from('highscores').insert([{ name, score: scoreVal }]); }
-    catch (e) { console.error(e); }
+    if (!currentSessionId) {
+      console.warn('no session id – score not saved to leaderboard');
+      return;
+    }
+    try {
+      const res = await fetch(`${EDGE_BASE}/submit-score`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ name, score: scoreVal, sessionId: currentSessionId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('score rejected:', err);
+      }
+    } catch (e) { console.error(e); }
   }
 
   function renderLeaderboard(entries, currentPlayerName) {
@@ -2979,6 +2997,20 @@ function goBack() { window.location.href = "../index.html"; }
   window.addEventListener('orientationchange', checkOrientation);
 
   playerNameInput.addEventListener('keydown', e => { if (e.key === 'Enter') window.submitScore(); });
+
+  window.startGameSession = async function () {
+    currentSessionId = null;
+    try {
+      const res = await fetch(`${EDGE_BASE}/start-session`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        currentSessionId = data.sessionId;
+      }
+    } catch (e) { console.error('session start failed:', e); }
+  };
 })();
 
 // ===== GOODYBAG SYSTEM =====
