@@ -155,10 +155,11 @@ html, body {
   will-change: transform;
 }
 
-/* Status text — white with dark outline, centred vertically and horizontally. */
+/* Status text — white with dark outline, centred horizontally.
+   Desktop sits at 40% from top; mobile overrides to 50% (true centre). */
 .status {
   position: fixed;
-  top: 50%;
+  top: 40%;                /* ← DESKTOP vertical position (mobile overrides below) */
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 22px;
@@ -188,6 +189,11 @@ html, body {
     width: 42vh;          /* ← adjust couch scale here */
     bottom: 1%;           /* ← adjust couch vertical position here */
     left: 54%;            /* ← adjust couch horizontal position here (50% = centre) */
+  }
+
+  /* ↓ STATUS TEXT VERTICAL POSITION ON MOBILE                                */
+  .status {
+    top: 50%;             /* ← adjust status text vertical position here (desktop is 40%) */
   }
 
 }
@@ -423,6 +429,8 @@ const fetched = new Map();
       fetched.set(name, await res.arrayBuffer());
     } catch (_) {}
   }));
+  // If the user gestured before fetch finished, kick off decode now
+  if (actx && !audioReady) decodeAndReady();
 })();
 
 // WebAudio state — all lazy, created inside first gesture
@@ -433,8 +441,27 @@ const buffers   = new Map();
 let crackleGain = null;
 let crackleNode = null;
 
-async function unlockNow() {
-  // Create context inside gesture so iOS starts it in "running" state
+// Decodes fetched byte arrays into AudioBuffers, then fires audio if holding.
+// Runs async but does NOT need to be inside a gesture handler.
+async function decodeAndReady() {
+  for (const [name, arr] of fetched) {
+    if (!buffers.has(name)) {
+      try {
+        buffers.set(name, await actx.decodeAudioData(arr.slice(0)));
+      } catch (_) {}
+    }
+  }
+  if (buffers.size >= Object.keys(SOUNDS).length) {
+    audioReady = true;
+    if (holding) { playIgnite(); crackleOn(); }
+  }
+}
+
+// SYNCHRONOUS unlock — context creation and resume() MUST stay synchronous
+// within the gesture handler so the browser never sees us exit the gesture
+// context before the AudioContext is started. Any async work (decode) is
+// delegated to decodeAndReady() which runs outside the gesture context.
+function unlockNow() {
   if (!actx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
@@ -443,9 +470,10 @@ async function unlockNow() {
     master.connect(actx.destination);
   }
 
-  if (actx.state === "suspended") await actx.resume().catch(() => {});
+  // resume() called synchronously — no await, so we never yield the gesture context
+  actx.resume().catch(() => {});
 
-  // Warm-up blip (unlocks iOS audio hardware)
+  // Warm-up blip (unlocks iOS audio hardware while still inside gesture)
   try {
     const osc = actx.createOscillator();
     const g   = actx.createGain();
@@ -456,16 +484,10 @@ async function unlockNow() {
     osc.stop(actx.currentTime + 0.01);
   } catch (_) {}
 
-  // Decode fetched buffers now that context exists
-  if (!audioReady) {
-    for (const [name, arr] of fetched) {
-      if (!buffers.has(name)) {
-        try {
-          buffers.set(name, await actx.decodeAudioData(arr.slice(0)));
-        } catch (_) {}
-      }
-    }
-    if (buffers.size >= Object.keys(SOUNDS).length) audioReady = true;
+  // Kick off decode (async, safe to run outside gesture context)
+  if (!audioReady && !unlockNow._decoding) {
+    unlockNow._decoding = true;
+    decodeAndReady();
   }
 
   // Heartbeat — keeps iOS from suspending the context in the background
@@ -481,9 +503,6 @@ async function unlockNow() {
       }
     }, 25000);
   }
-
-  // If user is already holding, kick off sounds now
-  if (holding && audioReady) { playIgnite(); crackleOn(); }
 }
 
 // Fire once on first gesture (touchstart works here because we create the context inside it)
@@ -607,10 +626,11 @@ function onDown(e) {
   startFire();
   setTimeout(() => { if (holding) startSmoke(); }, 120);
 
-  // Audio — unlock handles context creation on first gesture;
-  // subsequent presses just call play directly
-  playIgnite();
-  crackleOn();
+  // Only play if context is already ready. On first-ever tap, unlockNow (firing
+  // on the same gesture via capture listener) creates the context synchronously,
+  // then decodeAndReady() fires playIgnite + crackleOn once buffers are decoded.
+  // On all subsequent taps audioReady is true, so we play immediately.
+  if (audioReady) { playIgnite(); crackleOn(); }
 }
 
 function onUp(e) {
