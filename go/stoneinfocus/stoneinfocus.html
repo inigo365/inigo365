@@ -114,7 +114,7 @@ video {
 /* ── MAIN OVERLAY ── */
 #overlay {
   position: fixed; /* fixed so it's never clipped by the video container */
-  top: 55%;
+  top: 52%;        /* ← DESKTOP "tap to mine" vertical position */
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
@@ -122,6 +122,15 @@ video {
   max-width: 90%;
   width: 90%;
   z-index: 10;
+}
+
+/* Overlay position overrides — must come AFTER the base #overlay rule */
+@media (min-width: 769px) {
+  #overlay.is-finished { top: 47%; } /* ← DESKTOP completion screen vertical position */
+}
+@media (max-width: 768px) {
+  #overlay             { top: 55%; } /* ← MOBILE "tap to mine" vertical position */
+  #overlay.is-finished { top: 53%; } /* ← MOBILE completion screen vertical position */
 }
 
 .overlay-text {
@@ -375,6 +384,10 @@ video.muted = true;
 // State: 'idle' → 'playing' → 'finished' → 'idle' (on restart)
 let state = 'idle';
 
+// Timestamp of last completion — prevents accidental instant restart
+let completionTime = 0;
+const COMPLETION_LOCK_MS = 5000; // can't restart for 5s after completion
+
 // Mobile stability — track position, retry on error, delay stall UI
 let lastKnownTime = 0;
 let retryCount    = 0;
@@ -403,7 +416,8 @@ function startPlayback() {
   retryCount    = 0;
   lastKnownTime = 0;
   clearStallTimer();
-  hidePosterSmooth();
+  // Keep poster visible until the video's 'playing' event fires (first real frame).
+  // Hiding it here would reveal the black background during the load gap on mobile.
   overlayTitle.style.opacity = "0";
   progressText.style.opacity = "0";
   acquireWakeLock();
@@ -434,7 +448,7 @@ function startPlayback() {
 function showCompletionUI() {
   setTimeout(() => {
     overlayTitle.textContent   = "you have generated:\n0.0000000000013 bitcoin";
-    progressText.textContent   = "tap to go again";
+    progressText.textContent   = "tap to keep mining";
     overlayTitle.style.opacity = "1";
     progressText.style.opacity = "1";
     modDownload.classList.add("visible");
@@ -444,6 +458,7 @@ function showCompletionUI() {
 function triggerCompletion() {
   if (state === 'finished') return;
   state = 'finished';
+  completionTime = Date.now(); // start the lock window
   video.pause();
   bgAudio.pause();
   releaseWakeLock();
@@ -453,6 +468,7 @@ function triggerCompletion() {
   flashOverlay.classList.add("flash");
 
   clickSFX.playCorrect();
+  document.getElementById('overlay').classList.add('is-finished');
   showCompletionUI();
   hidePosterSmooth();
 }
@@ -468,6 +484,7 @@ function restartFromBeginning() {
   progressText.style.opacity = "0";
   progressText.textContent   = "";
   modDownload.classList.remove("visible");
+  document.getElementById('overlay').classList.remove('is-finished');
   video.pause();
   bgAudio.pause();
   // load() resets a broken media element so future play() works reliably
@@ -550,8 +567,15 @@ function handleInteraction() {
   const now = Date.now();
   if (now - lastInteractionTime < 400) return;
   lastInteractionTime = now;
-  if      (state === 'idle')     startPlayback();
-  else if (state === 'finished') restartFromBeginning();
+  if (state === 'idle') {
+    startPlayback();
+  } else if (state === 'finished') {
+    // Don't allow restart during the lock window — protects against:
+    //  • the tap that triggered the button bubbling up here
+    //  • accidental touches the instant completion fires
+    if (now - completionTime < COMPLETION_LOCK_MS) return;
+    restartFromBeginning();
+  }
   // 'playing': do nothing — let the video run uninterrupted
 }
 document.addEventListener("touchend", handleInteraction, { passive: true });
@@ -571,17 +595,24 @@ document.addEventListener("visibilitychange", () => {
 const modDownloadBtn = document.getElementById('modDownloadBtn');
 const popupDownload  = document.getElementById('popupDownload');
 
-// All clicks inside the popup stop propagation so they don't trigger start/restart
-modPopupOverlay.addEventListener('click', (e) => {
+// All clicks AND touches inside the popup stop propagation so they don't
+// trigger start/restart on the document handler
+function stopAndMaybeClose(e) {
   e.stopPropagation();
-  if (e.target === modPopupOverlay) modPopupOverlay.classList.remove('visible');
-});
+  if (e.type === 'click' && e.target === modPopupOverlay) {
+    modPopupOverlay.classList.remove('visible');
+  }
+}
+modPopupOverlay.addEventListener('click',    stopAndMaybeClose);
+modPopupOverlay.addEventListener('touchend', stopAndMaybeClose);
 
-// "download the mod" button opens popup
-modDownloadBtn.addEventListener('click', (e) => {
+// "download the mod" button opens popup — stop both events
+function openModPopup(e) {
   e.stopPropagation();
-  modPopupOverlay.classList.add('visible');
-});
+  if (e.type === 'click') modPopupOverlay.classList.add('visible');
+}
+modDownloadBtn.addEventListener('click',    openModPopup);
+modDownloadBtn.addEventListener('touchend', openModPopup);
 
 // Inner popup download button
 popupDownload.addEventListener('click', () => {
