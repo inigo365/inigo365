@@ -10,9 +10,9 @@
     gtag('config', 'G-9K5EFW2BTF');
   </script>
 <meta charset="UTF-8" />
-<title>couch</title>
+<title>couch burn simulator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<link rel="icon" href="/images/icon.png" />
+<link rel="icon" type="image/png" href="../../images/icon.png">
 
 <style>
 @font-face {
@@ -26,7 +26,14 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: white;
+  overflow: hidden;
+  /* Pixelated background scene — rendered with crisp-edges via CSS */
+  background-image: url("background.png");
+  background-size: max(100vw, 1280px) auto; /* desktop: always at least 1280px wide */
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
   font-family: "RuneScape UF", Arial, sans-serif;
 
   -webkit-user-select: none;
@@ -59,31 +66,40 @@ html, body {
   font-size: 28px;
   background: transparent;
   border: none;
-  color: #2d93ea;
+  color: #ffffff;
   font-family: "RuneScape UF", Arial, sans-serif;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
   text-transform: lowercase;
   padding: 0;
   z-index: 10;
+  text-shadow:
+     1px  1px 0 rgba(0,0,0,0.85),
+    -1px -1px 0 rgba(0,0,0,0.85),
+     1px -1px 0 rgba(0,0,0,0.85),
+    -1px  1px 0 rgba(0,0,0,0.85);
 }
 
+/* Full-screen container — stage and status sit inside this */
 .wrapper {
-  height: 100%;
-  width: 100%;
-  display: grid;
-  place-items: center;
-}
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.stage {
   position: relative;
-  width: min(70vw, 360px);
+  width: 100%;
+  height: 100%;
+}
+
+/* Transparent to layout — children (.stage, .status) position themselves */
+.stack {
+  display: contents;
+}
+
+/* Stage: positioned to match the couch in background.png (1000×667 image).
+   Background couch center ≈ 50% horizontal, bottom ≈ 93% from top.
+   With cover sizing this maps to roughly bottom: 5% of viewport. */
+.stage {
+  position: absolute;
+  left: 51%;
+  bottom: 1%;             /* ← DESKTOP couch vertical position (mobile overrides this below) */
+  transform: translateX(-50%);
+  width: 57vh; /* 380/667 * 100vh ≈ 57vh — same scale on all screens; overflows on narrow viewports like bg image does */
   aspect-ratio: 1 / 1;
 }
 
@@ -96,6 +112,31 @@ html, body {
 
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+}
+
+/* Floating splash phrases that pop up over the couch */
+@keyframes splashFloat {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(0);     }
+  12%  { opacity: 1; transform: translateX(-50%) translateY(-8px);  }
+  65%  { opacity: 1; transform: translateX(-50%) translateY(-28px); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-80px); }
+}
+
+.splash {
+  position: fixed;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 24px;
+  color: #ffffff;
+  text-transform: lowercase;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 20;
+  animation: splashFloat 2.8s ease-out forwards;
+  text-shadow:
+     1px  1px 0 rgba(0,0,0,0.9),
+    -1px -1px 0 rgba(0,0,0,0.9),
+     1px -1px 0 rgba(0,0,0,0.9),
+    -1px  1px 0 rgba(0,0,0,0.9);
 }
 
 .couch { z-index: 1; }
@@ -114,11 +155,41 @@ html, body {
   will-change: transform;
 }
 
+/* Status text — white with dark outline, centred vertically and horizontally. */
 .status {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 22px;
-  color: #2d93ea;
+  color: #ffffff;
   text-transform: lowercase;
   line-height: 1;
+  white-space: nowrap;
+  text-shadow:
+     1px  1px 0 rgba(0,0,0,0.85),
+    -1px -1px 0 rgba(0,0,0,0.85),
+     1px -1px 0 rgba(0,0,0,0.85),
+    -1px  1px 0 rgba(0,0,0,0.85);
+}
+
+/* ─── MOBILE OVERRIDES ──────────────────────────────────────────────────────
+   Background: cover scales by height on portrait phones so the image always
+   fills the full viewport with no gap at the top.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  html, body {
+    background-size: cover;
+  }
+
+  /* ↓ COUCH SIZE / POSITION ON MOBILE — tweak these three values to reposition.
+       Desktop width is 57vh. Desktop bottom is 17%. Desktop left is 50%.     */
+  .stage {
+    width: 42vh;          /* ← adjust couch scale here */
+    bottom: 1%;           /* ← adjust couch vertical position here */
+    left: 54%;            /* ← adjust couch horizontal position here (50% = centre) */
+  }
+
 }
 </style>
 </head>
@@ -179,10 +250,63 @@ let smokeScale = 1;
 
 let stopSmokeTimeout = null;
 
+/* -------------------------------------------------------
+   STATUS TEXT — rotating NZ slang while burning
+------------------------------------------------------- */
+const NZ_PHRASES = [
+  "she's going off bro",
+  "fully cooked",
+  "choice as",
+  "get in!",
+  "oh yeah nah",
+  "sweet as",
+  "it's munted",
+  "ka pai",
+  "absolutely munted",
+  "go on then",
+  "oi oi oi",
+];
+
+let statusTimer = null;
+let phraseIndex = 0;
+
+/* Spawn a phrase as a floating label above the couch, drifting upward then fading */
+function showSplash(text) {
+  const rect = stageEl.getBoundingClientRect();
+  // Appear in the upper third of the couch, with a small random horizontal nudge
+  const x = rect.left + rect.width  * 0.5 + (Math.random() - 0.5) * rect.width * 0.3;
+  const y = rect.top  + rect.height * 0.25;
+
+  const el = document.createElement("div");
+  el.className   = "splash";
+  el.textContent = text;
+  el.style.left  = x + "px";
+  el.style.top   = y + "px";
+  document.body.appendChild(el);
+  el.addEventListener("animationend", () => el.remove());
+}
+
+function startStatusCycle() {
+  if (statusTimer) return;
+  statusEl.textContent = "burning...";
+
+  // Spawn a floating phrase over the couch — ← adjust interval (ms) to change frequency
+  statusTimer = setInterval(() => {
+    phraseIndex = Math.floor(Math.random() * NZ_PHRASES.length);
+    showSplash(NZ_PHRASES[phraseIndex]);
+  }, 2000); /* ← splash frequency in ms (lower = more frequent) */
+}
+
+function stopStatusCycle() {
+  clearInterval(statusTimer);
+  statusTimer = null;
+  statusEl.textContent = "click / tap to ignite";
+}
+
 function startFire() {
   if (fireTimer) return;
 
-  statusEl.textContent = "burning...";
+  startStatusCycle();
   fireEl.style.opacity = "1";
 
   fireIndex = Math.floor(Math.random() * fireFrames.length);
@@ -201,7 +325,7 @@ function startFire() {
 }
 
 function stopFire() {
-  statusEl.textContent = "click / tap to ignite";
+  stopStatusCycle();
   fireEl.style.opacity = "0";
   fireEl.style.transform = "translate(0px, 0px)";
 
@@ -271,176 +395,202 @@ function stopSmokeWithLinger() {
 }
 
 /* -------------------------------------------------------
-   AUDIO — Hybrid WebAudio approach
-
-   KEY iOS FINDINGS (from WebKit spec, Howler.js, PixiJS, Tone.js):
-   1. touchstart does NOT grant user activation on iOS Safari
-   2. touchend DOES grant activation (primary unlock event for touch)
-   3. pointerdown from touch does NOT grant activation
-   4. mousedown DOES grant activation (desktop/trackpad)
-   5. Create AudioContext at page load, resume() in gesture handler
-   6. Keep-alive oscillator at ~0 gain prevents "interrupted" state
-   7. Resume on EVERY interaction (WKWebView re-suspends aggressively)
+   AUDIO — Lazy WebAudio + HTMLAudio pool fallback
+   (same pattern as index.html — context created inside first gesture)
 ------------------------------------------------------- */
-const CRACKLE_VOL_ON = 0.70;
 
-// Step 1: Create AudioContext eagerly at page load
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-const ctx = AudioCtx ? new AudioCtx({ latencyHint: "interactive" }) : null;
+const SOUNDS  = { crackle: "crackle.mp3" }; // ignite is now procedural WebAudio
+const VOLUMES = { ignite: 0.65, crackle: 0.45 };
 
-// Step 2: Keep-alive oscillator (Tone.js pattern) — prevents Safari "interrupted" state
-if (ctx) {
-  const keepAlive = ctx.createOscillator();
-  const keepAliveGain = ctx.createGain();
-  keepAliveGain.gain.value = 1e-37; // inaudible but keeps context alive
-  keepAlive.connect(keepAliveGain);
-  keepAliveGain.connect(ctx.destination);
-  keepAlive.start();
+// HTMLAudio pools — created immediately, no gesture needed (fallback path)
+const pools = {};
+function ensurePool(name) {
+  if (pools[name]) return pools[name];
+  const a = new Audio(SOUNDS[name]);
+  a.volume = VOLUMES[name] || 1;
+  if (name === "crackle") a.loop = true;
+  pools[name] = a;
+  return a;
 }
+Object.keys(SOUNDS).forEach(ensurePool);
 
-let igniteBuffer  = null;
-let crackleBuffer = null;
-let crackleGain   = null;
-let crackleSource = null;
-let audioReady    = false;
-let loadPromise   = null;
-let unlocked      = false;
-
-/*
-  unlockAudio() — called from activation-granting events.
-  Resumes context + plays empty buffer to fully warm the audio graph.
-  Safe to call repeatedly (no-ops if already running).
-  If called while holding (first-tap touchend), starts audio immediately.
-*/
-function unlockAudio() {
-  if (!ctx) return;
-
-  // Always try to resume (handles re-suspension after backgrounding)
-  if (ctx.state !== "running") {
-    ctx.resume();
-  }
-
-  if (!unlocked) {
-    // Play an empty buffer through the graph (PixiJS Sound pattern)
+// Fetch raw bytes for WebAudio decoding (cached, no gesture needed)
+const fetched = new Map();
+(async () => {
+  await Promise.all(Object.keys(SOUNDS).map(async (name) => {
     try {
-      const src = ctx.createBufferSource();
-      src.buffer = ctx.createBuffer(1, 1, 22050);
-      src.connect(ctx.destination);
-      src.start(0);
+      const res = await fetch(SOUNDS[name], { cache: "force-cache" });
+      fetched.set(name, await res.arrayBuffer());
     } catch (_) {}
+  }));
+})();
 
-    if (ctx.state === "running") unlocked = true;
+// WebAudio state — all lazy, created inside first gesture
+let actx        = null;
+let master      = null;
+let audioReady  = false;
+const buffers   = new Map();
+let crackleGain = null;
+let crackleNode = null;
+
+async function unlockNow() {
+  // Create context inside gesture so iOS starts it in "running" state
+  if (!actx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    actx   = new AC({ latencyHint: "interactive" });
+    master = actx.createGain();
+    master.connect(actx.destination);
   }
 
-  // If user is currently holding the couch and audio is ready,
-  // start sounds now (catches the first-tap case where touchend
-  // unlocks the context AFTER pointerdown already tried to play)
-  if (holding && audioReady) {
-    playIgnite();
-    crackleOn();
+  if (actx.state === "suspended") await actx.resume().catch(() => {});
+
+  // Warm-up blip (unlocks iOS audio hardware)
+  try {
+    const osc = actx.createOscillator();
+    const g   = actx.createGain();
+    g.gain.value = 0.0001;
+    osc.connect(g);
+    g.connect(master);
+    osc.start();
+    osc.stop(actx.currentTime + 0.01);
+  } catch (_) {}
+
+  // Decode fetched buffers now that context exists
+  if (!audioReady) {
+    for (const [name, arr] of fetched) {
+      if (!buffers.has(name)) {
+        try {
+          buffers.set(name, await actx.decodeAudioData(arr.slice(0)));
+        } catch (_) {}
+      }
+    }
+    if (buffers.size >= Object.keys(SOUNDS).length) audioReady = true;
   }
+
+  // Heartbeat — keeps iOS from suspending the context in the background
+  if (!unlockNow._hb) {
+    unlockNow._hb = setInterval(() => {
+      if (actx && actx.state === "running") {
+        try {
+          const s = actx.createBufferSource();
+          s.buffer = actx.createBuffer(1, 1, actx.sampleRate);
+          s.connect(master);
+          s.start(0);
+        } catch (_) {}
+      }
+    }, 25000);
+  }
+
+  // If user is already holding, kick off sounds now
+  if (holding && audioReady) { playIgnite(); crackleOn(); }
 }
 
-// Step 3: Listen on activation-granting events (capture phase for reliability)
-// touchend = iOS touch, mousedown = desktop, click = fallback
-document.addEventListener("touchend", unlockAudio, true);
-document.addEventListener("mousedown", unlockAudio, true);
-document.addEventListener("click", unlockAudio, true);
+// Fire once on first gesture (touchstart works here because we create the context inside it)
+["touchstart", "pointerdown", "keydown"].forEach(evt =>
+  window.addEventListener(evt, unlockNow, { capture: true, once: true })
+);
 
-// Step 4: Re-resume after tab switch / phone call / screen lock
+// Re-resume after tab switch / phone call / screen lock
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && ctx && ctx.state !== "running") {
-    ctx.resume();
-  }
+  if (!document.hidden && actx && actx.state === "suspended") actx.resume().catch(() => {});
 });
 
-/*
-  loadBuffers() — async, decodes audio files. Safe to call anytime after ctx exists.
-  Only runs once; subsequent calls return the same promise.
-*/
-async function loadBuffers() {
-  if (audioReady) return true;
-  if (loadPromise) return loadPromise;
-  if (!ctx) return false;
-
-  loadPromise = (async () => {
-    try {
-      // Fetch and decode both audio files (works even on suspended context)
-      if (!igniteBuffer || !crackleBuffer) {
-        const [igBuf, crBuf] = await Promise.all([
-          fetch("ignite.mp3").then(r => r.arrayBuffer()).then(ab => ctx.decodeAudioData(ab)),
-          fetch("crackle.mp3").then(r => r.arrayBuffer()).then(ab => ctx.decodeAudioData(ab))
-        ]);
-        igniteBuffer  = igBuf;
-        crackleBuffer = crBuf;
-      }
-
-      audioReady = true;
-      return true;
-    } catch (e) {
-      return false;
-    } finally {
-      loadPromise = null;
-    }
-  })();
-
-  return loadPromise;
-}
-
-// Start loading buffers eagerly at page load
-loadBuffers();
-
-/* — Lazy-init crackle loop (only when first needed, after context is unlocked) — */
-function ensureCrackleLoop() {
-  if (crackleGain) return; // already set up
-  if (!ctx || !crackleBuffer) return;
-
-  crackleGain = ctx.createGain();
-  crackleGain.gain.value = 0.0;
-  crackleGain.connect(ctx.destination);
-
-  crackleSource = ctx.createBufferSource();
-  crackleSource.buffer = crackleBuffer;
-  crackleSource.loop = true;
-  crackleSource.connect(crackleGain);
-  crackleSource.start(0);
-}
-
-/* — Ignite: fire-and-forget one-shot buffer — */
+/* — Ignite: procedural two-layer fire-catch sound (no audio file needed) —
+   Layer 1 "whoosh"  — low-pass noise sweeping 3500 Hz → 300 Hz over 0.7s
+   Layer 2 "whumph"  — low-pass thump at ~180 Hz, decays in 0.35s
+   Tweak VOLUMES.ignite (0–1) above to change overall loudness.            */
 function playIgnite() {
-  if (!audioReady || !ctx || !igniteBuffer) return;
+  if (!actx || !master) return;
+  if (actx.state === "suspended") actx.resume().catch(() => {});
   try {
-    const src = ctx.createBufferSource();
-    src.buffer = igniteBuffer;
-    src.connect(ctx.destination);
-    src.start(0);
+    const t      = actx.currentTime;
+    const dur    = 0.7;
+    const frames = Math.ceil(actx.sampleRate * dur);
+
+    // Shared white-noise buffer
+    const noiseBuf = actx.createBuffer(1, frames, actx.sampleRate);
+    const ch = noiseBuf.getChannelData(0);
+    for (let i = 0; i < frames; i++) ch[i] = Math.random() * 2 - 1;
+
+    // Layer 1 — bright-to-dark frequency sweep (the "whoosh")
+    const src1 = actx.createBufferSource(); src1.buffer = noiseBuf;
+    const lpf1 = actx.createBiquadFilter(); lpf1.type = "lowpass"; lpf1.Q.value = 0.7;
+    lpf1.frequency.setValueAtTime(3500, t);
+    lpf1.frequency.exponentialRampToValueAtTime(300, t + dur);
+    const g1 = actx.createGain();
+    g1.gain.setValueAtTime(0, t);
+    g1.gain.linearRampToValueAtTime(VOLUMES.ignite * 0.8, t + 0.03);
+    g1.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src1.connect(lpf1); lpf1.connect(g1); g1.connect(master);
+
+    // Layer 2 — low-frequency thump (the "whumph" as it catches)
+    const src2 = actx.createBufferSource(); src2.buffer = noiseBuf;
+    const lpf2 = actx.createBiquadFilter(); lpf2.type = "lowpass";
+    lpf2.frequency.value = 180; lpf2.Q.value = 1.5;
+    const g2 = actx.createGain();
+    g2.gain.setValueAtTime(0, t);
+    g2.gain.linearRampToValueAtTime(VOLUMES.ignite * 0.9, t + 0.02);
+    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    src2.connect(lpf2); lpf2.connect(g2); g2.connect(master);
+
+    src1.start(t); src1.stop(t + dur);
+    src2.start(t); src2.stop(t + dur);
   } catch (_) {}
 }
 
-/* — Crackle on/off via gain ramp — */
+/* — Crackle loop: WebAudio gain ramp, HTMLAudio fallback —
+   Assumes crackle.mp3 is a properly prepared seamless loop (no encoder-padding
+   gap), so we loop the full buffer from 0 → duration with no trim needed.    */
+function ensureCrackleLoop() {
+  if (crackleGain || !actx || !master || !buffers.has("crackle")) return;
+  crackleGain = actx.createGain();
+  crackleGain.gain.value = 0;
+  crackleGain.connect(master);
+
+  const buf = buffers.get("crackle");
+  crackleNode = actx.createBufferSource();
+  crackleNode.buffer    = buf;
+  crackleNode.loop      = true;
+  crackleNode.loopStart = 0;
+  crackleNode.loopEnd   = buf.duration;
+  crackleNode.connect(crackleGain);
+  crackleNode.start(0);
+}
+
 function crackleOn() {
-  if (!audioReady || !ctx) return;
-  ensureCrackleLoop();
-  if (!crackleGain) return;
-  const t = ctx.currentTime;
-  crackleGain.gain.cancelScheduledValues(t);
-  crackleGain.gain.setValueAtTime(crackleGain.gain.value, t);
-  crackleGain.gain.linearRampToValueAtTime(CRACKLE_VOL_ON, t + 0.02);
+  if (actx && actx.state === "suspended") actx.resume().catch(() => {});
+  if (audioReady && actx) {
+    ensureCrackleLoop();
+    if (crackleGain) {
+      const t = actx.currentTime;
+      crackleGain.gain.cancelScheduledValues(t);
+      crackleGain.gain.setValueAtTime(crackleGain.gain.value, t);
+      crackleGain.gain.linearRampToValueAtTime(VOLUMES.crackle, t + 0.02);
+      return;
+    }
+  }
+  // HTMLAudio fallback
+  try { pools["crackle"].play().catch(() => {}); } catch (_) {}
 }
 
 function crackleOff() {
-  if (!audioReady || !ctx || !crackleGain) return;
-  const t = ctx.currentTime;
-  crackleGain.gain.cancelScheduledValues(t);
-  crackleGain.gain.setValueAtTime(crackleGain.gain.value, t);
-  crackleGain.gain.linearRampToValueAtTime(0.0, t + 0.08);
+  if (actx && crackleGain) {
+    const t = actx.currentTime;
+    crackleGain.gain.cancelScheduledValues(t);
+    crackleGain.gain.setValueAtTime(crackleGain.gain.value, t);
+    crackleGain.gain.linearRampToValueAtTime(0, t + 0.08);
+    return;
+  }
+  // HTMLAudio fallback
+  try { const a = pools["crackle"]; a.pause(); a.currentTime = 0; } catch (_) {}
 }
 
 /* -------------------------------------------------------
    INPUT
    - touchstart on stage: preventDefault only (stops scroll/zoom)
    - pointerdown: visuals + audio playback
-   - Audio unlock happens via touchend/mousedown/click on document
+   - Audio unlock: context created on first touchstart/pointerdown/keydown
 ------------------------------------------------------- */
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -449,7 +599,7 @@ stageEl.addEventListener("touchstart", (e) => {
   e.preventDefault();
 }, { passive: false });
 
-async function onDown(e) {
+function onDown(e) {
   e.preventDefault();
   holding = true;
 
@@ -457,15 +607,8 @@ async function onDown(e) {
   startFire();
   setTimeout(() => { if (holding) startSmoke(); }, 120);
 
-  // Ensure buffers are loaded (usually already done eagerly)
-  await loadBuffers();
-
-  // If user released while loading, bail
-  if (!holding) return;
-
-  // Resume context in case it was suspended (belt + suspenders)
-  if (ctx && ctx.state !== "running") ctx.resume();
-
+  // Audio — unlock handles context creation on first gesture;
+  // subsequent presses just call play directly
   playIgnite();
   crackleOn();
 }
