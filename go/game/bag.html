@@ -1203,6 +1203,9 @@ canvas {
   <div id="soundBar">
     <button id="homeMusicBtn">music: <span id="musicState">off</span></button>
     <span class="bar-sep">·</span>
+    <!-- nudge left toward music button: adjust margin-left below (more negative = closer to music) -->
+    <button id="homeGoodybagBtn" style="margin-left: -6px;">goodybag</button>
+    <span class="bar-sep">·</span>
     <button id="homeSfxBtn">sfx: <span id="sfxState">off</span></button>
   </div>
 </div>
@@ -3117,6 +3120,8 @@ function closeGoodybag() {
 }
 
 goodybagBtn.addEventListener('click', () => { SFX.play('click'); openGoodybag(); });
+const homeGoodybagBtn = document.getElementById('homeGoodybagBtn');
+if (homeGoodybagBtn) homeGoodybagBtn.addEventListener('click', () => { SFX.play('click'); openGoodybag(); });
 
 let soundtrackPageIndex = 0;
 
