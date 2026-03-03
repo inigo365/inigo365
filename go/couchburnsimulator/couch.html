@@ -29,8 +29,8 @@ html, body {
   overflow: hidden;
   /* Pixelated background scene — rendered with crisp-edges via CSS */
   background-image: url("background.png");
-  background-size: max(100vw, 1280px) auto; /* desktop: always at least 1280px wide */
-  background-position: center bottom;
+  background-size: max(100vw, 187.5vh) auto; /* fills full viewport width AND preserves full image height — 187.5vh = image aspect ratio (1250÷667) × 100vh */
+  background-position: left bottom;
   background-repeat: no-repeat;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -96,10 +96,10 @@ html, body {
    With cover sizing this maps to roughly bottom: 5% of viewport. */
 .stage {
   position: absolute;
-  left: 18%;
-  bottom: 1%;             /* ← DESKTOP couch vertical position (mobile overrides this below) */
+  left: 25%;              /* ← DESKTOP couch horizontal position (mobile overrides below) */
+  bottom: 1%;             /* ← DESKTOP couch vertical position (mobile overrides below) */
   transform: translateX(-50%);
-  width: 57vh;
+  width: 52vh;            /* ← DESKTOP couch size (mobile overrides below) */
   aspect-ratio: 1 / 1;
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
@@ -205,8 +205,8 @@ html, body {
 }
 #start-prompt {
   position: fixed;
-  top: 40%;            /* matches .status desktop position */
-  left: 15%;           /* ← horizontal position of "tap anywhere to start" text */
+  top: 50%;            /* desktop: perfectly centred (mobile overrides below) */
+  left: 50%;           /* desktop: perfectly centred (mobile overrides below) */
   transform: translate(-50%, -50%);
   font-family: "RuneScape UF", Arial, sans-serif;
   font-size: 22px;
@@ -233,7 +233,7 @@ html, body {
 @media (max-width: 600px) {
   html, body {
     background-size: cover;
-    background-position: left bottom; /* show left side of image where the couch is; cuts from top if needed */
+    background-position: -150px bottom; /* offset 150px left to compensate for 150px added to left side of image */
   }
 
   /* ↓ COUCH SIZE / POSITION ON MOBILE — tweak these three values to reposition.
