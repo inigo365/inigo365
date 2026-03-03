@@ -96,11 +96,12 @@ html, body {
    With cover sizing this maps to roughly bottom: 5% of viewport. */
 .stage {
   position: absolute;
-  left: 51%;
+  left: 18%;
   bottom: 1%;             /* ← DESKTOP couch vertical position (mobile overrides this below) */
   transform: translateX(-50%);
-  width: 57vh; /* 380/667 * 100vh ≈ 57vh — same scale on all screens; overflows on narrow viewports like bg image does */
+  width: 57vh;
   aspect-ratio: 1 / 1;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
 
 .stage img {
@@ -116,10 +117,28 @@ html, body {
 
 /* Floating splash phrases that pop up over the couch */
 @keyframes splashFloat {
-  0%   { opacity: 0; transform: translateX(-50%) translateY(0);     }
-  12%  { opacity: 1; transform: translateX(-50%) translateY(-8px);  }
-  65%  { opacity: 1; transform: translateX(-50%) translateY(-28px); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-80px); }
+  0%   { opacity: 0;    transform: translateX(-50%) translateY(0);     }
+  12%  { opacity: 1;    transform: translateX(-50%) translateY(-8px);  }
+  65%  { opacity: 1;    transform: translateX(-50%) translateY(-28px); }
+  100% { opacity: 0;    transform: translateX(-50%) translateY(-80px); }
+}
+
+/* Ghostly variant for pre-interaction hints — same float but much fainter */
+@keyframes splashHintFloat {
+  0%   { opacity: 0;    transform: translateX(-50%) translateY(0);     }
+  15%  { opacity: 0.38; transform: translateX(-50%) translateY(-8px);  }
+  65%  { opacity: 0.32; transform: translateX(-50%) translateY(-28px); }
+  100% { opacity: 0;    transform: translateX(-50%) translateY(-80px); }
+}
+.splash-hint {
+  animation: splashHintFloat 3.6s ease-out forwards;
+  font-size: 19px;
+  color: #e8e8e8;
+  text-shadow:
+     1px  1px 0 rgba(0,0,0,0.4),
+    -1px -1px 0 rgba(0,0,0,0.4),
+     1px -1px 0 rgba(0,0,0,0.4),
+    -1px  1px 0 rgba(0,0,0,0.4);
 }
 
 .splash {
@@ -160,7 +179,7 @@ html, body {
 .status {
   position: fixed;
   top: 40%;                /* ← DESKTOP vertical position (mobile overrides below) */
-  left: 45%;               /* ← horizontal position (50% = centre, lower = further left) */
+  left: 15%;               /* ← horizontal position (50% = centre, lower = further left) */
   transform: translate(-50%, -50%);
   font-size: 22px;
   color: #ffffff;
@@ -174,6 +193,39 @@ html, body {
     -1px  1px 0 rgba(0,0,0,0.85);
 }
 
+/* ─── START SCREEN ──────────────────────────────────────────────────────────
+   Fullscreen transparent overlay — intercepts the very first gesture so that
+   AudioContext creation happens in a clean, isolated user-gesture context with
+   no competing preventDefault chains or capture-phase complications.           */
+#start-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  cursor: url("../../images/cursor/cursor-hover.png"), pointer;
+}
+#start-prompt {
+  position: fixed;
+  top: 40%;            /* matches .status desktop position */
+  left: 15%;           /* ← horizontal position of "tap anywhere to start" text */
+  transform: translate(-50%, -50%);
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 22px;
+  color: #ffffff;
+  text-transform: lowercase;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+     1px  1px 0 rgba(0,0,0,0.85),
+    -1px -1px 0 rgba(0,0,0,0.85),
+     1px -1px 0 rgba(0,0,0,0.85),
+    -1px  1px 0 rgba(0,0,0,0.85);
+  animation: startPulse 1.2s ease-in-out infinite;
+}
+@keyframes startPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
 /* ─── MOBILE OVERRIDES ──────────────────────────────────────────────────────
    Background: cover scales by height on portrait phones so the image always
    fills the full viewport with no gap at the top.
@@ -181,6 +233,7 @@ html, body {
 @media (max-width: 600px) {
   html, body {
     background-size: cover;
+    background-position: left bottom; /* show left side of image where the couch is; cuts from top if needed */
   }
 
   /* ↓ COUCH SIZE / POSITION ON MOBILE — tweak these three values to reposition.
@@ -193,7 +246,13 @@ html, body {
 
   /* ↓ STATUS TEXT VERTICAL POSITION ON MOBILE                                */
   .status {
-    top: 50%;             /* ← adjust status text vertical position here (desktop is 40%) */
+    top: 50%;
+    left: 40%;             /* ← adjust status text horizontal position here (desktop is 15%) */
+  }
+
+  #start-prompt {
+    top: 50%;
+    left: 30%;
   }
 
 }
@@ -203,6 +262,11 @@ html, body {
 <body>
 <button class="back-button" onclick="goBack()">← back</button>
 
+<!-- Start screen: intercepts the very first gesture to unlock AudioContext cleanly -->
+<div id="start-screen">
+  <div id="start-prompt">tap anywhere to start</div>
+</div>
+
 <div class="wrapper">
   <div class="stack">
     <div class="stage" id="stage">
@@ -211,7 +275,7 @@ html, body {
       <img class="smoke" id="smoke" src="smoke_1.png" alt="smoke" draggable="false" />
     </div>
 
-    <div class="status" id="status">click / tap to ignite</div>
+    <div class="status" id="status" style="visibility:hidden"></div>
   </div>
 </div>
 
@@ -289,14 +353,13 @@ let statusTimer = null;
 let phraseIndex = 0;
 
 /* Spawn a phrase as a floating label above the couch, drifting upward then fading */
-function showSplash(text) {
+function showSplash(text, hint = false) {
   const rect = stageEl.getBoundingClientRect();
-  // Appear in the upper third of the couch, with a small random horizontal nudge
   const x = rect.left + rect.width  * 0.5 + (Math.random() - 0.5) * rect.width * 0.3;
   const y = rect.top  + rect.height * 0.25;
 
   const el = document.createElement("div");
-  el.className   = "splash";
+  el.className   = hint ? "splash splash-hint" : "splash";
   el.textContent = text;
   el.style.left  = x + "px";
   el.style.top   = y + "px";
@@ -304,9 +367,32 @@ function showSplash(text) {
   el.addEventListener("animationend", () => el.remove());
 }
 
+/* Hint splashes — appear over the couch after the start screen is dismissed,
+   nudging the user to interact. Stops as soon as they press the couch.       */
+const HINTS = ["tap & hold", "hold it...", "tap the couch"];
+let hintIdx   = 0;
+let hintTimer = null;
+let hintsDone = false; // set true once fire is confirmed — never show hints again
+
+function startHintCycle() {
+  if (hintsDone || hintTimer) return;
+  function showNext() {
+    showSplash(HINTS[hintIdx % HINTS.length], true); // true = ghostly hint style
+    hintIdx++;
+    hintTimer = setTimeout(showNext, 4000);
+  }
+  showNext(); // first hint immediately, then every 4s
+}
+
+function stopHintCycle(permanent = false) {
+  clearTimeout(hintTimer);
+  hintTimer = null;
+  if (permanent) hintsDone = true;
+}
+
 function startStatusCycle() {
   if (statusTimer) return;
-  statusEl.textContent = "burning...";
+  stopHintCycle(true); // fire is going — hints no longer needed, ever
 
   // Spawn a floating phrase over the couch — ← adjust interval (ms) to change frequency
   statusTimer = setInterval(() => {
@@ -321,7 +407,7 @@ function startStatusCycle() {
 function stopStatusCycle() {
   clearInterval(statusTimer);
   statusTimer = null;
-  statusEl.textContent = "click / tap to ignite";
+  statusEl.textContent = "";
 }
 
 function startFire() {
@@ -520,10 +606,20 @@ function unlockNow() {
   }
 }
 
-// Fire once on first gesture (touchstart works here because we create the context inside it)
-["touchstart", "pointerdown", "keydown"].forEach(evt =>
-  window.addEventListener(evt, unlockNow, { capture: true, once: true })
-);
+// Start screen — the ONLY entry point for first-gesture audio unlock.
+// Calling unlockNow() here gives the browser a clean, unambiguous user-gesture
+// context: no capture-phase complications, no preventDefault chains.
+const startScreenEl = document.getElementById("start-screen");
+
+function dismissStartScreen() {
+  unlockNow();
+  startScreenEl.remove();
+  statusEl.style.visibility = "";
+  startHintCycle(); // begin subtle couch-hint splashes
+}
+
+startScreenEl.addEventListener("pointerdown", dismissStartScreen, { once: true });
+document.addEventListener("keydown", dismissStartScreen,           { once: true });
 
 // Re-resume after tab switch / phone call / screen lock
 document.addEventListener("visibilitychange", () => {
@@ -637,7 +733,7 @@ function onDown(e) {
   e.preventDefault();
   holding = true;
 
-  // Visuals start instantly
+  stopHintCycle(); // pause hints while pressing (resumes on release if fire didn't start)
   startFire();
   setTimeout(() => { if (holding) startSmoke(); }, 120);
 
@@ -658,6 +754,7 @@ function onUp(e) {
   stopFire();
   stopSmokeWithLinger();
   crackleOff();
+  startHintCycle(); // resume hints if fire never got going (no-ops if hintsDone)
 }
 
 stageEl.addEventListener("pointerdown", onDown, { passive: false });
