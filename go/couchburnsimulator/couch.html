@@ -160,7 +160,7 @@ html, body {
 .status {
   position: fixed;
   top: 40%;                /* ← DESKTOP vertical position (mobile overrides below) */
-  left: 50%;
+  left: 45%;               /* ← horizontal position (50% = centre, lower = further left) */
   transform: translate(-50%, -50%);
   font-size: 22px;
   color: #ffffff;
@@ -260,17 +260,29 @@ let stopSmokeTimeout = null;
    STATUS TEXT — rotating NZ slang while burning
 ------------------------------------------------------- */
 const NZ_PHRASES = [
-  "she's going off bro",
-  "fully cooked",
-  "choice as",
-  "get in!",
-  "oh yeah nah",
-  "sweet as",
-  "it's munted",
+  "insane couch",
+  "so cooked g",
+  "good cunt",
+  "sick cunt",
+  "oh yeah nah yeah nah yea",
+  "sweet bro",
+  "munted fuckwit",
   "ka pai",
-  "absolutely munted",
-  "go on then",
+  "whadyatalkinabeet",
+  "boom ting",
   "oi oi oi",
+  "six pack of diesels",
+  "5 million billy mavs later",
+  "i love scrumpy",
+  "g he just funnelled a goldfish",
+  "pube sandwich",
+  "paint the eisel",
+  "lets play hide the shit",
+  "any cones showley",
+  "g ne rax",
+  "wna sco",
+  "gt tbz msg",
+  "bring back discord"
 ];
 
 let statusTimer = null;
@@ -298,7 +310,10 @@ function startStatusCycle() {
 
   // Spawn a floating phrase over the couch — ← adjust interval (ms) to change frequency
   statusTimer = setInterval(() => {
-    phraseIndex = Math.floor(Math.random() * NZ_PHRASES.length);
+    let next;
+    do { next = Math.floor(Math.random() * NZ_PHRASES.length); }
+    while (next === phraseIndex && NZ_PHRASES.length > 1); // never repeat the last one
+    phraseIndex = next;
     showSplash(NZ_PHRASES[phraseIndex]);
   }, 2000); /* ← splash frequency in ms (lower = more frequent) */
 }
@@ -453,7 +468,7 @@ async function decodeAndReady() {
   }
   if (buffers.size >= Object.keys(SOUNDS).length) {
     audioReady = true;
-    if (holding) { playIgnite(); crackleOn(); }
+    if (holding) crackleOn(); // ignite already fired in onDown; just start the loop
   }
 }
 
@@ -626,11 +641,14 @@ function onDown(e) {
   startFire();
   setTimeout(() => { if (holding) startSmoke(); }, 120);
 
-  // Only play if context is already ready. On first-ever tap, unlockNow (firing
-  // on the same gesture via capture listener) creates the context synchronously,
-  // then decodeAndReady() fires playIgnite + crackleOn once buffers are decoded.
-  // On all subsequent taps audioReady is true, so we play immediately.
-  if (audioReady) { playIgnite(); crackleOn(); }
+  // playIgnite is fully procedural — only needs actx to exist, no decoded buffers.
+  // unlockNow (capture phase, same gesture) creates actx synchronously before
+  // onDown fires, so this works on the very first tap.
+  if (actx) playIgnite();
+
+  // crackleOn needs the decoded buffer — fires immediately on taps after the
+  // first, or via decodeAndReady() callback on the first tap once decode finishes.
+  if (audioReady) crackleOn();
 }
 
 function onUp(e) {
