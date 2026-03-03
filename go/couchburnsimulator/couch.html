@@ -239,7 +239,8 @@ html, body {
   /* ↓ COUCH SIZE / POSITION ON MOBILE — tweak these three values to reposition.
        Desktop width is 57vh. Desktop bottom is 17%. Desktop left is 50%.     */
   .stage {
-    width: 42vh;          /* ← adjust couch scale here */
+    width: 42vh;          /* fallback for older browsers */
+    width: 42svh;         /* ← adjust couch scale here — svh = viewport minus Safari browser chrome, matches DevTools exactly */
     bottom: 1%;           /* ← adjust couch vertical position here */
     left: 54%;            /* ← adjust couch horizontal position here (50% = centre) */
   }
