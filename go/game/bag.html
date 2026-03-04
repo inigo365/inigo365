@@ -2005,7 +2005,7 @@ function addHoop() {
 
 // Tune these (unlock total should feel ~like baghetti)
 const MUSIC_UNLOCK_CHANCE    = 1 / 30;  // ~3.3%
-const PASSWORD_UNLOCK_CHANCE = 1 / 20;  // ~8.3% — boosted to counter notbag dilution
+const PASSWORD_UNLOCK_CHANCE = 1 / 27;  // ~8.3% — boosted to counter notbag dilution
 const SHIELD_SPAWN_CHANCE    = 1 / 30;  // ~3.3%
 const BAGHETTI_SPAWN_CHANCE  = 1 / 80;  // ~1.7%
 
@@ -2227,6 +2227,7 @@ function startGame() {
   lastPasswordOffset = -1;
   baghettiCharges = 0;
   baghettiRunLeft = 0;
+  dismissBaghettiNotification();
   updateTopScores();
   gameOver = false;
   shieldArmed = false;
@@ -2499,6 +2500,7 @@ if (powerId === POWERUPS.baghetti) {
   // Only show the persistent notification on the initial pickup, not forced ones
   if (!h.forcedBaghetti) {
     showBaghettiNotification();
+    setTimeout(() => dismissBaghettiNotification(), 2000);
     // baghettiCharges = BAGHETTI_FORCED_COUNT; // 2 forced — disabled
     // baghettiRunLeft = BAGHETTI_TOTAL_RUN;    // 3 total — disabled
   }
