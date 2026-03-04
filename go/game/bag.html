@@ -852,6 +852,24 @@ canvas {
   margin-top: 6px;
 }
 
+/* ===== COLLECTION COMPLETE STATE ===== */
+@keyframes bagShimmer {
+  0%, 100% { filter: brightness(1); }
+  50%       { filter: brightness(1.3) drop-shadow(0 0 5px #ffd400); }
+}
+
+.collection-grid.complete .collection-sprite {
+  animation: bagShimmer 2s ease-in-out infinite;
+  /* stagger per sprite — --idx set in JS */
+  animation-delay: calc(var(--idx, 0) * 60ms);
+}
+
+.collection-count.complete {
+  color: #ffd400;
+  opacity: 1;
+  font-size: 18px;
+}
+
 #goodybagButtons {
     display: flex;
     flex-wrap: wrap;
@@ -1747,7 +1765,10 @@ const powerupSprites = [];
 const MYTHIC_INDEX = NUM_SPRITES;                 // 25
 const NOTBAG_START = MYTHIC_INDEX + 1;            // 26
 const UNLOCK_START = NOTBAG_START + NOTBAG_COUNT; // 36
-const POWERUP_START = UNLOCK_START + UNLOCK_COUNT;// 39
+const POWERUP_START = UNLOCK_START + UNLOCK_COUNT;// 40
+
+// Total bags collectable: regular (0-25) + unlocks (36-39) + powerups (40-41)
+const TOTAL_COLLECTABLE = (MYTHIC_INDEX + 1) + UNLOCK_COUNT + POWERUP_COUNT; // 32
 
 // Flat sprite lookup — built once after load, O(1) access in hot loop
 const spriteTable = [];
@@ -1977,10 +1998,10 @@ function addHoop() {
      // 3) Unlock bags + Powerups (all in ONE chain so nothing overwrites)
 
 // Tune these (unlock total should feel ~like baghetti)
-const MUSIC_UNLOCK_CHANCE    = 1 / 60; // ~0.33%
-const PASSWORD_UNLOCK_CHANCE = 1 / 60; // ~0.17%  (rarer than music)
-const SHIELD_SPAWN_CHANCE    = 1 / 60;  // ~1.67%
-const BAGHETTI_SPAWN_CHANCE  = 1 / 200; // ~0.5%
+const MUSIC_UNLOCK_CHANCE    = 1 / 45;  // ~2.2%  (was 1/60)
+const PASSWORD_UNLOCK_CHANCE = 1 / 45;  // ~2.2%  (was 1/60)
+const SHIELD_SPAWN_CHANCE    = 1 / 45;  // ~2.2%  (was 1/60)
+const BAGHETTI_SPAWN_CHANCE  = 1 / 130; // ~0.77% (was 1/200)
 
 const roll = Math.random();
 
@@ -3260,9 +3281,31 @@ function addToCollection(spriteIndex) {
   collectionSet.add(spriteIndex);
   collectionCache.push(spriteIndex);
   localStorage.setItem(COLLECTION_KEY, JSON.stringify(collectionCache));
+
+  // Check if this was the last bag needed to complete the collection
+  if (collectionSet.size === TOTAL_COLLECTABLE) {
+    SFX.play('power');
+    const completingSprite = imgForIndex(spriteIndex);
+    showPickupNotification(
+      completingSprite ? completingSprite.src : '',
+      'all bags unlocked!',
+      '#ffd400',
+      4500
+    );
+    updateCollectionBtnBadge();
+  }
 }
 
 const collectionBtn = document.getElementById('collectionBtn');
+
+function updateCollectionBtnBadge() {
+  ensureCollectionCache();
+  collectionBtn.textContent = collectionSet.size >= TOTAL_COLLECTABLE
+    ? 'collection ✦'
+    : 'collection';
+}
+// Set badge state on load (in case the player already has all bags)
+updateCollectionBtnBadge();
 
 collectionBtn.addEventListener('click', () => {
   const col = getCollection();
@@ -3286,9 +3329,10 @@ collectionBtn.addEventListener('click', () => {
   const totalCollectable = collectableIndices.length;
   let foundCount = 0;
 
-  collectableIndices.forEach(idx => {
+  collectableIndices.forEach((idx, i) => {
     const img = document.createElement('img');
     img.className = 'collection-sprite';
+    img.style.setProperty('--idx', i); // used for shimmer stagger animation
     const spriteImg = imgForIndex(idx);
     if (spriteImg && spriteImg.src) {
       img.src = spriteImg.src;
@@ -3303,11 +3347,16 @@ collectionBtn.addEventListener('click', () => {
     grid.appendChild(img);
   });
 
+  const isComplete = foundCount === totalCollectable;
+  if (isComplete) grid.classList.add('complete');
+
   goodybagContent.appendChild(grid);
 
   const count = document.createElement('div');
-  count.className = 'collection-count';
-  count.textContent = foundCount + ' / ' + totalCollectable + ' bags found';
+  count.className = isComplete ? 'collection-count complete' : 'collection-count';
+  count.textContent = isComplete
+    ? 'all bags found!'
+    : foundCount + ' / ' + totalCollectable + ' bags found';
   goodybagContent.appendChild(count);
 });
 
