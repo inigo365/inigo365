@@ -1649,6 +1649,7 @@ let lastDt = 1;
 // ===================== SPECIAL SPAWN + POWERUP STATE =====================
 let lastHoopWasNotBag = false;
 let lastHoopSpriteIndex = -1; // prevent same bag twice in a row
+let lastPasswordOffset = -1;  // prevent same password bag twice in a row
 
 // Shield: simplest + safest = 1-use shield (saves you once)
 let shieldArmed = false;
@@ -2003,10 +2004,10 @@ function addHoop() {
      // 3) Unlock bags + Powerups (all in ONE chain so nothing overwrites)
 
 // Tune these (unlock total should feel ~like baghetti)
-const MUSIC_UNLOCK_CHANCE    = 1 / 30;  // ~5%
-const PASSWORD_UNLOCK_CHANCE = 1 / 30;  // ~5% for the password pool
+const MUSIC_UNLOCK_CHANCE    = 1 / 30;  // ~3.3%
+const PASSWORD_UNLOCK_CHANCE = 1 / 20;  // ~8.3% — boosted to counter notbag dilution
 const SHIELD_SPAWN_CHANCE    = 1 / 30;  // ~3.3%
-const BAGHETTI_SPAWN_CHANCE  = 1 / 70;  // ~1.7%
+const BAGHETTI_SPAWN_CHANCE  = 1 / 80;  // ~1.7%
 
 // All three password bags — always available as visual spawns.
 const _allPws = [
@@ -2028,8 +2029,12 @@ if (roll < MUSIC_UNLOCK_CHANCE) {
   spriteIndex = UNLOCK_START + 2;
 }
 else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
-  // Pick from uncollected passwords first; if all collected, pick from all three
-  const pw = _pwPool[Math.floor(Math.random() * _pwPool.length)];
+  // Exclude the last-spawned password bag to prevent back-to-back repeats.
+  // If filtering leaves at least one option, use the filtered pool; otherwise fall back.
+  const _noRepeatPool = _pwPool.filter(pw => pw.offset !== lastPasswordOffset);
+  const _chooseFrom = _noRepeatPool.length > 0 ? _noRepeatPool : _pwPool;
+  const pw = _chooseFrom[Math.floor(Math.random() * _chooseFrom.length)];
+  lastPasswordOffset = pw.offset;
   spriteIndex = UNLOCK_START + pw.offset;
 }
 
@@ -2219,6 +2224,9 @@ function startGame() {
   hoops = [];
   score = 0;
   lastHoopSpriteIndex = -1;
+  lastPasswordOffset = -1;
+  baghettiCharges = 0;
+  baghettiRunLeft = 0;
   updateTopScores();
   gameOver = false;
   shieldArmed = false;
@@ -2491,8 +2499,8 @@ if (powerId === POWERUPS.baghetti) {
   // Only show the persistent notification on the initial pickup, not forced ones
   if (!h.forcedBaghetti) {
     showBaghettiNotification();
-    baghettiCharges = BAGHETTI_FORCED_COUNT; // 2 forced
-    baghettiRunLeft = BAGHETTI_TOTAL_RUN;    // 3 total
+    // baghettiCharges = BAGHETTI_FORCED_COUNT; // 2 forced — disabled
+    // baghettiRunLeft = BAGHETTI_TOTAL_RUN;    // 3 total — disabled
   }
 
   // ✅ decrement for every baghetti collected (pickup + forced)
