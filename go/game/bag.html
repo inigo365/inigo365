@@ -2463,7 +2463,11 @@ if (key === UNLOCK_KEYS.soundtracks) {
   showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', '#2d93ea', 3000);
 }
 
-  if (!willCompleteCollection(h.spriteIndex)) playSfx(sfxPower);
+  if (!willCompleteCollection(h.spriteIndex)) {
+    // Password bags each have a unique SFX; music bag keeps sfxPower
+    const pwSfx = { 0: 'tinny', 1: 'onway', 3: 'deathstar' }[h.spriteIndex - UNLOCK_START];
+    pwSfx ? SFX.play(pwSfx) : playSfx(sfxPower);
+  }
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -2495,7 +2499,7 @@ if (powerId === POWERUPS.baghetti) {
   // ✅ decrement for every baghetti collected (pickup + forced)
   if (baghettiRunLeft > 0) baghettiRunLeft--;
 
-  if (!willCompleteCollection(h.spriteIndex)) playSfx(sfxPower);
+  if (!willCompleteCollection(h.spriteIndex)) SFX.play('baghetti');
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -3424,13 +3428,17 @@ let sfxUserToggled = false;
 
 const SFX = (() => {
   const paths = {
-    gold:  'sfx_gold.mp3',
-    die:   'sfx_die.mp3',
-    power: 'sfx_power.mp3',
-    click: 'sfx_click.mp3',
+    gold:      'SFX/sfx_gold.mp3',
+    die:       'SFX/sfx_die.mp3',
+    power:     'SFX/sfx_power.mp3',
+    click:     'SFX/sfx_click.mp3',
+    baghetti:  'SFX/sfx_baghetti.mp3',
+    tinny:     'SFX/sfx_tinny.mp3',
+    onway:     'SFX/sfx_onway.mp3',
+    deathstar: 'SFX/sfx_deathstar.mp3',
   };
-  const volumes = { gold: 0.8, die: 1.0, power: 1.0, click: 0.85 };
-  const POOL_SIZES = { gold: 6, die: 3, power: 3, click: 8 };
+  const volumes = { gold: 0.8, die: 1.0, power: 1.0, click: 0.85, baghetti: 1.0, tinny: 1.0, onway: 1.0, deathstar: 1.0 };
+  const POOL_SIZES = { gold: 6, die: 3, power: 3, click: 8, baghetti: 2, tinny: 2, onway: 2, deathstar: 2 };
 
   let ctx = null;
   let master = null;
