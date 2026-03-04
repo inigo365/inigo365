@@ -1623,7 +1623,7 @@ const LIFT = -6.9;
 // Desktop gets a speed boost to compensate for the larger screen giving more
 // reaction time. Mobile is completely untouched (multiplier is always 1.0).
 // ── TO TUNE: change the first number (currently 1.12 = +12%). ──────────────
-const DESKTOP_SPEED_MULT = window.innerWidth > 768 ? 1.18 : 1.0;
+const DESKTOP_SPEED_MULT = window.innerWidth > 768 ? 1.25 : 1.0;
 // ────────────────────────────────────────────────────────────────────────────
 
 let SPEED = 3;
@@ -2008,7 +2008,7 @@ function addHoop() {
 const MUSIC_UNLOCK_CHANCE    = 1 / 30;  // ~5%
 const PASSWORD_UNLOCK_CHANCE = 1 / 30;  // ~5% for the password pool
 const SHIELD_SPAWN_CHANCE    = 1 / 30;  // ~3.3%
-const BAGHETTI_SPAWN_CHANCE  = 1 / 50;  // ~1.7%
+const BAGHETTI_SPAWN_CHANCE  = 1 / 70;  // ~1.7%
 
 // All three password bags — always available as visual spawns.
 const _allPws = [
@@ -3439,7 +3439,7 @@ const SFX = (() => {
     onway:     'SFX/sfx_onway.mp3',
     deathstar: 'SFX/sfx_deathstar.mp3',
   };
-  const volumes = { gold: 0.8, die: 1.0, power: 1.0, click: 0.85, baghetti: 0.5, tinny: 1.0, onway: 1.0, deathstar: 1.0 };
+  const volumes = { gold: 0.8, die: 1.0, power: 1.0, click: 1.0, baghetti: 0.4, tinny: 1.0, onway: 1.0, deathstar: 0.7 };
   const POOL_SIZES = { gold: 6, die: 3, power: 3, click: 8, baghetti: 2, tinny: 2, onway: 2, deathstar: 2 };
 
   let ctx = null;
