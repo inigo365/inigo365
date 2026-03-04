@@ -1304,6 +1304,17 @@ const topScoresEl = document.getElementById('topScores');
 // Use CSS layout viewport (reliable across Safari & iOS WebView/standalone)
 function getViewportW() { return document.documentElement.clientWidth  || window.innerWidth; }
 function getViewportH() { return document.documentElement.clientHeight || window.innerHeight; }
+
+// In iOS PWA (added to home screen), the full screen height is available — no browser chrome.
+// getGameplayH() caps this to match a typical iOS Safari viewport so that sprites,
+// the playable area, and physics feel identical in both browser and PWA mode.
+// 0.78 ≈ the ratio of Safari's visible viewport to screen.height on iPhones.
+// Nudge this value up if the play area feels too cramped, down if still too tall.
+const IS_IOS_PWA = window.navigator.standalone === true;
+function getGameplayH() {
+  const h = document.documentElement.clientHeight || window.innerHeight;
+  return IS_IOS_PWA ? Math.min(h, Math.round(screen.height * 0.78)) : h;
+}
 canvas.width = getViewportW();
 canvas.height = getViewportH();
 
@@ -1594,7 +1605,7 @@ let SPEED = 3;
 const START_SPEED = 4;       // speed when the game starts
 const MAX_SPEED = 7.3;       // speed when score reaches MAX_SPEED_SCORE
 const MAX_SPEED_SCORE = 500;
-let SPRITE_SIZE = Math.round(Math.min(canvas.height, screen.height) * 0.10);
+let SPRITE_SIZE = Math.round(Math.min(getGameplayH(), screen.height) * 0.10);
       // ✅ Definitely-not-bag hitbox tuning
 const NOTBAG_HITBOX_SCALE = 0.45; // 0.4 very forgiving, 0.55 nice, 0.7 strict
 let ball = { x: Math.round(canvas.width * 0.4), y: canvas.height / 2, vy: 0, spriteIndex: 0, scaleX: 1, scaleY: 1 };
@@ -2061,10 +2072,10 @@ let cachedWinW = getViewportW();
 let cachedWinH = getViewportH();
 let cachedHighscore = Number(localStorage.getItem('flappyBasketHighscore') || 0);
 let cachedTopScoresH = 44; // fallback; updated on resize + game start
-let cachedPlayableH = cachedWinW <= 768 ? getViewportH() * 0.95 : getViewportH();
+let cachedPlayableH = cachedWinW <= 768 ? getGameplayH() * 0.95 : getGameplayH();
 
 function refreshCachedPlayableH() {
-  cachedPlayableH = cachedWinW <= 768 ? canvas.height * 0.95 : canvas.height;
+  cachedPlayableH = cachedWinW <= 768 ? getGameplayH() * 0.95 : getGameplayH();
 }
 
 window.addEventListener('resize', () => {
@@ -2656,7 +2667,7 @@ function endGame() {
 window.addEventListener('resize', () => {
   canvas.width = getViewportW();
   canvas.height = getViewportH();
-  SPRITE_SIZE = Math.round(Math.min(canvas.height, screen.height) * 0.10);
+  SPRITE_SIZE = Math.round(Math.min(getGameplayH(), screen.height) * 0.10);
   refreshCachedPlayableH();
 });
 
