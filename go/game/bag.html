@@ -865,7 +865,7 @@ canvas {
 }
 
 .collection-count.complete {
-  color: #2d93ea;
+  color: #ffd400;
   opacity: 1;
   font-size: 18px;
 }
@@ -1998,10 +1998,22 @@ function addHoop() {
      // 3) Unlock bags + Powerups (all in ONE chain so nothing overwrites)
 
 // Tune these (unlock total should feel ~like baghetti)
-const MUSIC_UNLOCK_CHANCE    = 1 / 45;  // ~2.2%  (was 1/60)
-const PASSWORD_UNLOCK_CHANCE = 1 / 45;  // ~2.2%  (was 1/60)
-const SHIELD_SPAWN_CHANCE    = 1 / 45;  // ~2.2%  (was 1/60)
-const BAGHETTI_SPAWN_CHANCE  = 1 / 130; // ~0.77% (was 1/200)
+const MUSIC_UNLOCK_CHANCE    = 1 / 50;  // ~2.0%  (was 1/45)
+const PASSWORD_UNLOCK_CHANCE = 1 / 50;  // ~2.0% for the password pool (was 1/45)
+const SHIELD_SPAWN_CHANCE    = 1 / 45;  // ~2.2%  (unchanged)
+const BAGHETTI_SPAWN_CHANCE  = 1 / 130; // ~0.77% (unchanged)
+
+// All three password bags — always available as visual spawns.
+const _allPws = [
+  { offset: 0, key: UNLOCK_KEYS.password_tinny },
+  { offset: 1, key: UNLOCK_KEYS.password_onway },
+  { offset: 3, key: UNLOCK_KEYS.password_deathstar },
+];
+// Uncollected ones get priority — if any are missing, only pick from those.
+// Once all three are collected, fall back to picking from the full set so
+// these bags (some of the most visually interesting) keep appearing at 1/50.
+const _uncollectedPws = _allPws.filter(pw => localStorage.getItem(pw.key) !== 'true');
+const _pwPool = _uncollectedPws.length > 0 ? _uncollectedPws : _allPws;
 
 const roll = Math.random();
 
@@ -2011,9 +2023,9 @@ if (roll < MUSIC_UNLOCK_CHANCE) {
   spriteIndex = UNLOCK_START + 2;
 }
 else if (roll < MUSIC_UNLOCK_CHANCE + PASSWORD_UNLOCK_CHANCE) {
-  // passwords: tinny (0), onway (1), deathstar (3)
-  const pwOffsets = [0, 1, 3];
-  spriteIndex = UNLOCK_START + pwOffsets[Math.floor(Math.random() * pwOffsets.length)];
+  // Pick from uncollected passwords first; if all collected, pick from all three
+  const pw = _pwPool[Math.floor(Math.random() * _pwPool.length)];
+  spriteIndex = UNLOCK_START + pw.offset;
 }
 
 // --- otherwise, consider powerups ---
@@ -2444,7 +2456,7 @@ if (key === UNLOCK_KEYS.soundtracks) {
   showPickupNotification(unlockImg ? unlockImg.src : '', pwName + ' found!', '#2d93ea', 3000);
 }
 
-  playSfx(sfxPower);
+  if (!willCompleteCollection(h.spriteIndex)) playSfx(sfxPower);
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -2463,7 +2475,7 @@ if (h.spriteIndex >= POWERUP_START && h.spriteIndex < POWERUP_START + POWERUP_CO
 if (powerId === POWERUPS.baghetti) {
   score += 1;
 
-  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#ffd400');
+  showTextPopup('baghetti', ball.x, ball.y + POP_TEXT_OFFSET_Y, '#2d93ea');
   showPopup('+1', ball.x, ball.y + POP_POINT_OFFSET_Y, '#ffd400');
 
   // Only show the persistent notification on the initial pickup, not forced ones
@@ -2476,7 +2488,7 @@ if (powerId === POWERUPS.baghetti) {
   // ✅ decrement for every baghetti collected (pickup + forced)
   if (baghettiRunLeft > 0) baghettiRunLeft--;
 
-  playSfx(sfxPower);
+  if (!willCompleteCollection(h.spriteIndex)) playSfx(sfxPower);
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -2500,7 +2512,7 @@ if (powerId === POWERUPS.baghetti) {
     showPickupNotification('sprites/powerups/shield.png', 'ibuprofen found!', '#2d93ea', 3000);
   }
 
-  playSfx(sfxPower);
+  if (!willCompleteCollection(h.spriteIndex)) playSfx(sfxPower);
   addToCollection(h.spriteIndex);
   ball.spriteIndex = h.spriteIndex;
   hoops.splice(i, 1);
@@ -2533,7 +2545,7 @@ if (powerId === POWERUPS.baghetti) {
 
         showPopup('+1', ball.x, pointY, TIER_COLORS.common);
       }
-      playSfx(sfxGold);
+      if (!willCompleteCollection(h.spriteIndex)) playSfx(sfxGold);
       addToCollection(h.spriteIndex);
       ball.spriteIndex = h.spriteIndex;
       hoops.splice(i, 1);
@@ -3275,6 +3287,13 @@ function ensureCollectionCache() {
   collectionCache.forEach(i => collectionSet.add(i));
 }
 
+// Returns true if collecting this sprite would complete the full collection.
+// Called in the game loop BEFORE playSfx so we can suppress the bag's own sound.
+function willCompleteCollection(spriteIndex) {
+  ensureCollectionCache();
+  return !collectionSet.has(spriteIndex) && collectionSet.size + 1 === TOTAL_COLLECTABLE;
+}
+
 function addToCollection(spriteIndex) {
   ensureCollectionCache();
   if (collectionSet.has(spriteIndex)) return;
@@ -3282,14 +3301,16 @@ function addToCollection(spriteIndex) {
   collectionCache.push(spriteIndex);
   localStorage.setItem(COLLECTION_KEY, JSON.stringify(collectionCache));
 
-  // Check if this was the last bag needed to complete the collection
+  // Check if this was the last bag needed to complete the collection.
+  // The bag's own playSfx was already suppressed in the game loop, so play
+  // the completion sound immediately with no overlap.
   if (collectionSet.size === TOTAL_COLLECTABLE) {
     SFX.play('power');
     const completingSprite = imgForIndex(spriteIndex);
     showPickupNotification(
       completingSprite ? completingSprite.src : '',
       'all bags unlocked!',
-      '#ffd400',
+      '#2d93ea',
       4500
     );
     updateCollectionBtnBadge();
