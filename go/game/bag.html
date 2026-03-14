@@ -1404,8 +1404,8 @@ const UNLOCK_KEYS = {
 Object.values(UNLOCK_KEYS).forEach(k => {
   if (localStorage.getItem(k) === null) localStorage.setItem(k, "false");
 });
-// ===================== SOUNDTRACK SYSTEM (3 for now) =====================
-const TOTAL_SOUNDTRACKS = 3;
+// ===================== SOUNDTRACK SYSTEM =====================
+const TOTAL_SOUNDTRACKS = 5;
 const SOUNDTRACK_UNLOCK_LEVEL_KEY = "soundtrack_unlock_level";    // "0".."3"
 const SELECTED_SOUNDTRACK_INDEX_KEY = "selected_soundtrack_index"; // "-1"=random, "0..2"=selected
 
@@ -1424,8 +1424,9 @@ if (localStorage.getItem(SELECTED_SOUNDTRACK_INDEX_KEY) === null) {
 })();
 
 function getUnlockedSoundtrackLevel() {
-  const lvl = Number(localStorage.getItem(SOUNDTRACK_UNLOCK_LEVEL_KEY) || "0");
-  return Math.max(0, Math.min(TOTAL_SOUNDTRACKS, lvl));
+  // All soundtracks are always available — return full count regardless of unlock state.
+  // The per-pickup unlock logic below is kept intact in case we want to restore it later.
+  return TOTAL_SOUNDTRACKS;
 }
 function getSelectedSoundtrackIndex() {
   return Number(localStorage.getItem(SELECTED_SOUNDTRACK_INDEX_KEY) || "-1");
@@ -1473,6 +1474,27 @@ const SOUNDTRACKS = [
       "attracted to you remix- pinkpanthress prod otismadeit",
       "7200 RINGS (7 Rings Remix)- SHENNY x ariana grande",
       "no feelings - deadforest"
+    ]
+  },
+  {
+    title: "soundtrack04",
+    src: "/go/game/soundtrack04.mp3",
+    link: "https://soundcloud.com/",  // placeholder for now
+    tracks: [
+      "they hate it - icytwat",
+      "molly - playboi carti",
+      "at the gates - lil uzi vert x drizzy",
+      "a team thingy - j.robb",
+      "munch9822 - aqua.d",
+      "somalia park - dean blunt"
+    ]
+  },
+  {
+    title: "soundtrack05",
+    src: "/go/game/soundtrack05.mp3",
+    link: "https://soundcloud.com/",  // placeholder for now
+    tracks: [
+      "coming soon..."
     ]
   }
 ];
@@ -2744,7 +2766,6 @@ function ensureSoundtrackLoadedOnce() {
   // only set src once so it never restarts between runs
   bgMusic.src = s.src;
   bgMusic.load();
-  bgMusic.loop = true;
 }
 
 function setSoundtrackByIndex(idx, tryPlay = true) {
@@ -2764,7 +2785,6 @@ function setSoundtrackByIndex(idx, tryPlay = true) {
   bgMusic.pause();
   bgMusic.src = s.src;
   bgMusic.load();
-  bgMusic.loop = true;
 
   if (tryPlay) {
     bgMusic.play().then(() => {
@@ -2800,7 +2820,28 @@ function getPageLoadRandomSoundtrackIndex() {
 }
 
 bgMusic.volume = 0.5;
-bgMusic.loop = true;
+bgMusic.loop = false; // we advance to the next track manually on 'ended'
+
+// Shuffle queue — cycles through all soundtracks without repeating
+let _shuffleQueue = [];
+function _nextShuffledIndex(currentIdx) {
+  if (_shuffleQueue.length === 0) {
+    // Build a full shuffled queue, excluding the current track to avoid immediate repeat
+    const all = SOUNDTRACKS.map((_, i) => i).filter(i => i !== currentIdx);
+    for (let i = all.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [all[i], all[j]] = [all[j], all[i]];
+    }
+    _shuffleQueue = all;
+  }
+  return _shuffleQueue.shift();
+}
+
+bgMusic.addEventListener('ended', () => {
+  if (bgMusic.paused) return; // music was manually stopped
+  const next = _nextShuffledIndex(currentSoundtrackIndex);
+  setSoundtrackByIndex(next, true);
+});
 
 const musicToggle = document.getElementById('musicToggle');
 
@@ -3154,13 +3195,13 @@ function buildHowToContent() {
 
 
 function refreshGoodybagButtons() {
-const hasSoundtracks = getUnlockedSoundtrackLevel() > 0;
-const hasAnyPassword =
-  localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
-  localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true' ||
-  localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true';
+  // Soundtracks always enabled for everyone
+  soundtrackBtn.disabled = false;
 
-  soundtrackBtn.disabled = !hasSoundtracks;
+  const hasAnyPassword =
+    localStorage.getItem(UNLOCK_KEYS.password_tinny) === 'true' ||
+    localStorage.getItem(UNLOCK_KEYS.password_onway) === 'true' ||
+    localStorage.getItem(UNLOCK_KEYS.password_deathstar) === 'true';
   passwordBtn.disabled = !hasAnyPassword;
 }
 
@@ -3168,13 +3209,8 @@ function openGoodybag() {
   goodybagBackdrop.classList.add('active');
   refreshGoodybagButtons();
 
-  // If nothing unlocked yet
-  if (soundtrackBtn.disabled && passwordBtn.disabled) {
-    goodybagContent.innerHTML = `
-      <div style="opacity:0.6; font-size:20px;">
-        no goodies found yet...
-      </div>
-    `;
+  if (passwordBtn.disabled) {
+    goodybagContent.innerHTML = '';
   } else {
     goodybagContent.innerHTML = '';
   }
