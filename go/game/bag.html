@@ -2767,17 +2767,20 @@ function ensureSoundtrackLoadedOnce() {
   bgMusic.load();
 }
 
-function setSoundtrackByIndex(idx, tryPlay = true) {
+function setSoundtrackByIndex(idx, tryPlay = true, countImmediate = false) {
   const s = SOUNDTRACKS[idx];
   if (!s) return;
 
-  // ✅ If already on this track, don't restart it
+  // If already on this track, don't restart it
   if (currentSoundtrackIndex === idx) {
     if (tryPlay && bgMusic.paused) {
       bgMusic.play().then(() => musicToggle.textContent = "music: on").catch(() => {});
     }
     return;
   }
+
+  // Changing track — cancel any pending 30-second count for the previous track
+  _clearPlayCountTimer();
 
   currentSoundtrackIndex = idx;
 
@@ -2789,7 +2792,11 @@ function setSoundtrackByIndex(idx, tryPlay = true) {
     bgMusic.play().then(() => {
       musicToggle.textContent = "music: on";
       updateMediaSession();
-      incrementPlayCount(idx);
+      if (countImmediate) {
+        incrementPlayCount(idx);       // select button — count straight away
+      } else {
+        schedulePlayCount(idx);        // auto-advance / random — wait 30 seconds
+      }
     }).catch(() => {});
   }
 }
@@ -2857,7 +2864,7 @@ function handleFirstUserGesture() {
       musicToggle.textContent = "music: on";
       const ms = document.getElementById('musicState'); if (ms) ms.textContent = "on";
       updateMediaSession();
-      incrementPlayCount(currentSoundtrackIndex);
+      schedulePlayCount(currentSoundtrackIndex); // random on load — wait 30 seconds
     }).catch(() => { });
   }
 
@@ -3130,6 +3137,19 @@ let _gameSupabaseClient = null; // shared with play counter
 
 // ===== SOUNDTRACK PLAY COUNTS =====
 const _playCountCache = {}; // soundtrack_index (number) -> play_count (number)
+let _playCountTimer = null;  // pending 30-second timer
+
+function _clearPlayCountTimer() {
+  if (_playCountTimer) { clearTimeout(_playCountTimer); _playCountTimer = null; }
+}
+
+function schedulePlayCount(idx) {
+  _clearPlayCountTimer();
+  _playCountTimer = setTimeout(() => {
+    incrementPlayCount(idx);
+    _playCountTimer = null;
+  }, 30000);
+}
 
 async function fetchPlayCounts() {
   if (!_gameSupabaseClient) return;
@@ -3330,7 +3350,7 @@ function renderSoundtrackPage() {
   selectBtn.onclick = () => {
     SFX.play('power');
     setSelectedSoundtrackIndex(soundtrackPageIndex);
-    setSoundtrackByIndex(soundtrackPageIndex, true);
+    setSoundtrackByIndex(soundtrackPageIndex, true, true); // countImmediate = true
   };
 
   bottomRow.appendChild(leftControls);
