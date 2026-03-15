@@ -2753,9 +2753,7 @@ const bgMusic = document.getElementById('bgMusic');
 let currentSoundtrackIndex = null;
 
 function resolveInitialSoundtrackIndex() {
-  const selected = getSelectedSoundtrackIndex();
-  if (selected >= 0 && selected < SOUNDTRACKS.length) return selected;
-  return getPageLoadRandomSoundtrackIndex(); // random ONCE per page load
+  return getPageLoadRandomSoundtrackIndex(); // always random on page load
 }
 
 function ensureSoundtrackLoadedOnce() {
@@ -2840,7 +2838,7 @@ function _nextShuffledIndex(currentIdx) {
 }
 
 bgMusic.addEventListener('ended', () => {
-  if (bgMusic.paused) return; // music was manually stopped
+  // 'ended' only fires on natural completion, never on manual pause — no guard needed
   const next = _nextShuffledIndex(currentSoundtrackIndex);
   setSoundtrackByIndex(next, true);
 });
