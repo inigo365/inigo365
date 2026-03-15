@@ -2789,6 +2789,7 @@ function setSoundtrackByIndex(idx, tryPlay = true) {
     bgMusic.play().then(() => {
       musicToggle.textContent = "music: on";
       updateMediaSession();
+      incrementPlayCount(idx);
     }).catch(() => {});
   }
 }
@@ -2856,6 +2857,7 @@ function handleFirstUserGesture() {
       musicToggle.textContent = "music: on";
       const ms = document.getElementById('musicState'); if (ms) ms.textContent = "on";
       updateMediaSession();
+      incrementPlayCount(currentSoundtrackIndex);
     }).catch(() => { });
   }
 
@@ -2952,6 +2954,7 @@ document.addEventListener('visibilitychange', () => {
 function goBack() { window.location.href = "../index.html"; }
 
 // ================== LEADERBOARD ==================
+let _gameSupabaseClient = null; // shared with play counter
 (function initLeaderboard() {
   const nameModal = document.getElementById('nameModal');
   const finalScoreEl = document.getElementById('finalScore');
@@ -2968,7 +2971,10 @@ function goBack() { window.location.href = "../index.html"; }
   const script = document.createElement('script');
   script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
   script.onload = function () {
-    if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (window.supabase) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      _gameSupabaseClient = supabaseClient; // expose to play counter
+    }
   };
   document.head.appendChild(script);
 
@@ -3122,6 +3128,32 @@ function goBack() { window.location.href = "../index.html"; }
   };
 })();
 
+// ===== SOUNDTRACK PLAY COUNTS =====
+const _playCountCache = {}; // soundtrack_index (number) -> play_count (number)
+
+async function fetchPlayCounts() {
+  if (!_gameSupabaseClient) return;
+  try {
+    const { data, error } = await _gameSupabaseClient
+      .from('soundtrack_plays')
+      .select('soundtrack_index, play_count');
+    if (error) throw error;
+    (data || []).forEach(row => {
+      _playCountCache[row.soundtrack_index] = row.play_count;
+    });
+  } catch (e) { /* silently ignore — counts just won't show */ }
+}
+
+function incrementPlayCount(idx) {
+  if (!_gameSupabaseClient || idx == null) return;
+  _gameSupabaseClient
+    .rpc('increment_soundtrack_play', { p_index: idx })
+    .then(({ error }) => {
+      if (!error) _playCountCache[idx] = (_playCountCache[idx] || 0) + 1;
+    })
+    .catch(() => {});
+}
+
 // ===== GOODYBAG SYSTEM =====
 const goodybagBackdrop = document.getElementById('goodybagBackdrop');
 const soundtrackBtn = document.getElementById('soundtrackBtn');
@@ -3250,13 +3282,13 @@ function renderSoundtrackPage() {
   header.className = 'soundtrack-title';
   header.textContent = s.title;
 
-  const linkBtn = document.createElement('button');
-  linkBtn.textContent = 'link';
-  linkBtn.className = 'soundtrack-link-btn';
-  linkBtn.onclick = () => { SFX.play('click'); window.open(s.link, '_blank'); };
+  const playCountEl = document.createElement('div');
+  const count = _playCountCache[soundtrackPageIndex];
+  playCountEl.textContent = s.comingSoon ? '' : (count != null ? count + ' plays' : '');
+  playCountEl.style.cssText = 'font-size:16px; opacity:0.6; white-space:nowrap;';
 
   headerRow.appendChild(header);
-  headerRow.appendChild(linkBtn);
+  headerRow.appendChild(playCountEl);
 
   // track list
   const ul = document.createElement('ul');
@@ -3313,8 +3345,8 @@ function renderSoundtrackPage() {
 }
 
 soundtrackBtn.addEventListener('click', () => {
-  soundtrackPageIndex = 0; // always start at soundtrack01
-  renderSoundtrackPage();
+  soundtrackPageIndex = 0;
+  fetchPlayCounts().then(() => renderSoundtrackPage());
 });
 
 
