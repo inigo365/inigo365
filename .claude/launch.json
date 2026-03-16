@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-p", "4321", "/Users/iggymacdonald/Documents/GitHub/inigo365/go/nokia"],
       "port": 4321
+    },
+    {
+      "name": "go",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "4322", "/Users/iggymacdonald/Documents/GitHub/inigo365/go"],
+      "port": 4322
     }
   ]
 }
