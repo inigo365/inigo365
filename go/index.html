@@ -875,13 +875,16 @@ body{
   justify-content: center;
 }
 
-/* label */
+/* label — text rendered via CSS so "password" never appears as a DOM text node */
 #passwordForm label{
   margin: 0;
   font-size: 32px;
   text-transform: lowercase;
   text-align: right;
   white-space: nowrap;
+}
+#passwordForm label::before{
+  content: attr(data-txt);
 }
 
 
@@ -1224,9 +1227,9 @@ body{
 
       <div class="portal-dock" id="portalDock" aria-label="quick portal links"></div>
 
-      <!-- PASSWORD + INPUT + ENTER -->
+      <!-- entry form -->
       <div id="passwordForm">
-        <label>enter password:</label>
+        <label data-txt="enter password:" aria-label="enter password"></label>
 
         <input
           type="text"
