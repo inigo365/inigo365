@@ -744,7 +744,7 @@ body{
    TRANSLUCENT UI SURFACES
    ========================= */
 .portal-tile,
-#passwordInput,
+#codeEntry,
 .panel,
 .boxbtn,
 .cheat-seq,
@@ -757,7 +757,7 @@ body{
 
 /* Keep borders crisp */
 .portal-tile,
-#passwordInput,
+#codeEntry,
 .panel,
 .boxbtn,
 .cheat-seq,
@@ -865,7 +865,7 @@ body{
 }
 
 #passwordForm label { grid-area: label; }
-#passwordInput      { grid-area: input;  min-width: 0; }
+#codeEntry      { grid-area: input;  min-width: 0; }
 .action-row         { grid-area: action; justify-self: end; }
 #passwordForm .hint-row {
   grid-area: hint;
@@ -886,7 +886,7 @@ body{
 
 
 /* input fills its grid column */
-#passwordInput{
+#codeEntry{
   -webkit-text-security: disc;
   width: 100%;
   min-width: 0;
@@ -1018,7 +1018,7 @@ body{
   }
 
   /* input MUST NEVER exceed viewport */
-  #passwordInput{
+  #codeEntry{
     grid-area: input;
     cursor: pointer !important;
     
@@ -1230,7 +1230,7 @@ body{
 
         <input
           type="text"
-          id="passwordInput"
+          id="codeEntry"
           autocomplete="off"
           data-lpignore="true"
           autocapitalize="none"
@@ -1374,7 +1374,7 @@ document.addEventListener("gesturestart", (e) => e.preventDefault(), { passive: 
 document.addEventListener("gesturechange", (e) => e.preventDefault(), { passive: false });
 document.addEventListener("gestureend", (e) => e.preventDefault(), { passive: false });
 
-const passwordInput = document.getElementById("passwordInput");
+const passwordInput = document.getElementById("codeEntry");
 const passwordForm = document.getElementById("passwordForm");
 const enterButton = document.getElementById("enterButton");
 const hintHelp = document.getElementById("hintHelp");
