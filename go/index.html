@@ -1225,7 +1225,7 @@ body{
       <div class="portal-dock" id="portalDock" aria-label="quick portal links"></div>
 
       <!-- PASSWORD + INPUT + ENTER -->
-      <form id="passwordForm" autocomplete="off">
+      <div id="passwordForm">
         <label>enter password:</label>
 
         <input
@@ -1246,7 +1246,7 @@ body{
          <div class="hint-row">
     <div class="portal-hint" id="portalHint">hint: find hidden passwords around the site...</div>
   </div>
-      </form>
+      </div>
       <button class="add-home-btn" id="addHomeBtn" type="button">add to home page</button>
 
     </div>
@@ -2156,13 +2156,7 @@ passwordInput.addEventListener("keyup", () => { if (!enterLock) setButtonsForInp
 passwordInput.addEventListener("change", () => { if (!enterLock) setButtonsForInputState(); });
 passwordInput.addEventListener("focus", () => { if (!enterLock) setButtonsForInputState(); });
 
-/* SUBMIT: only submits */
-passwordForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  if (passwordInput.disabled) return;
-  if (passwordInput.value.trim().length === 0) return;
-  tryPassword();
-});
+/* SUBMIT: handled via Enter key and button listeners below */
 
 /* Enter key works */
 passwordInput.addEventListener("keydown", (e) => {
