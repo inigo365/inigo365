@@ -57,7 +57,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
    width:fit-content shrink-wraps to the #nokiaFrame image size. */
 #nokiaPhoneWrap {
   position: fixed;
-  top: 53%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: fit-content;
@@ -70,7 +70,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
    binding constraint: max height = 95vw × (2048/1364) ≈ 95vw × 1.502 */
 #nokiaFrame {
   display: block;
-  height: min(99vh, 860px, calc(95vw * 1.502));
+  height: min(90vh, 760px, calc(95vw * 1.502));
   width: auto;
   pointer-events: none;
   user-select: none;
@@ -111,7 +111,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
   font-family: 'RuneScape', monospace;
   /* Scale with viewport width so text stays readable on mobile.
      Phone screen width ≈ 61.9% of phone frame ≈ 58.8vw on mobile. */
-  font-size: clamp(9px, 2.5vw, 16px);
+  font-size: clamp(9px, 2.5vw, 14px);
   letter-spacing: 0.04em;
   line-height: 1.35;
   image-rendering: pixelated;
@@ -236,10 +236,10 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 768px) {
-  /* slightly smaller than desktop to ensure no clipping on mobile */
-  #nokiaFrame { height: min(90vh, 780px, calc(97vw * 1.502)); }
+  /* 10% smaller than the desktop baseline */
+  #nokiaFrame { height: min(81vh, 684px, calc(85vw * 1.502)); }
   /* ~20% larger text to stay readable at the reduced size */
-  #nokiaScreen { font-size: clamp(11px, 3vw, 16px) !important; }
+  #nokiaScreen { font-size: clamp(11px, 3vw, 14px) !important; }
 }
 
 /* ===================== BACK BUTTON ===================== */
@@ -318,7 +318,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
 // ── CONFIG ────────────────────────────────────────────────────────────
 const CONFIG = {
   UNLOCK_PIN: "2001",          // CHANGE THIS before going live
-  HINT_TEXT: "ENTER PINCODE 2 UNLOCK",            // IDLE SCREEN CRYPTIC HINT
+  HINT_TEXT: "enter pincode to unlock",            // IDLE SCREEN CRYPTIC HINT
   PIN_HINT:  "hint: the year i was born",                          // HINT SHOWN ON PIN SCREEN — edit this
   REVEAL_MESSAGE: "song unlocked!",       // MESSAGE SHOWN AFTER PUZZLE COMPLETE
   ARTIST_NAME: "inigo365",          // YOUR ARTIST NAME
@@ -363,7 +363,7 @@ function screenBase() {
     'position:absolute;left:19.8%;top:19.0%;width:61.9%;height:22.8%;' +
     'background:#0d0d0d;color:#4dff91;' +
     'font-family:\'RuneScape\',monospace;' +
-    'font-size:clamp(9px,2.5vw,16px);letter-spacing:0.04em;line-height:1.35;' +
+    'font-size:clamp(9px,2.5vw,14px);letter-spacing:0.04em;line-height:1.35;' +
     'overflow:hidden;z-index:1;box-sizing:border-box;padding:3% 4%;' +
     'display:flex;flex-direction:column;align-items:center;' +
     'justify-content:center;text-align:center;';
