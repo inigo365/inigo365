@@ -887,6 +887,7 @@ body{
 
 /* input fills its grid column */
 #passwordInput{
+  -webkit-text-security: disc;
   width: 100%;
   min-width: 0;
   max-width: 520px;
@@ -1228,9 +1229,9 @@ body{
         <label for="passwordInput">enter password:</label>
 
         <input
-          type="password"
+          type="text"
           id="passwordInput"
-          autocomplete="new-password"
+          autocomplete="off"
           data-lpignore="true"
           autocapitalize="none"
           autocorrect="off"
