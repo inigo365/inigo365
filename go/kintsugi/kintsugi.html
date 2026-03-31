@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>kintsugi — inigo365</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+
+/* ===================== FONTS ===================== */
+@font-face {
+  font-family: 'RuneScape';
+  src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+       url('../../fonts/RuneScape-UF.woff') format('woff'),
+       url('../../fonts/runescape.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* ===================== RESET & BASE ===================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: 'RuneScape', monospace;
+  text-transform: lowercase;
+  color: #4AADFF;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: none;
+  cursor: url('../../images/cursor/cursor.png'), auto;
+}
+
+body { opacity: 0; transition: opacity 0.8s ease; }
+
+button, a, .track-row.released, .pctl, .nav-arrow {
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+}
+
+/* ===================== CANVAS ===================== */
+#viewport {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  overflow: hidden;
+}
+
+#world {
+  position: absolute;
+  width: 4000px; height: 4000px;
+}
+
+/* ===================== ISLANDS ===================== */
+.island {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+.island.visible { opacity: 1; }
+
+/* ===================== TRACKLIST ===================== */
+.tracklist-island { width: 460px; }
+
+.tracklist-header {
+  display: flex; align-items: flex-start;
+  gap: 28px; margin-bottom: 36px;
+}
+
+.artwork-wrap { flex-shrink: 0; width: 200px; height: 200px; }
+
+.artwork-wrap img, .artwork-placeholder {
+  width: 200px; height: 200px; display: block;
+}
+
+.artwork-placeholder {
+  background: #4AADFF;
+  display: flex; align-items: center; justify-content: center;
+}
+.artwork-placeholder span {
+  color: #fff;
+  font-family: 'RuneScape', monospace;
+  font-size: 18px; letter-spacing: 0.06em;
+}
+
+.album-meta {
+  padding-top: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.album-artist  { font-size: 20px; letter-spacing: 0.04em; }
+.album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; }
+.album-detail  { font-size: 18px; letter-spacing: 0.03em; }
+
+/* ===================== TRACK LIST ===================== */
+.track-list { display: flex; flex-direction: column; }
+
+.track-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(74, 173, 255, 0.15);
+}
+.track-row:first-child { border-top: none; }
+
+.track-num      { font-size: 18px; width: 24px; text-align: right; flex-shrink: 0; }
+.track-title    { flex: 1; font-size: 24px; letter-spacing: 0.02em; }
+.track-duration { font-size: 18px; flex-shrink: 0; letter-spacing: 0.04em; }
+
+.track-row.released {
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  transition: opacity 0.15s ease;
+}
+.track-row.released:hover { opacity: 0.65; }
+.track-row.locked { opacity: 0.3; pointer-events: none; }
+
+/* ===================== TITLE ISLAND ===================== */
+.title-island { max-width: 640px; }
+
+.album-title-large {
+  font-size: 96px; letter-spacing: 0.08em;
+  line-height: 1; margin-bottom: 32px;
+}
+.album-description { font-size: 22px; line-height: 2; letter-spacing: 0.03em; }
+
+/* ===================== LINER NOTE ===================== */
+.liner-island { text-align: center; max-width: 360px; }
+.liner-text   { font-size: 20px; line-height: 2.4; letter-spacing: 0.04em; }
+
+/* ===================== IMAGE ISLAND ===================== */
+.image-island     { width: 340px; }
+.image-island img { width: 100%; display: block; }
+
+.image-placeholder {
+  width: 100%; aspect-ratio: 1;
+  background: rgba(74, 173, 255, 0.07);
+  border: 1px solid rgba(74, 173, 255, 0.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.image-placeholder span { font-size: 18px; letter-spacing: 0.06em; }
+.image-caption { font-size: 16px; margin-top: 12px; letter-spacing: 0.04em; text-align: center; }
+
+/* ===================== NAV ARROWS ===================== */
+/*
+  Each .arrow-sprite has a transparent 4×4 seed div; all visible
+  pixels are built as CSS box-shadows.  The seed sits at the visual
+  centre of the bounding box, so the glyph is always centred inside
+  its .nav-arrow container.
+
+  Each "pixel" = 5px × 5px.  Positions are offsets from the seed.
+
+  RIGHT (>):   rows (top→bottom), tip at right
+    (col 0, row 0) = (-5, -10)
+    (col 1, row 1) = ( 0,  -5)
+    (col 2, row 2) = ( 5,   0)  ← tip
+    (col 1, row 3) = ( 0,   5)
+    (col 0, row 4) = (-5,  10)
+
+  LEFT (<):   mirror of RIGHT
+  UP   (^):   rotate RIGHT 90° CCW
+  DOWN (v):   rotate RIGHT 90° CW
+*/
+.nav-arrow {
+  position: fixed; z-index: 60;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.25s ease;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+}
+.nav-arrow.active { opacity: 1; }
+.nav-arrow:hover  { opacity: 0.65 !important; }
+
+#arrow-up    { top: 28px;     left: 50%; transform: translateX(-50%); }
+#arrow-down  { bottom: 148px; left: 50%; transform: translateX(-50%); }
+#arrow-left  { left: 28px;    top:  50%; transform: translateY(-50%); }
+#arrow-right { right: 28px;   top:  50%; transform: translateY(-50%); }
+
+/* seed: transparent, all pixels live in box-shadow */
+.arrow-sprite {
+  width: 4px; height: 4px;
+  background: transparent;
+}
+
+/* → right */
+.right-sprite {
+  box-shadow:
+    -5px -10px 0 0 #4AADFF,
+     0px  -5px 0 0 #4AADFF,
+     5px   0px 0 0 #4AADFF,
+     0px   5px 0 0 #4AADFF,
+    -5px  10px 0 0 #4AADFF;
+}
+
+/* ← left */
+.left-sprite {
+  box-shadow:
+     5px -10px 0 0 #4AADFF,
+     0px  -5px 0 0 #4AADFF,
+    -5px   0px 0 0 #4AADFF,
+     0px   5px 0 0 #4AADFF,
+     5px  10px 0 0 #4AADFF;
+}
+
+/* ↑ up */
+.up-sprite {
+  box-shadow:
+    -10px  5px 0 0 #4AADFF,
+     -5px  0px 0 0 #4AADFF,
+      0px -5px 0 0 #4AADFF,
+      5px  0px 0 0 #4AADFF,
+     10px  5px 0 0 #4AADFF;
+}
+
+/* ↓ down */
+.down-sprite {
+  box-shadow:
+    -10px -5px 0 0 #4AADFF,
+     -5px  0px 0 0 #4AADFF,
+      0px  5px 0 0 #4AADFF,
+      5px  0px 0 0 #4AADFF,
+     10px -5px 0 0 #4AADFF;
+}
+
+/* ===================== MUSIC PLAYER ===================== */
+#player {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  /* glass tile */
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(74, 173, 255, 0.28);
+  box-shadow: 0 8px 36px rgba(74, 173, 255, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.85);
+
+  padding: 14px 22px;
+  font-family: 'RuneScape', monospace;
+  color: #4AADFF;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+#player.visible { opacity: 1; pointer-events: auto; }
+
+/* artwork thumbnail */
+.player-art          { flex-shrink: 0; width: 52px; height: 52px; }
+.player-art img,
+.player-art-ph       { width: 52px; height: 52px; display: block; }
+.player-art-ph       {
+  background: #4AADFF;
+  display: flex; align-items: center; justify-content: center;
+}
+.player-art-ph span  { color: #fff; font-size: 11px; }
+
+/* info column */
+.player-info         { display: flex; flex-direction: column; gap: 3px; min-width: 140px; }
+.player-title        { font-size: 18px; }
+.player-artist       { font-size: 14px; opacity: 0.5; }
+
+/* time */
+.player-time         { font-size: 17px; min-width: 108px; text-align: center; }
+
+/* controls */
+.player-controls     { display: flex; align-items: center; gap: 6px; }
+.pctl {
+  font-size: 17px;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  transition: opacity 0.15s ease;
+  padding: 2px 4px;
+}
+.pctl:hover { opacity: 0.6; }
+.pctl.dim   { opacity: 0.35; }
+.pctl.active{ opacity: 1; }
+
+/* ===================== MOBILE ===================== */
+@media (max-width: 600px) {
+
+  /* scale down world islands */
+  .tracklist-island { width: min(420px, calc(100vw - 40px)); }
+  .album-title      { font-size: 28px; }
+  .album-artist     { font-size: 17px; }
+  .album-detail     { font-size: 16px; }
+  .track-title      { font-size: 20px; }
+  .track-num,
+  .track-duration   { font-size: 16px; }
+  .album-title-large{ font-size: 64px; }
+  .album-description{ font-size: 18px; }
+  .liner-text       { font-size: 17px; }
+  .artwork-wrap, .artwork-wrap img, .artwork-placeholder { width: 160px; height: 160px; }
+
+  /* player: 2-row stack */
+  #player {
+    bottom: 16px;
+    width: calc(100% - 32px);
+    padding: 12px 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  /* top row: art + info + time */
+  .player-art         { width: 44px; height: 44px; }
+  .player-art img,
+  .player-art-ph      { width: 44px; height: 44px; }
+  .player-info        { flex: 1; min-width: 0; }
+  .player-title       { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-artist      { display: none; }
+  .player-time        { font-size: 15px; min-width: 0; text-align: right; }
+
+  /* bottom row: controls full-width */
+  .player-controls {
+    width: 100%;
+    justify-content: center;
+    gap: 12px;
+    border-top: 1px solid rgba(74, 173, 255, 0.12);
+    padding-top: 10px;
+  }
+  .pctl { font-size: 16px; }
+
+  /* title island: constrain width and left-align on mobile */
+  .title-island          { max-width: calc(100vw - 40px); }
+  .album-title-large     { font-size: 64px; }
+  .album-description     { font-size: 18px; text-align: left; }
+
+  /* arrows: always visible on mobile — no mouse to trigger them */
+  .nav-arrow             { opacity: 0.55 !important; }
+  .nav-arrow:active      { opacity: 1 !important; }
+
+  /* arrows: slightly closer to edge on mobile */
+  #arrow-up    { top: 16px; }
+  #arrow-left  { left: 16px; }
+  #arrow-right { right: 16px; }
+  #arrow-down  { bottom: 130px; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="viewport">
+  <div id="world"></div>
+</div>
+
+<!-- directional nav arrows -->
+<div class="nav-arrow" id="arrow-up"    data-dir="up">
+  <div class="arrow-sprite up-sprite"></div>
+</div>
+<div class="nav-arrow" id="arrow-down"  data-dir="down">
+  <div class="arrow-sprite down-sprite"></div>
+</div>
+<div class="nav-arrow" id="arrow-left"  data-dir="left">
+  <div class="arrow-sprite left-sprite"></div>
+</div>
+<div class="nav-arrow" id="arrow-right" data-dir="right">
+  <div class="arrow-sprite right-sprite"></div>
+</div>
+
+<!-- music player -->
+<div id="player">
+  <div class="player-art">
+    <img id="playerArt" src="images/kintsugi-art.jpg" alt=""
+         onerror="this.outerHTML='<div class=\'player-art-ph\'><span>k</span></div>'">
+  </div>
+  <div class="player-info">
+    <div class="player-title"  id="playerTitle">—</div>
+    <div class="player-artist">inigo365</div>
+  </div>
+  <div class="player-time" id="playerTime">0:00 / 0:00</div>
+  <div class="player-controls">
+    <span class="pctl dim" id="pPrev">[ &lt;&lt; ]</span>
+    <span class="pctl"     id="pPlayPause">[ play ]</span>
+    <span class="pctl dim" id="pNext">[ &gt;&gt; ]</span>
+    <span class="pctl dim" id="pRepeat">[ loop ]</span>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+//  ISLANDS — edit content here only
+// =====================================================================
+const ISLANDS = [
+
+  {
+    type: 'tracklist',
+    x: 0,
+    y: 0,
+    tracks: [
+      { title: 'homesick_ (intr0)', state: 'released', duration: null, file: 'audio/homesick.mp3' },
+      { title: 'track 02', state: 'locked', duration: null },
+      { title: 'track 03', state: 'locked', duration: null },
+      { title: 'track 04', state: 'locked', duration: null },
+      { title: 'track 05', state: 'locked', duration: null },
+    ]
+  },
+
+  {
+    type: 'title',
+    x: -680,
+    y: -420,
+    // edit lines to update description
+    lines: [
+      'kintsugi is the japanese art of mending what is broken with gold,',
+      'transforming otherwise broken ceramics into something beautiful.',
+      'beauty in the imperfections.'
+    ]
+  },
+
+  {
+    type: 'description',
+    // x must clear tracklist right edge (width ~460px) plus breathing room
+    x: 580,
+    y: 200,
+    lines: [
+      'produced, written & recorded between',
+      'the abbey road canteen,',
+      'morris blitz court,',
+      'the bottom of ridley road,',
+      'the 1021',
+      '& te atatu peninsula'
+    ]
+  },
+
+  {
+    type: 'image',
+    x: -500,
+    y: 700,
+    src: 'images/kintsugi-brain.jpg',
+    caption: ''
+  },
+
+  // { type: 'nokia', x: -1200, y: 800 } — nokia player island, to be built in later
+
+];
+
+// =====================================================================
+//  AUDIO STATE
+// =====================================================================
+let audioEl      = null;
+let isPlaying    = false;
+let isLooping    = false;
+let currentTrack = null;
+let releaseList  = [];
+
+function formatTime(s) {
+  if (!isFinite(s) || isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+function updateTimeDisplay() {
+  if (!audioEl) { document.getElementById('playerTime').textContent = '0:00 / 0:00'; return; }
+  document.getElementById('playerTime').textContent =
+    formatTime(audioEl.currentTime) + ' / ' + formatTime(audioEl.duration);
+}
+
+function stopAudio() {
+  if (audioEl) { audioEl.pause(); audioEl = null; }
+  isPlaying = false;
+  currentTrack = null;
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = 'none';
+    ['play','pause','stop'].forEach(a => {
+      try { navigator.mediaSession.setActionHandler(a, null); } catch(e) {}
+    });
+  }
+  document.getElementById('player').classList.remove('visible');
+  document.getElementById('pPlayPause').textContent = '[ play ]';
+  updateTrackStates();
+  updateTimeDisplay();
+}
+
+function playTrack(track) {
+  if (currentTrack === track && audioEl) {
+    isPlaying = !isPlaying;
+    isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
+  } else {
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+    currentTrack = track;
+    audioEl = new Audio(track.file);
+    audioEl.loop = isLooping;
+    audioEl.addEventListener('ended', () => { if (!isLooping) stopAudio(); });
+    audioEl.addEventListener('loadedmetadata', updateTimeDisplay);
+    isPlaying = true;
+    audioEl.play().catch(() => {});
+    document.getElementById('playerTitle').textContent = track.title;
+    document.getElementById('player').classList.add('visible');
+
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title, artist: 'inigo365', album: 'kintsugi'
+      });
+      navigator.mediaSession.setActionHandler('play', () => {
+        isPlaying = true;
+        if (audioEl) audioEl.play().catch(() => {});
+        navigator.mediaSession.playbackState = 'playing';
+        syncPlayerUI();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        isPlaying = false;
+        if (audioEl) audioEl.pause();
+        navigator.mediaSession.playbackState = 'paused';
+        syncPlayerUI();
+      });
+    }
+  }
+
+  if ('mediaSession' in navigator)
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+
+  syncPlayerUI();
+  updateTrackStates();
+}
+
+function syncPlayerUI() {
+  document.getElementById('pPlayPause').textContent = isPlaying ? '[ pause ]' : '[ play ]';
+  document.getElementById('pRepeat').className = 'pctl ' + (isLooping ? 'active' : 'dim');
+}
+
+function updateTrackStates() {
+  document.querySelectorAll('.track-row.released').forEach(row => {
+    row.classList.toggle('playing', !!(currentTrack && currentTrack.file === row.dataset.file && isPlaying));
+  });
+}
+
+document.getElementById('pPlayPause').addEventListener('click', () => {
+  if (!currentTrack) return;
+  isPlaying = !isPlaying;
+  isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
+  if ('mediaSession' in navigator)
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  syncPlayerUI();
+  updateTrackStates();
+});
+
+document.getElementById('pRepeat').addEventListener('click', () => {
+  isLooping = !isLooping;
+  if (audioEl) audioEl.loop = isLooping;
+  syncPlayerUI();
+});
+
+document.getElementById('pPrev').addEventListener('click', () => {
+  if (!releaseList.length) return;
+  const idx = currentTrack ? releaseList.indexOf(currentTrack) : 0;
+  playTrack(releaseList[(idx - 1 + releaseList.length) % releaseList.length]);
+});
+
+document.getElementById('pNext').addEventListener('click', () => {
+  if (!releaseList.length) return;
+  const idx = currentTrack ? releaseList.indexOf(currentTrack) : -1;
+  playTrack(releaseList[(idx + 1) % releaseList.length]);
+});
+
+// =====================================================================
+//  ISLAND RENDERERS
+// =====================================================================
+function renderTracklist(island) {
+  const el = document.createElement('div');
+  el.className = 'island tracklist-island';
+
+  const header = document.createElement('div');
+  header.className = 'tracklist-header';
+
+  const artWrap = document.createElement('div');
+  artWrap.className = 'artwork-wrap';
+
+  const img = document.createElement('img');
+  img.src = 'images/kintsugi-art.jpg';
+  img.alt = 'kintsugi';
+  img.onerror = () => {
+    const ph = document.createElement('div');
+    ph.className = 'artwork-placeholder';
+    ph.innerHTML = '<span>kintsugi</span>';
+    artWrap.replaceChild(ph, img);
+  };
+  artWrap.appendChild(img);
+
+  const meta = document.createElement('div');
+  meta.className = 'album-meta';
+  meta.innerHTML =
+    '<div class="album-artist">inigo365</div>' +
+    '<div class="album-title">kintsugi</div>' +
+    '<div class="album-detail">2025 · ' + island.tracks.length + ' tracks</div>';
+
+  header.appendChild(artWrap);
+  header.appendChild(meta);
+  el.appendChild(header);
+
+  const list = document.createElement('div');
+  list.className = 'track-list';
+
+  island.tracks.forEach((track, i) => {
+    const row = document.createElement('div');
+    row.className = 'track-row ' + track.state;
+    row.innerHTML =
+      '<span class="track-num">' + (i + 1) + '</span>' +
+      '<span class="track-title">' + track.title + '</span>' +
+      '<span class="track-duration">' + (track.duration || '—:——') + '</span>';
+    if (track.state === 'released') {
+      row.dataset.file = track.file;
+      row.addEventListener('click', () => playTrack(track));
+      releaseList.push(track);
+    }
+    list.appendChild(row);
+  });
+
+  el.appendChild(list);
+  return el;
+}
+
+function renderTitle(island) {
+  const el = document.createElement('div');
+  el.className = 'island title-island';
+
+  const title = document.createElement('div');
+  title.className = 'album-title-large';
+  title.textContent = 'kintsugi';
+  el.appendChild(title);
+
+  const desc = document.createElement('div');
+  desc.className = 'album-description';
+  desc.innerHTML = island.lines.map(l => l + '<br>').join('');
+  el.appendChild(desc);
+
+  return el;
+}
+
+function renderDescription(island) {
+  const el = document.createElement('div');
+  el.className = 'island liner-island';
+
+  const text = document.createElement('div');
+  text.className = 'liner-text';
+  text.innerHTML = island.lines.map(l => l + '<br>').join('');
+  el.appendChild(text);
+
+  return el;
+}
+
+function renderImage(island) {
+  const el = document.createElement('div');
+  el.className = 'island image-island';
+
+  const img = document.createElement('img');
+  img.src = island.src;
+  img.alt = 'kintsugi';
+  img.onerror = () => {
+    const ph = document.createElement('div');
+    ph.className = 'image-placeholder';
+    ph.innerHTML = '<span>[ brain ]</span>';
+    el.replaceChild(ph, img);
+  };
+  el.appendChild(img);
+
+  if (island.caption) {
+    const cap = document.createElement('div');
+    cap.className = 'image-caption';
+    cap.textContent = island.caption;
+    el.appendChild(cap);
+  }
+
+  return el;
+}
+
+// =====================================================================
+//  BUILD WORLD
+// =====================================================================
+const world      = document.getElementById('world');
+const WORLD_SIZE = 4000;
+const CENTER     = WORLD_SIZE / 2;
+const islandDriftParams = [];
+
+function buildIslands() {
+  ISLANDS.forEach((island, idx) => {
+    let el;
+    if      (island.type === 'tracklist')   el = renderTracklist(island);
+    else if (island.type === 'title')       el = renderTitle(island);
+    else if (island.type === 'description') el = renderDescription(island);
+    else if (island.type === 'image')       el = renderImage(island);
+    else return;
+
+    const baseLeft = CENTER + island.x;
+    const baseTop  = CENTER + island.y;
+    el.style.left = baseLeft + 'px';
+    el.style.top  = baseTop  + 'px';
+    island._baseLeft = baseLeft;
+    island._baseTop  = baseTop;
+
+    islandDriftParams.push({
+      el,
+      phase:     Math.random() * Math.PI * 2,
+      amplitude: 4 + Math.random() * 2,
+      period:    7000 + Math.random() * 3000,
+      baseLeft, baseTop
+    });
+
+    world.appendChild(el);
+    setTimeout(() => el.classList.add('visible'), 300 + idx * 120);
+  });
+}
+
+// =====================================================================
+//  CANVAS NAVIGATION — edge-velocity mouse + touch drag
+// =====================================================================
+let worldX = 0, worldY = 0;
+let targetX = 0, targetY = 0;
+
+const MAX_SPEED = 11;   // px per frame — split between 9 and 15
+const DEAD_ZONE = 0.28; // inner fraction of each axis that is inert
+
+let mouseNX = 0, mouseNY = 0;
+
+function edgeVelocity(norm) {
+  const abs = Math.abs(norm);
+  if (abs < DEAD_ZONE) return 0;
+  const t = (abs - DEAD_ZONE) / (1 - DEAD_ZONE);
+  return Math.sign(norm) * t * t * MAX_SPEED;
+}
+
+function clampWorld(x, y) {
+  const vw = window.innerWidth, vh = window.innerHeight, pad = 300;
+  return [
+    Math.max(-(WORLD_SIZE - vw  + pad), Math.min(pad, x)),
+    Math.max(-(WORLD_SIZE - vh  + pad), Math.min(pad, y))
+  ];
+}
+
+function initPosition() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const isMobile = vw <= 600;
+
+  // Land on the tracklist island
+  const tl = ISLANDS.find(i => i.type === 'tracklist');
+  const iwx = CENTER + (tl ? tl.x : 0);
+  const iwy = CENTER + (tl ? tl.y : 0);
+
+  let landX, landY;
+  if (isMobile) {
+    // 20px left margin, small top gap so artwork clears the top edge
+    landX = 20 - iwx;
+    landY = 48 - iwy;
+  } else {
+    // Desktop: tracklist at ~24% from left so production credit
+    // island (580px to the right) is also visible in the same view
+    landX = vw * 0.24 - iwx;
+    landY = vh * 0.10 - iwy;
+  }
+
+  const [cx, cy] = clampWorld(landX, landY);
+  worldX = targetX = cx;
+  worldY = targetY = cy;
+  applyWorldTransform();
+}
+
+function applyWorldTransform() {
+  world.style.transform = 'translate(' + worldX + 'px,' + worldY + 'px)';
+}
+
+document.addEventListener('mousemove', e => {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  mouseNX = (e.clientX - vw / 2) / (vw / 2);
+  mouseNY = (e.clientY - vh / 2) / (vh / 2);
+  updateArrows();
+});
+document.addEventListener('mouseleave', () => { mouseNX = 0; mouseNY = 0; updateArrows(); });
+
+let touchStartX = 0, touchStartY = 0, touchWorldStartX = 0, touchWorldStartY = 0;
+
+document.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1) return;
+  touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+  touchWorldStartX = targetX;         touchWorldStartY = targetY;
+}, { passive: true });
+
+document.addEventListener('touchmove', e => {
+  if (e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - touchStartX;
+  const dy = e.touches[0].clientY - touchStartY;
+  const [nx, ny] = clampWorld(touchWorldStartX + dx, touchWorldStartY + dy);
+  targetX = nx; targetY = ny;
+}, { passive: true });
+
+// =====================================================================
+//  DIRECTIONAL ARROWS
+// =====================================================================
+const arrowEls = {
+  up:    document.getElementById('arrow-up'),
+  down:  document.getElementById('arrow-down'),
+  left:  document.getElementById('arrow-left'),
+  right: document.getElementById('arrow-right')
+};
+
+function updateArrows() {
+  arrowEls.right.classList.toggle('active', mouseNX >  DEAD_ZONE);
+  arrowEls.left.classList.toggle ('active', mouseNX < -DEAD_ZONE);
+  arrowEls.down.classList.toggle ('active', mouseNY >  DEAD_ZONE);
+  arrowEls.up.classList.toggle   ('active', mouseNY < -DEAD_ZONE);
+}
+
+function snapToNearest(dir) {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const vcx = vw / 2, vcy = vh / 2;
+
+  let best = null, bestDist = Infinity;
+
+  ISLANDS.forEach(island => {
+    if (island._baseLeft === undefined) return;
+    const sx = island._baseLeft + worldX;
+    const sy = island._baseTop  + worldY;
+    const dx = sx - vcx, dy = sy - vcy;
+    const threshold = 80;
+
+    let qualifies = false, dist = 0;
+    if (dir === 'right' && dx >  threshold) { qualifies = true; dist =  dx; }
+    if (dir === 'left'  && dx < -threshold) { qualifies = true; dist = -dx; }
+    if (dir === 'down'  && dy >  threshold) { qualifies = true; dist =  dy; }
+    if (dir === 'up'    && dy < -threshold) { qualifies = true; dist = -dy; }
+
+    if (qualifies && dist < bestDist) { bestDist = dist; best = island; }
+  });
+
+  if (!best) return;
+  const [nx, ny] = clampWorld(vcx - best._baseLeft, vcy - best._baseTop);
+  targetX = nx; targetY = ny;
+}
+
+Object.entries(arrowEls).forEach(([dir, el]) => {
+  el.addEventListener('click', () => snapToNearest(dir));
+});
+
+// =====================================================================
+//  ANIMATION LOOP
+// =====================================================================
+const LERP = 0.08;
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function tick(now) {
+  requestAnimationFrame(tick);
+
+  const vx = edgeVelocity(mouseNX);
+  const vy = edgeVelocity(mouseNY);
+  if (vx !== 0 || vy !== 0) {
+    const [nx, ny] = clampWorld(targetX - vx, targetY - vy);
+    targetX = nx; targetY = ny;
+  }
+
+  worldX = lerp(worldX, targetX, LERP);
+  worldY = lerp(worldY, targetY, LERP);
+  applyWorldTransform();
+
+  islandDriftParams.forEach(p => {
+    const drift = Math.sin(now / p.period * Math.PI * 2 + p.phase) * p.amplitude;
+    p.el.style.top = (p.baseTop + drift) + 'px';
+  });
+
+  updateTimeDisplay();
+}
+
+// =====================================================================
+//  INIT
+// =====================================================================
+buildIslands();
+initPosition();
+requestAnimationFrame(tick);
+requestAnimationFrame(() => { document.body.style.opacity = '1'; });
+
+</script>
+</body>
+</html>
