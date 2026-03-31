@@ -192,6 +192,43 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 .death-stats{ font-size:18px; line-height:1.5; margin-bottom:12px; }
 .death-hint{ font-size:16px; opacity:0.7; margin-top:8px; }
 .death-best{ font-size:15px; opacity:0.6; margin-top:6px; }
+.death-btns{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+/* ===== Leaderboard modal ===== */
+#leaderboardBackdrop{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.55);
+  display:none; align-items:center; justify-content:center;
+  z-index:9600; pointer-events:auto;
+}
+#leaderboardPanel{
+  position:relative;
+  border:2px solid #000; background:#fff;
+  padding:18px 24px; text-align:center;
+  font-family:"RuneScape UF", Arial, sans-serif;
+  text-transform:lowercase;
+  width:min(420px, calc(100vw - 32px));
+  max-height:80vh; overflow-y:auto;
+}
+.lb-close{
+  position:absolute; top:6px; right:10px;
+  font-size:28px; background:transparent; border:none;
+  color:#000; cursor:pointer; line-height:1;
+}
+.lb-title{ font-size:28px; margin-bottom:12px; }
+.lb-entry{
+  display:flex; align-items:center;
+  font-size:18px; padding:6px 0;
+  border-bottom:1px solid #eee;
+}
+.lb-entry .lb-rank{ width:30px; text-align:left; }
+.lb-entry .lb-name{ flex:1; text-align:left; padding-left:8px; }
+.lb-entry .lb-score{ width:70px; text-align:right; }
+.lb-entry.rank-1{ color:#ffd400; font-weight:bold; }
+.lb-entry.rank-2{ color:#aaa; }
+.lb-entry.rank-3{ color:#cd7f32; }
+.lb-entry.is-player{ background:rgba(0,0,0,0.05); }
+.lb-empty{ color:#999; font-size:16px; padding:12px 0; }
 
 /* ===== Buttons ===== */
 button{
@@ -456,7 +493,8 @@ button{
       <button class="boxbtn" id="startBtn" type="button">start</button>
     </div>
     <div class="hint" id="highScoreHint">tip: boosting sheds mass behind you</div>
-    <button class="linkish" id="backBtnOverlay" type="button" style="margin-top:10px">&larr; back</button>
+    <button class="linkish" id="lbFromName" type="button" style="margin-top:10px">leaderboard</button>
+    <button class="linkish" id="backBtnOverlay" type="button" style="margin-top:6px">&larr; back</button>
   </div>
 </div>
 
@@ -471,9 +509,20 @@ button{
   <div class="death-box">
     <div class="death-title" id="deathTitle">you died!</div>
     <div class="death-stats" id="deathStats"></div>
-    <button class="boxbtn" id="respawnBtn" type="button">play again</button>
+    <div class="death-btns">
+      <button class="boxbtn" id="respawnBtn" type="button">play again</button>
+      <button class="boxbtn" id="leaderboardBtn" type="button">leaderboard</button>
+    </div>
     <div class="death-hint">tap anywhere or press space to respawn</div>
     <div class="death-best" id="deathBest"></div>
+  </div>
+</div>
+
+<div id="leaderboardBackdrop">
+  <div id="leaderboardPanel">
+    <button class="lb-close" id="lbClose" type="button">&times;</button>
+    <div class="lb-title">leaderboard</div>
+    <div id="leaderboardEntries">loading...</div>
   </div>
 </div>
 
@@ -867,6 +916,104 @@ function updateHighScoreHint(){
   }
 }
 updateHighScoreHint();
+
+/* =========================================================
+   SUPABASE LEADERBOARD
+========================================================= */
+const SUPABASE_URL = "https://rlxtggsefecwcpgkjern.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_4mNOVz4GqFxtlJWOtzfXIQ_OaI1hLGT";
+const EDGE_BASE = SUPABASE_URL + "/functions/v1";
+let supabaseClient = null;
+let currentSessionId = null;
+
+const _sbScript = document.createElement("script");
+_sbScript.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+_sbScript.onload = () => {
+  if(window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+};
+document.head.appendChild(_sbScript);
+
+async function startSession(){
+  currentSessionId = null;
+  try{
+    const res = await fetch(`${EDGE_BASE}/frog-start-session`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if(res.ok){
+      const data = await res.json();
+      currentSessionId = data.sessionId;
+    }
+  }catch(e){ console.error("session start failed:", e); }
+}
+
+async function submitScoreToDb(name, scoreVal){
+  if(!currentSessionId) return;
+  try{
+    await fetch(`${EDGE_BASE}/frog-submit-score`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ name, score: scoreVal, sessionId: currentSessionId }),
+    });
+  }catch(e){ console.error("score submit failed:", e); }
+}
+
+async function fetchLeaderboard(){
+  if(!supabaseClient){
+    return [];
+  }
+  try{
+    const { data, error } = await supabaseClient
+      .from("frog_highscores")
+      .select("*")
+      .order("score", { ascending: false })
+      .limit(20);
+    if(error) throw error;
+    return data || [];
+  }catch(e){ console.error("leaderboard fetch failed:", e); return []; }
+}
+
+const leaderboardBackdrop = document.getElementById("leaderboardBackdrop");
+const leaderboardEntries = document.getElementById("leaderboardEntries");
+const leaderboardBtn = document.getElementById("leaderboardBtn");
+const lbClose = document.getElementById("lbClose");
+const lbFromName = document.getElementById("lbFromName");
+
+function renderLeaderboard(entries){
+  if(!entries.length){
+    leaderboardEntries.innerHTML = '<div class="lb-empty">no scores yet</div>';
+    return;
+  }
+  const pName = (nameInput.value || localStorage.getItem("1mf_name") || "").toLowerCase().trim();
+  leaderboardEntries.innerHTML = entries.map((entry, i) => {
+    const cls = ["lb-entry"];
+    if(i === 0) cls.push("rank-1");
+    else if(i === 1) cls.push("rank-2");
+    else if(i === 2) cls.push("rank-3");
+    if(pName && entry.name.toLowerCase().trim() === pName) cls.push("is-player");
+    return `<div class="${cls.join(" ")}"><span class="lb-rank">${i+1}.</span><span class="lb-name">${entry.name}</span><span class="lb-score">${entry.score}</span></div>`;
+  }).join("");
+}
+
+async function toggleLeaderboard(){
+  const isOpen = leaderboardBackdrop.style.display === "flex";
+  if(isOpen){
+    leaderboardBackdrop.style.display = "none";
+  } else {
+    leaderboardEntries.innerHTML = "loading...";
+    leaderboardBackdrop.style.display = "flex";
+    const entries = await fetchLeaderboard();
+    renderLeaderboard(entries);
+  }
+}
+
+leaderboardBtn.addEventListener("click", e => { e.stopPropagation(); toggleLeaderboard(); });
+lbClose.addEventListener("click", toggleLeaderboard);
+lbFromName.addEventListener("click", toggleLeaderboard);
+leaderboardBackdrop.addEventListener("click", e => { if(e.target === leaderboardBackdrop) toggleLeaderboard(); });
 
 /* =========================================================
    KILL FEED
@@ -2019,6 +2166,9 @@ function showDeathScreen(s, killerName, method){
   if(rank < highScores.bestRank) highScores.bestRank = rank;
   saveHighScores(highScores);
 
+  // submit to global leaderboard
+  submitScoreToDb(s.name, Math.round(s.length));
+
   // prepare overlay content but don't show yet
   const methodText = method === "encircled" ? "encircled by" : "killed by";
   deathTitle.textContent = "you died!";
@@ -2087,6 +2237,7 @@ function findSafeSpawn(){
 
 function quickRespawn(){
   if(!playerDead || deathScreenPending) return;
+  if(leaderboardBackdrop.style.display === "flex") return;
   hideDeathScreen();
 
   // remove old player from snakes
@@ -2682,6 +2833,7 @@ async function startGame(){
   unlockAudio();
   await initSfx();
   tryStartMusic();
+  startSession().catch(() => {});
 
   WORLD.seed = (WORLD.seed + ((Math.random() * 1e9) | 0)) >>> 0;
   nextSnakeId = 1;
@@ -2696,6 +2848,7 @@ async function startGame(){
   hideDeathScreen();
 
   const nm = (nameInput.value || "frog").toLowerCase().trim().slice(0, 18) || "frog";
+  try{ localStorage.setItem("1mf_name", nm); }catch{}
   spawnPlayer(nm);
   spawnWorldSnakes();
 
