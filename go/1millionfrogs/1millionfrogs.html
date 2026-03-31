@@ -228,7 +228,7 @@ button, input { cursor: url("../../images/cursor/cursor-hover.png"), pointer; }
 .lb-close{
   position:absolute; top:6px; right:10px;
   font-size:28px; background:transparent; border:none;
-  color:#000; cursor:pointer; line-height:1;
+  color:#000; cursor: url("../../images/cursor/cursor-hover.png"), pointer; line-height:1;
 }
 .lb-title{ font-size:28px; margin-bottom:12px; }
 .lb-entry{
@@ -731,7 +731,7 @@ let dpr = 1, W = 0, H = 0;
 let _bgCache = null, _bgCacheW = 0, _bgCacheH = 0;
 function resize(){
   // cap DPR lower on mobile to avoid rendering at huge resolutions
-  const maxDpr = _isMobile ? 1.5 : 2;
+  const maxDpr = _isMobile ? 2 : 2;
   dpr = Math.max(1, Math.min(maxDpr, window.devicePixelRatio || 1));
   W = innerWidth; H = innerHeight;
   c.width  = Math.floor(W * dpr);
@@ -2982,11 +2982,11 @@ function showBoostHint(){
   if(_isMobile){
     dh.style.display = "none";
     mh.style.display = "block";
-    // position below the top panel on the right side
-    requestAnimationFrame(() => {
+    // position below the top panel on the right side — use timeout to ensure layout is settled
+    setTimeout(() => {
       const r = playPanelEl.getBoundingClientRect();
-      mh.style.top = (r.bottom + 8) + "px";
-    });
+      if(r.bottom > 0) mh.style.top = (r.bottom + 8) + "px";
+    }, 100);
   } else {
     mh.style.display = "none";
     dh.style.display = "block";
