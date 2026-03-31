@@ -2110,11 +2110,11 @@ function rebuildBodyGrid(){
     const s = snakes[si];
     if(!s.alive) continue;
     const b = s.body;
-    const start = Math.min(6, b.length);
     const sid = s.id, sr = s.radius;
-    for(let i = start; i < b.length; i++){
+    for(let i = 0; i < b.length; i++){
       const pt = b[i];
       pt.sid = sid; pt.r = sr;
+      pt._idx = i;          // track segment index for self-collision skip
       bodyGrid.add(pt.x, pt.y, pt);
     }
   }
@@ -2145,6 +2145,9 @@ function checkPop(s){
 
   for(let i = 0; i < _tmpBodies.length; i++){
     const pt = _tmpBodies[i];
+    // skip own head-adjacent segments to prevent self-collision on sharp turns
+    if(pt.sid === s.id && pt._idx < 6) continue;
+    // skip rest of own body entirely (can't kill yourself by running into your own tail)
     if(pt.sid === s.id) continue;
     // hit distance = attacker head radius + defender body segment radius, scaled
     const hitR = (s.radius + (pt.r || 10)) * CFG.headBodyHitMul;
