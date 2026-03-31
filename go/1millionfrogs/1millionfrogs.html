@@ -565,7 +565,7 @@ button{
       <button class="boxbtn" id="submitScoreBtn" type="button">submit score</button>
       <button class="boxbtn" id="leaderboardBtn" type="button">leaderboard</button>
     </div>
-    <div class="death-hint">tap anywhere or press space to respawn</div>
+    <div class="death-hint">press space to respawn</div>
     <div class="death-best" id="deathBest"></div>
   </div>
 </div>
@@ -900,11 +900,17 @@ function _sfxDecodeAll(cb){
 
 async function unlockAudio(){
   // kept async for back-compat with callers that await it
-  if(_sfxUnlocked) return;
-  _sfxUnlocked = true;
   _sfxEnsureContext();
+  if(_sfxCtx && _sfxCtx.state === "suspended") _sfxCtx.resume().catch(()=>{});
+  // Prime HTML5 Audio pool elements during user gesture (iOS requirement)
+  Object.keys(_sfxPools).forEach(function(name){
+    _sfxPools[name].els.forEach(function(a){
+      try{ a.play().then(function(){ a.pause(); a.currentTime = 0; }).catch(function(){}); }catch{}
+    });
+  });
   _sfxDecodeAll(function(){
-    if(_sfxCtx && _sfxMaster && _sfxCtx.state === "running"){
+    if(!_sfxUnlocked && _sfxCtx && _sfxMaster){
+      _sfxUnlocked = true;
       try{
         const osc = _sfxCtx.createOscillator();
         const g   = _sfxCtx.createGain();
@@ -915,7 +921,6 @@ async function unlockAudio(){
     }
     _sfxStartHeartbeat();
   });
-  if(_sfxCtx && _sfxCtx.state === "suspended") _sfxCtx.resume().catch(()=>{});
 }
 
 // kept for back-compat — unlockAudio now handles everything
@@ -929,6 +934,8 @@ document.addEventListener("visibilitychange", function(){
 function playSfx(name, vol = 1){
   if(!sfxOn) return;
   if(_sfxCtx && _sfxCtx.state === "suspended") _sfxCtx.resume().catch(()=>{});
+  // try decoding if we have fetched data but no decoded buffer yet
+  if(_sfxCtx && !_sfxBuffers[name] && _sfxFetched[name]) _sfxDecodeAll();
   if(_sfxCtx && _sfxMaster && _sfxBuffers[name]){
     try{
       const src = _sfxCtx.createBufferSource();
@@ -962,6 +969,7 @@ document.getElementById("musicTogglePause").addEventListener("click", e => { e.s
 document.getElementById("sfxTogglePause").addEventListener("click", e => {
   e.stopPropagation();
   sfxOn = !sfxOn;
+  unlockAudio();
   updateSfxButton();
 });
 
@@ -2382,9 +2390,6 @@ function quickRespawn(){
 
 // respawn click/tap handlers
 respawnBtn.addEventListener("click", quickRespawn);
-deathOverlay.addEventListener("pointerdown", e => {
-  if(e.target === deathOverlay) quickRespawn();
-});
 
 function respawnSnake(s){
   // half respawn near player, half at random world positions
@@ -2837,10 +2842,11 @@ function startLoop(){
 }
 
 function setPaused(on){
+  if(playerDead) return;
   paused = !!on;
   if(!gameRunning){ updatePauseUI(); return; }
   if(paused){ boostHeld = false; stopLoop(); hideBoostHint(); }
-  else { startLoop(); if(!playerDead) showBoostHint(); }
+  else { startLoop(); showBoostHint(); }
   updatePauseUI();
 }
 
@@ -3017,6 +3023,7 @@ window.addEventListener("pagehide", autoPause);
 ========================================================= */
 pauseOverlay.addEventListener("pointerdown", e => {
   e.preventDefault();
+  if(playerDead) return;
   if(leaderboardBackdrop.style.display === "flex") return;
   if(e.target.closest("#lbFromPause")) return;
   if(e.target.closest(".pause-toggles")) return;
@@ -3041,7 +3048,7 @@ backBtnOverlay.addEventListener("click", () => {
 startBtn.addEventListener("click", startGame);
 nameInput.addEventListener("keydown", e => { if(e.key === "Enter") startGame(); });
 
-pauseBtn.addEventListener("click", () => setPaused(true));
+pauseBtn.addEventListener("click", () => { if(!playerDead) setPaused(true); });
 
 resetBtn.addEventListener("click", () => {
   hideDeathScreen();
