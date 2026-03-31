@@ -782,12 +782,6 @@ function updateMusicButton(){
   const mp = document.getElementById("musicTogglePause");
   if(mp) mp.textContent = label;
 }
-function updateSfxButton(){
-  const label = sfxOn ? "sfx: on" : "sfx: off";
-  const sp = document.getElementById("sfxTogglePause");
-  if(sp) sp.textContent = label;
-}
-
 async function tryStartMusic(){
   if(!musicOn) return;
   try{
@@ -813,6 +807,12 @@ document.addEventListener("visibilitychange", () => {
 
 // ── SFX engine ─────────────────────────────────────────────────────────
 let sfxOn = true;
+
+function updateSfxButton(){
+  const label = sfxOn ? "sfx: on" : "sfx: off";
+  const sp = document.getElementById("sfxTogglePause");
+  if(sp) sp.textContent = label;
+}
 
 const _sfxPaths   = { die: SFX_DIE_SRC, gold: SFX_GOLD_SRC };
 const _sfxVolumes = { die: 0.95, gold: 0.85 };
