@@ -306,8 +306,9 @@ body.music-active #arrow-down { bottom: 118px; }
   z-index: 100;
 
   display: flex;
-  align-items: center;
-  gap: 18px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
 
   /* glass tile */
   background: rgba(255, 255, 255, 0.58);
@@ -322,13 +323,48 @@ body.music-active #arrow-down { bottom: 118px; }
   color: #4AADFF;
   text-transform: lowercase;
   letter-spacing: 0.04em;
-  white-space: nowrap;
 
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s ease;
 }
 #player.visible { opacity: 1; pointer-events: auto; }
+
+/* top row: art + info + time + controls */
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  white-space: nowrap;
+}
+
+/* scrubber */
+#pScrub {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: rgba(74, 173, 255, 0.25);
+  border-radius: 2px;
+  outline: none;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+#pScrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #4AADFF;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+}
+#pScrub::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #4AADFF;
+  border: none;
+}
 
 /* artwork thumbnail */
 .player-art          { flex-shrink: 0; width: 52px; height: 52px; }
@@ -360,6 +396,24 @@ body.music-active #arrow-down { bottom: 118px; }
 .pctl.dim   { opacity: 0.35; }
 .pctl.active{ opacity: 1; }
 
+/* ===================== RESET BUTTON ===================== */
+.reset-btn {
+  background: none;
+  border: none;
+  color: #4AADFF;
+  font-family: 'RuneScape', monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  padding: 0;
+  opacity: 0.28;
+  transition: opacity 0.15s;
+  margin-top: 5px;
+  display: block;
+}
+.reset-btn:hover { opacity: 0.7; }
+
 /* ===================== MOBILE ===================== */
 @media (max-width: 600px) {
 
@@ -381,6 +435,10 @@ body.music-active #arrow-down { bottom: 118px; }
     bottom: 16px;
     width: calc(100% - 32px);
     padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .player-row {
     gap: 12px;
     flex-wrap: wrap;
     white-space: normal;
@@ -446,21 +504,24 @@ body.music-active #arrow-down { bottom: 118px; }
 
 <!-- music player -->
 <div id="player">
-  <div class="player-art">
-    <img id="playerArt" src="images/kintsugi-art.jpg" alt=""
-         onerror="this.outerHTML='<div class=\'player-art-ph\'><span>k</span></div>'">
+  <div class="player-row">
+    <div class="player-art">
+      <img id="playerArt" src="images/kintsugi-art.jpg" alt=""
+           onerror="this.outerHTML='<div class=\'player-art-ph\'><span>k</span></div>'">
+    </div>
+    <div class="player-info">
+      <div class="player-title"  id="playerTitle">—</div>
+      <div class="player-artist">inigo365</div>
+    </div>
+    <div class="player-time" id="playerTime">0:00 / 0:00</div>
+    <div class="player-controls">
+      <span class="pctl dim" id="pPrev">[ &lt;&lt; ]</span>
+      <span class="pctl"     id="pPlayPause">[ play ]</span>
+      <span class="pctl dim" id="pNext">[ &gt;&gt; ]</span>
+      <span class="pctl dim" id="pRepeat">[ loop ]</span>
+    </div>
   </div>
-  <div class="player-info">
-    <div class="player-title"  id="playerTitle">—</div>
-    <div class="player-artist">inigo365</div>
-  </div>
-  <div class="player-time" id="playerTime">0:00 / 0:00</div>
-  <div class="player-controls">
-    <span class="pctl dim" id="pPrev">[ &lt;&lt; ]</span>
-    <span class="pctl"     id="pPlayPause">[ play ]</span>
-    <span class="pctl dim" id="pNext">[ &gt;&gt; ]</span>
-    <span class="pctl dim" id="pRepeat">[ loop ]</span>
-  </div>
+  <input type="range" id="pScrub" min="0" max="1" value="0" step="0.001">
 </div>
 
 <script>
@@ -526,6 +587,9 @@ const ISLANDS = [
   { type: 'bandcamp', x: 622, y: 650 },
 
   { type: 'nokia', x: -500, y: 0 },
+  { type: 'image', x: -510, y: -620, src: 'images/morrisblitz.png', caption: '' },
+  /*{ type: 'image', x: -370, y: -500, src: 'images/brainblur.png', caption: '' },*/
+  { type: 'image', x: -430,  y: -590, src: 'images/skytower.png',    caption: '' },
 
 ];
 
@@ -552,13 +616,33 @@ function formatTime(s) {
   return m + ':' + (sec < 10 ? '0' : '') + sec;
 }
 
+let _scrubbing = false;
+
 function updateTimeDisplay() {
-  if (!audioEl) { document.getElementById('playerTime').textContent = '0:00 / 0:00'; return; }
+  const pScrub = document.getElementById('pScrub');
+  if (!audioEl) {
+    document.getElementById('playerTime').textContent = '0:00 / 0:00';
+    if (pScrub) pScrub.value = 0;
+    return;
+  }
   document.getElementById('playerTime').textContent =
     formatTime(audioEl.currentTime) + ' / ' + formatTime(audioEl.duration);
+  if (pScrub && !_scrubbing && isFinite(audioEl.duration) && audioEl.duration > 0) {
+    pScrub.value = audioEl.currentTime / audioEl.duration;
+  }
+  if ('mediaSession' in navigator && isFinite(audioEl.duration) && audioEl.duration > 0) {
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: audioEl.duration,
+        playbackRate: audioEl.playbackRate || 1,
+        position: audioEl.currentTime
+      });
+    } catch (e) {}
+  }
 }
 
 function stopAudio() {
+  cancelPlayCount();
   if (audioEl) { audioEl.pause(); audioEl = null; }
   isPlaying = false;
   currentTrack = null;
@@ -592,6 +676,11 @@ function playTrack(track) {
     document.getElementById('player').classList.add('visible');
     document.body.classList.add('music-active');
 
+    // Schedule play count (fires after 10 seconds of continuous listening)
+    const tlIsland = ISLANDS.find(ii => ii.type === 'tracklist');
+    const trackIdx = tlIsland ? tlIsland.tracks.findIndex(t => t === track) : -1;
+    if (trackIdx >= 0) schedulePlayCount(trackIdx);
+
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.title, artist: 'inigo365', album: 'kintsugi',
@@ -611,6 +700,20 @@ function playTrack(track) {
         navigator.mediaSession.playbackState = 'paused';
         syncPlayerUI();
       });
+      try {
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+          if (audioEl && details.seekTime != null) {
+            audioEl.currentTime = Math.min(details.seekTime, audioEl.duration - 0.1);
+            updateTimeDisplay();
+          }
+        });
+        navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+          if (audioEl) audioEl.currentTime = Math.max(0, audioEl.currentTime - (details.seekOffset || 10));
+        });
+        navigator.mediaSession.setActionHandler('seekforward', (details) => {
+          if (audioEl) audioEl.currentTime = Math.min(audioEl.duration - 0.1, audioEl.currentTime + (details.seekOffset || 10));
+        });
+      } catch (e) {}
     }
   }
 
@@ -660,6 +763,83 @@ document.getElementById('pNext').addEventListener('click', () => {
   playTrack(releaseList[(idx + 1) % releaseList.length]);
 });
 
+// scrubber
+(function() {
+  const pScrub = document.getElementById('pScrub');
+  pScrub.addEventListener('mousedown',  () => { _scrubbing = true; });
+  pScrub.addEventListener('touchstart', () => { _scrubbing = true; }, { passive: true });
+  pScrub.addEventListener('input', () => {
+    if (audioEl && isFinite(audioEl.duration)) {
+      audioEl.currentTime = pScrub.value * audioEl.duration;
+    }
+  });
+  pScrub.addEventListener('mouseup',  () => { _scrubbing = false; });
+  pScrub.addEventListener('touchend', () => { _scrubbing = false; }, { passive: true });
+  pScrub.addEventListener('change',   () => { _scrubbing = false; });
+})();
+
+// =====================================================================
+//  SUPABASE PLAY COUNTER
+// =====================================================================
+const SUPABASE_URL  = 'https://rlxtggsefecwcpgkjern.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_4mNOVz4GqFxtlJWOtzfXIQ_OaI1hLGT';
+
+let _sbClient        = null;
+const _kintsugiCounts = {};  // track_index -> play_count
+let _playTimer        = null;
+
+(function initSupabase() {
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  s.onload = () => {
+    if (window.supabase) {
+      _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      fetchKintsugiCounts();
+    }
+  };
+  document.head.appendChild(s);
+})();
+
+async function fetchKintsugiCounts() {
+  if (!_sbClient) return;
+  try {
+    const { data, error } = await _sbClient
+      .from('kintsugi_plays')
+      .select('track_index, play_count');
+    if (error) throw error;
+    (data || []).forEach(r => { _kintsugiCounts[r.track_index] = r.play_count; });
+    _updateCountDisplay();
+  } catch (e) { /* silently ignore */ }
+}
+
+function _updateCountDisplay() {
+  Object.entries(_kintsugiCounts).forEach(([idx, count]) => {
+    const el = document.getElementById('tk-count-' + idx);
+    if (el) el.textContent = count > 0 ? count : '—';
+  });
+}
+
+function schedulePlayCount(trackIdx) {
+  if (_playTimer) clearTimeout(_playTimer);
+  _playTimer = setTimeout(() => {
+    _incrementKintsugiCount(trackIdx);
+    _playTimer = null;
+  }, 10000);
+}
+
+function cancelPlayCount() {
+  if (_playTimer) { clearTimeout(_playTimer); _playTimer = null; }
+}
+
+async function _incrementKintsugiCount(idx) {
+  if (!_sbClient) return;
+  try {
+    await _sbClient.rpc('increment_kintsugi_play', { p_index: idx });
+    _kintsugiCounts[idx] = (_kintsugiCounts[idx] || 0) + 1;
+    _updateCountDisplay();
+  } catch (e) {}
+}
+
 // =====================================================================
 //  ISLAND RENDERERS
 // =====================================================================
@@ -689,7 +869,15 @@ function renderTracklist(island) {
   meta.innerHTML =
     '<div class="album-artist">inigo365</div>' +
     '<div class="album-title">kintsugi</div>' +
-    '<div class="album-detail">2023-2026 · ' + island.tracks.length + ' tracks</div>';
+    '<div class="album-detail">2023-2026 · ' + island.tracks.length + ' tracks</div>' +
+    '<button class="reset-btn" id="nokia-reset-btn">[ reset unlock ]</button>';
+  meta.querySelector('#nokia-reset-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    localStorage.removeItem('kintsugi_track1_unlocked');
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    if (tl) tl.tracks[0].state = 'locked';
+    refreshTracklist();
+  });
 
   header.appendChild(artWrap);
   header.appendChild(meta);
@@ -713,10 +901,12 @@ function renderTracklist(island) {
       });
     } else {
       row.className = 'track-row ' + track.state;
+      const countVal = _kintsugiCounts[i];
+      const countStr = (countVal != null && countVal > 0) ? countVal : '—';
       row.innerHTML =
         '<span class="track-num">' + (i + 1) + '</span>' +
         '<span class="track-title">' + track.title + '</span>' +
-        '<span class="track-duration">' + (track.duration || '—:——') + '</span>';
+        '<span class="track-duration" id="tk-count-' + i + '">' + countStr + '</span>';
       if (track.state === 'released') {
         row.dataset.file = track.file;
         row.addEventListener('click', () => playTrack(track));
@@ -1062,7 +1252,7 @@ function navigateToTracklist() {
   const iwx = CENTER + tl.x;
   const iwy = CENTER + tl.y;
   const [nx, ny] = clampWorld(
-    isMobileNow ? (20 - iwx) : (vw * 0.24 - iwx),
+    isMobileNow ? (20 - iwx) : (vw * 0.34 - iwx),
     isMobileNow ? (48 - iwy) : (vh * 0.10 - iwy)
   );
   targetX = nx; targetY = ny;
@@ -1079,9 +1269,6 @@ function refreshTracklist() {
   const params = islandDriftParams[driftIdx];
   const oldEl  = params.el;
 
-  const doTypewrite = !!tlIsland.tracks[0]._typewrite;
-  delete tlIsland.tracks[0]._typewrite;
-
   releaseList = [];
   const newEl = renderTracklist(tlIsland);
   newEl.style.left = params.baseLeft + 'px';
@@ -1091,20 +1278,22 @@ function refreshTracklist() {
   world.appendChild(newEl);
   oldEl.remove();
   params.el = newEl;
+}
 
-  if (doTypewrite) {
-    const firstReleasedRow = newEl.querySelector('.track-row.released');
-    if (firstReleasedRow) {
-      const titleSpan = firstReleasedRow.querySelector('.track-title');
-      const fullTitle = tlIsland.tracks[0].title;
-      titleSpan.textContent = '';
-      let i = 0;
-      const tw = setInterval(() => {
-        titleSpan.textContent = fullTitle.slice(0, ++i);
-        if (i >= fullTitle.length) clearInterval(tw);
-      }, 52);
-    }
-  }
+function triggerTypewrite() {
+  const tlIsland = ISLANDS.find(i => i.type === 'tracklist');
+  if (!tlIsland) return;
+  const firstReleasedRow = document.querySelector('.tracklist-island .track-row.released');
+  if (!firstReleasedRow) return;
+  const titleSpan = firstReleasedRow.querySelector('.track-title');
+  if (!titleSpan) return;
+  const fullTitle = tlIsland.tracks[0].title;
+  titleSpan.textContent = '';
+  let i = 0;
+  const tw = setInterval(() => {
+    titleSpan.textContent = fullTitle.slice(0, ++i);
+    if (i >= fullTitle.length) clearInterval(tw);
+  }, 52);
 }
 
 window.addEventListener('message', e => {
@@ -1112,11 +1301,13 @@ window.addEventListener('message', e => {
   if (e.data.type === 'nokia-puzzle-complete') {
     localStorage.setItem('kintsugi_track1_unlocked', 'true');
     const tl = ISLANDS.find(i => i.type === 'tracklist');
-    if (tl) { tl.tracks[0].state = 'released'; tl.tracks[0]._typewrite = true; }
+    if (tl) tl.tracks[0].state = 'released';
     refreshTracklist();
   }
   if (e.data.type === 'nokia-return') {
     navigateToTracklist();
+    // Delay typewriter until pan has settled (~1400ms at lerp 0.08/60fps)
+    setTimeout(triggerTypewrite, 1400);
   }
 });
 
