@@ -461,7 +461,7 @@ const ISLANDS = [
     tracks: [
       { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
       { title: 'track 02', state: 'locked', duration: null },
-      { title: 'track 03', state: 'locked', duration: null },
+      { title: 'pin: 2001', state: 'locked', duration: null },
       { title: 'track 04', state: 'locked', duration: null },
       { title: 'track 05', state: 'locked', duration: null },
       { title: 'track 06', state: 'locked', duration: null },
@@ -488,7 +488,7 @@ const ISLANDS = [
     type: 'description',
     // x must clear tracklist right edge (width ~460px) plus breathing room
     x: 580,
-    y: 250,
+    y: 40,
     lines: [
       'produced, written & recorded between',
       'the abbey road canteen,',
@@ -503,7 +503,7 @@ const ISLANDS = [
   {
     type: 'image',
     x: 580,
-    y: 600,
+    y: 400,
     src: 'images/kintsugi-brain.jpg',
     caption: ''
   },
@@ -512,8 +512,9 @@ const ISLANDS = [
 
 ];
 
-// Restore unlock state from a previous session
-if (localStorage.getItem('puzzleComplete') === 'true') {
+// Restore unlock state from a previous kintsugi session.
+// Uses a scoped key so nokia.html's standalone puzzleComplete key never collides.
+if (localStorage.getItem('kintsugi_track1_unlocked') === 'true') {
   const _tl = ISLANDS.find(i => i.type === 'tracklist');
   if (_tl) _tl.tracks[0].state = 'released';
 }
@@ -926,6 +927,10 @@ const arrowEls = {
 };
 
 function panInDirection(dir) {
+  if (window.innerWidth <= 600) {
+    if (dir === 'left')  { navigateToNokia();   return; }
+    if (dir === 'right') { navigateToContent(); return; }
+  }
   let dx = 0, dy = 0;
   if (dir === 'right') dx = -PAN_STEP;
   if (dir === 'left')  dx =  PAN_STEP;
@@ -978,6 +983,24 @@ function navigateToNokia() {
   const [nx, ny] = clampWorld(
     vw / 2 - (CENTER + nokia.x) - 190,
     vh / 2 - (CENTER + nokia.y) - 300
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+}
+
+function navigateToContent() {
+  const desc = ISLANDS.find(i => i.type === 'description');
+  if (!desc) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  // Centre the description/image column horizontally; keep the same vertical level
+  // as the tracklist landing so it reads as a pure horizontal pan
+  const tl = ISLANDS.find(i => i.type === 'tracklist');
+  const tlLandY = vw <= 600
+    ? (48 - (CENTER + tl.y))
+    : (vh * 0.10 - (CENTER + tl.y));
+  const [nx, ny] = clampWorld(
+    vw / 2 - (CENTER + desc.x + 180), // 180 ≈ half description width
+    tlLandY
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
@@ -1038,6 +1061,7 @@ function refreshTracklist() {
 window.addEventListener('message', e => {
   if (!e.data) return;
   if (e.data.type === 'nokia-puzzle-complete') {
+    localStorage.setItem('kintsugi_track1_unlocked', 'true');
     const tl = ISLANDS.find(i => i.type === 'tracklist');
     if (tl) { tl.tracks[0].state = 'released'; tl.tracks[0]._typewrite = true; }
     refreshTracklist();

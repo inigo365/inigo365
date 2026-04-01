@@ -111,7 +111,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
   font-family: 'RuneScape', monospace;
   /* Scale with viewport width so text stays readable on mobile.
      Phone screen width ≈ 61.9% of phone frame ≈ 58.8vw on mobile. */
-  font-size: clamp(9px, 2.5vw, 16px);
+  font-size: clamp(11px, 3.8vw, 16px);
   letter-spacing: 0.04em;
   line-height: 1.35;
   image-rendering: pixelated;
@@ -239,7 +239,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
   /* slightly smaller than desktop to ensure no clipping on mobile */
   #nokiaFrame { height: min(90vh, 780px, calc(97vw * 1.502)); }
   /* ~20% larger text to stay readable at the reduced size */
-  #nokiaScreen { font-size: clamp(11px, 3vw, 16px) !important; }
+  #nokiaScreen { font-size: clamp(11px, 3.8vw, 16px) !important; }
 }
 
 /* ===================== BACK BUTTON ===================== */
@@ -319,7 +319,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
 const CONFIG = {
   UNLOCK_PIN: "2001",          // CHANGE THIS before going live
   HINT_TEXT: "ENTER PINCODE 2 UNLOCK",            // IDLE SCREEN CRYPTIC HINT
-  PIN_HINT:  "2001",                                          // HINT SHOWN ON PIN SCREEN — edit this
+  PIN_HINT:  "",                                              // HINT SHOWN ON PIN SCREEN — edit this
   REVEAL_MESSAGE: "song unlocked!",       // MESSAGE SHOWN AFTER PUZZLE COMPLETE
   ARTIST_NAME: "inigo365",          // YOUR ARTIST NAME
   TRACKS: [
@@ -363,7 +363,7 @@ function screenBase() {
     'position:absolute;left:19.8%;top:19.0%;width:61.9%;height:22.8%;' +
     'background:#0d0d0d;color:#4dff91;' +
     'font-family:\'RuneScape\',monospace;' +
-    'font-size:clamp(9px,2.5vw,16px);letter-spacing:0.04em;line-height:1.35;' +
+    'font-size:clamp(11px,3.8vw,16px);letter-spacing:0.04em;line-height:1.35;' +
     'overflow:hidden;z-index:1;box-sizing:border-box;padding:3% 4%;' +
     'display:flex;flex-direction:column;align-items:center;' +
     'justify-content:center;text-align:center;';
@@ -412,11 +412,11 @@ function renderIdle() {
   STATE = 'idle';
   screenBase();
   nokiaScreen.innerHTML =
-    '<div style="opacity:0.5;font-size:0.75em;margin-bottom:5px">◆ ◆ ◆</div>' +
-    '<div style="opacity:0.9;font-size:0.9em;line-height:1.45;padding:0 3px">' +
+    '<div style="opacity:0.9;font-size:0.9em;line-height:1.55;padding:0 4px;white-space:nowrap">' +
       CONFIG.HINT_TEXT +
     '</div>' +
-    (CONFIG.PIN_HINT ? '<div style="opacity:0.9;font-size:1.4em;margin-top:8px;letter-spacing:0.3em">' + CONFIG.PIN_HINT + '</div>' : '');
+    '<div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);' +
+      'opacity:0.45;font-size:0.65em;white-space:nowrap">[* back]</div>';
 }
 
 // =====================================================================
@@ -522,7 +522,7 @@ function renderPuzzleIntro() {
   STATE = 'puzzleintro';
   screenBase();
   nokiaScreen.innerHTML =
-    '<div id="piTxt" style="font-size:0.9em;line-height:1.45;padding:0 2px"></div>';
+    '<div id="piTxt" style="font-size:0.9em;line-height:1.45;padding:0 2px;white-space:nowrap"></div>';
   const el  = nokiaScreen.querySelector('#piTxt');
   const msg = 'drag the pieces into place...';
   let i = 0;
@@ -831,7 +831,7 @@ function renderReveal() {
   STATE = 'reveal';
   screenBase();
   nokiaScreen.innerHTML =
-    '<div id="rvTxt" style="font-size:0.9em;line-height:1.45;padding:0 2px"></div>';
+    '<div id="rvTxt" style="font-size:0.9em;line-height:1.45;padding:0 2px;white-space:nowrap"></div>';
   const el  = nokiaScreen.querySelector('#rvTxt');
   const msg = CONFIG.REVEAL_MESSAGE;
   let i = 0;
@@ -1115,7 +1115,10 @@ function handleButton(action) {
   if (action === 'key0' && STATE !== 'pin')    action = 'ok';
   switch (STATE) {
     case 'idle':
-      if (action === 'lsoft') return; // ignore back on lock screen
+      if (action === 'lsoft') {
+        if (window !== window.top) window.parent.postMessage({ type: 'nokia-return' }, '*');
+        return;
+      }
       pinBuffer = '';
       renderPin(false);
       // Forward the digit if the first press was a number key
