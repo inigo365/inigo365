@@ -1088,11 +1088,11 @@ function clampWorld(x, y) {
   // Content bounding box in world coordinates (based on island layout).
   // Allow 200px of breathing room beyond each content edge — enough to
   // feel like a world but nowhere near the empty edges of the 4000px canvas.
-  const extra = 200;
-  const cL = CENTER - 880;  // left edge including nokia island (x=-600, width~380px) + title (x=-680)
-  const cR = CENTER + 970;  // right edge of rightmost island (desc/image x=580 + ~360px)
-  const cT = CENTER - 460;  // top of topmost island (title y=-420)
-  const cB = CENTER + 980;  // bottom of bottommost island (image y=600 + ~380px)
+  const extra = 80;
+  const cL = CENTER - 510;  // left edge: morrisblitz x=-510
+  const cR = CENTER + 940;  // right edge: brain/profile/desc x=600+340px
+  const cT = CENTER - 620;  // top edge: morrisblitz y=-620
+  const cB = CENTER + 740;  // bottom edge: brain image y=400+340px
   return [
     Math.max(-(cR + extra - vw), Math.min(-(cL - extra), x)),
     Math.max(-(cB + extra - vh), Math.min(-(cT - extra), y))
@@ -1267,9 +1267,9 @@ function navigateToImage() {
 }
 
 function navigateToBandcamp() {
-  // Land with profile image near the top, bandcamp link visible below
+  // Land with profile image visible, bandcamp link below, description off screen
   // X: centre on profile image (x:600, width:340px → centre at x+170)
-  // Y: profile.y near top (same 48px gap as tracklist landing)
+  // Y: profile starts 180px from top so description (540px below) clears the fold
   const bc   = ISLANDS.find(i => i.type === 'bandcamp');
   const prof = ISLANDS.find(i => i.src && i.src.includes('profile'));
   if (!bc && !prof) return;
@@ -1277,7 +1277,7 @@ function navigateToBandcamp() {
   const vw = window.innerWidth, vh = window.innerHeight;
   const [nx, ny] = clampWorld(
     vw / 2 - (CENTER + anchor.x + 170),
-    48 - (CENTER + anchor.y)
+    180 - (CENTER + anchor.y)
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
@@ -1292,7 +1292,7 @@ function navigateToContent() {
   // Island width: 360px desktop (max-width), ~(vw-40) on mobile
   const islandW = isMobileNow ? Math.min(360, vw - 40) : 360;
   const landY = isMobileNow
-    ? (48 - (CENTER + desc.y))           // text near top of screen on mobile
+    ? (100 - (CENTER + desc.y))          // text ~100px from top on mobile
     : (vh * 0.10 - (CENTER + desc.y));   // same top-gap ratio on desktop
   const [nx, ny] = clampWorld(
     vw / 2 - (CENTER + desc.x + islandW / 2),
