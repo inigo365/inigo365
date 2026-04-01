@@ -396,7 +396,7 @@ body.music-active #arrow-down { bottom: 118px; }
 .pctl.dim   { opacity: 0.35; }
 .pctl.active{ opacity: 1; }
 
-/* ===================== RESET BUTTON ===================== */
+/* ===================== RESET / HOME BUTTONS ===================== */
 .reset-btn {
   background: none;
   border: none;
@@ -405,6 +405,7 @@ body.music-active #arrow-down { bottom: 118px; }
   font-size: 14px;
   letter-spacing: 0.04em;
   text-transform: lowercase;
+  text-decoration: none;
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
   padding: 0;
   opacity: 0.28;
@@ -872,6 +873,7 @@ function renderTracklist(island) {
     '<div class="album-artist">inigo365</div>' +
     '<div class="album-title">kintsugi</div>' +
     '<div class="album-detail">2023-2026 · ' + island.tracks.length + ' tracks</div>' +
+    '<a href="../index.html" class="reset-btn" id="home-btn">[ home ]</a>' +
     '<button class="reset-btn" id="nokia-reset-btn">[ reset unlock ]</button>';
   meta.querySelector('#nokia-reset-btn').addEventListener('click', e => {
     e.stopPropagation();
@@ -1196,17 +1198,17 @@ let mobileCurrentIsland = 'tracklist';
 /*  Grid adjacency — each entry lists valid arrow directions and their target.
     Layout (col × row):
       images(stacked,-605)   | title(0,-400)    |
-      nokia(-500,0)          | tracklist(0,0)   | bandcamp(622,-100)
+      nokia(-500,0)          | tracklist(0,0)   | bandcamp+profile(mid,-300)
                              |                  | description(580,40)
                              |                  | image(580,400)      */
 const MOBILE_GRID = {
   nokia:       { right: 'tracklist',  up: 'images' },
-  tracklist:   { left: 'nokia',       right: 'description', up: 'title' },
-  title:       { left: 'images',      down: 'tracklist' },
+  tracklist:   { left: 'nokia',       right: 'bandcamp',    up: 'title' },
+  title:       { left: 'images',      right: 'bandcamp',    down: 'tracklist' },
   images:      { right: 'title',      down: 'nokia' },
-  description: { left: 'tracklist',  up: 'title',   down: 'image' },
+  bandcamp:    { left: 'tracklist',   down: 'description' },
+  description: { left: 'tracklist',  up: 'bandcamp',  down: 'image' },
   image:       { left: 'tracklist',  up: 'description' },
-  bandcamp:    { left: 'tracklist',  down: 'description' },
 };
 
 function navigateToNokia() {
@@ -1234,35 +1236,26 @@ function navigateToTitle() {
   mobileCurrentIsland = 'title';
 }
 
-function navigateToMorrisblitz() {
-  const island = ISLANDS.find(i => i.src && i.src.includes('morrisblitz'));
-  if (!island) return;
+function navigateToImages() {
+  // Centre on the midpoint between morrisblitz and skytower (they're stacked)
+  const mb = ISLANDS.find(i => i.src && i.src.includes('morrisblitz'));
+  const st = ISLANDS.find(i => i.src && i.src.includes('skytower'));
+  if (!mb && !st) return;
   const vw = window.innerWidth, vh = window.innerHeight;
+  const midX = ((mb ? mb.x : 0) + (st ? st.x : 0)) / (mb && st ? 2 : 1);
+  const midY = ((mb ? mb.y : 0) + (st ? st.y : 0)) / (mb && st ? 2 : 1);
   const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + island.x + 170),
-    40 - (CENTER + island.y)
+    vw / 2 - (CENTER + midX + 170),
+    vh / 2 - (CENTER + midY + 170)
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
-  mobileCurrentIsland = 'morrisblitz';
-}
-
-function navigateToSkytower() {
-  const island = ISLANDS.find(i => i.src && i.src.includes('skytower'));
-  if (!island) return;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + island.x + 170),
-    40 - (CENTER + island.y)
-  );
-  targetX = nx; targetY = ny;
-  mouseNX = 0; mouseNY = 0;
-  mobileCurrentIsland = 'skytower';
+  mobileCurrentIsland = 'images';
 }
 
 function navigateToImage() {
-  // Brain image — first image island in array (x:580, y:400)
-  const island = ISLANDS.find(i => i.type === 'image');
+  // Brain image (x:600, y:400)
+  const island = ISLANDS.find(i => i.type === 'image' && i.src && i.src.includes('brain'));
   if (!island) return;
   const vw = window.innerWidth, vh = window.innerHeight;
   const [nx, ny] = clampWorld(
@@ -1275,12 +1268,18 @@ function navigateToImage() {
 }
 
 function navigateToBandcamp() {
-  const island = ISLANDS.find(i => i.type === 'bandcamp');
-  if (!island) return;
+  // Centre vertically on the midpoint between profile.png and the bandcamp link
+  const bc   = ISLANDS.find(i => i.type === 'bandcamp');
+  const prof = ISLANDS.find(i => i.src && i.src.includes('profile'));
+  if (!bc) return;
   const vw = window.innerWidth, vh = window.innerHeight;
+  const midX = bc.x + (bc.x - (prof ? prof.x : bc.x)) / 2;  // centre on bandcamp x
+  const midY = prof
+    ? (bc.y + prof.y) / 2
+    : bc.y;
   const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + island.x + 120),
-    40 - (CENTER + island.y)
+    vw / 2 - (CENTER + bc.x + 120),
+    vh / 2 - (CENTER + midY + 170)
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
@@ -1291,12 +1290,15 @@ function navigateToContent() {
   const desc = ISLANDS.find(i => i.type === 'description');
   if (!desc) return;
   const vw = window.innerWidth, vh = window.innerHeight;
+  const isMobileNow = vw <= 600;
+  // Island width: 360px desktop (max-width), ~(vw-40) on mobile
+  const islandW = isMobileNow ? Math.min(360, vw - 40) : 360;
   const tl = ISLANDS.find(i => i.type === 'tracklist');
-  const tlLandY = vw <= 600
+  const tlLandY = isMobileNow
     ? (48 - (CENTER + tl.y))
     : (vh * 0.10 - (CENTER + tl.y));
   const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + desc.x + 180),
+    vw / 2 - (CENTER + desc.x + islandW / 2),
     tlLandY
   );
   targetX = nx; targetY = ny;
@@ -1324,8 +1326,7 @@ const MOBILE_NAVIGATE = {
   nokia:       navigateToNokia,
   tracklist:   navigateToTracklist,
   title:       navigateToTitle,
-  morrisblitz: navigateToMorrisblitz,
-  skytower:    navigateToSkytower,
+  images:      navigateToImages,
   description: navigateToContent,
   image:       navigateToImage,
   bandcamp:    navigateToBandcamp,
