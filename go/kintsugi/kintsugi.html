@@ -122,8 +122,11 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .album-description { font-size: 22px; line-height: 2; letter-spacing: 0.03em; }
 
 /* ===================== LINER NOTE ===================== */
-.liner-island { text-align: center; max-width: 360px; }
+.liner-island { text-align: center; max-width: 360px; z-index: 5; }
 .liner-text   { font-size: 20px; line-height: 2.4; letter-spacing: 0.04em; }
+
+/* ===================== BANDCAMP ISLAND ===================== */
+.bandcamp-island { z-index: 5; }
 
 /* ===================== IMAGE ISLAND ===================== */
 .image-island     { width: 340px; }
@@ -520,7 +523,9 @@ const ISLANDS = [
     caption: ''
   },
 
-  { type: 'nokia', x: -520, y: 0 },
+  { type: 'bandcamp', x: 622, y: 650 },
+
+  { type: 'nokia', x: -500, y: 0 },
 
 ];
 
@@ -724,12 +729,6 @@ function renderTracklist(island) {
 
   el.appendChild(list);
 
-  const bc = document.createElement('div');
-  bc.style.cssText = 'margin-top:28px;';
-  bc.innerHTML = '<a href="https://inigo365.bandcamp.com/" target="_blank" rel="noopener" class="bc-link">' +
-    'support me on bandcamp →</a>';
-  el.appendChild(bc);
-
   return el;
 }
 
@@ -787,6 +786,13 @@ function renderImage(island) {
   return el;
 }
 
+function renderBandcamp() {
+  const el = document.createElement('div');
+  el.className = 'island bandcamp-island';
+  el.innerHTML = '<a href="https://inigo365.bandcamp.com/" target="_blank" rel="noopener" class="bc-link">support me on bandcamp →</a>';
+  return el;
+}
+
 function renderNokia() {
   const el = document.createElement('div');
   el.className = 'island nokia-island';
@@ -814,6 +820,7 @@ function buildIslands() {
     else if (island.type === 'title')       el = renderTitle(island);
     else if (island.type === 'description') el = renderDescription(island);
     else if (island.type === 'image')       el = renderImage(island);
+    else if (island.type === 'bandcamp')    el = renderBandcamp();
     else if (island.type === 'nokia')       el = renderNokia();
     else return;
 
