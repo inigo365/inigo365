@@ -502,7 +502,10 @@ function playTrack(track) {
 
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: track.title, artist: 'inigo365', album: 'kintsugi'
+        title: track.title, artist: 'inigo365', album: 'kintsugi',
+        artwork: [
+          { src: 'images/kintsugi-art.jpg', sizes: '512x512', type: 'image/png' }
+        ]
       });
       navigator.mediaSession.setActionHandler('play', () => {
         isPlaying = true;
