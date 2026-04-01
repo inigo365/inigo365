@@ -1197,18 +1197,17 @@ let mobileCurrentIsland = 'tracklist';
 
 /*  Grid adjacency — each entry lists valid arrow directions and their target.
     Layout (col × row):
-      images(stacked,-605)   | title(0,-400)    |
-      nokia(-500,0)          | tracklist(0,0)   | bandcamp+profile(mid,-300)
-                             |                  | description(580,40)
+      images(stacked,-605)   | title(0,-400)    | bandcamp+profile(mid,-300)
+      nokia(-500,0)          | tracklist(0,0)   | description(580,40)
                              |                  | image(580,400)      */
 const MOBILE_GRID = {
-  nokia:       { right: 'tracklist',  up: 'images' },
-  tracklist:   { left: 'nokia',       right: 'bandcamp',    up: 'title' },
-  title:       { left: 'images',      right: 'bandcamp',    down: 'tracklist' },
-  images:      { right: 'title',      down: 'nokia' },
-  bandcamp:    { left: 'tracklist',   down: 'description' },
-  description: { left: 'tracklist',  up: 'bandcamp',  down: 'image' },
-  image:       { left: 'tracklist',  up: 'description' },
+  nokia:       { right: 'tracklist',   up: 'images' },
+  tracklist:   { left: 'nokia',        right: 'description', up: 'title' },
+  title:       { left: 'images',       right: 'bandcamp',    down: 'tracklist' },
+  images:      { right: 'title',       down: 'nokia' },
+  bandcamp:    { left: 'title',        down: 'description' },
+  description: { left: 'tracklist',   up: 'bandcamp',       down: 'image' },
+  image:       { left: 'tracklist',   up: 'description' },
 };
 
 function navigateToNokia() {
@@ -1246,7 +1245,7 @@ function navigateToImages() {
   const midY = ((mb ? mb.y : 0) + (st ? st.y : 0)) / (mb && st ? 2 : 1);
   const [nx, ny] = clampWorld(
     vw / 2 - (CENTER + midX + 170),
-    vh / 2 - (CENTER + midY + 170)
+    vh / 2 - (CENTER + midY + 170 - 40)  // shift 40px higher
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
@@ -1268,18 +1267,17 @@ function navigateToImage() {
 }
 
 function navigateToBandcamp() {
-  // Centre vertically on the midpoint between profile.png and the bandcamp link
+  // Land with profile image near the top, bandcamp link visible below
+  // X: centre on profile image (x:600, width:340px → centre at x+170)
+  // Y: profile.y near top (same 48px gap as tracklist landing)
   const bc   = ISLANDS.find(i => i.type === 'bandcamp');
   const prof = ISLANDS.find(i => i.src && i.src.includes('profile'));
-  if (!bc) return;
+  if (!bc && !prof) return;
+  const anchor = prof || bc;
   const vw = window.innerWidth, vh = window.innerHeight;
-  const midX = bc.x + (bc.x - (prof ? prof.x : bc.x)) / 2;  // centre on bandcamp x
-  const midY = prof
-    ? (bc.y + prof.y) / 2
-    : bc.y;
   const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + bc.x + 120),
-    vh / 2 - (CENTER + midY + 170)
+    vw / 2 - (CENTER + anchor.x + 170),
+    48 - (CENTER + anchor.y)
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
@@ -1293,13 +1291,12 @@ function navigateToContent() {
   const isMobileNow = vw <= 600;
   // Island width: 360px desktop (max-width), ~(vw-40) on mobile
   const islandW = isMobileNow ? Math.min(360, vw - 40) : 360;
-  const tl = ISLANDS.find(i => i.type === 'tracklist');
-  const tlLandY = isMobileNow
-    ? (48 - (CENTER + tl.y))
-    : (vh * 0.10 - (CENTER + tl.y));
+  const landY = isMobileNow
+    ? (48 - (CENTER + desc.y))           // text near top of screen on mobile
+    : (vh * 0.10 - (CENTER + desc.y));   // same top-gap ratio on desktop
   const [nx, ny] = clampWorld(
     vw / 2 - (CENTER + desc.x + islandW / 2),
-    tlLandY
+    landY
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
