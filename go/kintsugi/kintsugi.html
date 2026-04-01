@@ -232,10 +232,22 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 }
 .nav-arrow:hover { opacity: 1; }
 
-#arrow-up    { top: 10px;     left: 50%; transform: translateX(-50%); }
-#arrow-down  { bottom: 10px; left: 50%; transform: translateX(-50%); }
-#arrow-left  { left: 10px;    top:  50%; transform: translateY(-50%); }
-#arrow-right { right: 10px;   top:  50%; transform: translateY(-50%); }
+/* Directional float animations — each arrow bobs toward the edge it points at */
+@keyframes floatUp    { 0%,100%{transform:translateX(-50%) translateY(0)}   50%{transform:translateX(-50%) translateY(-5px)} }
+@keyframes floatDown  { 0%,100%{transform:translateX(-50%) translateY(0)}   50%{transform:translateX(-50%) translateY(5px)} }
+@keyframes floatLeft  { 0%,100%{transform:translateY(-50%) translateX(0)}   50%{transform:translateY(-50%) translateX(-5px)} }
+@keyframes floatRight { 0%,100%{transform:translateY(-50%) translateX(0)}   50%{transform:translateY(-50%) translateX(5px)} }
+
+#arrow-up    { top: 4px;    left: 50%; transform: translateX(-50%); animation: floatUp    2.4s ease-in-out infinite; }
+#arrow-down  { bottom: 4px; left: 50%; transform: translateX(-50%); animation: floatDown  2.4s ease-in-out 0.6s infinite; }
+#arrow-left  { left: 4px;   top:  50%; transform: translateY(-50%); animation: floatLeft  2.4s ease-in-out 1.2s infinite; }
+#arrow-right { right: 4px;  top:  50%; transform: translateY(-50%); animation: floatRight 2.4s ease-in-out 1.8s infinite; }
+
+/* Lift bottom arrow above music player when it's visible */
+body.music-active #arrow-down { bottom: 118px; }
+@media (max-width: 600px) {
+  body.music-active #arrow-down { bottom: 148px; }
+}
 
 /* seed: transparent, all pixels live in box-shadow */
 .arrow-sprite {
@@ -399,11 +411,11 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   .nav-arrow             { opacity: 0.6; }
   .nav-arrow:active      { opacity: 1; }
 
-  /* arrows: slightly closer to edge on mobile */
-  #arrow-up    { top: 16px; }
-  #arrow-left  { left: 16px; }
-  #arrow-right { right: 16px; }
-  #arrow-down  { bottom: 130px; }
+  /* flush to screen edges on mobile */
+  #arrow-up    { top: 4px; }
+  #arrow-left  { left: 4px; }
+  #arrow-right { right: 4px; }
+  #arrow-down  { bottom: 4px; }
 }
 
 </style>
@@ -508,7 +520,7 @@ const ISLANDS = [
     caption: ''
   },
 
-  { type: 'nokia', x: -600, y: 0 },
+  { type: 'nokia', x: -520, y: 0 },
 
 ];
 
@@ -552,6 +564,7 @@ function stopAudio() {
     });
   }
   document.getElementById('player').classList.remove('visible');
+  document.body.classList.remove('music-active');
   document.getElementById('pPlayPause').textContent = '[ play ]';
   updateTrackStates();
   updateTimeDisplay();
@@ -572,6 +585,7 @@ function playTrack(track) {
     audioEl.play().catch(() => {});
     document.getElementById('playerTitle').textContent = track.title;
     document.getElementById('player').classList.add('visible');
+    document.body.classList.add('music-active');
 
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -930,6 +944,8 @@ function panInDirection(dir) {
   if (window.innerWidth <= 600) {
     if (dir === 'left')  { navigateToNokia();   return; }
     if (dir === 'right') { navigateToContent(); return; }
+    if (dir === 'up')    { navigateToTitle();   return; }
+    if (dir === 'down')  { navigateToImage();   return; }
   }
   let dx = 0, dy = 0;
   if (dir === 'right') dx = -PAN_STEP;
@@ -983,6 +999,32 @@ function navigateToNokia() {
   const [nx, ny] = clampWorld(
     vw / 2 - (CENTER + nokia.x) - 190,
     vh / 2 - (CENTER + nokia.y) - 300
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+}
+
+function navigateToTitle() {
+  const island = ISLANDS.find(i => i.type === 'title');
+  if (!island) return;
+  const vw = window.innerWidth;
+  // Same 20px left margin as tracklist landing; show title near top of screen
+  const [nx, ny] = clampWorld(
+    20 - (CENTER + island.x),
+    40 - (CENTER + island.y)
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+}
+
+function navigateToImage() {
+  const island = ISLANDS.find(i => i.type === 'image');
+  if (!island) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  // Centre image horizontally; show near top of screen
+  const [nx, ny] = clampWorld(
+    vw / 2 - (CENTER + island.x + 170), // 170 = half of 340px image width
+    40 - (CENTER + island.y)
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
