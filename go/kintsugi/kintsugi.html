@@ -168,10 +168,10 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .nav-arrow.active { opacity: 1; }
 .nav-arrow:hover  { opacity: 0.65 !important; }
 
-#arrow-up    { top: 28px;     left: 50%; transform: translateX(-50%); }
-#arrow-down  { bottom: 148px; left: 50%; transform: translateX(-50%); }
-#arrow-left  { left: 28px;    top:  50%; transform: translateY(-50%); }
-#arrow-right { right: 28px;   top:  50%; transform: translateY(-50%); }
+#arrow-up    { top: 10px;     left: 50%; transform: translateX(-50%); }
+#arrow-down  { bottom: 10px; left: 50%; transform: translateX(-50%); }
+#arrow-left  { left: 10px;    top:  50%; transform: translateY(-50%); }
+#arrow-right { right: 10px;   top:  50%; transform: translateY(-50%); }
 
 /* seed: transparent, all pixels live in box-shadow */
 .arrow-sprite {
@@ -404,13 +404,13 @@ const ISLANDS = [
 
   {
     type: 'title',
-    x: -680,
+    x: 0,
     y: -420,
     // edit lines to update description
     lines: [
-      'kintsugi is the japanese art of mending what is broken with gold,',
-      'transforming otherwise broken ceramics into something beautiful.',
-      'beauty in the imperfections.'
+      'kintsugi; the japanese art of mending what is broken with gold-',
+      'transforming the broken into something beautiful.',
+      'beauty in the imperfection.'
     ]
   },
 
@@ -423,7 +423,7 @@ const ISLANDS = [
       'produced, written & recorded between',
       'the abbey road canteen,',
       'morris blitz court,',
-      'the bottom of ridley road,',
+      'E8,',
       'the 1021',
       '& te atatu peninsula'
     ]
@@ -431,7 +431,7 @@ const ISLANDS = [
 
   {
     type: 'image',
-    x: -500,
+    x: -200,
     y: 700,
     src: 'images/kintsugi-brain.jpg',
     caption: ''
