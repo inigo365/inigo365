@@ -399,13 +399,18 @@ const ISLANDS = [
       { title: 'track 03', state: 'locked', duration: null },
       { title: 'track 04', state: 'locked', duration: null },
       { title: 'track 05', state: 'locked', duration: null },
+      { title: 'track 06', state: 'locked', duration: null },
+      { title: 'track 07', state: 'locked', duration: null },
+      { title: 'track 08', state: 'locked', duration: null },
+      { title: 'track 09', state: 'locked', duration: null },
+      { title: 'track 10', state: 'locked', duration: null }
     ]
   },
 
   {
     type: 'title',
     x: 0,
-    y: -420,
+    y: -400,
     // edit lines to update description
     lines: [
       'kintsugi; the japanese art of mending what is broken with gold-',
@@ -422,17 +427,17 @@ const ISLANDS = [
     lines: [
       'produced, written & recorded between',
       'the abbey road canteen,',
-      'morris blitz court,',
-      'E8,',
-      'the 1021',
-      '& te atatu peninsula'
+      'E8, N16 & the 1021',
+      'the morris blitz court,',
+      'kiwi bake and cafe henderson',
+      '& the te atatu peninsula roast shop'
     ]
   },
 
   {
     type: 'image',
-    x: -200,
-    y: 700,
+    x: 580,
+    y: 600,
     src: 'images/kintsugi-brain.jpg',
     caption: ''
   },
@@ -589,7 +594,7 @@ function renderTracklist(island) {
   meta.innerHTML =
     '<div class="album-artist">inigo365</div>' +
     '<div class="album-title">kintsugi</div>' +
-    '<div class="album-detail">2025 · ' + island.tracks.length + ' tracks</div>';
+    '<div class="album-detail">2023-2026 · ' + island.tracks.length + ' tracks</div>';
 
   header.appendChild(artWrap);
   header.appendChild(meta);
