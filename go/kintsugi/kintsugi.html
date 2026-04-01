@@ -138,6 +138,40 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .image-placeholder span { font-size: 18px; letter-spacing: 0.06em; }
 .image-caption { font-size: 16px; margin-top: 12px; letter-spacing: 0.04em; text-align: center; }
 
+/* ===================== NOKIA ISLAND ===================== */
+.nokia-island {
+  width: 380px;
+  height: 600px;
+  overflow: hidden;
+}
+.nokia-island iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ===================== UNLOCK BUTTON ===================== */
+.track-row.unlockable {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: default;
+}
+.unlock-btn {
+  background: none;
+  border: none;
+  color: #4AADFF;
+  font-family: 'RuneScape', monospace;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+.unlock-btn:hover { opacity: 1; }
+
 /* ===================== BANDCAMP LINK ===================== */
 .bc-link {
   display: inline-block;
@@ -425,7 +459,7 @@ const ISLANDS = [
     x: 0,
     y: 0,
     tracks: [
-      { title: 'homesick_ (intr0)', state: 'released', duration: null, file: 'audio/homesick.mp3' },
+      { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
       { title: 'track 02', state: 'locked', duration: null },
       { title: 'track 03', state: 'locked', duration: null },
       { title: 'track 04', state: 'locked', duration: null },
@@ -474,9 +508,15 @@ const ISLANDS = [
     caption: ''
   },
 
-  // { type: 'nokia', x: -1200, y: 800 } — nokia player island, to be built in later
+  { type: 'nokia', x: -600, y: 0 },
 
 ];
+
+// Restore unlock state from a previous session
+if (localStorage.getItem('puzzleComplete') === 'true') {
+  const _tl = ISLANDS.find(i => i.type === 'tracklist');
+  if (_tl) _tl.tracks[0].state = 'released';
+}
 
 // =====================================================================
 //  AUDIO STATE
@@ -640,16 +680,30 @@ function renderTracklist(island) {
 
   island.tracks.forEach((track, i) => {
     const row = document.createElement('div');
-    row.className = 'track-row ' + track.state;
-    row.innerHTML =
-      '<span class="track-num">' + (i + 1) + '</span>' +
-      '<span class="track-title">' + track.title + '</span>' +
-      '<span class="track-duration">' + (track.duration || '—:——') + '</span>';
-    if (track.state === 'released') {
-      row.dataset.file = track.file;
-      row.addEventListener('click', () => playTrack(track));
-      releaseList.push(track);
+
+    if (track.state === 'locked' && track.unlockable) {
+      row.className = 'track-row unlockable';
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title" style="opacity:0.35">???</span>' +
+        '<span class="track-duration"><button class="unlock-btn">[ unlock ]</button></span>';
+      row.querySelector('.unlock-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        navigateToNokia();
+      });
+    } else {
+      row.className = 'track-row ' + track.state;
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title">' + track.title + '</span>' +
+        '<span class="track-duration">' + (track.duration || '—:——') + '</span>';
+      if (track.state === 'released') {
+        row.dataset.file = track.file;
+        row.addEventListener('click', () => playTrack(track));
+        releaseList.push(track);
+      }
     }
+
     list.appendChild(row);
   });
 
@@ -718,6 +772,18 @@ function renderImage(island) {
   return el;
 }
 
+function renderNokia() {
+  const el = document.createElement('div');
+  el.className = 'island nokia-island';
+
+  const iframe = document.createElement('iframe');
+  iframe.src = '../nokia/nokia.html';
+  iframe.id  = 'nokia-iframe';
+  el.appendChild(iframe);
+
+  return el;
+}
+
 // =====================================================================
 //  BUILD WORLD
 // =====================================================================
@@ -733,6 +799,7 @@ function buildIslands() {
     else if (island.type === 'title')       el = renderTitle(island);
     else if (island.type === 'description') el = renderDescription(island);
     else if (island.type === 'image')       el = renderImage(island);
+    else if (island.type === 'nokia')       el = renderNokia();
     else return;
 
     const baseLeft = CENTER + island.x;
@@ -806,7 +873,7 @@ function clampWorld(x, y) {
   // Allow 200px of breathing room beyond each content edge — enough to
   // feel like a world but nowhere near the empty edges of the 4000px canvas.
   const extra = 200;
-  const cL = CENTER - 720;  // left edge of leftmost island (title x=-680)
+  const cL = CENTER - 880;  // left edge including nokia island (x=-600, width~380px) + title (x=-680)
   const cR = CENTER + 970;  // right edge of rightmost island (desc/image x=580 + ~360px)
   const cT = CENTER - 460;  // top of topmost island (title y=-420)
   const cB = CENTER + 980;  // bottom of bottommost island (image y=600 + ~380px)
@@ -899,6 +966,86 @@ function tick(now) {
 
   updateTimeDisplay();
 }
+
+// =====================================================================
+//  NOKIA ISLAND — navigation & unlock
+// =====================================================================
+function navigateToNokia() {
+  const nokia = ISLANDS.find(i => i.type === 'nokia');
+  if (!nokia) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  // Centre the Nokia phone in the viewport
+  const [nx, ny] = clampWorld(
+    vw / 2 - (CENTER + nokia.x) - 190,
+    vh / 2 - (CENTER + nokia.y) - 300
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+}
+
+function navigateToTracklist() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const isMobileNow = vw <= 600;
+  const tl = ISLANDS.find(i => i.type === 'tracklist');
+  const iwx = CENTER + tl.x;
+  const iwy = CENTER + tl.y;
+  const [nx, ny] = clampWorld(
+    isMobileNow ? (20 - iwx) : (vw * 0.24 - iwx),
+    isMobileNow ? (48 - iwy) : (vh * 0.10 - iwy)
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+}
+
+function refreshTracklist() {
+  const tlIsland = ISLANDS.find(i => i.type === 'tracklist');
+  if (!tlIsland) return;
+  const driftIdx = islandDriftParams.findIndex(p =>
+    p.el.classList.contains('tracklist-island'));
+  if (driftIdx === -1) return;
+
+  const params = islandDriftParams[driftIdx];
+  const oldEl  = params.el;
+
+  const doTypewrite = !!tlIsland.tracks[0]._typewrite;
+  delete tlIsland.tracks[0]._typewrite;
+
+  releaseList = [];
+  const newEl = renderTracklist(tlIsland);
+  newEl.style.left = params.baseLeft + 'px';
+  newEl.style.top  = params.baseTop  + 'px';
+  newEl.classList.add('visible');
+
+  world.appendChild(newEl);
+  oldEl.remove();
+  params.el = newEl;
+
+  if (doTypewrite) {
+    const firstReleasedRow = newEl.querySelector('.track-row.released');
+    if (firstReleasedRow) {
+      const titleSpan = firstReleasedRow.querySelector('.track-title');
+      const fullTitle = tlIsland.tracks[0].title;
+      titleSpan.textContent = '';
+      let i = 0;
+      const tw = setInterval(() => {
+        titleSpan.textContent = fullTitle.slice(0, ++i);
+        if (i >= fullTitle.length) clearInterval(tw);
+      }, 52);
+    }
+  }
+}
+
+window.addEventListener('message', e => {
+  if (!e.data) return;
+  if (e.data.type === 'nokia-puzzle-complete') {
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    if (tl) { tl.tracks[0].state = 'released'; tl.tracks[0]._typewrite = true; }
+    refreshTracklist();
+  }
+  if (e.data.type === 'nokia-return') {
+    navigateToTracklist();
+  }
+});
 
 // =====================================================================
 //  INIT

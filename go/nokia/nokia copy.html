@@ -319,7 +319,7 @@ button, a, .nokia-key, #nokiaScreen, .pz-piece {
 const CONFIG = {
   UNLOCK_PIN: "2001",          // CHANGE THIS before going live
   HINT_TEXT: "ENTER PINCODE 2 UNLOCK",            // IDLE SCREEN CRYPTIC HINT
-  PIN_HINT:  "2001",                                          // HINT SHOWN ON PIN SCREEN — edit this
+  PIN_HINT:  "hint: coming soon...",                          // HINT SHOWN ON PIN SCREEN — edit this
   REVEAL_MESSAGE: "song unlocked!",       // MESSAGE SHOWN AFTER PUZZLE COMPLETE
   ARTIST_NAME: "inigo365",          // YOUR ARTIST NAME
   TRACKS: [
@@ -416,7 +416,7 @@ function renderIdle() {
     '<div style="opacity:0.9;font-size:0.9em;line-height:1.45;padding:0 3px">' +
       CONFIG.HINT_TEXT +
     '</div>' +
-    (CONFIG.PIN_HINT ? '<div style="opacity:0.9;font-size:1.4em;margin-top:8px;letter-spacing:0.3em">' + CONFIG.PIN_HINT + '</div>' : '');
+    (CONFIG.PIN_HINT ? '<div style="opacity:0.35;font-size:0.6em;margin-top:6px">' + CONFIG.PIN_HINT + '</div>' : '');
 }
 
 // =====================================================================
@@ -473,7 +473,8 @@ function renderMenu() {
   STATE = 'menu';
   screenBase();
   const items = [
-    { label: 'PUZZLE', enabled: true }
+    { label: '1. PUZZLE', enabled: true },
+    { label: '2. MUSIC',  enabled: puzzleComplete }
   ];
   let html =
     '<div style="opacity:0.4;font-size:0.7em;margin-bottom:5px">MENU</div>';
@@ -490,7 +491,7 @@ function renderMenu() {
         (sel ? '► ' : '  ') + item.label +
       '</div>';
   });
-  html += '<div style="opacity:0.35;font-size:0.6em;margin-top:5px">[0] SELECT  [*] BACK</div>';
+  html += '<div style="opacity:0.35;font-size:0.6em;margin-top:5px">[#] MOVE  [0] SELECT  [*] BACK</div>';
   html += '<div style="opacity:0.35;font-size:0.6em;margin-top:3px">album coming soon</div>';
   nokiaScreen.innerHTML = html;
   // Direct item clicks (stopPropagation prevents screen handler)
@@ -505,13 +506,14 @@ function renderMenu() {
 
 function handleMenu(action) {
   if (action === 'up')   { menuIndex = Math.max(0, menuIndex - 1); renderMenu(); return; }
-  if (action === 'down') { menuIndex = 0; renderMenu(); return; }  // wraps so # cycles
+  if (action === 'down') { menuIndex = (menuIndex + 1) % 2; renderMenu(); return; }  // wraps so # cycles
   if (action === 'ok' || action === 'rsoft' || action === 'screen') { selectMenuItem(); return; }
   if (action === 'lsoft') { if (!pinUnlocked) { menuIndex = 0; renderIdle(); } return; }
 }
 
 function selectMenuItem() {
-  if (menuIndex === 0) { renderPuzzleIntro(); return; }
+  if (menuIndex === 0)                      { renderPuzzleIntro(); return; }
+  if (menuIndex === 1 && puzzleComplete)    { renderMusicList(); return; } // skip reveal on revisit
 }
 
 // =====================================================================
@@ -810,11 +812,7 @@ function _pzCheckComplete() {
   if (allDone) {
     sfxPlay('ringtone');
     // Hold the completed brain on screen for 2.5 s before transitioning to reveal
-    revealTimer = setTimeout(function() {
-      saveProgress();
-      window.parent.postMessage({ type: 'nokia-puzzle-complete' }, '*');
-      renderReveal();
-    }, 2500);
+    revealTimer = setTimeout(function() { saveProgress(); renderReveal(); }, 2500);
   }
 }
 
@@ -840,13 +838,160 @@ function renderReveal() {
       el.textContent = msg.slice(0, i++);
       revealTimer = setTimeout(tick, 52); // ← REVEAL TYPEWRITER SPEED ms/char
     } else {
-      revealTimer = setTimeout(function() {
-        window.parent.postMessage({ type: 'nokia-return' }, '*');
-      }, 1800);
+      revealTimer = setTimeout(renderMusicList, 1800);
     }
   })();
 }
 
+// =====================================================================
+//  STATE 6 — MUSIC LIST  (file-directory tree)
+// =====================================================================
+function renderMusicList() {
+  clearTimers();
+  STATE = 'musiclist';
+  stopAudio();
+  screenBase();
+
+  const tracks = getAvailableTracks();
+  if (trackIndex >= tracks.length) trackIndex = 0;
+
+  // Wrap header + tracks in one left-aligned column so they form a single centred group
+  let html = '<div style="display:flex;flex-direction:column;align-items:flex-start;">';
+
+  // INIGO365/ sits directly above the └ entries
+  html += '<div style="opacity:0.75;font-size:0.82em;' +
+    'margin-bottom:2px;letter-spacing:0.06em">INIGO365/</div>';
+
+  // Each track as a └ directory entry
+  tracks.forEach(function(t, i) {
+    const sel = (i === trackIndex);
+    html +=
+      '<div class="tl-item" data-ti="' + i + '" style="' +
+        'width:100%;margin:1px 0;font-size:0.82em;' +
+        (sel ? 'opacity:1;font-weight:bold;' : 'opacity:0.42;') + '">' +
+        (sel ? '└ ▸ ' : '└ ') + t.title.toUpperCase() +
+      '</div>';
+  });
+
+  html += '</div>';
+
+  // Hint pinned to bottom-left
+  html += '<div style="position:absolute;bottom:2px;left:4px;' +
+    'opacity:0.28;font-size:0.6em;font-family:\'RuneScape\',monospace;' +
+    'color:#4dff91;">[#] MOVE  [0] PLAY  [*] BACK</div>';
+
+  nokiaScreen.innerHTML = html;
+
+  // Direct tap/click on a track row
+  nokiaScreen.querySelectorAll('.tl-item').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      trackIndex = +el.dataset.ti;
+      renderMusic();
+    });
+  });
+}
+
+function handleMusicList(action) {
+  const tracks = getAvailableTracks();
+  const len = Math.max(1, tracks.length);
+  if (action === 'up')   { trackIndex = Math.max(0, trackIndex - 1); renderMusicList(); return; }
+  if (action === 'down') { trackIndex = (trackIndex + 1) % len; renderMusicList(); return; }
+  if (action === 'ok' || action === 'rsoft' || action === 'screen') { renderMusic(); return; }
+  if (action === 'lsoft') { trackIndex = 0; renderMenu(); return; }
+}
+
+// =====================================================================
+//  STATE 7 — MUSIC PLAYER
+// =====================================================================
+function getAvailableTracks() {
+  const now = new Date();
+  return CONFIG.TRACKS.filter(t => {
+    if (t.unlockDate > now) return false;
+    if (t.unlockedByPuzzle && !puzzleComplete) return false;
+    return true;
+  });
+}
+
+let trackIndex = 0;
+
+function renderMusic() {
+  clearTimers();
+  STATE = 'music';
+  screenBase();
+
+  const tracks = getAvailableTracks();
+  if (!tracks.length) {
+    nokiaScreen.innerHTML =
+      '<div style="opacity:0.6;font-size:0.85em;line-height:1.5">NO TRACKS<br>AVAILABLE</div>';
+    return;
+  }
+
+  const t = tracks[Math.min(trackIndex, tracks.length - 1)];
+
+  // Build audio element once per track
+  if (!audioEl && t.audioSrc) {
+    audioEl = new Audio(t.audioSrc);
+    audioEl.loop = true;
+  }
+
+  // ── Media Session API ─────────────────────────────────────────────────
+  // Populates the iOS/Android lock-screen "now playing" card and control
+  // strip.  Requires an active <audio> element (which we have above) and
+  // iOS 15+ / Chrome 73+ — silently no-ops on older browsers.
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  t.title,
+      artist: CONFIG.ARTIST_NAME,
+      album:  CONFIG.ARTIST_NAME,
+      artwork: [
+        { src: 'assets/mediaplayer.png', sizes: '512x512', type: 'image/png' }
+      ]
+    });
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    // Wire hardware/lock-screen controls back into the player
+    navigator.mediaSession.setActionHandler('play', () => {
+      isPlaying = true;
+      if (audioEl) audioEl.play().catch(() => {});
+      navigator.mediaSession.playbackState = 'playing';
+      renderMusic();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      isPlaying = false;
+      if (audioEl) audioEl.pause();
+      navigator.mediaSession.playbackState = 'paused';
+      renderMusic();
+    });
+    navigator.mediaSession.setActionHandler('stop', () => {
+      stopAudio(); renderMusicList();
+    });
+  }
+
+  const icon      = isPlaying ? '▐ ▐' : '▶';
+  const animState = isPlaying ? 'running' : 'paused';
+  nokiaScreen.innerHTML =
+    '<div style="opacity:0.35;font-size:0.7em;margin-bottom:2px">' + CONFIG.ARTIST_NAME + '</div>' +
+    '<div style="font-size:0.95em;margin-bottom:4px">' + t.title + '</div>' +
+    '<div style="font-size:1.0em;margin-bottom:5px">' + icon + '</div>' +
+    '<div style="position:relative;width:90%;height:4px;' +
+      'background:#1a3a22;border-radius:2px;overflow:hidden">' +
+      '<div style="position:absolute;top:0;left:-35%;width:35%;height:100%;' +
+        'background:#4dff91;border-radius:2px;' +
+        'animation:nokiaProgress 1.8s linear infinite;' +
+        'animation-play-state:' + animState + '"></div>' +
+    '</div>' +
+    '<div style="opacity:0.3;font-size:0.6em;margin-top:4px">[0] PLAY/PAUSE  [*] LIST</div>';
+}
+
+function handleMusic(action) {
+  if (action === 'lsoft') { stopAudio(); renderMusicList(); return; }
+  if (action === 'ok' || action === 'rsoft' || action === 'screen') {
+    isPlaying = !isPlaying;
+    if (audioEl) isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
+    renderMusic();
+    return;
+  }
+}
 
 // =====================================================================
 //  SFX ENGINE  (Web Audio API + pooled <audio> fallback)
@@ -1128,6 +1273,8 @@ function handleButton(action) {
     case 'puzzleintro': /* locked during typewriter */ break;
     case 'puzzle':     handlePuzzle(action);    break;
     case 'reveal':     /* locked during typewriter */ break;
+    case 'musiclist':  handleMusicList(action); break;
+    case 'music':      handleMusic(action);     break;
   }
 }
 
@@ -1138,14 +1285,6 @@ function showDebug(action) {}
 (function boot() {
   loadProgress();
   renderIdle();
-  // When embedded in an iframe: hide back button, use white background
-  if (window !== window.top) {
-    const btn = document.getElementById('siteBackBtn');
-    if (btn) btn.style.display = 'none';
-    document.documentElement.style.background = '#ffffff';
-    document.body.style.background = '#ffffff';
-    document.body.style.backgroundImage = 'none';
-  }
 })();
 </script>
 
