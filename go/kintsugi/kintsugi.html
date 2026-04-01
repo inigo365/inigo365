@@ -162,11 +162,10 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   position: fixed; z-index: 60;
   width: 56px; height: 56px;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.25s ease;
+  opacity: 0.6;
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
 }
-.nav-arrow.active { opacity: 1; }
-.nav-arrow:hover  { opacity: 0.65 !important; }
+.nav-arrow:hover { opacity: 1; }
 
 #arrow-up    { top: 10px;     left: 50%; transform: translateX(-50%); }
 #arrow-down  { bottom: 10px; left: 50%; transform: translateX(-50%); }
@@ -331,9 +330,9 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   .album-title-large     { font-size: 64px; }
   .album-description     { font-size: 18px; text-align: left; }
 
-  /* arrows: always visible on mobile — no mouse to trigger them */
-  .nav-arrow             { opacity: 0.55 !important; }
-  .nav-arrow:active      { opacity: 1 !important; }
+  /* arrows: always visible on mobile */
+  .nav-arrow             { opacity: 0.6; }
+  .nav-arrow:active      { opacity: 1; }
 
   /* arrows: slightly closer to edge on mobile */
   #arrow-up    { top: 16px; }
@@ -423,14 +422,15 @@ const ISLANDS = [
     type: 'description',
     // x must clear tracklist right edge (width ~460px) plus breathing room
     x: 580,
-    y: 200,
+    y: 230,
     lines: [
       'produced, written & recorded between',
       'the abbey road canteen,',
       'E8, N16 & the 1021',
       'the morris blitz court,',
       'kiwi bake and cafe henderson',
-      '& the te atatu peninsula roast shop'
+      '& the te atatu peninsula roast shop',
+      'thank you 4 listening <3',
     ]
   },
 
@@ -722,8 +722,9 @@ function buildIslands() {
 let worldX = 0, worldY = 0;
 let targetX = 0, targetY = 0;
 
-const MAX_SPEED = 11;   // px per frame — split between 9 and 15
-const DEAD_ZONE = 0.28; // inner fraction of each axis that is inert
+const PAN_STEP  = 420;  // px moved per arrow click
+const MAX_SPEED = 4;    // desktop mouse-follow: slow drift
+const DEAD_ZONE = 0.40; // large dead zone — only triggers near screen edge
 
 let mouseNX = 0, mouseNY = 0;
 
@@ -732,6 +733,15 @@ function edgeVelocity(norm) {
   if (abs < DEAD_ZONE) return 0;
   const t = (abs - DEAD_ZONE) / (1 - DEAD_ZONE);
   return Math.sign(norm) * t * t * MAX_SPEED;
+}
+
+// Desktop only: slow mouse-edge drift. Touch devices use arrows only.
+if (!('ontouchstart' in window)) {
+  document.addEventListener('mousemove', e => {
+    mouseNX = (e.clientX - window.innerWidth  / 2) / (window.innerWidth  / 2);
+    mouseNY = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+  });
+  document.addEventListener('mouseleave', () => { mouseNX = 0; mouseNY = 0; });
 }
 
 function clampWorld(x, y) {
@@ -773,29 +783,6 @@ function applyWorldTransform() {
   world.style.transform = 'translate(' + worldX + 'px,' + worldY + 'px)';
 }
 
-document.addEventListener('mousemove', e => {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  mouseNX = (e.clientX - vw / 2) / (vw / 2);
-  mouseNY = (e.clientY - vh / 2) / (vh / 2);
-  updateArrows();
-});
-document.addEventListener('mouseleave', () => { mouseNX = 0; mouseNY = 0; updateArrows(); });
-
-let touchStartX = 0, touchStartY = 0, touchWorldStartX = 0, touchWorldStartY = 0;
-
-document.addEventListener('touchstart', e => {
-  if (e.touches.length !== 1) return;
-  touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
-  touchWorldStartX = targetX;         touchWorldStartY = targetY;
-}, { passive: true });
-
-document.addEventListener('touchmove', e => {
-  if (e.touches.length !== 1) return;
-  const dx = e.touches[0].clientX - touchStartX;
-  const dy = e.touches[0].clientY - touchStartY;
-  const [nx, ny] = clampWorld(touchWorldStartX + dx, touchWorldStartY + dy);
-  targetX = nx; targetY = ny;
-}, { passive: true });
 
 // =====================================================================
 //  DIRECTIONAL ARROWS
@@ -807,42 +794,18 @@ const arrowEls = {
   right: document.getElementById('arrow-right')
 };
 
-function updateArrows() {
-  arrowEls.right.classList.toggle('active', mouseNX >  DEAD_ZONE);
-  arrowEls.left.classList.toggle ('active', mouseNX < -DEAD_ZONE);
-  arrowEls.down.classList.toggle ('active', mouseNY >  DEAD_ZONE);
-  arrowEls.up.classList.toggle   ('active', mouseNY < -DEAD_ZONE);
-}
-
-function snapToNearest(dir) {
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const vcx = vw / 2, vcy = vh / 2;
-
-  let best = null, bestDist = Infinity;
-
-  ISLANDS.forEach(island => {
-    if (island._baseLeft === undefined) return;
-    const sx = island._baseLeft + worldX;
-    const sy = island._baseTop  + worldY;
-    const dx = sx - vcx, dy = sy - vcy;
-    const threshold = 80;
-
-    let qualifies = false, dist = 0;
-    if (dir === 'right' && dx >  threshold) { qualifies = true; dist =  dx; }
-    if (dir === 'left'  && dx < -threshold) { qualifies = true; dist = -dx; }
-    if (dir === 'down'  && dy >  threshold) { qualifies = true; dist =  dy; }
-    if (dir === 'up'    && dy < -threshold) { qualifies = true; dist = -dy; }
-
-    if (qualifies && dist < bestDist) { bestDist = dist; best = island; }
-  });
-
-  if (!best) return;
-  const [nx, ny] = clampWorld(vcx - best._baseLeft, vcy - best._baseTop);
+function panInDirection(dir) {
+  let dx = 0, dy = 0;
+  if (dir === 'right') dx = -PAN_STEP;
+  if (dir === 'left')  dx =  PAN_STEP;
+  if (dir === 'up')    dy =  PAN_STEP;
+  if (dir === 'down')  dy = -PAN_STEP;
+  const [nx, ny] = clampWorld(targetX + dx, targetY + dy);
   targetX = nx; targetY = ny;
 }
 
 Object.entries(arrowEls).forEach(([dir, el]) => {
-  el.addEventListener('click', () => snapToNearest(dir));
+  el.addEventListener('click', e => { e.stopPropagation(); panInDirection(dir); });
 });
 
 // =====================================================================
