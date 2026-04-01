@@ -427,7 +427,8 @@ body.music-active #arrow-down { bottom: 118px; }
   .track-duration   { font-size: 16px; }
   .album-title-large{ font-size: 64px; }
   .album-description{ font-size: 18px; }
-  .liner-text       { font-size: 17px; }
+  .liner-text       { font-size: 20px; }
+  .bc-link          { font-size: 20px; }
   .artwork-wrap, .artwork-wrap img, .artwork-placeholder { width: 160px; height: 160px; }
 
   /* player: 2-row stack */
@@ -584,7 +585,7 @@ const ISLANDS = [
     caption: ''
   },
 
-  { type: 'bandcamp', x: 622, y: 650 },
+  { type: 'bandcamp', x: 622, y: -100 },
 
   { type: 'nokia', x: -500, y: 0 },
   { type: 'image', x: -510, y: -620, src: 'images/morrisblitz.png', caption: '' },
@@ -1139,10 +1140,9 @@ const arrowEls = {
 
 function panInDirection(dir) {
   if (window.innerWidth <= 600) {
-    if (dir === 'left')  { navigateToNokia();   return; }
-    if (dir === 'right') { navigateToContent(); return; }
-    if (dir === 'up')    { navigateToTitle();   return; }
-    if (dir === 'down')  { navigateToImage();   return; }
+    const neighbor = MOBILE_GRID[mobileCurrentIsland] && MOBILE_GRID[mobileCurrentIsland][dir];
+    if (neighbor && MOBILE_NAVIGATE[neighbor]) MOBILE_NAVIGATE[neighbor]();
+    return;
   }
   let dx = 0, dy = 0;
   if (dir === 'right') dx = -PAN_STEP;
@@ -1188,61 +1188,119 @@ function tick(now) {
 // =====================================================================
 //  NOKIA ISLAND — navigation & unlock
 // =====================================================================
+
+// Tracks which island the mobile grid navigator is currently on
+let mobileCurrentIsland = 'tracklist';
+
+/*  Grid adjacency — each entry lists valid arrow directions and their target.
+    Layout (col × row):
+      images(stacked,-605)   | title(0,-400)    |
+      nokia(-500,0)          | tracklist(0,0)   | bandcamp(622,-100)
+                             |                  | description(580,40)
+                             |                  | image(580,400)      */
+const MOBILE_GRID = {
+  nokia:       { right: 'tracklist',  up: 'images' },
+  tracklist:   { left: 'nokia',       right: 'description', up: 'title' },
+  title:       { left: 'images',      down: 'tracklist' },
+  images:      { right: 'title',      down: 'nokia' },
+  description: { left: 'tracklist',  up: 'title',   down: 'image' },
+  image:       { left: 'tracklist',  up: 'description' },
+  bandcamp:    { left: 'tracklist',  down: 'description' },
+};
+
 function navigateToNokia() {
   const nokia = ISLANDS.find(i => i.type === 'nokia');
   if (!nokia) return;
   const vw = window.innerWidth, vh = window.innerHeight;
-  // Centre the Nokia phone in the viewport
   const [nx, ny] = clampWorld(
     vw / 2 - (CENTER + nokia.x) - 190,
     vh / 2 - (CENTER + nokia.y) - 300
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = 'nokia';
 }
 
 function navigateToTitle() {
   const island = ISLANDS.find(i => i.type === 'title');
   if (!island) return;
-  const vw = window.innerWidth;
-  // Same 20px left margin as tracklist landing; show title near top of screen
   const [nx, ny] = clampWorld(
     20 - (CENTER + island.x),
     40 - (CENTER + island.y)
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = 'title';
 }
 
-function navigateToImage() {
-  const island = ISLANDS.find(i => i.type === 'image');
+function navigateToMorrisblitz() {
+  const island = ISLANDS.find(i => i.src && i.src.includes('morrisblitz'));
   if (!island) return;
   const vw = window.innerWidth, vh = window.innerHeight;
-  // Centre image horizontally; show near top of screen
   const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + island.x + 170), // 170 = half of 340px image width
+    vw / 2 - (CENTER + island.x + 170),
     40 - (CENTER + island.y)
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = 'morrisblitz';
+}
+
+function navigateToSkytower() {
+  const island = ISLANDS.find(i => i.src && i.src.includes('skytower'));
+  if (!island) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const [nx, ny] = clampWorld(
+    vw / 2 - (CENTER + island.x + 170),
+    40 - (CENTER + island.y)
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = 'skytower';
+}
+
+function navigateToImage() {
+  // Brain image — first image island in array (x:580, y:400)
+  const island = ISLANDS.find(i => i.type === 'image');
+  if (!island) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const [nx, ny] = clampWorld(
+    vw / 2 - (CENTER + island.x + 170),
+    40 - (CENTER + island.y)
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = 'image';
+}
+
+function navigateToBandcamp() {
+  const island = ISLANDS.find(i => i.type === 'bandcamp');
+  if (!island) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const [nx, ny] = clampWorld(
+    vw / 2 - (CENTER + island.x + 120),
+    40 - (CENTER + island.y)
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = 'bandcamp';
 }
 
 function navigateToContent() {
   const desc = ISLANDS.find(i => i.type === 'description');
   if (!desc) return;
   const vw = window.innerWidth, vh = window.innerHeight;
-  // Centre the description/image column horizontally; keep the same vertical level
-  // as the tracklist landing so it reads as a pure horizontal pan
   const tl = ISLANDS.find(i => i.type === 'tracklist');
   const tlLandY = vw <= 600
     ? (48 - (CENTER + tl.y))
     : (vh * 0.10 - (CENTER + tl.y));
   const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + desc.x + 180), // 180 ≈ half description width
+    vw / 2 - (CENTER + desc.x + 180),
     tlLandY
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = 'description';
 }
 
 function navigateToTracklist() {
@@ -1257,7 +1315,20 @@ function navigateToTracklist() {
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = 'tracklist';
 }
+
+// Lookup used by panInDirection — defined after all navigate functions
+const MOBILE_NAVIGATE = {
+  nokia:       navigateToNokia,
+  tracklist:   navigateToTracklist,
+  title:       navigateToTitle,
+  morrisblitz: navigateToMorrisblitz,
+  skytower:    navigateToSkytower,
+  description: navigateToContent,
+  image:       navigateToImage,
+  bandcamp:    navigateToBandcamp,
+};
 
 function refreshTracklist() {
   const tlIsland = ISLANDS.find(i => i.type === 'tracklist');
@@ -1299,15 +1370,18 @@ function triggerTypewrite() {
 window.addEventListener('message', e => {
   if (!e.data) return;
   if (e.data.type === 'nokia-puzzle-complete') {
+    // Persist unlock but keep showing ??? until we've panned back
     localStorage.setItem('kintsugi_track1_unlocked', 'true');
-    const tl = ISLANDS.find(i => i.type === 'tracklist');
-    if (tl) tl.tracks[0].state = 'released';
-    refreshTracklist();
   }
   if (e.data.type === 'nokia-return') {
     navigateToTracklist();
-    // Delay typewriter until pan has settled (~1400ms at lerp 0.08/60fps)
-    setTimeout(triggerTypewrite, 1400);
+    // After pan settles: promote to released, refresh DOM, then start typewriter
+    setTimeout(() => {
+      const tl = ISLANDS.find(i => i.type === 'tracklist');
+      if (tl && tl.tracks[0].state !== 'released') tl.tracks[0].state = 'released';
+      refreshTracklist();
+      triggerTypewrite();
+    }, 1400);
   }
 });
 
