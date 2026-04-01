@@ -1091,8 +1091,8 @@ function clampWorld(x, y) {
   const extra = 80;
   const cL = CENTER - 510;  // left edge: morrisblitz x=-510
   const cR = CENTER + 940;  // right edge: brain/profile/desc x=600+340px
-  const cT = CENTER - 620;  // top edge: morrisblitz y=-620
-  const cB = CENTER + 740;  // bottom edge: brain image y=400+340px
+  const cT = CENTER - 800;  // top edge: loosened to allow images island to be centred on screen
+  const cB = CENTER + 1000; // bottom edge: brain image y=400+340px + extra room to pan it into view
   return [
     Math.max(-(cR + extra - vw), Math.min(-(cL - extra), x)),
     Math.max(-(cB + extra - vh), Math.min(-(cT - extra), y))
@@ -1144,7 +1144,7 @@ const arrowEls = {
 function panInDirection(dir) {
   if (window.innerWidth <= 600) {
     const neighbor = MOBILE_GRID[mobileCurrentIsland] && MOBILE_GRID[mobileCurrentIsland][dir];
-    if (neighbor && MOBILE_NAVIGATE[neighbor]) MOBILE_NAVIGATE[neighbor]();
+    if (neighbor) mobileNavigateTo(neighbor);
     return;
   }
   let dx = 0, dy = 0;
@@ -1192,142 +1192,100 @@ function tick(now) {
 //  NOKIA ISLAND — navigation & unlock
 // =====================================================================
 
-// Tracks which island the mobile grid navigator is currently on
+// Tracks which node the mobile grid navigator is currently on
 let mobileCurrentIsland = 'tracklist';
 
-/*  Grid adjacency — each entry lists valid arrow directions and their target.
-    Layout (col × row):
-      images(stacked,-605)   | title(0,-400)    | bandcamp+profile(mid,-300)
-      nokia(-500,0)          | tracklist(0,0)   | description(580,40)
-                             |                  | image(580,400)      */
+// =====================================================================
+//  MOBILE GRID — adjacency map
+//  To add a new node: add an entry here, add its position in
+//  MOBILE_POSITIONS below, and wire up its neighbours.
+// =====================================================================
 const MOBILE_GRID = {
-  nokia:       { right: 'tracklist',   up: 'images' },
-  tracklist:   { left: 'nokia',        right: 'description', up: 'title' },
-  title:       { left: 'images',       right: 'bandcamp',    down: 'tracklist' },
-  images:      { right: 'title',       down: 'nokia' },
-  bandcamp:    { left: 'title',        down: 'description' },
-  description: { left: 'tracklist',   up: 'bandcamp',       down: 'image' },
-  image:       { left: 'tracklist',   up: 'description' },
+  //            left            up              right            down
+  nokia:       { right: 'tracklist',   up: 'images'                              },
+  tracklist:   { left:  'nokia',       up: 'title',      right: 'description'    },
+  title:       { left:  'images',      down: 'tracklist', right: 'bandcamp'      },
+  images:      { right: 'title',       down: 'nokia'                             },
+  bandcamp:    { left:  'title',       down: 'description'                       },
+  description: { left:  'tracklist',  up: 'bandcamp',   down: 'image'           },
+  image:       { left:  'tracklist',  up: 'description'                          },
 };
 
-function navigateToNokia() {
-  const nokia = ISLANDS.find(i => i.type === 'nokia');
-  if (!nokia) return;
+// =====================================================================
+//  MOBILE POSITIONS
+//
+//  wx  = world X to pin (island x, or island x + half-width to centre it)
+//  sx  = screen X pixel where wx lands ('c' = screen centre vw/2, or a px value)
+//  wy  = world Y to pin (island y = top edge, or island y + half-height to centre)
+//  sy  = screen Y pixel where wy lands ('c' = screen centre vh/2, or a px from top)
+//
+//  Reading it: "put world point (wx,wy) at screen pixel (sx,sy)."
+//  e.g. sy:48 = that world Y lands 48px from the top of the screen.
+//       sy:'c' = that world Y lands at vertical screen centre.
+//
+//  To add a new node: add one line here + wire neighbours in MOBILE_GRID above.
+//  Island sizes: images 340×340px, description max 360px wide, tracklist ~460px.
+// =====================================================================
+const MOBILE_POSITIONS = {
+  //              wx      sx    wy      sy
+  tracklist:   { wx:    0, sx: 20,  wy:    0, sy: 48  },  // left edge at 20px, top at 48px — identical to initial page load
+  nokia:       { wx: -310, sx:'c',  wy:  300, sy:'c'  },  // nokia centred (island x:-500 w:380, y:0 h:600, centre=-310/300)
+  title:       { wx:    0, sx: 30,  wy: -400, sy: 100  },  // same x formula as tracklist; wy=-400 pans up to title island
+  images:      { wx: -295, sx:'c',  wy: -605, sy: 38 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
+  description: { wx:  575, sx: 10,  wy:   40, sy: 70  },  // left edge 20px like tracklist; top of text 80px from screen top
+  bandcamp:    { wx:  740, sx:'c',  wy: -500, sy: 110 },  // profile centred x; profile top 130px from screen top
+  image:       { wx:  770, sx:'c',  wy:  570, sy:'c'  },  // brain centred on screen (island x:600 w:340, y:400 h:340, centre y=570)
+};
+
+function mobileNavigateTo(key) {
+  const pos = MOBILE_POSITIONS[key];
+  if (!pos) return;
   const vw = window.innerWidth, vh = window.innerHeight;
+  const sx = pos.sx === 'c' ? vw / 2 : pos.sx;
+  const sy = pos.sy === 'c' ? vh / 2 : pos.sy;
   const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + nokia.x) - 190,
-    vh / 2 - (CENTER + nokia.y) - 300
+    sx - (CENTER + pos.wx),
+    sy - (CENTER + pos.wy)
   );
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
-  mobileCurrentIsland = 'nokia';
+  mobileCurrentIsland = key;
 }
 
-function navigateToTitle() {
-  const island = ISLANDS.find(i => i.type === 'title');
-  if (!island) return;
-  const [nx, ny] = clampWorld(
-    20 - (CENTER + island.x),
-    40 - (CENTER + island.y)
-  );
-  targetX = nx; targetY = ny;
-  mouseNX = 0; mouseNY = 0;
-  mobileCurrentIsland = 'title';
-}
-
-function navigateToImages() {
-  // Centre on the midpoint between morrisblitz and skytower (they're stacked)
-  const mb = ISLANDS.find(i => i.src && i.src.includes('morrisblitz'));
-  const st = ISLANDS.find(i => i.src && i.src.includes('skytower'));
-  if (!mb && !st) return;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const midX = ((mb ? mb.x : 0) + (st ? st.x : 0)) / (mb && st ? 2 : 1);
-  const midY = ((mb ? mb.y : 0) + (st ? st.y : 0)) / (mb && st ? 2 : 1);
-  const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + midX + 170),
-    vh / 2 - (CENTER + midY + 170 - 40)  // shift 40px higher
-  );
-  targetX = nx; targetY = ny;
-  mouseNX = 0; mouseNY = 0;
-  mobileCurrentIsland = 'images';
-}
-
-function navigateToImage() {
-  // Brain image (x:600, y:400)
-  const island = ISLANDS.find(i => i.type === 'image' && i.src && i.src.includes('brain'));
-  if (!island) return;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + island.x + 170),
-    40 - (CENTER + island.y)
-  );
-  targetX = nx; targetY = ny;
-  mouseNX = 0; mouseNY = 0;
-  mobileCurrentIsland = 'image';
-}
-
-function navigateToBandcamp() {
-  // Land with profile image visible, bandcamp link below, description off screen
-  // X: centre on profile image (x:600, width:340px → centre at x+170)
-  // Y: profile starts 180px from top so description (540px below) clears the fold
-  const bc   = ISLANDS.find(i => i.type === 'bandcamp');
-  const prof = ISLANDS.find(i => i.src && i.src.includes('profile'));
-  if (!bc && !prof) return;
-  const anchor = prof || bc;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + anchor.x + 170),
-    180 - (CENTER + anchor.y)
-  );
-  targetX = nx; targetY = ny;
-  mouseNX = 0; mouseNY = 0;
-  mobileCurrentIsland = 'bandcamp';
-}
-
-function navigateToContent() {
-  const desc = ISLANDS.find(i => i.type === 'description');
-  if (!desc) return;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const isMobileNow = vw <= 600;
-  // Island width: 360px desktop (max-width), ~(vw-40) on mobile
-  const islandW = isMobileNow ? Math.min(360, vw - 40) : 360;
-  const landY = isMobileNow
-    ? (100 - (CENTER + desc.y))          // text ~100px from top on mobile
-    : (vh * 0.10 - (CENTER + desc.y));   // same top-gap ratio on desktop
-  const [nx, ny] = clampWorld(
-    vw / 2 - (CENTER + desc.x + islandW / 2),
-    landY
-  );
-  targetX = nx; targetY = ny;
-  mouseNX = 0; mouseNY = 0;
-  mobileCurrentIsland = 'description';
-}
-
+// navigateToTracklist is called from nokia-return so keep it as a named function
 function navigateToTracklist() {
   const vw = window.innerWidth, vh = window.innerHeight;
   const isMobileNow = vw <= 600;
-  const tl = ISLANDS.find(i => i.type === 'tracklist');
-  const iwx = CENTER + tl.x;
-  const iwy = CENTER + tl.y;
-  const [nx, ny] = clampWorld(
-    isMobileNow ? (20 - iwx) : (vw * 0.34 - iwx),
-    isMobileNow ? (48 - iwy) : (vh * 0.10 - iwy)
-  );
-  targetX = nx; targetY = ny;
-  mouseNX = 0; mouseNY = 0;
+  if (isMobileNow) {
+    mobileNavigateTo('tracklist');
+  } else {
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    const [nx, ny] = clampWorld(
+      vw * 0.34 - (CENTER + tl.x),
+      vh * 0.10 - (CENTER + tl.y)
+    );
+    targetX = nx; targetY = ny;
+    mouseNX = 0; mouseNY = 0;
+  }
   mobileCurrentIsland = 'tracklist';
 }
 
-// Lookup used by panInDirection — defined after all navigate functions
-const MOBILE_NAVIGATE = {
-  nokia:       navigateToNokia,
-  tracklist:   navigateToTracklist,
-  title:       navigateToTitle,
-  images:      navigateToImages,
-  description: navigateToContent,
-  image:       navigateToImage,
-  bandcamp:    navigateToBandcamp,
-};
+// navigateToNokia is called from the unlock button so keep it too
+function navigateToNokia() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  if (vw <= 600) {
+    mobileNavigateTo('nokia');
+  } else {
+    const nokia = ISLANDS.find(i => i.type === 'nokia');
+    const [nx, ny] = clampWorld(
+      vw / 2 - (CENTER + nokia.x) - 190,
+      vh / 2 - (CENTER + nokia.y) - 300
+    );
+    targetX = nx; targetY = ny;
+    mouseNX = 0; mouseNY = 0;
+  }
+  mobileCurrentIsland = 'nokia';
+}
 
 function refreshTracklist() {
   const tlIsland = ISLANDS.find(i => i.type === 'tracklist');
