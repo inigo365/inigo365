@@ -579,7 +579,7 @@ const ISLANDS = [
     y: 0,
     tracks: [
       { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
-      { title: 'track 02', state: 'locked', duration: null, file: 'audio/spliff-demo.mp3' },
+      { title: 'track 02', state: 'locked', duration: null, file: 'audio/spliff-demo.mp3', hidden: true },
       { title: 'pin: 1021', state: 'locked', duration: null },
       { title: '22.04.2026', state: 'locked', duration: null, countdown: true },
       { title: 'track 05', state: 'locked', duration: null },
@@ -978,6 +978,12 @@ function renderTracklist(island) {
         sfxPlay('click');
         navigateToNokia();
       });
+    } else if (track.state === 'locked' && track.hidden) {
+      row.className = 'track-row locked';
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title" style="opacity:0.35">???</span>' +
+        '<span class="track-duration"><span class="unlock-btn" style="pointer-events:none;cursor:default">[ hidden ]</span></span>';
     } else {
       row.className = 'track-row ' + track.state;
       const countVal = _kintsugiCounts[i];
@@ -1344,7 +1350,7 @@ const MOBILE_POSITIONS = {
   //                       wx      sx    wy      sy
   tracklist:            { wx:    0, sx: 20,  wy:    0, sy: 48  },  // left edge at 20px, top at 48px — identical to initial page load
   'tracklist-bottom':   { wx:    0, sx: 20,  wy:  560, sy: 'c' },  // same x as tracklist; wy≈560 (near bottom of 640px island) centred vertically
-  nokia:       { wx: -310, sx:'c',  wy:  300, sy:'c'  },  // nokia centred (island x:-500 w:380, y:0 h:600, centre=-310/300)
+  nokia:       { wx: -310, sx:'c',  wy:  450, sy:'c'  },  // shifted up so bottom buttons clear the music player (island h:600, 450=75% down)
   title:       { wx:    0, sx: 30,  wy: -400, sy: 100  },  // same x formula as tracklist; wy=-400 pans up to title island
   images:      { wx: -295, sx:'c',  wy: -605, sy: 30 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
   description: { wx:  575, sx: '16',  wy:   40, sy: 70  },  // left edge 20px like tracklist; top of text 80px from screen top
