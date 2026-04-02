@@ -561,7 +561,7 @@ const ISLANDS = [
       { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
       { title: 'track 02', state: 'locked', duration: null },
       { title: 'pin: 1021', state: 'locked', duration: null },
-      { title: 'track 04', state: 'locked', duration: null },
+      { title: '22.04.2026', state: 'locked', duration: null, countdown: true },
       { title: 'track 05', state: 'locked', duration: null },
       { title: 'track 06', state: 'locked', duration: null },
       { title: 'track 07', state: 'locked', duration: null },
@@ -895,8 +895,10 @@ function renderTracklist(island) {
     '<span class="reset-btn wip-label">[ wip ]</span>' +
     '<a href="../index.html" class="reset-btn" id="home-btn">[ home ]</a>' +
     '<button class="reset-btn" id="nokia-reset-btn">[ reset unlock ]</button>';
+  meta.querySelector('#home-btn').addEventListener('click', () => sfxPlay('click'));
   meta.querySelector('#nokia-reset-btn').addEventListener('click', e => {
     e.stopPropagation();
+    sfxPlay('click');
     localStorage.removeItem('kintsugi_track1_unlocked');
     const tl = ISLANDS.find(i => i.type === 'tracklist');
     if (tl) tl.tracks[0].state = 'locked';
@@ -913,7 +915,26 @@ function renderTracklist(island) {
   island.tracks.forEach((track, i) => {
     const row = document.createElement('div');
 
-    if (track.state === 'locked' && track.unlockable) {
+    if (track.countdown) {
+      row.className = 'track-row locked';
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title">' + track.title + '</span>' +
+        '<span class="track-duration countdown-timer"></span>';
+      const timerEl = row.querySelector('.countdown-timer');
+      const bdayTarget = new Date('2026-04-22T00:00:00');
+      const tickBday = () => {
+        const diff = bdayTarget - Date.now();
+        if (diff <= 0) { timerEl.textContent = 'today!'; return; }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        timerEl.textContent = d + 'd ' + String(h).padStart(2,'0') + 'h ' + String(m).padStart(2,'0') + 'm ' + String(s).padStart(2,'0') + 's';
+      };
+      tickBday();
+      setInterval(tickBday, 1000);
+    } else if (track.state === 'locked' && track.unlockable) {
       row.className = 'track-row unlockable';
       row.innerHTML =
         '<span class="track-num">' + (i + 1) + '</span>' +
@@ -921,6 +942,7 @@ function renderTracklist(island) {
         '<span class="track-duration"><button class="unlock-btn">[ unlock ]</button></span>';
       row.querySelector('.unlock-btn').addEventListener('click', e => {
         e.stopPropagation();
+        sfxPlay('click');
         navigateToNokia();
       });
     } else {
@@ -935,7 +957,7 @@ function renderTracklist(island) {
         '<span class="track-duration" id="tk-count-' + i + '">' + countStr + '</span>';
       if (track.state === 'released') {
         row.dataset.file = track.file;
-        row.addEventListener('click', () => playTrack(track));
+        row.addEventListener('click', () => { sfxPlay('click'); playTrack(track); });
         releaseList.push(track);
       }
     }
@@ -1212,7 +1234,7 @@ function panInDirection(dir) {
 }
 
 Object.entries(arrowEls).forEach(([dir, el]) => {
-  el.addEventListener('click', e => { e.stopPropagation(); panInDirection(dir); });
+  el.addEventListener('click', e => { e.stopPropagation(); sfxPlay('click'); panInDirection(dir); });
 });
 
 // =====================================================================
@@ -1402,6 +1424,96 @@ window.addEventListener('message', e => {
 // =====================================================================
 //  INIT
 // =====================================================================
+// =====================================================================
+//  SFX ENGINE  (Web Audio API + pooled <audio> fallback)
+//  Usage: sfxPlay('click')
+// =====================================================================
+(function () {
+  var SOUNDS  = { click: 0.6 };
+  var POOL_SZ = { click: 6   };
+  var ctx = null, master = null, unlocked = false;
+  var fetched = {}, buffers = {}, pools = {};
+
+  function ensurePool(name) {
+    if (pools[name]) return pools[name];
+    var els = [];
+    for (var j = 0; j < (POOL_SZ[name] || 3); j++) {
+      var a = new Audio('sfx/' + name + '.mp3');
+      a.preload = 'auto'; a.volume = SOUNDS[name] || 1;
+      els.push(a);
+    }
+    pools[name] = { els: els, i: 0 };
+    return pools[name];
+  }
+  Object.keys(SOUNDS).forEach(function(n) { ensurePool(n); });
+
+  function playFromPool(name) {
+    var pool = ensurePool(name);
+    var a = pool.els[pool.i];
+    pool.i = (pool.i + 1) % pool.els.length;
+    try { a.pause(); a.currentTime = 0; var p = a.play(); if (p && p.catch) p.catch(function(){}); } catch(e) {}
+  }
+
+  function fetchAll() {
+    Object.keys(SOUNDS).forEach(function(name) {
+      fetch('sfx/' + name + '.mp3', { cache: 'force-cache' })
+        .then(function(r) { return r.arrayBuffer(); })
+        .then(function(ab) { fetched[name] = ab; })
+        .catch(function() {});
+    });
+  }
+
+  function ensureCtx() {
+    if (ctx) return;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC(); master = ctx.createGain(); master.gain.value = 1; master.connect(ctx.destination);
+  }
+
+  function decodeAll() {
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(function(){});
+    Object.keys(SOUNDS).forEach(function(name) {
+      if (buffers[name] || !fetched[name]) return;
+      ctx.decodeAudioData(fetched[name].slice(0),
+        function(buf) { buffers[name] = buf; }, function() {});
+    });
+  }
+
+  function unlockOnce() {
+    if (unlocked) return; unlocked = true;
+    ensureCtx(); decodeAll();
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(function(){});
+  }
+
+  function playWebAudio(name) {
+    if (!ctx || !master || !buffers[name]) return false;
+    try {
+      var src = ctx.createBufferSource(); src.buffer = buffers[name];
+      var g = ctx.createGain(); g.gain.value = SOUNDS[name] || 1;
+      src.connect(g); g.connect(master); src.start(0); return true;
+    } catch(e) { return false; }
+  }
+
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && ctx && ctx.state === 'suspended') ctx.resume().catch(function(){});
+  });
+
+  fetchAll();
+  var _evts = ['touchstart','pointerdown','mousedown','keydown'];
+  _evts.forEach(function(ev) {
+    document.addEventListener(ev, function _p() {
+      unlockOnce();
+      _evts.forEach(function(e2) { document.removeEventListener(e2, _p, true); });
+    }, { capture: true, passive: true });
+  });
+
+  window.sfxPlay = function(name) {
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(function(){});
+    if (!playWebAudio(name)) playFromPool(name);
+  };
+}());
+
 buildIslands();
 initPosition();
 requestAnimationFrame(tick);
