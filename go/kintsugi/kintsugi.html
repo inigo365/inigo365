@@ -145,6 +145,26 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 }
 .image-placeholder span { font-size: 18px; letter-spacing: 0.06em; }
 .image-caption { font-size: 16px; margin-top: 12px; letter-spacing: 0.04em; text-align: center; }
+.image-secret  { cursor: url('../../images/cursor/cursor-hover.png'), pointer !important; }
+
+/* secret button — world-space reveal between the parted images */
+.secret-btn {
+  position: absolute;
+  background: none;
+  border: 1px solid rgba(74, 173, 255, 0.4);
+  color: #4AADFF;
+  font-family: 'RuneScape', monospace;
+  font-size: 15px; letter-spacing: 0.08em;
+  text-transform: lowercase;
+  padding: 10px 20px;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s ease;
+  transform: translate(-50%, -50%);
+  white-space: nowrap; z-index: 10;
+}
+.secret-btn.visible { opacity: 1; pointer-events: auto; }
+.secret-btn:hover   { background: rgba(74, 173, 255, 0.06); }
 
 /* ===================== NOKIA ISLAND ===================== */
 .nokia-island {
@@ -609,9 +629,9 @@ const ISLANDS = [
   { type: 'image', x: 600, y: -500, src: 'images/profile.png', caption: '' },
 
   { type: 'nokia', x: -500, y: 0 },
-  { type: 'image', x: -510, y: -620, src: 'images/morrisblitz.png', caption: '' },
+  { type: 'image', id: 'morrisblitz', x: -510, y: -620, src: 'images/morrisblitz.png', caption: '' },
   /*{ type: 'image', x: -370, y: -500, src: 'images/brainblur.png', caption: '' },*/
-  { type: 'image', x: -420,  y: -590, src: 'images/skytower.png',    caption: '' },
+  { type: 'image', id: 'skytower',    x: -420, y: -590, src: 'images/skytower.png',    caption: '' },
 
 ];
 
@@ -1062,6 +1082,9 @@ function buildIslands() {
     else if (island.type === 'nokia')       el = renderNokia();
     else return;
 
+    island._el = el;
+    if (island.id) el.dataset.islandId = island.id;
+
     const baseLeft = CENTER + island.x;
     const baseTop  = CENTER + island.y;
     el.style.left = baseLeft + 'px';
@@ -1403,6 +1426,72 @@ function triggerTypewrite() {
   }, 52);
 }
 
+// Typewriter for track 2 — used after the image secret is triggered
+function triggerTypewriteTrack2() {
+  const rows = document.querySelectorAll('.tracklist-island .track-row');
+  const row = rows[1];
+  if (!row) return;
+  const titleSpan = row.querySelector('.track-title');
+  if (!titleSpan) return;
+  const tl = ISLANDS.find(i => i.type === 'tracklist');
+  const fullTitle = tl.tracks[1].title;
+  titleSpan.textContent = '';
+  let j = 0;
+  const tw = setInterval(() => {
+    titleSpan.textContent = fullTitle.slice(0, ++j);
+    if (j >= fullTitle.length) clearInterval(tw);
+  }, 52);
+}
+
+// Wire up the morrisblitz + skytower image parting easter-egg
+function setupImageSecret() {
+  const mbIsland = ISLANDS.find(i => i.id === 'morrisblitz');
+  const stIsland = ISLANDS.find(i => i.id === 'skytower');
+  if (!mbIsland || !stIsland || !mbIsland._el || !stIsland._el) return;
+  const mbEl = mbIsland._el;
+  const stEl = stIsland._el;
+
+  // Create the secret button centered in the gap (world x ≈ CENTER-295, y ≈ CENTER-430)
+  const secretBtn = document.createElement('button');
+  secretBtn.className = 'secret-btn';
+  secretBtn.textContent = '[ secret ]';
+  secretBtn.style.left = (CENTER - 295) + 'px';
+  secretBtn.style.top  = (CENTER - 430) + 'px';
+  world.appendChild(secretBtn);
+
+  // Make images feel clickable
+  mbEl.classList.add('image-secret');
+  stEl.classList.add('image-secret');
+
+  let parted = false;
+  function partImages() {
+    if (parted) return;
+    parted = true;
+    sfxPlay('click');
+    // Slide morrisblitz left, skytower right
+    mbEl.style.transition = 'left 0.9s cubic-bezier(0.4, 0, 0.2, 1)';
+    stEl.style.transition = 'left 0.9s cubic-bezier(0.4, 0, 0.2, 1)';
+    mbEl.style.left = (mbIsland._baseLeft - 300) + 'px';
+    stEl.style.left = (stIsland._baseLeft + 300) + 'px';
+    setTimeout(() => secretBtn.classList.add('visible'), 550);
+  }
+
+  mbEl.addEventListener('click', partImages);
+  stEl.addEventListener('click', partImages);
+
+  secretBtn.addEventListener('click', () => {
+    sfxPlay('click');
+    secretBtn.classList.remove('visible');
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    if (tl) tl.tracks[1].title = '[i_like_spliff][demo]';
+    navigateToTracklist();
+    setTimeout(() => {
+      refreshTracklist();
+      triggerTypewriteTrack2();
+    }, 1400);
+  });
+}
+
 window.addEventListener('message', e => {
   if (!e.data) return;
   if (e.data.type === 'nokia-puzzle-complete') {
@@ -1515,6 +1604,7 @@ window.addEventListener('message', e => {
 }());
 
 buildIslands();
+setupImageSecret();
 initPosition();
 requestAnimationFrame(tick);
 requestAnimationFrame(() => { document.body.style.opacity = '1'; });
