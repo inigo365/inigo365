@@ -89,7 +89,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 }
 .album-artist  { font-size: 20px; letter-spacing: 0.04em; }
 .album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; }
-/*.wip-tag       { text-transform: uppercase; }*/
+.reset-btn.wip-label { cursor: default; text-align: center; opacity: 0.7; }
 .album-detail  { font-size: 18px; letter-spacing: 0.03em; }
 
 /* ===================== TRACK LIST ===================== */
@@ -107,6 +107,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .track-num      { font-size: 18px; width: 24px; text-align: right; flex-shrink: 0; }
 .track-title    { flex: 1; font-size: 24px; letter-spacing: 0.02em; min-width: 0; white-space: nowrap; overflow: hidden; }
 .track-duration { font-size: 18px; flex-shrink: 0; letter-spacing: 0.04em; }
+.play-icon      { font-size: 0.72em; opacity: 0.7; }
 
 .track-row.released {
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
@@ -240,6 +241,17 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
 }
 .nav-arrow:hover { opacity: 1; }
+
+/* ── first-visit navigation hint ── */
+#nav-hint {
+  position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%);
+  z-index: 50; pointer-events: none;
+  font-size: 15px; letter-spacing: 0.12em;
+  color: rgba(74, 173, 255, 0.9);
+  opacity: 0; transition: opacity 0.8s ease;
+  white-space: nowrap;
+}
+#nav-hint.visible { opacity: 1; }
 
 /* Directional float animations — each arrow bobs toward the edge it points at */
 @keyframes floatUp    { 0%,100%{transform:translateX(-50%) translateY(0)}   50%{transform:translateX(-50%) translateY(-5px)} }
@@ -496,6 +508,9 @@ body.music-active #arrow-down { bottom: 118px; }
 </div>
 <div id="world-border"></div>
 
+<!-- first-visit navigation hint -->
+<div id="nav-hint">use arrows to navigate</div>
+
 <!-- directional nav arrows -->
 <div class="nav-arrow" id="arrow-up"    data-dir="up">
   <div class="arrow-sprite up-sprite"></div>
@@ -545,7 +560,7 @@ const ISLANDS = [
     tracks: [
       { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
       { title: 'track 02', state: 'locked', duration: null },
-      { title: 'pin: 2001', state: 'locked', duration: null },
+      { title: 'pin: 1021', state: 'locked', duration: null },
       { title: 'track 04', state: 'locked', duration: null },
       { title: 'track 05', state: 'locked', duration: null },
       { title: 'track 06', state: 'locked', duration: null },
@@ -822,7 +837,7 @@ async function fetchKintsugiCounts() {
 function _updateCountDisplay() {
   Object.entries(_kintsugiCounts).forEach(([idx, count]) => {
     const el = document.getElementById('tk-count-' + idx);
-    if (el) el.textContent = count > 0 ? count : '—';
+    if (el) el.innerHTML = count > 0 ? '<span class="play-icon">▶</span> ' + count : '—';
   });
 }
 
@@ -875,8 +890,9 @@ function renderTracklist(island) {
   meta.className = 'album-meta';
   meta.innerHTML =
     '<div class="album-artist">inigo365</div>' +
-    '<div class="album-title">kintsugi <span class="wip-tag">[wip]</span></div>' +
+    '<div class="album-title">kintsugi</div>' +
     '<div class="album-detail">2023-2026 · ' + island.tracks.length + ' tracks</div>' +
+    '<span class="reset-btn wip-label">[ wip ]</span>' +
     '<a href="../index.html" class="reset-btn" id="home-btn">[ home ]</a>' +
     '<button class="reset-btn" id="nokia-reset-btn">[ reset unlock ]</button>';
   meta.querySelector('#nokia-reset-btn').addEventListener('click', e => {
@@ -910,7 +926,9 @@ function renderTracklist(island) {
     } else {
       row.className = 'track-row ' + track.state;
       const countVal = _kintsugiCounts[i];
-      const countStr = (countVal != null && countVal > 0) ? countVal : '—';
+      const countStr = (countVal != null && countVal > 0)
+        ? '<span class="play-icon">▶</span> ' + countVal
+        : '—';
       row.innerHTML =
         '<span class="track-num">' + (i + 1) + '</span>' +
         '<span class="track-title">' + track.title + '</span>' +
@@ -1095,8 +1113,8 @@ function clampWorld(x, y) {
   const extra = 80;
   const cL = CENTER - 510;  // left edge: morrisblitz x=-510
   const cR = CENTER + 940;  // right edge: brain/profile/desc x=600+340px
-  const cT = CENTER - 800;  // top edge: loosened to allow images island to be centred on screen
-  const cB = CENTER + 1000; // bottom edge: brain image y=400+340px + extra room to pan it into view
+  const cT = CENTER - 560;  // top edge: images/morrisblitz at y=-620, ~100px breathing room above
+  const cB = CENTER + 800; // bottom edge: brain image y=400+340px + extra room to pan it into view
   return [
     Math.max(-(cR + extra - vw), Math.min(-(cL - extra), x)),
     Math.max(-(cB + extra - vh), Math.min(-(cT - extra), y))
@@ -1388,6 +1406,17 @@ buildIslands();
 initPosition();
 requestAnimationFrame(tick);
 requestAnimationFrame(() => { document.body.style.opacity = '1'; });
+
+// Navigation hint — fades in after 1.2s, fades out after ~4.8s, removed from DOM after
+(function () {
+  const _hint = document.getElementById('nav-hint');
+  if (!_hint) return;
+  setTimeout(() => _hint.classList.add('visible'), 1200);
+  setTimeout(() => {
+    _hint.style.opacity = '0';
+    setTimeout(() => _hint.remove(), 900);
+  }, 4800);
+}());
 
 </script>
 </body>
