@@ -923,9 +923,18 @@ function renderTracklist(island) {
   meta.querySelector('#nokia-reset-btn').addEventListener('click', e => {
     e.stopPropagation();
     sfxPlay('click');
+    // Reset track 1
     localStorage.removeItem('kintsugi_track1_unlocked');
+    // Reset track 2
+    localStorage.removeItem('kintsugi_track2_unlocked');
     const tl = ISLANDS.find(i => i.type === 'tracklist');
-    if (tl) tl.tracks[0].state = 'locked';
+    if (tl) {
+      tl.tracks[0].state = 'locked';
+      tl.tracks[1].state = 'locked';
+      tl.tracks[1].title = 'track 02';
+    }
+    // Reset the image secret so it can be triggered again
+    if (window._resetImageSecret) window._resetImageSecret();
     refreshTracklist();
   });
 
@@ -1423,10 +1432,11 @@ function triggerTypewrite() {
   if (!titleSpan) return;
   const fullTitle = tlIsland.tracks[0].title;
   titleSpan.textContent = '';
+  const stopTw1 = sfxPlay('typewriter');
   let i = 0;
   const tw = setInterval(() => {
     titleSpan.textContent = fullTitle.slice(0, ++i);
-    if (i >= fullTitle.length) clearInterval(tw);
+    if (i >= fullTitle.length) { clearInterval(tw); if (stopTw1) stopTw1(); }
   }, 52);
 }
 
@@ -1440,10 +1450,11 @@ function triggerTypewriteTrack2() {
   const tl = ISLANDS.find(i => i.type === 'tracklist');
   const fullTitle = tl.tracks[1].title;
   titleSpan.textContent = '';
+  const stopTw2 = sfxPlay('typewriter');
   let j = 0;
   const tw = setInterval(() => {
     titleSpan.textContent = fullTitle.slice(0, ++j);
-    if (j >= fullTitle.length) clearInterval(tw);
+    if (j >= fullTitle.length) { clearInterval(tw); if (stopTw2) stopTw2(); }
   }, 52);
 }
 
@@ -1502,6 +1513,18 @@ function setupImageSecret() {
   mbEl.addEventListener('click', partImages);
   stEl.addEventListener('click', partImages);
 
+  // Exposed so the reset-unlock button can restore the secret to its default state
+  window._resetImageSecret = () => {
+    secretCaught = false;
+    parted = false;
+    clearTimeout(closeTimer);
+    secretBtn.classList.remove('visible');
+    mbEl.style.transition = 'left 0.4s ease';
+    stEl.style.transition = 'left 0.4s ease';
+    mbEl.style.left = mbIsland._baseLeft + 'px';
+    stEl.style.left = stIsland._baseLeft + 'px';
+  };
+
   secretBtn.addEventListener('click', () => {
     secretCaught = true;
     clearTimeout(closeTimer);
@@ -1547,8 +1570,8 @@ window.addEventListener('message', e => {
 //  Usage: sfxPlay('click')
 // =====================================================================
 (function () {
-  var SOUNDS  = { click: 0.6 };
-  var POOL_SZ = { click: 6   };
+  var SOUNDS  = { click: 0.6, typewriter: 0.75 };
+  var POOL_SZ = { click: 6,   typewriter: 2    };
   var ctx = null, master = null, unlocked = false;
   var fetched = {}, buffers = {}, pools = {};
 
@@ -1570,6 +1593,7 @@ window.addEventListener('message', e => {
     var a = pool.els[pool.i];
     pool.i = (pool.i + 1) % pool.els.length;
     try { a.pause(); a.currentTime = 0; var p = a.play(); if (p && p.catch) p.catch(function(){}); } catch(e) {}
+    return function stopPool() { try { a.pause(); a.currentTime = 0; } catch(e) {} };
   }
 
   function fetchAll() {
@@ -1605,12 +1629,13 @@ window.addEventListener('message', e => {
   }
 
   function playWebAudio(name) {
-    if (!ctx || !master || !buffers[name]) return false;
+    if (!ctx || !master || !buffers[name]) return null;
     try {
       var src = ctx.createBufferSource(); src.buffer = buffers[name];
       var g = ctx.createGain(); g.gain.value = SOUNDS[name] || 1;
-      src.connect(g); g.connect(master); src.start(0); return true;
-    } catch(e) { return false; }
+      src.connect(g); g.connect(master); src.start(0);
+      return function stopWA() { try { src.stop(); } catch(e) {} };
+    } catch(e) { return null; }
   }
 
   document.addEventListener('visibilitychange', function() {
@@ -1626,9 +1651,11 @@ window.addEventListener('message', e => {
     }, { capture: true, passive: true });
   });
 
+  // Returns a stop() function so callers can cut the sound at a precise moment.
   window.sfxPlay = function(name) {
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(function(){});
-    if (!playWebAudio(name)) playFromPool(name);
+    var stopFn = playWebAudio(name);
+    return stopFn || playFromPool(name);
   };
 }());
 
