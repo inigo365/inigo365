@@ -150,9 +150,9 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 /* secret button — world-space reveal between the parted images */
 .secret-btn {
   position: absolute;
-  background: none;
-  border: 1px solid rgba(74, 173, 255, 0.4);
-  color: #4AADFF;
+  background: url('images/secrettinny.png') center/cover no-repeat;
+  border: none;
+  color: #FFD700;
   font-family: 'RuneScape', monospace;
   font-size: 15px; letter-spacing: 0.08em;
   text-transform: lowercase;
@@ -164,7 +164,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   white-space: nowrap; z-index: 10;
 }
 .secret-btn.visible { opacity: 1; pointer-events: auto; }
-.secret-btn:hover   { background: rgba(74, 173, 255, 0.06); }
+.secret-btn:hover   { filter: brightness(1.15); }
 
 /* ===================== NOKIA ISLAND ===================== */
 .nokia-island {
