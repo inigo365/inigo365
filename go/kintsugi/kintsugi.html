@@ -89,6 +89,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 }
 .album-artist  { font-size: 20px; letter-spacing: 0.04em; }
 .album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; }
+/*.wip-tag       { text-transform: uppercase; }*/
 .album-detail  { font-size: 18px; letter-spacing: 0.03em; }
 
 /* ===================== TRACK LIST ===================== */
@@ -120,6 +121,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .album-title-large {
   font-size: 96px; letter-spacing: 0.08em;
   line-height: 1; margin-bottom: 32px;
+  text-shadow: 3px 3px 0 #C9A84C;
 }
 .album-description { font-size: 22px; line-height: 2; letter-spacing: 0.03em; }
 
@@ -560,9 +562,7 @@ const ISLANDS = [
     y: -400,
     // edit lines to update description
     lines: [
-      'kintsugi- the japanese art of mending ceramics with gold',
-      'transforming breaks into something beautiful.',
-      'beauty in the imperfection.'
+      'Kintsugi takes its name from the Japanese art of repairing broken ceramics with gold — the philosophy that damage, made visible, becomes the most beautiful part of the whole.',
     ]
   },
 
@@ -875,7 +875,7 @@ function renderTracklist(island) {
   meta.className = 'album-meta';
   meta.innerHTML =
     '<div class="album-artist">inigo365</div>' +
-    '<div class="album-title">kintsugi</div>' +
+    '<div class="album-title">kintsugi <span class="wip-tag">[wip]</span></div>' +
     '<div class="album-detail">2023-2026 · ' + island.tracks.length + ' tracks</div>' +
     '<a href="../index.html" class="reset-btn" id="home-btn">[ home ]</a>' +
     '<button class="reset-btn" id="nokia-reset-btn">[ reset unlock ]</button>';
@@ -1145,11 +1145,44 @@ const arrowEls = {
   right: document.getElementById('arrow-right')
 };
 
+// Pan so the bottom of the tracklist island sits just above the player/arrow.
+function panToTracklistBottom() {
+  const tlEl = document.querySelector('.tracklist-island');
+  if (!tlEl) return;
+  const tlIsland = ISLANDS.find(i => i.type === 'tracklist');
+  if (!tlIsland) return;
+  const tlH = tlEl.offsetHeight;
+  // When music is active the fixed player is ~160px tall (content + padding + bottom offset).
+  // Add 16px breathing room so the last track never slides under it.
+  const clearance = document.body.classList.contains('music-active') ? 176 : 40;
+  // Island top in world pixels = CENTER + island.y.  We want its bottom on screen at vh-clearance.
+  // screen_y_of_bottom = (CENTER + island.y + tlH) + targetY  →  set = vh - clearance
+  const newY = window.innerHeight - clearance - (CENTER + tlIsland.y + tlH);
+  const [nx, ny] = clampWorld(targetX, newY);
+  targetX = nx; targetY = ny;
+}
+
 function panInDirection(dir) {
   if (window.innerWidth <= 600) {
     const neighbor = MOBILE_GRID[mobileCurrentIsland] && MOBILE_GRID[mobileCurrentIsland][dir];
     if (neighbor) mobileNavigateTo(neighbor);
     return;
+  }
+  // On desktop, if 'down' is pressed and the tracklist bottom is currently clipped
+  // (extends below the player/arrow clearance zone), snap to the tracklist bottom instead
+  // of doing a generic pan step.
+  if (dir === 'down') {
+    const tlEl = document.querySelector('.tracklist-island');
+    if (tlEl) {
+      const rect = tlEl.getBoundingClientRect();
+      const clearance = document.body.classList.contains('music-active') ? 176 : 40;
+      const visibleFloor = window.innerHeight - clearance;
+      // Tracklist top is still on-screen and its bottom extends below the safe zone
+      if (rect.top > -rect.height * 0.3 && rect.bottom > visibleFloor) {
+        panToTracklistBottom();
+        return;
+      }
+    }
   }
   let dx = 0, dy = 0;
   if (dir === 'right') dx = -PAN_STEP;
@@ -1205,14 +1238,15 @@ let mobileCurrentIsland = 'tracklist';
 //  MOBILE_POSITIONS below, and wire up its neighbours.
 // =====================================================================
 const MOBILE_GRID = {
-  //            left            up              right            down
-  nokia:       { right: 'tracklist',   up: 'images'                              },
-  tracklist:   { left:  'nokia',       up: 'title',      right: 'description'    },
-  title:       { left:  'images',      down: 'tracklist', right: 'bandcamp'      },
-  images:      { right: 'title',       down: 'nokia'                             },
-  bandcamp:    { left:  'title',       down: 'description'                       },
-  description: { left:  'tracklist',  up: 'bandcamp',   down: 'image'           },
-  image:       { left:  'tracklist',  up: 'description'                          },
+  //                    left                  up                   right              down
+  nokia:               { right: 'tracklist',   up: 'images'                                            },
+  tracklist:           { left:  'nokia',        up: 'title',         right: 'description', down: 'tracklist-bottom' },
+  'tracklist-bottom':  { left:  'nokia',        up: 'tracklist',     right: 'description'               },
+  title:               { left:  'images',       down: 'tracklist',   right: 'bandcamp'                  },
+  images:              { right: 'title',        down: 'nokia'                                           },
+  bandcamp:            { left:  'title',        down: 'description'                                     },
+  description:         { left:  'tracklist',    up: 'bandcamp',      down: 'image'                      },
+  image:               { left:  'tracklist',    up: 'description'                                       },
 };
 
 // =====================================================================
@@ -1231,11 +1265,12 @@ const MOBILE_GRID = {
 //  Island sizes: images 340×340px, description max 360px wide, tracklist ~460px.
 // =====================================================================
 const MOBILE_POSITIONS = {
-  //              wx      sx    wy      sy
-  tracklist:   { wx:    0, sx: 20,  wy:    0, sy: 48  },  // left edge at 20px, top at 48px — identical to initial page load
+  //                       wx      sx    wy      sy
+  tracklist:            { wx:    0, sx: 20,  wy:    0, sy: 48  },  // left edge at 20px, top at 48px — identical to initial page load
+  'tracklist-bottom':   { wx:    0, sx: 20,  wy:  560, sy: 'c' },  // same x as tracklist; wy≈560 (near bottom of 640px island) centred vertically
   nokia:       { wx: -310, sx:'c',  wy:  300, sy:'c'  },  // nokia centred (island x:-500 w:380, y:0 h:600, centre=-310/300)
   title:       { wx:    0, sx: 30,  wy: -400, sy: 100  },  // same x formula as tracklist; wy=-400 pans up to title island
-  images:      { wx: -295, sx:'c',  wy: -605, sy: 38 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
+  images:      { wx: -295, sx:'c',  wy: -605, sy: 30 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
   description: { wx:  575, sx: '16',  wy:   40, sy: 70  },  // left edge 20px like tracklist; top of text 80px from screen top
   bandcamp:    { wx:  740, sx:'c',  wy: -520, sy: 110 },  // profile centred x; profile top 130px from screen top
   image:       { wx:  750, sx:'c',  wy:  660, sy:'c'  },  // brain centred on screen (island x:600 w:340, y:400 h:340, centre y=570)
