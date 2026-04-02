@@ -579,7 +579,7 @@ const ISLANDS = [
     y: 0,
     tracks: [
       { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
-      { title: 'track 02', state: 'locked', duration: null },
+      { title: 'track 02', state: 'locked', duration: null, file: 'audio/spliff-demo.mp3' },
       { title: 'pin: 1021', state: 'locked', duration: null },
       { title: '22.04.2026', state: 'locked', duration: null, countdown: true },
       { title: 'track 05', state: 'locked', duration: null },
@@ -640,6 +640,10 @@ const ISLANDS = [
 if (localStorage.getItem('kintsugi_track1_unlocked') === 'true') {
   const _tl = ISLANDS.find(i => i.type === 'tracklist');
   if (_tl) _tl.tracks[0].state = 'released';
+}
+if (localStorage.getItem('kintsugi_track2_unlocked') === 'true') {
+  const _tl = ISLANDS.find(i => i.type === 'tracklist');
+  if (_tl) { _tl.tracks[1].state = 'released'; _tl.tracks[1].title = '[i_like_spliff][demo]'; }
 }
 
 // =====================================================================
@@ -1451,39 +1455,64 @@ function setupImageSecret() {
   const mbEl = mbIsland._el;
   const stEl = stIsland._el;
 
-  // Create the secret button centered in the gap (world x ≈ CENTER-295, y ≈ CENTER-430)
+  // Secret button — centred on the stacked images in world space
+  // x = midpoint of the two image centres; y = approximate vertical centre of images
   const secretBtn = document.createElement('button');
   secretBtn.className = 'secret-btn';
   secretBtn.textContent = '[ secret ]';
-  secretBtn.style.left = (CENTER - 295) + 'px';
-  secretBtn.style.top  = (CENTER - 430) + 'px';
+  // horizontal centre of the two 340px-wide images
+  const gapCentreX = Math.round((mbIsland._baseLeft + 170 + stIsland._baseLeft + 170) / 2);
+  // vertical centre: average of tops + ~half image height + 150px lower per user preference
+  const gapCentreY = Math.round((mbIsland._baseTop + stIsland._baseTop) / 2 + 310);
+  secretBtn.style.left = gapCentreX + 'px';
+  secretBtn.style.top  = gapCentreY + 'px';
   world.appendChild(secretBtn);
 
-  // Make images feel clickable
   mbEl.classList.add('image-secret');
   stEl.classList.add('image-secret');
 
   let parted = false;
+  let closeTimer = null;
+  let secretCaught = false;
+
+  function closeImages() {
+    secretBtn.classList.remove('visible');
+    // Snap back — firm but not jarring (~0.5s)
+    mbEl.style.transition = 'left 0.5s cubic-bezier(0.6, 0, 0.8, 1)';
+    stEl.style.transition = 'left 0.5s cubic-bezier(0.6, 0, 0.8, 1)';
+    mbEl.style.left = mbIsland._baseLeft + 'px';
+    stEl.style.left = stIsland._baseLeft + 'px';
+    setTimeout(() => { parted = false; }, 550);
+  }
+
   function partImages() {
-    if (parted) return;
+    if (parted || secretCaught) return;
     parted = true;
     sfxPlay('click');
-    // Slide morrisblitz left, skytower right
-    mbEl.style.transition = 'left 0.9s cubic-bezier(0.4, 0, 0.2, 1)';
-    stEl.style.transition = 'left 0.9s cubic-bezier(0.4, 0, 0.2, 1)';
-    mbEl.style.left = (mbIsland._baseLeft - 300) + 'px';
-    stEl.style.left = (stIsland._baseLeft + 300) + 'px';
-    setTimeout(() => secretBtn.classList.add('visible'), 550);
+    // Drift just far enough to reveal the secret (~150px each side)
+    mbEl.style.transition = 'left 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
+    stEl.style.transition = 'left 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
+    mbEl.style.left = (mbIsland._baseLeft - 150) + 'px';
+    stEl.style.left = (stIsland._baseLeft + 150) + 'px';
+    // Secret visible for ~1.1 s — total animation ~2.3 s
+    setTimeout(() => secretBtn.classList.add('visible'), 420);
+    closeTimer = setTimeout(() => closeImages(), 420 + 1100);
   }
 
   mbEl.addEventListener('click', partImages);
   stEl.addEventListener('click', partImages);
 
   secretBtn.addEventListener('click', () => {
+    secretCaught = true;
+    clearTimeout(closeTimer);
     sfxPlay('click');
     secretBtn.classList.remove('visible');
     const tl = ISLANDS.find(i => i.type === 'tracklist');
-    if (tl) tl.tracks[1].title = '[i_like_spliff][demo]';
+    if (tl) {
+      tl.tracks[1].title = '[i_like_spliff][demo]';
+      tl.tracks[1].state = 'released';
+    }
+    localStorage.setItem('kintsugi_track2_unlocked', 'true');
     navigateToTracklist();
     setTimeout(() => {
       refreshTracklist();
