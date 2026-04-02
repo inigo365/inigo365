@@ -1350,7 +1350,7 @@ const MOBILE_POSITIONS = {
   //                       wx      sx    wy      sy
   tracklist:            { wx:    0, sx: 20,  wy:    0, sy: 48  },  // left edge at 20px, top at 48px — identical to initial page load
   'tracklist-bottom':   { wx:    0, sx: 20,  wy:  560, sy: 'c' },  // same x as tracklist; wy≈560 (near bottom of 640px island) centred vertically
-  nokia:       { wx: -310, sx:'c',  wy:  450, sy:'c'  },  // shifted up so bottom buttons clear the music player (island h:600, 450=75% down)
+  nokia:       { wx: -310, sx:'c',  wy:  375, sy:'c'  },  // halfway between 300 (original) and 450 — full Nokia visible, bottom buttons clear music player
   title:       { wx:    0, sx: 30,  wy: -400, sy: 100  },  // same x formula as tracklist; wy=-400 pans up to title island
   images:      { wx: -295, sx:'c',  wy: -605, sy: 30 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
   description: { wx:  575, sx: '16',  wy:   40, sy: 70  },  // left edge 20px like tracklist; top of text 80px from screen top
@@ -1512,7 +1512,7 @@ function setupImageSecret() {
     mbEl.style.left = (mbIsland._baseLeft - 150) + 'px';
     stEl.style.left = (stIsland._baseLeft + 150) + 'px';
     // Secret visible for ~1.1 s — total animation ~2.3 s
-    setTimeout(() => secretBtn.classList.add('visible'), 420);
+    setTimeout(() => { secretBtn.classList.add('visible'); sfxPlay('egg'); }, 420);
     closeTimer = setTimeout(() => closeImages(), 420 + 1100);
   }
 
@@ -1576,8 +1576,8 @@ window.addEventListener('message', e => {
 //  Usage: sfxPlay('click')
 // =====================================================================
 (function () {
-  var SOUNDS  = { click: 0.6, typewriter: 0.75 };
-  var POOL_SZ = { click: 6,   typewriter: 2    };
+  var SOUNDS  = { click: 0.6, typewriter: 0.75, egg: 0.8 };
+  var POOL_SZ = { click: 6,   typewriter: 2,    egg: 1   };
   var ctx = null, master = null, unlocked = false;
   var fetched = {}, buffers = {}, pools = {};
 
