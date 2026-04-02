@@ -150,21 +150,25 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 /* secret button — world-space reveal between the parted images */
 .secret-btn {
   position: absolute;
-  background: url('images/secrettinny.png') center/cover no-repeat;
+  background: url('images/secrettinny.png') center/contain no-repeat;
   border: none;
-  color: #FFD700;
-  font-family: 'RuneScape', monospace;
-  font-size: 15px; letter-spacing: 0.08em;
-  text-transform: lowercase;
-  padding: 10px 20px;
+  color: transparent;
+  width: 160px; height: 48px;
+  padding: 0;
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
   opacity: 0; pointer-events: none;
   transition: opacity 0.6s ease;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) rotate(90deg);
   white-space: nowrap; z-index: 10;
 }
 .secret-btn.visible { opacity: 1; pointer-events: auto; }
-.secret-btn:hover   { filter: brightness(1.15); }
+.secret-btn:hover   { filter: brightness(1.2); }
+@keyframes secret-glow {
+  0%   { filter: drop-shadow(0 0 0px #FFD700); }
+  40%  { filter: drop-shadow(0 0 10px #FFD700) drop-shadow(0 0 22px rgba(255,215,0,0.6)); }
+  100% { filter: drop-shadow(0 0 10px #FFD700) drop-shadow(0 0 22px rgba(255,215,0,0.6)); }
+}
+.secret-btn.glowing { animation: secret-glow 0.3s ease-out forwards; pointer-events: none; }
 
 /* ===================== NOKIA ISLAND ===================== */
 .nokia-island {
@@ -643,7 +647,7 @@ if (localStorage.getItem('kintsugi_track1_unlocked') === 'true') {
 }
 if (localStorage.getItem('kintsugi_track2_unlocked') === 'true') {
   const _tl = ISLANDS.find(i => i.type === 'tracklist');
-  if (_tl) { _tl.tracks[1].state = 'released'; _tl.tracks[1].title = '[i_like_spliff][demo]'; }
+  if (_tl) { _tl.tracks[1].state = 'released'; _tl.tracks[1].title = '[tinny_h0use][demo]'; }
 }
 
 // =====================================================================
@@ -714,7 +718,17 @@ function playTrack(track) {
     currentTrack = track;
     audioEl = new Audio(track.file);
     audioEl.loop = isLooping;
-    audioEl.addEventListener('ended', () => { if (!isLooping) stopAudio(); });
+    audioEl.addEventListener('ended', () => {
+      if (isLooping) return;
+      // Auto-play next released track in the list
+      const tlIsland = ISLANDS.find(ii => ii.type === 'tracklist');
+      if (tlIsland) {
+        const idx = tlIsland.tracks.findIndex(t => t === currentTrack);
+        const next = tlIsland.tracks.slice(idx + 1).find(t => t.state === 'released' && t.file);
+        if (next) { playTrack(next); return; }
+      }
+      stopAudio();
+    });
     audioEl.addEventListener('loadedmetadata', updateTimeDisplay);
     isPlaying = true;
     audioEl.play().catch(() => {});
@@ -1480,7 +1494,6 @@ function setupImageSecret() {
   // x = midpoint of the two image centres; y = approximate vertical centre of images
   const secretBtn = document.createElement('button');
   secretBtn.className = 'secret-btn';
-  secretBtn.textContent = '[ secret ]';
   // horizontal centre of the two 340px-wide images
   const gapCentreX = Math.round((mbIsland._baseLeft + 170 + stIsland._baseLeft + 170) / 2);
   // vertical centre: average of tops + ~half image height + 150px lower per user preference
@@ -1536,21 +1549,27 @@ function setupImageSecret() {
   };
 
   secretBtn.addEventListener('click', () => {
+    if (secretCaught) return;
     secretCaught = true;
     clearTimeout(closeTimer);
     sfxPlay('click');
-    secretBtn.classList.remove('visible');
-    const tl = ISLANDS.find(i => i.type === 'tracklist');
-    if (tl) {
-      tl.tracks[1].title = '[i_like_spliff][demo]';
-      tl.tracks[1].state = 'released';
-    }
-    localStorage.setItem('kintsugi_track2_unlocked', 'true');
-    navigateToTracklist();
+    // Gold glow — hold for 1 second, then proceed
+    secretBtn.classList.add('glowing');
     setTimeout(() => {
-      refreshTracklist();
-      triggerTypewriteTrack2();
-    }, 1400);
+      secretBtn.classList.remove('visible');
+      secretBtn.classList.remove('glowing');
+      const tl = ISLANDS.find(i => i.type === 'tracklist');
+      if (tl) {
+        tl.tracks[1].title = '[tinny_h0use][demo]';
+        tl.tracks[1].state = 'released';
+      }
+      localStorage.setItem('kintsugi_track2_unlocked', 'true');
+      navigateToTracklist();
+      setTimeout(() => {
+        refreshTracklist();
+        triggerTypewriteTrack2();
+      }, 1400);
+    }, 1000);
   });
 }
 
