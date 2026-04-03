@@ -709,29 +709,54 @@ function stopAudio() {
   updateTimeDisplay();
 }
 
-function playTrack(track) {
+let _nextAudioEl = null; // preloaded next-track audio element
+
+function _preloadNext(track) {
+  const tlIsland = ISLANDS.find(ii => ii.type === 'tracklist');
+  if (!tlIsland) { _nextAudioEl = null; return; }
+  const idx = tlIsland.tracks.findIndex(t => t === track);
+  const next = tlIsland.tracks.slice(idx + 1).find(t => t.state === 'released' && t.file);
+  if (next) {
+    _nextAudioEl = new Audio(next.file);
+    _nextAudioEl.preload = 'auto';
+    _nextAudioEl._track = next;
+  } else {
+    _nextAudioEl = null;
+  }
+}
+
+function playTrack(track, _preloaded) {
   if (currentTrack === track && audioEl) {
     isPlaying = !isPlaying;
     isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
   } else {
     if (audioEl) { audioEl.pause(); audioEl = null; }
     currentTrack = track;
-    audioEl = new Audio(track.file);
+    // Use a preloaded element if available and correct, otherwise create fresh
+    if (_preloaded && _preloaded._track === track) {
+      audioEl = _preloaded;
+    } else {
+      if (_nextAudioEl && _nextAudioEl._track !== track) _nextAudioEl = null;
+      audioEl = new Audio(track.file);
+    }
+    _nextAudioEl = null;
     audioEl.loop = isLooping;
     audioEl.addEventListener('ended', () => {
       if (isLooping) return;
-      // Auto-play next released track in the list
+      // Use `track` (closed over param), not `currentTrack`, so navigation can't corrupt it
       const tlIsland = ISLANDS.find(ii => ii.type === 'tracklist');
       if (tlIsland) {
-        const idx = tlIsland.tracks.findIndex(t => t === currentTrack);
+        const idx = tlIsland.tracks.findIndex(t => t === track);
         const next = tlIsland.tracks.slice(idx + 1).find(t => t.state === 'released' && t.file);
-        if (next) { playTrack(next); return; }
+        if (next) { playTrack(next, _nextAudioEl); return; }
       }
       stopAudio();
     });
     audioEl.addEventListener('loadedmetadata', updateTimeDisplay);
     isPlaying = true;
     audioEl.play().catch(() => {});
+    // Start preloading the next track immediately
+    _preloadNext(track);
     document.getElementById('playerTitle').textContent = track.title;
     document.getElementById('player').classList.add('visible');
     document.body.classList.add('music-active');
@@ -797,6 +822,7 @@ function updateTrackStates() {
 
 document.getElementById('pPlayPause').addEventListener('click', () => {
   if (!currentTrack) return;
+  sfxPlay('click');
   isPlaying = !isPlaying;
   isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
   if ('mediaSession' in navigator)
@@ -806,6 +832,7 @@ document.getElementById('pPlayPause').addEventListener('click', () => {
 });
 
 document.getElementById('pRepeat').addEventListener('click', () => {
+  sfxPlay('click');
   isLooping = !isLooping;
   if (audioEl) audioEl.loop = isLooping;
   syncPlayerUI();
@@ -813,12 +840,14 @@ document.getElementById('pRepeat').addEventListener('click', () => {
 
 document.getElementById('pPrev').addEventListener('click', () => {
   if (!releaseList.length) return;
+  sfxPlay('click');
   const idx = currentTrack ? releaseList.indexOf(currentTrack) : 0;
   playTrack(releaseList[(idx - 1 + releaseList.length) % releaseList.length]);
 });
 
 document.getElementById('pNext').addEventListener('click', () => {
   if (!releaseList.length) return;
+  sfxPlay('click');
   const idx = currentTrack ? releaseList.indexOf(currentTrack) : -1;
   playTrack(releaseList[(idx + 1) % releaseList.length]);
 });
