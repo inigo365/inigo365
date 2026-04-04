@@ -88,7 +88,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   display: flex; flex-direction: column; gap: 8px;
 }
 .album-artist  { font-size: 20px; letter-spacing: 0.04em; }
-.album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; text-shadow: 1px 1px 0 #E8B84B; }
+.album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; text-shadow: 2px 2px 0 #E8B84B; }
 .reset-btn.wip-label { cursor: default; text-align: center; opacity: 0.7; }
 .title-wip-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: nowrap; }
 .wip-badge {
@@ -110,12 +110,14 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   display: flex; align-items: center; gap: 14px;
   height: 44px;          /* fixed — never reflows regardless of content state */
   padding: 0;
+  padding-left: 0;
   border-top: 1px solid rgba(74, 173, 255, 0.15);
   overflow: hidden;      /* button/text changes can't push the row taller */
+  transition: padding-left 0.2s ease;
 }
 .track-row:first-child { border-top: none; }
 
-.track-num      { font-size: 18px; width: 24px; text-align: right; flex-shrink: 0; }
+.track-num      { font-size: 18px; width: 24px; text-align: right; flex-shrink: 0; transition: opacity 0.15s ease; }
 .track-title    { flex: 1; font-size: 24px; letter-spacing: 0.02em; min-width: 0; white-space: nowrap; overflow: hidden; }
 .track-duration { font-size: 18px; flex-shrink: 0; letter-spacing: 0.04em; }
 .play-icon      { font-size: 0.72em; opacity: 0.7; }
@@ -124,7 +126,8 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
   transition: opacity 0.15s ease;
 }
-.track-row.released .track-title { text-shadow: 1px 1px 0 #A8D8FF; }
+.track-row.playing { padding-left: 14px; transition: padding-left 0.2s ease; }
+.track-row.playing .track-title { text-shadow: 1px 1px 0 #F5D98A; }
 
 .track-row.released:hover { opacity: 0.65; }
 .track-row.locked { opacity: 0.3; pointer-events: none; }
@@ -661,7 +664,7 @@ const ISLANDS = [
     y: 100,
     lines: [
       'produced, written, recorded &',
-      'schemed upon from 2021 to 2026',
+      'schemed upon between 2021-2026',
       'over a variety of locations including',
       'the abbey road canteen,',
       'E8, N16, 1021,',
@@ -901,7 +904,24 @@ function syncPlayerUI() {
 
 function updateTrackStates() {
   document.querySelectorAll('.track-row.released').forEach(row => {
-    row.classList.toggle('playing', !!(currentTrack && currentTrack.file === row.dataset.file && isPlaying));
+    const isActive = !!(currentTrack && currentTrack.file === row.dataset.file && isPlaying);
+    const wasActive = row.classList.contains('playing');
+    const numEl = row.querySelector('.track-num');
+    if (isActive && !wasActive) {
+      row.classList.add('playing');
+      if (numEl) {
+        if (!numEl.dataset.origNum) numEl.dataset.origNum = numEl.textContent;
+        numEl.style.opacity = '0';
+        setTimeout(() => { numEl.textContent = '▶'; numEl.style.opacity = ''; }, 150);
+      }
+    } else if (!isActive && wasActive) {
+      row.classList.remove('playing');
+      if (numEl && numEl.dataset.origNum) {
+        const orig = numEl.dataset.origNum;
+        numEl.style.opacity = '0';
+        setTimeout(() => { numEl.textContent = orig; numEl.style.opacity = ''; }, 150);
+      }
+    }
   });
 }
 
