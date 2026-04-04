@@ -628,8 +628,8 @@ const ISLANDS = [
     y: 0,
     tracks: [
       { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
-      { title: 'track 02', state: 'locked', duration: null, file: 'audio/spliff-demo.mp3', hidden: true },
       { title: 'pin: 1021', state: 'locked', duration: null, file: 'audio/thread.mp3', unlockTitle: 'hanging0n2a_thread' },
+      { title: 'track 03', state: 'locked', duration: null, file: 'audio/spliff-demo.mp3', hidden: true },
       { title: '22.04.2026', state: 'locked', duration: null, countdown: true, unlockTitle: '' },
       { title: 'track 05', state: 'locked', duration: null },
       { title: 'track 06', state: 'locked', duration: null },
@@ -701,7 +701,7 @@ if (localStorage.getItem('kintsugi_track1_unlocked') === 'true') {
 }
 if (localStorage.getItem('kintsugi_track2_unlocked') === 'true') {
   const _tl = ISLANDS.find(i => i.type === 'tracklist');
-  if (_tl) { _tl.tracks[1].state = 'released'; _tl.tracks[1].title = '[tinny_h0use][demo]'; }
+  if (_tl) { _tl.tracks[2].state = 'released'; _tl.tracks[2].title = '[tinny_h0use][demo]'; }
 }
 // Track 3 is gated by nokia stage:
 //   stage 0 → show pin hint (default)
@@ -710,11 +710,11 @@ if (localStorage.getItem('kintsugi_track2_unlocked') === 'true') {
 (function() {
   const _tl = ISLANDS.find(i => i.type === 'tracklist');
   if (!_tl) return;
-  const t3 = _tl.tracks[2];
+  const t3 = _tl.tracks[1];
   if (_nokiaStage >= 2) {
     t3.state = 'released';
-    t3.title = t3.unlockTitle || 'track 03';
-    t3.file  = t3.file || 'audio/track03.mp3';
+    t3.title = t3.unlockTitle || 'track 02';
+    t3.file  = t3.file || 'audio/thread.mp3';
   } else if (_nokiaStage >= 1) {
     t3.unlockable = true; // shows [ unlock ] → navigates to Nokia for game 2
   }
@@ -1061,8 +1061,8 @@ function renderTracklist(island) {
     const tl = ISLANDS.find(i => i.type === 'tracklist');
     if (tl) {
       tl.tracks[0].state = 'locked';
-      tl.tracks[1].state = 'locked'; tl.tracks[1].title = 'track 02';
-      tl.tracks[2].state = 'locked'; tl.tracks[2].unlockable = false;
+      tl.tracks[1].state = 'locked'; tl.tracks[1].title = 'pin: 1021'; tl.tracks[1].unlockable = false;
+      tl.tracks[2].state = 'locked'; tl.tracks[2].title = 'track 03';
     }
     if (window._resetImageSecret) window._resetImageSecret();
     refreshTracklist();
@@ -1649,12 +1649,12 @@ function triggerTypewrite() {
 // Typewriter for track 2 — used after the image secret is triggered
 function triggerTypewriteTrack2() {
   const rows = document.querySelectorAll('.tracklist-island .track-row');
-  const row = rows[1];
+  const row = rows[2];
   if (!row) return;
   const titleSpan = row.querySelector('.track-title');
   if (!titleSpan) return;
   const tl = ISLANDS.find(i => i.type === 'tracklist');
-  const fullTitle = tl.tracks[1].title;
+  const fullTitle = tl.tracks[2].title;
   titleSpan.textContent = '';
   const stopTw2 = sfxPlay('typewriter');
   let j = 0;
@@ -1744,8 +1744,8 @@ function setupImageSecret() {
       secretBtn.classList.remove('glowing');
       const tl = ISLANDS.find(i => i.type === 'tracklist');
       if (tl) {
-        tl.tracks[1].title = '[tinny_h0use][demo]';
-        tl.tracks[1].state = 'released';
+        tl.tracks[2].title = '[tinny_h0use][demo]';
+        tl.tracks[2].state = 'released';
       }
       localStorage.setItem('kintsugi_track2_unlocked', 'true');
       navigateToTracklist();
@@ -1766,7 +1766,7 @@ window.addEventListener('message', e => {
     localStorage.setItem('kintsugi_nokia_stage', '1');
     // Expose track 3 unlock button now that stage is 1
     const tl = ISLANDS.find(i => i.type === 'tracklist');
-    if (tl) tl.tracks[2].unlockable = true;
+    if (tl) tl.tracks[1].unlockable = true;
   }
   if (e.data.type === 'nokia-return') {
     navigateToTracklist();
@@ -1784,10 +1784,10 @@ window.addEventListener('message', e => {
     localStorage.setItem('kintsugi_track3_unlocked', 'true');
     const tl = ISLANDS.find(i => i.type === 'tracklist');
     if (tl) {
-      const t3 = tl.tracks[2];
+      const t3 = tl.tracks[1];
       t3.state = 'released';
-      t3.title = t3.unlockTitle || 'track 03';
-      t3.file  = t3.file || 'audio/track03.mp3';
+      t3.title = t3.unlockTitle || 'track 02';
+      t3.file  = t3.file || 'audio/thread.mp3';
     }
   }
   if (e.data.type === 'nokia-game2-return') {
@@ -1796,13 +1796,13 @@ window.addEventListener('message', e => {
       const tl = ISLANDS.find(i => i.type === 'tracklist');
       if (!tl) return;
       refreshTracklist();
-      // Typewriter for track 3 (index 2)
+      // Typewriter for track 2 (index 1)
       const rows = document.querySelectorAll('.tracklist-island .track-row');
-      const row3 = rows[2];
+      const row3 = rows[1];
       if (row3) {
         const span = row3.querySelector('.track-title');
         if (span) {
-          const full = tl.tracks[2].title;
+          const full = tl.tracks[1].title;
           span.textContent = '';
           const stopTw = sfxPlay('typewriter');
           let c = 0;
