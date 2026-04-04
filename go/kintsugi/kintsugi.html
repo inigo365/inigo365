@@ -124,6 +124,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
   transition: opacity 0.15s ease;
 }
+.track-row.released .track-title { text-shadow: 1px 1px 0 #E8B84B; }
 .track-row.released:hover { opacity: 0.65; }
 .track-row.locked { opacity: 0.3; pointer-events: none; }
 
@@ -139,7 +140,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 
 /* ===================== LINER NOTE ===================== */
 .liner-island { text-align: center; max-width: 360px; z-index: 5; }
-.liner-text   { font-size: 20px; line-height: 2.4; letter-spacing: 0.04em; }
+.liner-text   { font-size: 20px; line-height: 2.4; letter-spacing: 0.04em; text-shadow: 1px 1px 0 #E8B84B; }
 
 /* ===================== BANDCAMP ISLAND ===================== */
 .bandcamp-island { z-index: 5; }
@@ -471,12 +472,13 @@ body.music-active #arrow-down { bottom: 118px; }
 .player-time         { font-size: 17px; min-width: 108px; text-align: center; }
 
 /* controls */
-.player-controls     { display: flex; align-items: center; gap: 6px; }
+.player-controls     { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
 .pctl {
   font-size: 17px;
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
   transition: opacity 0.15s ease;
   padding: 2px 4px;
+  white-space: nowrap;
 }
 .pctl:hover { opacity: 0.6; }
 .pctl.dim   { opacity: 0.35; }
