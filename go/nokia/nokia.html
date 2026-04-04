@@ -36,8 +36,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: url('assets/background.png') center center / cover no-repeat fixed;
-  background-color: #1a1a1a;
+  background: transparent;
   cursor: url('../../images/cursor/cursor.png'), auto;
   /* Prevent iOS callout / blue text-selection highlight during drag */
   -webkit-user-select: none;
@@ -1439,12 +1438,12 @@ function showDebug(action) {}
   // If the user has previously entered the PIN, skip the lock screen entirely
   if (nokiaStage >= 1) { pinUnlocked = true; renderMenu(); }
   else { renderIdle(); }
-  // When embedded in an iframe: hide back button, use white background
+  // When embedded in an iframe: hide back button, use transparent background
   if (window !== window.top) {
     const btn = document.getElementById('siteBackBtn');
     if (btn) btn.style.display = 'none';
-    document.documentElement.style.background = '#ffffff';
-    document.body.style.background = '#ffffff';
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
     document.body.style.backgroundImage = 'none';
   }
 })();
