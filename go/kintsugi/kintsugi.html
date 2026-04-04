@@ -88,7 +88,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   display: flex; flex-direction: column; gap: 8px;
 }
 .album-artist  { font-size: 20px; letter-spacing: 0.04em; }
-.album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; text-shadow: 2px 2px 0 #E8B84B; }
+.album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; text-shadow: 1px 1px 0 #E8B84B; }
 .reset-btn.wip-label { cursor: default; text-align: center; opacity: 0.7; }
 .title-wip-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: nowrap; }
 .wip-badge {
@@ -1548,7 +1548,7 @@ const MOBILE_POSITIONS = {
   nokia:       { wx: -310, sx:'c',  wy:  300, sy:'c'  },
   title:       { wx:    0, sx: 30,  wy: -400, sy: 100  },  // same x formula as tracklist; wy=-400 pans up to title island
   images:      { wx: -295, sx:'c',  wy: -605, sy: 30 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
-  description: { wx:  570, sx: '33',  wy:   50, sy: 70  },  // left edge 20px like tracklist; top of text 80px from screen top
+  description: { wx:  585, sx: '33',  wy:   50, sy: 70  },  // left edge 20px like tracklist; top of text 80px from screen top
   bandcamp:    { wx:  740, sx:'c',  wy: -520, sy: 110 },  // profile centred x; profile top 130px from screen top
   image:       { wx:  750, sx:'c',  wy:  660, sy:'c'  },  // brain centred on screen (island x:600 w:340, y:400 h:340, centre y=570)
 };
