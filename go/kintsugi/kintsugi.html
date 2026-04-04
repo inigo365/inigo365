@@ -629,7 +629,7 @@ const ISLANDS = [
     tracks: [
       { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
       { title: 'track 02', state: 'locked', duration: null, file: 'audio/spliff-demo.mp3', hidden: true },
-      { title: 'pin: 1021', state: 'locked', duration: null, file: 'audio/track03.mp3', unlockTitle: 'gh0st_chips [in my head]' },
+      { title: 'pin: 1021', state: 'locked', duration: null, file: 'audio/inmyhead.mp3', unlockTitle: 'ghost_chips (in_my_head)' },
       { title: '22.04.2026', state: 'locked', duration: null, countdown: true, unlockTitle: '' },
       { title: 'track 05', state: 'locked', duration: null },
       { title: 'track 06', state: 'locked', duration: null },
@@ -1161,30 +1161,14 @@ function renderTracklist(island) {
         : (countVal != null && countVal > 0)
           ? '<span class="play-icon">▶</span> ' + countVal
           : '—';
-      if (track.state === 'released' && i === 2) {
-        row.innerHTML =
-          '<span class="track-num">' + (i + 1) + '</span>' +
-          '<span class="track-title">' + track.title + '</span>' +
-          '<span class="track-duration" style="display:flex;align-items:center;gap:10px">' +
-            '<span class="unlock-btn" id="tk-hs-btn">[ beat your highscore! ]</span>' +
-            '<span id="tk-count-' + i + '">' + countStr + '</span>' +
-          '</span>';
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title">' + track.title + '</span>' +
+        '<span class="track-duration" id="tk-count-' + i + '">' + countStr + '</span>';
+      if (track.state === 'released') {
         row.dataset.file = track.file;
         row.addEventListener('click', () => { sfxPlay('click'); playTrack(track); });
         releaseList.push(track);
-        row.querySelector('#tk-hs-btn').addEventListener('click', e => {
-          e.stopPropagation(); sfxPlay('click'); navigateToNokia();
-        });
-      } else {
-        row.innerHTML =
-          '<span class="track-num">' + (i + 1) + '</span>' +
-          '<span class="track-title">' + track.title + '</span>' +
-          '<span class="track-duration" id="tk-count-' + i + '">' + countStr + '</span>';
-        if (track.state === 'released') {
-          row.dataset.file = track.file;
-          row.addEventListener('click', () => { sfxPlay('click'); playTrack(track); });
-          releaseList.push(track);
-        }
       }
     }
 
