@@ -90,6 +90,17 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .album-artist  { font-size: 20px; letter-spacing: 0.04em; }
 .album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; }
 .reset-btn.wip-label { cursor: default; text-align: center; opacity: 0.7; }
+.title-wip-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: nowrap; }
+.wip-badge {
+  font-family: 'RuneScape', monospace;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  color: #C9A84C;
+  opacity: 0.85;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .album-detail  { font-size: 18px; letter-spacing: 0.03em; }
 
 /* ===================== TRACK LIST ===================== */
@@ -161,14 +172,47 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   transform: translate(-50%, -50%) rotate(90deg);
   white-space: nowrap; z-index: 10;
 }
+/* tooltip on the [ hidden ] track label */
+.hidden-hint { position: relative; }
+.hidden-hint::after {
+  content: 'scroll to find it..';
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+  opacity: 0.25;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #4AADFF;
+  opacity: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.hidden-hint:hover::after { opacity: 0.8; }
+/* mobile: slow pulse so it's discoverable without hover */
+@keyframes hidden-pulse {
+  0%   { opacity: 0.15; }
+  4%   { opacity: 0.75; }
+  28%  { opacity: 0.75; }
+  36%  { opacity: 0.15; }
+  100% { opacity: 0.15; }
+}
+@media (max-width: 600px) {
+  .hidden-hint::after {
+    animation: hidden-pulse 8.5s ease-in-out infinite;
+    transition: none;
+  }
+}
+
 .secret-btn.visible { opacity: 1; pointer-events: auto; }
 .secret-btn:hover   { filter: brightness(1.2); }
 @keyframes secret-glow {
-  0%   { filter: drop-shadow(0 0 0px #FFD700); }
-  40%  { filter: drop-shadow(0 0 10px #FFD700) drop-shadow(0 0 22px rgba(255,215,0,0.6)); }
-  100% { filter: drop-shadow(0 0 10px #FFD700) drop-shadow(0 0 22px rgba(255,215,0,0.6)); }
+  0%   { filter: drop-shadow(0 0 0px rgba(255,215,0,0)); }
+  50%  { filter: drop-shadow(0 0 6px rgba(255,215,0,0.9)) drop-shadow(0 0 18px rgba(255,200,0,0.4)); }
+  100% { filter: drop-shadow(0 0 6px rgba(255,215,0,0.9)) drop-shadow(0 0 18px rgba(255,200,0,0.4)); }
 }
-.secret-btn.glowing { animation: secret-glow 0.3s ease-out forwards; pointer-events: none; }
+.secret-btn.glowing { animation: secret-glow 0.4s ease-out forwards; pointer-events: none; }
 
 /* ===================== NOKIA ISLAND ===================== */
 .nokia-island {
@@ -566,6 +610,7 @@ body.music-active #arrow-down { bottom: 118px; }
       <span class="pctl"     id="pPlayPause">[ play ]</span>
       <span class="pctl dim" id="pNext">[ &gt;&gt; ]</span>
       <span class="pctl dim" id="pRepeat">[ loop ]</span>
+      <span class="pctl dim" id="pStop">[ stop ]</span>
     </div>
   </div>
   <input type="range" id="pScrub" min="0" max="1" value="0" step="0.001">
@@ -584,8 +629,8 @@ const ISLANDS = [
     tracks: [
       { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
       { title: 'track 02', state: 'locked', duration: null, file: 'audio/spliff-demo.mp3', hidden: true },
-      { title: 'pin: 1021', state: 'locked', duration: null },
-      { title: '22.04.2026', state: 'locked', duration: null, countdown: true },
+      { title: 'pin: 1021', state: 'locked', duration: null, file: 'audio/track03.mp3', unlockTitle: 'gh0st_chips [in my head]' },
+      { title: '22.04.2026', state: 'locked', duration: null, countdown: true, unlockTitle: '' },
       { title: 'track 05', state: 'locked', duration: null },
       { title: 'track 06', state: 'locked', duration: null },
       { title: 'track 07', state: 'locked', duration: null },
@@ -640,7 +685,16 @@ const ISLANDS = [
 ];
 
 // Restore unlock state from a previous kintsugi session.
-// Uses a scoped key so nokia.html's standalone puzzleComplete key never collides.
+// kintsugi_nokia_stage is the canonical progression key (0-N).
+// Migrate: if old puzzleComplete exists but stage key doesn't, promote to stage 1.
+(function() {
+  if (localStorage.getItem('puzzleComplete') === 'true' &&
+      !localStorage.getItem('kintsugi_nokia_stage')) {
+    localStorage.setItem('kintsugi_nokia_stage', '1');
+  }
+})();
+const _nokiaStage = parseInt(localStorage.getItem('kintsugi_nokia_stage') || '0', 10);
+
 if (localStorage.getItem('kintsugi_track1_unlocked') === 'true') {
   const _tl = ISLANDS.find(i => i.type === 'tracklist');
   if (_tl) _tl.tracks[0].state = 'released';
@@ -648,6 +702,31 @@ if (localStorage.getItem('kintsugi_track1_unlocked') === 'true') {
 if (localStorage.getItem('kintsugi_track2_unlocked') === 'true') {
   const _tl = ISLANDS.find(i => i.type === 'tracklist');
   if (_tl) { _tl.tracks[1].state = 'released'; _tl.tracks[1].title = '[tinny_h0use][demo]'; }
+}
+// Track 3 is gated by nokia stage:
+//   stage 0 → show pin hint (default)
+//   stage 1 → show [ unlock ] button (nokia game 2 not yet done)
+//   stage 2 → released
+(function() {
+  const _tl = ISLANDS.find(i => i.type === 'tracklist');
+  if (!_tl) return;
+  const t3 = _tl.tracks[2];
+  if (_nokiaStage >= 2) {
+    t3.state = 'released';
+    t3.title = t3.unlockTitle || 'track 03';
+    t3.file  = t3.file || 'audio/track03.mp3';
+  } else if (_nokiaStage >= 1) {
+    t3.unlockable = true; // shows [ unlock ] → navigates to Nokia for game 2
+  }
+  // stage 0: leave as-is — shows the 'pin: 1021' hint title
+})();
+if (localStorage.getItem('kintsugi_track4_unlocked') === 'true') {
+  const _tl = ISLANDS.find(i => i.type === 'tracklist');
+  if (_tl) {
+    const t = _tl.tracks[3];
+    t.state = 'released';
+    if (t.unlockTitle) t.title = t.unlockTitle;
+  }
 }
 
 // =====================================================================
@@ -838,6 +917,12 @@ document.getElementById('pRepeat').addEventListener('click', () => {
   syncPlayerUI();
 });
 
+document.getElementById('pStop').addEventListener('click', () => {
+  if (!currentTrack) return;
+  sfxPlay('click');
+  stopAudio();
+});
+
 document.getElementById('pPrev').addEventListener('click', () => {
   if (!releaseList.length) return;
   sfxPlay('click');
@@ -902,9 +987,13 @@ async function fetchKintsugiCounts() {
 }
 
 function _updateCountDisplay() {
+  const tl = ISLANDS.find(i => i.type === 'tracklist');
   Object.entries(_kintsugiCounts).forEach(([idx, count]) => {
     const el = document.getElementById('tk-count-' + idx);
-    if (el) el.innerHTML = count > 0 ? '<span class="play-icon">▶</span> ' + count : '—';
+    if (!el) return;
+    const track = tl && tl.tracks[+idx];
+    if (!track || track.state !== 'released') return;
+    el.innerHTML = count > 0 ? '<span class="play-icon">▶</span> ' + count : '—';
   });
 }
 
@@ -957,26 +1046,24 @@ function renderTracklist(island) {
   meta.className = 'album-meta';
   meta.innerHTML =
     '<div class="album-artist">inigo365</div>' +
-    '<div class="album-title">kintsugi</div>' +
+    '<div class="title-wip-row"><div class="album-title">kintsugi</div><span class="wip-badge">[ wip ]</span></div>' +
     '<div class="album-detail">2023-2026 · ' + island.tracks.length + ' tracks</div>' +
-    '<span class="reset-btn wip-label">[ wip ]</span>' +
     '<a href="../index.html" class="reset-btn" id="home-btn">[ home ]</a>' +
     '<button class="reset-btn" id="nokia-reset-btn">[ reset unlock ]</button>';
   meta.querySelector('#home-btn').addEventListener('click', () => sfxPlay('click'));
   meta.querySelector('#nokia-reset-btn').addEventListener('click', e => {
     e.stopPropagation();
     sfxPlay('click');
-    // Reset track 1
-    localStorage.removeItem('kintsugi_track1_unlocked');
-    // Reset track 2
-    localStorage.removeItem('kintsugi_track2_unlocked');
+    // Wipe all progression keys
+    ['kintsugi_track1_unlocked', 'kintsugi_track2_unlocked',
+     'kintsugi_track3_unlocked', 'kintsugi_track4_unlocked',
+     'kintsugi_nokia_stage', 'puzzleComplete'].forEach(k => localStorage.removeItem(k));
     const tl = ISLANDS.find(i => i.type === 'tracklist');
     if (tl) {
       tl.tracks[0].state = 'locked';
-      tl.tracks[1].state = 'locked';
-      tl.tracks[1].title = 'track 02';
+      tl.tracks[1].state = 'locked'; tl.tracks[1].title = 'track 02';
+      tl.tracks[2].state = 'locked'; tl.tracks[2].unlockable = false;
     }
-    // Reset the image secret so it can be triggered again
     if (window._resetImageSecret) window._resetImageSecret();
     refreshTracklist();
   });
@@ -999,9 +1086,48 @@ function renderTracklist(island) {
         '<span class="track-duration countdown-timer"></span>';
       const timerEl = row.querySelector('.countdown-timer');
       const bdayTarget = new Date('2026-04-22T00:00:00');
+
+      const showUnlockBtn = () => {
+        row.innerHTML =
+          '<span class="track-num">' + (i + 1) + '</span>' +
+          '<span class="track-title" style="opacity:0.35">???</span>' +
+          '<span class="track-duration"><button class="unlock-btn">[ tap to unlock ]</button></span>';
+        row.querySelector('.unlock-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          sfxPlay('click');
+          const resolvedTitle = track.unlockTitle || ('track 0' + (i + 1));
+          track.title = resolvedTitle;
+          track.state = 'released';
+          localStorage.setItem('kintsugi_track4_unlocked', 'true');
+          refreshTracklist();
+          // typewriter reveal
+          setTimeout(() => {
+            const rows = document.querySelectorAll('.tracklist-island .track-row');
+            const targetRow = rows[i];
+            if (targetRow) {
+              const span = targetRow.querySelector('.track-title');
+              if (span) {
+                const full = resolvedTitle;
+                span.textContent = '';
+                const stopTw = sfxPlay('typewriter');
+                let c = 0;
+                const tw = setInterval(() => {
+                  span.textContent = full.slice(0, ++c);
+                  if (c >= full.length) { clearInterval(tw); if (stopTw) stopTw(); }
+                }, 52);
+              }
+            }
+          }, 300);
+        });
+      };
+
       const tickBday = () => {
         const diff = bdayTarget - Date.now();
-        if (diff <= 0) { timerEl.textContent = 'today!'; return; }
+        if (diff <= 0) {
+          clearInterval(bdayInterval); // fix: clear the interval when done
+          showUnlockBtn();
+          return;
+        }
         const d = Math.floor(diff / 86400000);
         const h = Math.floor((diff % 86400000) / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
@@ -1009,7 +1135,7 @@ function renderTracklist(island) {
         timerEl.textContent = d + 'd ' + String(h).padStart(2,'0') + 'h ' + String(m).padStart(2,'0') + 'm ' + String(s).padStart(2,'0') + 's';
       };
       tickBday();
-      setInterval(tickBday, 1000);
+      const bdayInterval = setInterval(tickBday, 1000);
     } else if (track.state === 'locked' && track.unlockable) {
       row.className = 'track-row unlockable';
       row.innerHTML =
@@ -1026,21 +1152,39 @@ function renderTracklist(island) {
       row.innerHTML =
         '<span class="track-num">' + (i + 1) + '</span>' +
         '<span class="track-title" style="opacity:0.35">???</span>' +
-        '<span class="track-duration"><span class="unlock-btn" style="pointer-events:none;cursor:default">[ hidden ]</span></span>';
+        '<span class="track-duration"><span class="unlock-btn hidden-hint" style="pointer-events:auto;cursor:default">[ hidden ]</span></span>';
     } else {
       row.className = 'track-row ' + track.state;
       const countVal = _kintsugiCounts[i];
-      const countStr = (countVal != null && countVal > 0)
-        ? '<span class="play-icon">▶</span> ' + countVal
-        : '—';
-      row.innerHTML =
-        '<span class="track-num">' + (i + 1) + '</span>' +
-        '<span class="track-title">' + track.title + '</span>' +
-        '<span class="track-duration" id="tk-count-' + i + '">' + countStr + '</span>';
-      if (track.state === 'released') {
+      const countStr = track.state !== 'released'
+        ? ''
+        : (countVal != null && countVal > 0)
+          ? '<span class="play-icon">▶</span> ' + countVal
+          : '—';
+      if (track.state === 'released' && i === 2) {
+        row.innerHTML =
+          '<span class="track-num">' + (i + 1) + '</span>' +
+          '<span class="track-title">' + track.title + '</span>' +
+          '<span class="track-duration" style="display:flex;align-items:center;gap:10px">' +
+            '<span class="unlock-btn" id="tk-hs-btn">[ beat your highscore! ]</span>' +
+            '<span id="tk-count-' + i + '">' + countStr + '</span>' +
+          '</span>';
         row.dataset.file = track.file;
         row.addEventListener('click', () => { sfxPlay('click'); playTrack(track); });
         releaseList.push(track);
+        row.querySelector('#tk-hs-btn').addEventListener('click', e => {
+          e.stopPropagation(); sfxPlay('click'); navigateToNokia();
+        });
+      } else {
+        row.innerHTML =
+          '<span class="track-num">' + (i + 1) + '</span>' +
+          '<span class="track-title">' + track.title + '</span>' +
+          '<span class="track-duration" id="tk-count-' + i + '">' + countStr + '</span>';
+        if (track.state === 'released') {
+          row.dataset.file = track.file;
+          row.addEventListener('click', () => { sfxPlay('click'); playTrack(track); });
+          releaseList.push(track);
+        }
       }
     }
 
@@ -1174,7 +1318,7 @@ let worldX = 0, worldY = 0;
 let targetX = 0, targetY = 0;
 
 const PAN_STEP  = 420;  // px moved per arrow click
-const MAX_SPEED = 4;    // desktop mouse-follow: slow drift
+const MAX_SPEED = 1.5;  // desktop mouse-follow: subtle drift
 const DEAD_ZONE = 0.40; // large dead zone — only triggers near screen edge
 
 let mouseNX = 0, mouseNY = 0;
@@ -1214,16 +1358,18 @@ document.addEventListener('touchmove', e => {
 
 function clampWorld(x, y) {
   const vw = window.innerWidth, vh = window.innerHeight;
-  // Content bounding box in world coordinates (based on island layout).
-  // Allow 200px of breathing room beyond each content edge — enough to
-  // feel like a world but nowhere near the empty edges of the 4000px canvas.
   const extra = 80;
   const cL = CENTER - 510;  // left edge: morrisblitz x=-510
   const cR = CENTER + 940;  // right edge: brain/profile/desc x=600+340px
-  const cT = CENTER - 560;  // top edge: images/morrisblitz at y=-620, ~100px breathing room above
-  const cB = CENTER + 800; // bottom edge: brain image y=400+340px + extra room to pan it into view
+  const cT = CENTER - 560;  // top edge: images/morrisblitz at y=-620
+  const cB = CENTER + 800;  // bottom edge: brain image y=400+340px
+  // Right-scroll bound: at minimum allow centering the nokia island (wx=-310)
+  // so the phone is never clamped left of centre on any screen width.
+  const staticRight  = -(cL - extra);
+  const nokiaRight   = vw / 2 - (CENTER - 310);
+  const rightBound   = Math.max(staticRight, nokiaRight);
   return [
-    Math.max(-(cR + extra - vw), Math.min(-(cL - extra), x)),
+    Math.max(-(cR + extra - vw), Math.min(rightBound, x)),
     Math.max(-(cB + extra - vh), Math.min(-(cT - extra), y))
   ];
 }
@@ -1582,6 +1728,8 @@ function setupImageSecret() {
     secretCaught = true;
     clearTimeout(closeTimer);
     sfxPlay('click');
+    // Return images to base position
+    closeImages();
     // Gold glow — hold for 1 second, then proceed
     secretBtn.classList.add('glowing');
     setTimeout(() => {
@@ -1604,18 +1752,59 @@ function setupImageSecret() {
 
 window.addEventListener('message', e => {
   if (!e.data) return;
+
+  // ── Game 1: brain puzzle ─────────────────────────────────────────────
   if (e.data.type === 'nokia-puzzle-complete') {
-    // Persist unlock but keep showing ??? until we've panned back
     localStorage.setItem('kintsugi_track1_unlocked', 'true');
+    localStorage.setItem('kintsugi_nokia_stage', '1');
+    // Expose track 3 unlock button now that stage is 1
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    if (tl) tl.tracks[2].unlockable = true;
   }
   if (e.data.type === 'nokia-return') {
     navigateToTracklist();
-    // After pan settles: promote to released, refresh DOM, then start typewriter
     setTimeout(() => {
       const tl = ISLANDS.find(i => i.type === 'tracklist');
       if (tl && tl.tracks[0].state !== 'released') tl.tracks[0].state = 'released';
       refreshTracklist();
       triggerTypewrite();
+    }, 1400);
+  }
+
+  // ── Game 2: new nokia game ───────────────────────────────────────────
+  if (e.data.type === 'nokia-game2-complete') {
+    localStorage.setItem('kintsugi_nokia_stage', '2');
+    localStorage.setItem('kintsugi_track3_unlocked', 'true');
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    if (tl) {
+      const t3 = tl.tracks[2];
+      t3.state = 'released';
+      t3.title = t3.unlockTitle || 'track 03';
+      t3.file  = t3.file || 'audio/track03.mp3';
+    }
+  }
+  if (e.data.type === 'nokia-game2-return') {
+    navigateToTracklist();
+    setTimeout(() => {
+      const tl = ISLANDS.find(i => i.type === 'tracklist');
+      if (!tl) return;
+      refreshTracklist();
+      // Typewriter for track 3 (index 2)
+      const rows = document.querySelectorAll('.tracklist-island .track-row');
+      const row3 = rows[2];
+      if (row3) {
+        const span = row3.querySelector('.track-title');
+        if (span) {
+          const full = tl.tracks[2].title;
+          span.textContent = '';
+          const stopTw = sfxPlay('typewriter');
+          let c = 0;
+          const tw = setInterval(() => {
+            span.textContent = full.slice(0, ++c);
+            if (c >= full.length) { clearInterval(tw); if (stopTw) stopTw(); }
+          }, 52);
+        }
+      }
     }, 1400);
   }
 });

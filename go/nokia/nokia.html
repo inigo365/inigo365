@@ -342,19 +342,34 @@ let STATE       = 'idle';
 let pinBuffer   = '';
 const PIN_LENGTH = 4;
 let menuIndex   = 0;
-let puzzleComplete = false;
+let nokiaStage  = 0;  // 0 = fresh, 1 = brain puzzle done, 2 = game 2 done
+let puzzleComplete = false; // alias: nokiaStage >= 1
 let pinUnlocked = false; // true once correct PIN entered this session — resets on page refresh
 let audioEl     = null;
 let isPlaying   = false;
-let revealTimer = null;
+let revealTimer    = null;
+let _snakeInterval = null;
 
 // ── Persistence ───────────────────────────────────────────────────────
 function loadProgress() {
-  puzzleComplete = localStorage.getItem('puzzleComplete') === 'true';
+  // Migrate: old key → new unified stage key
+  if (localStorage.getItem('puzzleComplete') === 'true' &&
+      !localStorage.getItem('kintsugi_nokia_stage')) {
+    localStorage.setItem('kintsugi_nokia_stage', '1');
+  }
+  nokiaStage     = parseInt(localStorage.getItem('kintsugi_nokia_stage') || '0', 10);
+  puzzleComplete = nokiaStage >= 1;
 }
 function saveProgress() {
-  localStorage.setItem('puzzleComplete', 'true');
-  puzzleComplete = true;
+  // Stage 1: brain puzzle complete → track 1 unlocked
+  localStorage.setItem('kintsugi_nokia_stage', '1');
+  localStorage.setItem('puzzleComplete', 'true'); // backwards compat
+  nokiaStage = 1; puzzleComplete = true;
+}
+function saveProgress2() {
+  // Stage 2: game 2 complete → track 3 unlocked
+  localStorage.setItem('kintsugi_nokia_stage', '2');
+  nokiaStage = 2;
 }
 
 // ── Screen base styles ────────────────────────────────────────────────
@@ -371,7 +386,8 @@ function screenBase() {
 
 // ── Cleanup helpers ───────────────────────────────────────────────────
 function clearTimers() {
-  if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+  if (revealTimer)    { clearTimeout(revealTimer);      revealTimer    = null; }
+  if (_snakeInterval) { clearInterval(_snakeInterval);  _snakeInterval = null; }
 }
 function stopAudio() {
   if (audioEl) { audioEl.pause(); audioEl = null; }
@@ -472,11 +488,19 @@ function renderMenu() {
   clearTimers();
   STATE = 'menu';
   screenBase();
+
+  // Items are stage-gated: game 2 only appears after stage 1
   const items = [
-    { label: 'PUZZLE', enabled: true }
+    { label: 'PUZZLE',   enabled: true,            done: nokiaStage >= 1 },
+    ...(nokiaStage >= 1
+      ? [{ label: 'SNAKE',    enabled: true,             done: nokiaStage >= 2 }]
+      : [])
   ];
-  let html =
-    '<div style="opacity:0.4;font-size:0.7em;margin-bottom:5px">MENU</div>';
+
+  // Clamp menuIndex so it never points past available items
+  if (menuIndex >= items.length) menuIndex = 0;
+
+  let html = '<div style="opacity:0.4;font-size:0.7em;margin-bottom:5px">MENU</div>';
   items.forEach((item, i) => {
     const sel    = i === menuIndex;
     const dimmed = !item.enabled;
@@ -488,12 +512,14 @@ function renderMenu() {
         (sel    ? 'font-weight:bold;' : '') +
         'margin:1px 0">' +
         (sel ? '► ' : '  ') + item.label +
+        (item.done ? ' ✓' : '') +
       '</div>';
   });
-  html += '<div style="opacity:0.35;font-size:0.6em;margin-top:5px">[0] SELECT  [*] BACK</div>';
-  html += '<div style="opacity:0.35;font-size:0.6em;margin-top:3px">album coming soon</div>';
+  html += '<div style="opacity:0.35;font-size:0.55em;margin-top:5px;line-height:1.6">' +
+    '[#] up/down &nbsp; [0] ok &nbsp; [*] back' +
+  '</div>';
   nokiaScreen.innerHTML = html;
-  // Direct item clicks (stopPropagation prevents screen handler)
+
   nokiaScreen.querySelectorAll('.m-item').forEach(el => {
     el.addEventListener('click', e => {
       e.stopPropagation();
@@ -504,14 +530,16 @@ function renderMenu() {
 }
 
 function handleMenu(action) {
+  const maxIdx = nokiaStage >= 1 ? 1 : 0;
   if (action === 'up')   { menuIndex = Math.max(0, menuIndex - 1); renderMenu(); return; }
-  if (action === 'down') { menuIndex = 0; renderMenu(); return; }  // wraps so # cycles
+  if (action === 'down') { menuIndex = Math.min(maxIdx, menuIndex + 1); renderMenu(); return; }
   if (action === 'ok' || action === 'rsoft' || action === 'screen') { selectMenuItem(); return; }
   if (action === 'lsoft') { if (!pinUnlocked) { menuIndex = 0; renderIdle(); } return; }
 }
 
 function selectMenuItem() {
   if (menuIndex === 0) { renderPuzzleIntro(); return; }
+  if (menuIndex === 1 && nokiaStage >= 1) { renderGame2Intro(); return; }
 }
 
 // =====================================================================
@@ -842,11 +870,304 @@ function renderReveal() {
     } else {
       revealTimer = setTimeout(function() {
         window.parent.postMessage({ type: 'nokia-return' }, '*');
+        // Switch to menu at the same moment kintsugi starts its typewriter
+        renderMenu();
       }, 1800);
     }
   })();
 }
 
+
+// =====================================================================
+//  STATES 6a–6d — GAME 2: SNAKE  (canvas-based, authentic Nokia look)
+// =====================================================================
+var _GW, _GH, _CELL;
+var _freePlay  = false;
+var _snake, _dir, _nextDir, _pellets, _bigPellet, _trackPellet;
+var _snakeScore, _snakeTick, _pelletEaten, _trackSpawned;
+var _LCD_BG   = '#0d0d0d';   // Nokia nav background (dark)
+var _LCD_DARK = '#4dff91';   // Nokia screen green
+var _HS_KEY   = 'kintsugi_snake_hs';
+// Layout — score strip + pixel-dot border
+var _SH = 17;          // score strip height (px)
+var _BP = 4;           // border dot pitch (dot + gap)
+var _BF = 3;           // border dot fill size
+var _OX = _BP;         // grid x offset
+var _OY = _SH + _BP;   // grid y offset
+
+function _snakeOccupied(x, y) {
+  return _snake.some(function(s){ return s.x===x && s.y===y; }) ||
+         _pellets.some(function(p){ return p.x===x && p.y===y; }) ||
+         (_bigPellet   && _bigPellet.x===x   && _bigPellet.y===y)   ||
+         (_trackPellet && _trackPellet.x===x && _trackPellet.y===y);
+}
+function _snakePlacePellet() {
+  for (var t=0; t<200; t++) {
+    var x=Math.floor(Math.random()*_GW), y=Math.floor(Math.random()*_GH);
+    if (!_snakeOccupied(x,y)) { _pellets.push({x:x,y:y}); return; }
+  }
+}
+function _snakePlaceBig() {
+  for (var t=0; t<200; t++) {
+    var x=Math.floor(Math.random()*_GW), y=Math.floor(Math.random()*_GH);
+    if (!_snakeOccupied(x,y)) { _bigPellet={x:x,y:y}; return; }
+  }
+  _bigPellet = null;
+}
+function _snakePlaceTrack() {
+  for (var pass=0; pass<2; pass++) {
+    for (var t=0; t<200; t++) {
+      var x=Math.floor(Math.random()*_GW), y=Math.floor(Math.random()*_GH);
+      if (!_snakeOccupied(x,y) && (pass>0 || x > _GW*0.55)) {
+        _trackPellet={x:x,y:y}; _trackSpawned=true; return;
+      }
+    }
+  }
+}
+
+function _snakeDraw() {
+  var canvas = document.getElementById('snakeCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var C = _CELL;
+
+  // ── Full background ─────────────────────────────────────────────────
+  ctx.fillStyle = _LCD_BG;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Score strip ─────────────────────────────────────────────────────
+  ctx.fillStyle = _LCD_DARK;
+  ctx.font = 'bold 13px monospace';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText(String(_snakeScore).padStart(4, '0'), 4, _SH / 2);
+  if (_freePlay) {
+    var hs = parseInt(localStorage.getItem(_HS_KEY) || '0', 10);
+    ctx.textAlign = 'right';
+    ctx.fillText('HI ' + String(hs).padStart(4, '0'), W - 4, _SH / 2);
+  }
+
+  // ── Pixel-dot border (rows + columns of small squares) ──────────────
+  ctx.fillStyle = _LCD_DARK;
+  var bx, by;
+  for (bx = 0; bx < W; bx += _BP) ctx.fillRect(bx,         _SH,    _BF, _BF);  // top
+  for (bx = 0; bx < W; bx += _BP) ctx.fillRect(bx,         H-_BP,  _BF, _BF);  // bottom
+  for (by = _SH+_BP; by < H-_BP; by += _BP) ctx.fillRect(0,    by, _BF, _BF);  // left
+  for (by = _SH+_BP; by < H-_BP; by += _BP) ctx.fillRect(W-_BP, by, _BF, _BF); // right
+
+  // ── Regular pellets — 2×2 dot centred in cell ───────────────────────
+  ctx.fillStyle = _LCD_DARK;
+  _pellets.forEach(function(p) {
+    ctx.fillRect(p.x*C + _OX + Math.floor(C/2)-1, p.y*C + _OY + Math.floor(C/2)-1, 2, 2);
+  });
+
+  // ── Big pellet — 4×4 hollow ring ────────────────────────────────────
+  if (_bigPellet) {
+    var bp = _bigPellet;
+    ctx.fillStyle = _LCD_DARK;
+    ctx.fillRect(bp.x*C + _OX + 1, bp.y*C + _OY + 1, C-2, C-2);
+    ctx.fillStyle = _LCD_BG;
+    ctx.fillRect(bp.x*C + _OX + 2, bp.y*C + _OY + 2, C-4, C-4);
+  }
+
+  // ── Track pellet — flashes filled ↔ outline every 3 ticks ───────────
+  if (_trackPellet) {
+    var tp = _trackPellet;
+    if (_snakeTick % 6 < 3) {
+      ctx.fillStyle = _LCD_DARK;
+      ctx.fillRect(tp.x*C + _OX + 1, tp.y*C + _OY + 1, C-2, C-2);
+    } else {
+      ctx.strokeStyle = _LCD_DARK;
+      ctx.lineWidth   = 1;
+      ctx.strokeRect(tp.x*C + _OX + 1.5, tp.y*C + _OY + 1.5, C-3, C-3);
+    }
+  }
+
+  // ── Snake — consistent solid blocks throughout ───────────────────────
+  ctx.fillStyle = _LCD_DARK;
+  _snake.forEach(function(s) {
+    ctx.fillRect(s.x*C + _OX + 1, s.y*C + _OY + 1, C-2, C-2);
+  });
+}
+
+function _snakeStep() {
+  _snakeTick++;
+  _dir = {x:_nextDir.x, y:_nextDir.y};
+  var head = {x:_snake[0].x + _dir.x, y:_snake[0].y + _dir.y};
+
+  if (head.x<0 || head.x>=_GW || head.y<0 || head.y>=_GH) { _snakeDie(); return; }
+  if (_snake.some(function(s){ return s.x===head.x && s.y===head.y; })) { _snakeDie(); return; }
+
+  _snake.unshift(head);
+
+  // Track pellet → WIN (stage 1 only)
+  if (!_freePlay && _trackPellet && head.x===_trackPellet.x && head.y===_trackPellet.y) {
+    _trackPellet = null;
+    clearTimers();
+    _snakeDraw();
+    sfxPlay('ringtone');
+    revealTimer = setTimeout(function(){ saveProgress2(); renderGame2Reveal(); }, 900);
+    return;
+  }
+
+  // Big pellet → 3 pts, respawn, grow
+  if (_bigPellet && head.x===_bigPellet.x && head.y===_bigPellet.y) {
+    _snakeScore += 3;
+    sfxPlay('gold');
+    _snakePlaceBig();
+    _snakeDraw();
+    return;
+  }
+
+  // Regular pellet → 1 pt, grow
+  var pi = -1;
+  for (var j=0; j<_pellets.length; j++) {
+    if (_pellets[j].x===head.x && _pellets[j].y===head.y) { pi=j; break; }
+  }
+  if (pi !== -1) {
+    _pellets.splice(pi, 1);
+    _snakeScore += 1;
+    _pelletEaten++;
+    _snakePlacePellet();
+    // Spawn track pellet after eating 3 regular pellets (stage 1 mode only)
+    if (!_freePlay && !_trackSpawned && _pelletEaten >= 3) _snakePlaceTrack();
+  } else {
+    _snake.pop();
+  }
+  _snakeDraw();
+}
+
+function _snakeDie() {
+  clearTimers();
+  sfxPlay('die');
+  STATE = 'game2dead';
+  if (_freePlay) {
+    var hs = parseInt(localStorage.getItem(_HS_KEY) || '0', 10);
+    if (_snakeScore > hs) { localStorage.setItem(_HS_KEY, String(_snakeScore)); hs = _snakeScore; }
+    screenBase();
+    nokiaScreen.innerHTML =
+      '<div style="font-size:0.85em;line-height:1.6;text-align:center">' +
+        'GAME OVER<br>' +
+        '<span style="font-size:0.65em;opacity:0.7">score: ' + _snakeScore + '</span><br>' +
+        '<span style="font-size:0.65em;opacity:0.45">best: '  + hs          + '</span><br>' +
+        '<span style="font-size:0.55em;opacity:0.3">[ok] retry &nbsp; [*] quit</span>' +
+      '</div>';
+  } else {
+    screenBase();
+    nokiaScreen.innerHTML =
+      '<div style="font-size:0.85em;line-height:1.6;text-align:center">' +
+        'GAME OVER<br>' +
+        '<span style="font-size:0.6em;opacity:0.4">[ok] retry &nbsp; [*] quit</span>' +
+      '</div>';
+  }
+}
+
+// ── Intro screen ───────────────────────────────────────────────────────
+function renderGame2Intro() {
+  clearTimers();
+  STATE = 'game2intro';
+  screenBase();
+  var hs  = parseInt(localStorage.getItem(_HS_KEY) || '0', 10);
+  var topLine = nokiaStage >= 2
+    ? '<div style="margin-bottom:2px">hi-score: ' + hs + '</div>' +
+      '<div>collect \u25c6 for +3</div>'
+    : '<div>collect \u2666 to unlock track 03</div>';
+  nokiaScreen.innerHTML =
+    '<div style="font-size:0.72em;line-height:1.6;text-align:center;padding:0 4px">' +
+      topLine +
+      '<div style="opacity:0.45;font-size:0.85em;margin-top:4px">arrow keys or 2 / 4 / 6 / 8</div>' +
+      '<div style="opacity:0.3;font-size:0.75em;margin-top:6px">[ok] start &nbsp; [*] back</div>' +
+    '</div>';
+}
+
+function handleGame2Intro(action) {
+  if (action === 'lsoft')                     { renderMenu();  return; }
+  if (action === 'ok' || action === 'screen') { renderGame2(); return; }
+}
+
+// ── Game screen ────────────────────────────────────────────────────────
+function renderGame2() {
+  clearTimers();
+  STATE     = 'game2';
+  _freePlay = (nokiaStage >= 2);
+  screenBase();
+
+  var SW = nokiaScreen.clientWidth  || 210;
+  var SH = nokiaScreen.clientHeight || 95;
+
+  nokiaScreen.style.padding    = '0';
+  nokiaScreen.style.background = _LCD_BG;
+  nokiaScreen.innerHTML = '<canvas id="snakeCanvas" style="display:block;image-rendering:pixelated;image-rendering:crisp-edges"></canvas>';
+
+  var canvas = document.getElementById('snakeCanvas');
+  canvas.width  = SW;
+  canvas.height = SH;
+
+  _CELL = 8;
+  _GW   = Math.floor((SW - 2*_BP) / _CELL);
+  _GH   = Math.floor((SH - _SH - 2*_BP) / _CELL);
+
+  var startY    = Math.floor(_GH / 2);
+  _snake        = [{x:3,y:startY},{x:2,y:startY},{x:1,y:startY}];
+  _dir          = {x:1, y:0};
+  _nextDir      = {x:1, y:0};
+  _pellets      = [];
+  _bigPellet    = null;
+  _trackPellet  = null;
+  _snakeScore   = 0;
+  _snakeTick    = 0;
+  _pelletEaten  = 0;
+  _trackSpawned = false;
+
+  for (var i=0; i<3; i++) _snakePlacePellet();
+  if (_freePlay) _snakePlaceBig();
+  // Track pellet spawns in _snakeStep after 3 pellets eaten
+
+  _snakeDraw();
+  _snakeInterval = setInterval(_snakeStep, 230);
+}
+
+function handleGame2(action) {
+  if (action === 'lsoft') { clearTimers(); renderMenu(); return; }
+  var dirs = {
+    up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0},
+    key2:{x:0,y:-1}, key8:{x:0,y:1}, key4:{x:-1,y:0}, key6:{x:1,y:0}
+  };
+  var d = dirs[action];
+  if (d && !(d.x===-_dir.x && d.y===-_dir.y)) _nextDir = d;
+}
+
+function handleGame2Dead(action) {
+  if (action === 'lsoft') { renderMenu();  return; }
+  if (action === 'ok')    { renderGame2(); return; }
+}
+
+// ── Reveal: single-line typewriter, no line break ─────────────────────
+function renderGame2Reveal() {
+  clearTimers();
+  STATE = 'game2reveal';
+  screenBase();
+  nokiaScreen.innerHTML =
+    '<div id="g2r" style="font-size:0.9em;line-height:1.45;padding:0 2px;white-space:nowrap"></div>';
+  var el  = nokiaScreen.querySelector('#g2r');
+  var msg = 'song unlocked!';
+  var i = 0;
+  (function tick() {
+    if (i <= msg.length) {
+      el.textContent = msg.slice(0, i++);
+      revealTimer = setTimeout(tick, 52);
+    } else {
+      revealTimer = setTimeout(function() {
+        window.parent.postMessage({type:'nokia-game2-complete'}, '*');
+        revealTimer = setTimeout(function() {
+          window.parent.postMessage({type:'nokia-game2-return'}, '*');
+          renderMenu();
+        }, 1800);
+      }, 1000);
+    }
+  })();
+}
 
 // =====================================================================
 //  SFX ENGINE  (Web Audio API + pooled <audio> fallback)
@@ -862,8 +1183,8 @@ function renderReveal() {
 //  • Silent heartbeat every 25 s keeps iOS from suspending the context
 //  • visibilitychange resume when the page comes back into focus
 ;(function() {
-  var SOUNDS  = { click: 0.6, ringtone: 0.9, password: 0.75 };
-  var POOL_SZ = { click: 6,   ringtone: 2,   password: 3    };
+  var SOUNDS  = { click: 0.6, ringtone: 0.9, password: 0.75, die: 0.85, gold: 0.7 };
+  var POOL_SZ = { click: 6,   ringtone: 2,   password: 3,    die: 2,    gold: 3   };
 
   var ctx            = null;
   var master         = null;
@@ -1127,10 +1448,14 @@ function handleButton(action) {
         if (NUM[action] !== undefined) handlePin(action); }
       break;
     case 'pin':    handlePin(action);    break;
-    case 'menu':       handleMenu(action);      break;
+    case 'menu':        handleMenu(action);      break;
     case 'puzzleintro': /* locked during typewriter */ break;
-    case 'puzzle':     handlePuzzle(action);    break;
-    case 'reveal':     /* locked during typewriter */ break;
+    case 'puzzle':      handlePuzzle(action);   break;
+    case 'reveal':      /* locked during typewriter */ break;
+    case 'game2intro':  handleGame2Intro(action);     break;
+    case 'game2':       handleGame2(action);     break;
+    case 'game2dead':   handleGame2Dead(action); break;
+    case 'game2reveal': /* locked during typewriter */ break;
   }
 }
 
@@ -1140,7 +1465,9 @@ function showDebug(action) {}
 // ── Boot ──────────────────────────────────────────────────────────────
 (function boot() {
   loadProgress();
-  renderIdle();
+  // If the user has previously entered the PIN, skip the lock screen entirely
+  if (nokiaStage >= 1) { pinUnlocked = true; renderMenu(); }
+  else { renderIdle(); }
   // When embedded in an iframe: hide back button, use white background
   if (window !== window.top) {
     const btn = document.getElementById('siteBackBtn');
