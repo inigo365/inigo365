@@ -1452,6 +1452,26 @@ Object.entries(arrowEls).forEach(([dir, el]) => {
   el.addEventListener('click', e => { e.stopPropagation(); sfxPlay('click'); panInDirection(dir); });
 });
 
+function updateArrows() {
+  if (window.innerWidth > 600) {
+    // Desktop: show all arrows (free pan)
+    ['up', 'down', 'left', 'right'].forEach(dir => {
+      const el = arrowEls[dir];
+      if (!el) return;
+      el.style.visibility = '';
+      el.style.pointerEvents = '';
+    });
+    return;
+  }
+  const neighbors = MOBILE_GRID[mobileCurrentIsland] || {};
+  ['up', 'down', 'left', 'right'].forEach(dir => {
+    const el = arrowEls[dir];
+    if (!el) return;
+    el.style.visibility = neighbors[dir] ? '' : 'hidden';
+    el.style.pointerEvents = neighbors[dir] ? '' : 'none';
+  });
+}
+
 // =====================================================================
 //  ANIMATION LOOP
 // =====================================================================
@@ -1548,6 +1568,7 @@ function mobileNavigateTo(key) {
   targetX = nx; targetY = ny;
   mouseNX = 0; mouseNY = 0;
   mobileCurrentIsland = key;
+  updateArrows();
 }
 
 // navigateToTracklist is called from nokia-return so keep it as a named function
@@ -1566,6 +1587,7 @@ function navigateToTracklist() {
     mouseNX = 0; mouseNY = 0;
   }
   mobileCurrentIsland = 'tracklist';
+  updateArrows();
 }
 
 // navigateToNokia is called from the unlock button so keep it too
@@ -1583,6 +1605,7 @@ function navigateToNokia() {
     mouseNX = 0; mouseNY = 0;
   }
   mobileCurrentIsland = 'nokia';
+  updateArrows();
 }
 
 function refreshTracklist() {
@@ -1893,6 +1916,7 @@ window.addEventListener('message', e => {
 buildIslands();
 setupImageSecret();
 initPosition();
+updateArrows();
 requestAnimationFrame(tick);
 requestAnimationFrame(() => { document.body.style.opacity = '1'; });
 
