@@ -88,7 +88,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   display: flex; flex-direction: column; gap: 8px;
 }
 .album-artist  { font-size: 20px; letter-spacing: 0.04em; }
-.album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; }
+.album-title   { font-size: 36px; letter-spacing: 0.06em; line-height: 1.1; text-shadow: 2px 2px 0 #C9A84C; }
 .reset-btn.wip-label { cursor: default; text-align: center; opacity: 0.7; }
 .title-wip-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: nowrap; }
 .wip-badge {
@@ -654,14 +654,16 @@ const ISLANDS = [
     type: 'description',
     // x must clear tracklist right edge (width ~460px) plus breathing room
     x: 600,
-    y: 40,
+    y: 100,
     lines: [
-      'produced, written & recorded between',
+      'produced, written, recorded &',
+      'schemed upon from 2021 to 2026',
+      'over a variety of locations including',
       'the abbey road canteen,',
-      'E8, N16 & the 1021',
-      'the morris blitz court,',
-      'kiwi bake and cafe henderson',
-      '& the te atatu peninsula roast shop',
+      'E8, N16, 1021,',
+      'morris blitz court, evans bay,',
+      'bond st, henderson kiwi bake,',
+      '& te atatu peninsula roast shop',
       'thank you 4 listening <3',
     ]
   },
@@ -669,7 +671,7 @@ const ISLANDS = [
   {
     type: 'image',
     x: 600,
-    y: 400,
+    y: 600,
     src: 'images/kintsugi-brain.jpg',
     caption: ''
   },
@@ -1047,7 +1049,7 @@ function renderTracklist(island) {
   meta.innerHTML =
     '<div class="album-artist">inigo365</div>' +
     '<div class="title-wip-row"><div class="album-title">kintsugi</div><span class="wip-badge">[ wip ]</span></div>' +
-    '<div class="album-detail">2023-2026 · ' + island.tracks.length + ' tracks</div>' +
+    '<div class="album-detail">2021-2026 · ' + island.tracks.length + ' tracks</div>' +
     '<a href="../index.html" class="reset-btn" id="home-btn">[ home ]</a>' +
     '<button class="reset-btn" id="nokia-reset-btn">[ reset unlock ]</button>';
   meta.querySelector('#home-btn').addEventListener('click', () => sfxPlay('click'));
