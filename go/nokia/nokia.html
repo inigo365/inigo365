@@ -531,8 +531,8 @@ function renderMenu() {
 
 function handleMenu(action) {
   const maxIdx = nokiaStage >= 1 ? 1 : 0;
-  if (action === 'up')   { menuIndex = Math.max(0, menuIndex - 1); renderMenu(); return; }
-  if (action === 'down') { menuIndex = Math.min(maxIdx, menuIndex + 1); renderMenu(); return; }
+  if (action === 'up')   { menuIndex = menuIndex <= 0 ? maxIdx : menuIndex - 1; renderMenu(); return; }
+  if (action === 'down') { menuIndex = menuIndex >= maxIdx ? 0 : menuIndex + 1; renderMenu(); return; }
   if (action === 'ok' || action === 'rsoft' || action === 'screen') { selectMenuItem(); return; }
   if (action === 'lsoft') { if (!pinUnlocked) { menuIndex = 0; renderIdle(); } return; }
 }
