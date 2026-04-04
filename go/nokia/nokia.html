@@ -883,8 +883,8 @@ function renderReveal() {
 // =====================================================================
 var _GW, _GH, _CELL;
 var _freePlay  = false;
-var _snake, _dir, _nextDir, _pellets, _bigPellet, _trackPellet;
-var _snakeScore, _snakeTick, _pelletEaten, _trackSpawned;
+var _snake, _dir, _nextDir, _bigPellet, _trackPellet;
+var _snakeScore, _snakeTick, _trackSpawned;
 var _LCD_BG   = '#0d0d0d';   // Nokia nav background (dark)
 var _LCD_DARK = '#4dff91';   // Nokia screen green
 var _HS_KEY   = 'kintsugi_snake_hs';
@@ -897,15 +897,8 @@ var _OY = _SH + _BP;   // grid y offset
 
 function _snakeOccupied(x, y) {
   return _snake.some(function(s){ return s.x===x && s.y===y; }) ||
-         _pellets.some(function(p){ return p.x===x && p.y===y; }) ||
          (_bigPellet   && _bigPellet.x===x   && _bigPellet.y===y)   ||
          (_trackPellet && _trackPellet.x===x && _trackPellet.y===y);
-}
-function _snakePlacePellet() {
-  for (var t=0; t<200; t++) {
-    var x=Math.floor(Math.random()*_GW), y=Math.floor(Math.random()*_GH);
-    if (!_snakeOccupied(x,y)) { _pellets.push({x:x,y:y}); return; }
-  }
 }
 function _snakePlaceBig() {
   for (var t=0; t<200; t++) {
@@ -955,12 +948,6 @@ function _snakeDraw() {
   for (bx = 0; bx < W; bx += _BP) ctx.fillRect(bx,         H-_BP,  _BF, _BF);  // bottom
   for (by = _SH+_BP; by < H-_BP; by += _BP) ctx.fillRect(0,    by, _BF, _BF);  // left
   for (by = _SH+_BP; by < H-_BP; by += _BP) ctx.fillRect(W-_BP, by, _BF, _BF); // right
-
-  // ── Regular pellets — 2×2 dot centred in cell ───────────────────────
-  ctx.fillStyle = _LCD_DARK;
-  _pellets.forEach(function(p) {
-    ctx.fillRect(p.x*C + _OX + Math.floor(C/2)-1, p.y*C + _OY + Math.floor(C/2)-1, 2, 2);
-  });
 
   // ── Big pellet — 4×4 hollow ring ────────────────────────────────────
   if (_bigPellet) {
@@ -1020,21 +1007,8 @@ function _snakeStep() {
     return;
   }
 
-  // Regular pellet → 1 pt, grow
-  var pi = -1;
-  for (var j=0; j<_pellets.length; j++) {
-    if (_pellets[j].x===head.x && _pellets[j].y===head.y) { pi=j; break; }
-  }
-  if (pi !== -1) {
-    _pellets.splice(pi, 1);
-    _snakeScore += 1;
-    _pelletEaten++;
-    _snakePlacePellet();
-    // Spawn track pellet after eating 3 regular pellets (stage 1 mode only)
-    if (!_freePlay && !_trackSpawned && _pelletEaten >= 3) _snakePlaceTrack();
-  } else {
-    _snake.pop();
-  }
+  // No regular pellets — just move (shrink tail)
+  _snake.pop();
   _snakeDraw();
 }
 
@@ -1112,17 +1086,14 @@ function renderGame2() {
   _snake        = [{x:3,y:startY},{x:2,y:startY},{x:1,y:startY}];
   _dir          = {x:1, y:0};
   _nextDir      = {x:1, y:0};
-  _pellets      = [];
   _bigPellet    = null;
   _trackPellet  = null;
   _snakeScore   = 0;
   _snakeTick    = 0;
-  _pelletEaten  = 0;
   _trackSpawned = false;
 
-  for (var i=0; i<3; i++) _snakePlacePellet();
   if (_freePlay) _snakePlaceBig();
-  // Track pellet spawns in _snakeStep after 3 pellets eaten
+  else _snakePlaceTrack();
 
   _snakeDraw();
   _snakeInterval = setInterval(_snakeStep, 230);
