@@ -137,8 +137,8 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .title-island::before {
   content: '';
   position: absolute;
-  top: 40%;
-  left: 40%;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
   width: 600px;
   height: 600px;
@@ -149,13 +149,14 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 }
 
 .album-title-large {
-  font-size: 96px; font-weight: bold; letter-spacing: 0.08em;
+  font-size: 80px; font-weight: bold; letter-spacing: 0.08em;
   line-height: 1; margin-bottom: 8px;
   color: #ffffff;
   text-shadow: 6px 6px 0 #4AADFF;
   position: relative; z-index: 1;
+  text-align: center;
 }
-.album-description { font-size: 22px; line-height: 2; letter-spacing: 0.03em; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 0 #4AADFF; position: relative; z-index: 1; max-width: 420px; margin: 0 auto; text-align: center; }
+.album-description { font-size: 20px; line-height: 1.7; letter-spacing: 0.03em; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 0 #4AADFF; position: relative; z-index: 1; max-width: 280px; margin: 0 auto; text-align: center; }
 
 /* ===================== LINER NOTE ===================== */
 .liner-island { text-align: center; max-width: 360px; z-index: 5; background: rgba(255,255,255,1); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 28px rgba(255,255,255,1); }
@@ -539,8 +540,7 @@ body.music-active #arrow-down { bottom: 118px; }
   .track-title      { font-size: 20px; }
   .track-num,
   .track-duration   { font-size: 16px; }
-  .album-title-large{ font-size: 64px; }
-  .album-description{ font-size: 16px; line-height: 1.7; max-width: 280px; text-align: center; margin: 0 auto; }
+  .album-description{ max-width: 280px; }
   .liner-island     { width: 300px; max-width: 300px; box-shadow: 0 0 0 16px rgba(255,255,255,1); }
   .liner-text       { font-size: 20px; }
   .bc-link          { font-size: 20px; }
@@ -580,9 +580,8 @@ body.music-active #arrow-down { bottom: 118px; }
   .pctl { font-size: 16px; }
 
   /* title island: constrain width and left-align on mobile */
-  .title-island          { max-width: calc(100vw - 40px); }
+  .title-island          { width: calc(100vw - 40px); max-width: calc(100vw - 40px); }
   .title-island::before  { width: 500px; height: 500px; }
-  .album-title-large     { font-size: 64px; }
   .album-description     { max-width: 280px; }
 
   /* arrows: always visible on mobile */
@@ -1395,7 +1394,7 @@ function clampWorld(x, y) {
   const extra = 80;
   const cL = CENTER - 510;  // left edge: morrisblitz x=-510
   const cR = CENTER + 940;  // right edge: brain/profile/desc x=600+340px
-  const cT = CENTER - 570;  // top edge: title island now at y=-550, images/morrisblitz at y=-620
+  const cT = CENTER - 700;  // top edge: title island now at y=-550, images/morrisblitz at y=-620
   const cB = CENTER + 800;  // bottom edge: brain image y=400+340px
   // Right-scroll bound: at minimum allow centering the nokia island (wx=-310)
   // so the phone is never clamped left of centre on any screen width.
@@ -1594,7 +1593,7 @@ const MOBILE_POSITIONS = {
   tracklist:            { wx:    0, sx: 20,  wy:    0, sy: 48  },  // left edge at 20px, top at 48px — identical to initial page load
   'tracklist-bottom':   { wx:    0, sx: 20,  wy:  560, sy: 'c' },  // same x as tracklist; wy≈560 (near bottom of 640px island) centred vertically
   nokia:       { wx: -310, sx:'c',  wy:  300, sy:'c'  },
-  title:       { wx:    0, sx: 30,  wy: -550, sy: 100  },  // same x formula as tracklist; wy=-550 pans up to title island
+  title:       { wx:    0, sx: 20,  wy: -550, sy: 220  },  // 20px left margin centres the island (width: vw-40px) on screen
   images:      { wx: -295, sx:'c',  wy: -605, sy: 30 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
   description: { wx:  750, sx: 'c',   wy:   50, sy: 70  },  // centre of island (x:600 + fixed-mobile-w:300/2) centred on screen
   bandcamp:    { wx:  740, sx:'c',  wy: -520, sy: 110 },  // profile centred x; profile top 130px from screen top
