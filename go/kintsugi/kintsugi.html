@@ -60,7 +60,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .island.visible { opacity: 1; }
 
 /* ===================== TRACKLIST ===================== */
-.tracklist-island { width: 460px; background: rgba(255,255,255,1); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 32px rgba(255,255,255,1); }
+.tracklist-island { width: 460px; background: rgba(255,255,255,0.5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 32px rgba(255,255,255,0.7); }
 
 .tracklist-header {
   display: flex; align-items: flex-start;
@@ -159,7 +159,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .album-description { font-size: 20px; line-height: 1.7; letter-spacing: 0.03em; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 0 #4AADFF; position: relative; z-index: 1; max-width: 280px; margin: 0 auto; text-align: center; }
 
 /* ===================== LINER NOTE ===================== */
-.liner-island { text-align: center; max-width: 360px; z-index: 5; background: rgba(255,255,255,1); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 28px rgba(255,255,255,1); }
+.liner-island { text-align: center; max-width: 360px; z-index: 5; background: rgba(255,255,255,0.7); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 28px rgba(255,255,255,0.7); }
 .liner-text   { font-size: 20px; line-height: 2.4; letter-spacing: 0.04em; color: #4AADFF; text-shadow: 1px 1px 0 #A8D8FF; }
 
 /* ===================== BANDCAMP ISLAND ===================== */
@@ -533,7 +533,7 @@ body.music-active #arrow-down { bottom: 118px; }
 @media (max-width: 600px) {
 
   /* scale down world islands */
-  .tracklist-island { width: min(420px, calc(100vw - 40px)); box-shadow: 0 0 0 16px rgba(255,255,255,1); }
+  .tracklist-island { width: min(420px, calc(100vw - 40px)); box-shadow: 0 0 0 16px rgba(255,255,255,0.7); }
   .album-title      { font-size: 28px; }
   .album-artist     { font-size: 17px; }
   .album-detail     { font-size: 16px; }
@@ -625,7 +625,7 @@ body.music-active #arrow-down { bottom: 118px; }
 <div id="player">
   <div class="player-row">
     <div class="player-art">
-      <img id="playerArt" src="images/kintsugi-art.jpg" alt=""
+      <img id="playerArt" src="images/kintsugi-art.png" alt=""
            onerror="this.outerHTML='<div class=\'player-art-ph\'><span>k</span></div>'">
     </div>
     <div class="player-info">
@@ -879,7 +879,7 @@ function playTrack(track, _preloaded) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.title, artist: 'inigo365', album: 'kintsugi',
         artwork: [
-          { src: 'images/kintsugi-art.jpg', sizes: '512x512', type: 'image/png' }
+          { src: 'images/kintsugi-art.png', sizes: '512x512', type: 'image/png' }
         ]
       });
       navigator.mediaSession.setActionHandler('play', () => {
@@ -1079,7 +1079,7 @@ function renderTracklist(island) {
   artWrap.className = 'artwork-wrap';
 
   const img = document.createElement('img');
-  img.src = 'images/kintsugi-art.jpg';
+  img.src = 'images/kintsugi-art.png';
   img.alt = 'kintsugi';
   img.onerror = () => {
     const ph = document.createElement('div');
