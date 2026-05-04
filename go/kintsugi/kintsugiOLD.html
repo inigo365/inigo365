@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>kintsugi — inigo365</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+
+/* ===================== FONTS ===================== */
+@font-face {
+  font-family: 'RuneScape';
+  src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+       url('../../fonts/RuneScape-UF.woff') format('woff'),
+       url('../../fonts/runescape.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* ===================== RESET & BASE ===================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: url('images/background.png') center/cover fixed;
+  font-family: 'RuneScape', monospace;
+  text-transform: lowercase;
+  color: #4AADFF;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: none;
+  cursor: url('../../images/cursor/cursor.png'), auto;
+}
+
+body { opacity: 0; transition: opacity 0.8s ease; }
+
+button, a, .track-row.released, .pctl, .nav-arrow {
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+}
+
+/* ===================== CANVAS ===================== */
+#viewport {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  overflow: hidden;
+}
+
+#world {
+  position: absolute;
+  width: 4000px; height: 4000px;
+}
+
+/* ===================== ISLANDS ===================== */
+.island {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+.island.visible { opacity: 1; }
+
+/* ===================== TRACKLIST ===================== */
+.tracklist-island { width: 460px; background: rgba(255,255,255,0.5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 32px rgba(255,255,255,0.7); }
+
+.tracklist-header {
+  display: flex; align-items: flex-start;
+  gap: 28px; margin-bottom: 36px;
+}
+
+.artwork-wrap { flex-shrink: 0; width: 200px; height: 200px; }
+
+.artwork-wrap img, .artwork-placeholder {
+  width: 200px; height: 200px; display: block;
+}
+
+.artwork-placeholder {
+  background: #4AADFF;
+  display: flex; align-items: center; justify-content: center;
+}
+.artwork-placeholder span {
+  color: #fff;
+  font-family: 'RuneScape', monospace;
+  font-size: 18px; letter-spacing: 0.06em;
+}
+
+.album-meta {
+  padding-top: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.album-artist  { font-size: 20px; letter-spacing: 0.04em; }
+.album-title   { font-size: 36px; font-weight: bold; letter-spacing: 0.06em; line-height: 1.1; text-shadow: 2px 2px 0 #E8B84B; }
+.reset-btn.wip-label { cursor: default; text-align: center; opacity: 0.7; }
+.title-wip-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: nowrap; }
+.wip-badge {
+  font-family: 'RuneScape', monospace;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  color: #E8B84B;
+  opacity: 0.85;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.album-detail  { font-size: 18px; letter-spacing: 0.03em; }
+
+/* ===================== TRACK LIST ===================== */
+.track-list { display: flex; flex-direction: column; }
+
+.track-row {
+  display: flex; align-items: center; gap: 14px;
+  height: 44px;          /* fixed — never reflows regardless of content state */
+  padding: 0;
+  padding-left: 0;
+  border-top: 1px solid rgba(74, 173, 255, 0.15);
+  overflow: hidden;      /* button/text changes can't push the row taller */
+  transition: padding-left 0.2s ease;
+}
+.track-row:first-child { border-top: none; }
+
+.track-num      { font-size: 18px; width: 24px; text-align: right; flex-shrink: 0; transition: opacity 0.15s ease; }
+.track-title    { flex: 1; font-size: 24px; letter-spacing: 0.02em; min-width: 0; white-space: nowrap; overflow: hidden; }
+.track-duration { font-size: 18px; flex-shrink: 0; letter-spacing: 0.04em; }
+.play-icon      { font-size: 0.72em; opacity: 0.7; }
+
+.track-row.released {
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  transition: opacity 0.15s ease;
+}
+.track-row.playing { padding-left: 14px; transition: padding-left 0.2s ease; }
+.track-row.playing .track-title { text-shadow: 1px 1px 0 #F5D98A; }
+
+.track-row.released:hover { opacity: 0.65; }
+.track-row.locked { opacity: 0.3; pointer-events: none; }
+
+/* ===================== TITLE ISLAND ===================== */
+.title-island { max-width: 520px; position: relative; }
+.title-island::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background: url('images/brain.png') center/contain no-repeat;
+  pointer-events: none;
+  opacity: 0.9;
+  z-index: 0;
+}
+
+.album-title-large {
+  font-size: 80px; font-weight: bold; letter-spacing: 0.08em;
+  line-height: 1; margin-bottom: 8px;
+  color: #ffffff;
+  text-shadow: 6px 6px 0 #4AADFF;
+  position: relative; z-index: 1;
+  text-align: center;
+}
+.album-description { font-size: 20px; line-height: 1.7; letter-spacing: 0.03em; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 0 #4AADFF; position: relative; z-index: 1; max-width: 280px; margin: 0 auto; text-align: center; }
+
+/* ===================== LINER NOTE ===================== */
+.liner-island { text-align: center; max-width: 360px; z-index: 5; background: rgba(255,255,255,0.7); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 28px rgba(255,255,255,0.7); }
+.liner-text   { font-size: 20px; line-height: 2.4; letter-spacing: 0.04em; color: #4AADFF; text-shadow: 1px 1px 0 #A8D8FF; }
+
+/* ===================== BANDCAMP ISLAND ===================== */
+.bandcamp-island { z-index: 5; }
+
+/* ===================== IMAGE ISLAND ===================== */
+.image-island     { width: 340px; }
+.image-island img { width: 100%; display: block; }
+
+.image-placeholder {
+  width: 100%; aspect-ratio: 1;
+  background: rgba(74, 173, 255, 0.07);
+  border: 1px solid rgba(74, 173, 255, 0.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.image-placeholder span { font-size: 18px; letter-spacing: 0.06em; }
+.image-caption { font-size: 16px; margin-top: 12px; letter-spacing: 0.04em; text-align: center; }
+.image-secret  { cursor: url('../../images/cursor/cursor-hover.png'), pointer !important; }
+
+/* secret button — world-space reveal between the parted images */
+.secret-btn {
+  position: absolute;
+  background: url('images/secrettinny.png') center/contain no-repeat;
+  border: none;
+  color: transparent;
+  width: 160px; height: 48px;
+  padding: 0;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s ease;
+  transform: translate(-50%, -50%) rotate(90deg);
+  white-space: nowrap; z-index: 10;
+}
+/* tooltip on the [ hidden ] track label */
+.hidden-hint { position: relative; }
+.hidden-hint::after {
+  content: 'explore to find';
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+  opacity: 0.25;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #4AADFF;
+  opacity: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.hidden-hint:hover::after { opacity: 0.8; }
+/* mobile: slow pulse so it's discoverable without hover */
+@keyframes hidden-pulse {
+  0%   { opacity: 0.15; }
+  4%   { opacity: 0.75; }
+  28%  { opacity: 0.75; }
+  36%  { opacity: 0.15; }
+  100% { opacity: 0.15; }
+}
+@media (max-width: 600px) {
+  .hidden-hint::after {
+    animation: hidden-pulse 8.5s ease-in-out infinite;
+    transition: none;
+  }
+}
+
+.secret-btn.visible { opacity: 1; pointer-events: auto; }
+.secret-btn:hover   { filter: brightness(1.2); }
+@keyframes secret-glow {
+  0%   { filter: drop-shadow(0 0 0px rgba(255,215,0,0)); }
+  50%  { filter: drop-shadow(0 0 6px rgba(255,215,0,0.9)) drop-shadow(0 0 18px rgba(255,200,0,0.4)); }
+  100% { filter: drop-shadow(0 0 6px rgba(255,215,0,0.9)) drop-shadow(0 0 18px rgba(255,200,0,0.4)); }
+}
+.secret-btn.glowing { animation: secret-glow 0.4s ease-out forwards; pointer-events: none; }
+
+/* ===================== NOKIA ISLAND ===================== */
+.nokia-island {
+  width: 380px;
+  height: 600px;
+  overflow: hidden;
+  background: transparent;
+}
+.nokia-island iframe {
+  background: transparent;
+}
+.nokia-island iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ===================== UNLOCK BUTTON ===================== */
+.track-row.unlockable {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: default;
+}
+.unlock-btn {
+  background: none;
+  border: none;
+  color: #4AADFF;
+  font-family: 'RuneScape', monospace;
+  font-size: 18px;
+  line-height: 1;        /* prevent button from being taller than text */
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  padding: 0;
+  display: block;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+.unlock-btn:hover { opacity: 1; }
+
+/* ===================== BANDCAMP LINK ===================== */
+.bc-link {
+  display: inline-block;
+  font-family: 'RuneScape', monospace;
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  font-weight: bold;
+  text-decoration: none;
+  text-transform: lowercase;
+  text-shadow: 2px 2px 0 #E8B84B;
+  transition: transform 0.18s ease, letter-spacing 0.18s ease, opacity 0.18s ease;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+}
+.bc-link:hover {
+  transform: scale(1.05) translateY(-1.5px);
+  letter-spacing: 0.075em;
+}
+.bc-link:active {
+  transform: scale(0.975) translateY(0.5px);
+  opacity: 0.8;
+  transition-duration: 0.06s;
+}
+
+/* ===================== WORLD BORDER ===================== */
+#world-border {
+  position: fixed;
+  inset: 0;
+  border: 1px solid rgba(74, 173, 255, 0.18);
+  pointer-events: none;
+  z-index: 200;
+}
+
+/* ===================== NAV ARROWS ===================== */
+/*
+  Each .arrow-sprite has a transparent 4×4 seed div; all visible
+  pixels are built as CSS box-shadows.  The seed sits at the visual
+  centre of the bounding box, so the glyph is always centred inside
+  its .nav-arrow container.
+
+  Each "pixel" = 5px × 5px.  Positions are offsets from the seed.
+
+  RIGHT (>):   rows (top→bottom), tip at right
+    (col 0, row 0) = (-5, -10)
+    (col 1, row 1) = ( 0,  -5)
+    (col 2, row 2) = ( 5,   0)  ← tip
+    (col 1, row 3) = ( 0,   5)
+    (col 0, row 4) = (-5,  10)
+
+  LEFT (<):   mirror of RIGHT
+  UP   (^):   rotate RIGHT 90° CCW
+  DOWN (v):   rotate RIGHT 90° CW
+*/
+.nav-arrow {
+  position: fixed; z-index: 60;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.6;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+}
+.nav-arrow:hover { opacity: 1; }
+
+/* ── first-visit navigation hint ── */
+#nav-hint {
+  position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%);
+  z-index: 50; pointer-events: none;
+  font-size: 15px; letter-spacing: 0.12em;
+  color: rgba(74, 173, 255, 0.9);
+  opacity: 0; transition: opacity 0.8s ease;
+  white-space: nowrap;
+}
+#nav-hint.visible { opacity: 1; }
+
+/* Directional float animations — each arrow bobs toward the edge it points at */
+@keyframes floatUp    { 0%,100%{transform:translateX(-50%) translateY(0)}   50%{transform:translateX(-50%) translateY(-5px)} }
+@keyframes floatDown  { 0%,100%{transform:translateX(-50%) translateY(0)}   50%{transform:translateX(-50%) translateY(5px)} }
+@keyframes floatLeft  { 0%,100%{transform:translateY(-50%) translateX(0)}   50%{transform:translateY(-50%) translateX(-5px)} }
+@keyframes floatRight { 0%,100%{transform:translateY(-50%) translateX(0)}   50%{transform:translateY(-50%) translateX(5px)} }
+
+#arrow-up    { top: 4px;    left: 50%; transform: translateX(-50%); animation: floatUp    2.4s ease-in-out infinite; }
+#arrow-down  { bottom: 4px; left: 50%; transform: translateX(-50%); animation: floatDown  2.4s ease-in-out 0.6s infinite; }
+#arrow-left  { left: 4px;   top:  50%; transform: translateY(-50%); animation: floatLeft  2.4s ease-in-out 1.2s infinite; }
+#arrow-right { right: 4px;  top:  50%; transform: translateY(-50%); animation: floatRight 2.4s ease-in-out 1.8s infinite; }
+
+/* Lift bottom arrow above music player when it's visible */
+body.music-active #arrow-down { bottom: 118px; }
+@media (max-width: 600px) {
+  body.music-active #arrow-down { bottom: 148px; }
+}
+
+/* seed: transparent, all pixels live in box-shadow */
+.arrow-sprite {
+  width: 4px; height: 4px;
+  background: transparent;
+}
+
+/* → right */
+.right-sprite {
+  box-shadow:
+    -5px -10px 0 0 #E8B84B,
+     0px  -5px 0 0 #E8B84B,
+     5px   0px 0 0 #E8B84B,
+     0px   5px 0 0 #E8B84B,
+    -5px  10px 0 0 #E8B84B;
+}
+
+/* ← left */
+.left-sprite {
+  box-shadow:
+     5px -10px 0 0 #E8B84B,
+     0px  -5px 0 0 #E8B84B,
+    -5px   0px 0 0 #E8B84B,
+     0px   5px 0 0 #E8B84B,
+     5px  10px 0 0 #E8B84B;
+}
+
+/* ↑ up */
+.up-sprite {
+  box-shadow:
+    -10px  5px 0 0 #E8B84B,
+     -5px  0px 0 0 #E8B84B,
+      0px -5px 0 0 #E8B84B,
+      5px  0px 0 0 #E8B84B,
+     10px  5px 0 0 #E8B84B;
+}
+
+/* ↓ down */
+.down-sprite {
+  box-shadow:
+    -10px -5px 0 0 #E8B84B,
+     -5px  0px 0 0 #E8B84B,
+      0px  5px 0 0 #E8B84B,
+      5px  0px 0 0 #E8B84B,
+     10px -5px 0 0 #E8B84B;
+}
+
+/* ===================== MUSIC PLAYER ===================== */
+#player {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+
+  /* glass tile */
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(74, 173, 255, 0.28);
+  box-shadow: 0 8px 36px rgba(74, 173, 255, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.85);
+
+  padding: 14px 22px;
+  font-family: 'RuneScape', monospace;
+  color: #4AADFF;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+#player.visible { opacity: 1; pointer-events: auto; }
+
+/* top row: art + info + time + controls */
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  white-space: nowrap;
+}
+
+/* scrubber */
+#pScrub {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: rgba(74, 173, 255, 0.25);
+  border-radius: 2px;
+  outline: none;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+#pScrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #4AADFF;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+}
+#pScrub::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #4AADFF;
+  border: none;
+}
+
+/* artwork thumbnail */
+.player-art          { flex-shrink: 0; width: 52px; height: 52px; }
+.player-art img,
+.player-art-ph       { width: 52px; height: 52px; display: block; }
+.player-art-ph       {
+  background: #4AADFF;
+  display: flex; align-items: center; justify-content: center;
+}
+.player-art-ph span  { color: #fff; font-size: 11px; }
+
+/* info column */
+.player-info         { display: flex; flex-direction: column; gap: 3px; min-width: 140px; }
+.player-title        { font-size: 18px; }
+.player-artist       { font-size: 14px; opacity: 0.5; }
+
+/* time */
+.player-time         { font-size: 17px; min-width: 108px; text-align: center; }
+
+/* controls */
+.player-controls     { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.pctl {
+  font-size: 17px;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  transition: opacity 0.15s ease;
+  padding: 2px 4px;
+  white-space: nowrap;
+}
+.pctl:hover { opacity: 0.6; }
+.pctl.dim   { opacity: 0.35; }
+.pctl.active{ opacity: 1; }
+
+/* ===================== RESET / HOME BUTTONS ===================== */
+.reset-btn {
+  background: none;
+  border: none;
+  color: #4AADFF;
+  font-family: 'RuneScape', monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  text-decoration: none;
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  padding: 0;
+  opacity: 0.28;
+  transition: opacity 0.15s;
+  margin-top: 5px;
+  display: block;
+}
+.reset-btn:hover { opacity: 0.7; }
+
+/* ===================== MOBILE ===================== */
+@media (max-width: 600px) {
+
+  /* scale down world islands */
+  .tracklist-island { width: min(420px, calc(100vw - 40px)); box-shadow: 0 0 0 16px rgba(255,255,255,0.7); }
+  .album-title      { font-size: 28px; }
+  .album-artist     { font-size: 17px; }
+  .album-detail     { font-size: 16px; }
+  .track-title      { font-size: 20px; }
+  .track-num,
+  .track-duration   { font-size: 16px; }
+  .album-description{ max-width: 280px; }
+  .liner-island     { width: 300px; max-width: 300px; box-shadow: 0 0 0 16px rgba(255,255,255,1); }
+  .liner-text       { font-size: 20px; }
+  .bc-link          { font-size: 20px; }
+  .artwork-wrap, .artwork-wrap img, .artwork-placeholder { width: 160px; height: 160px; }
+
+  /* player: 2-row stack */
+  #player {
+    bottom: 16px;
+    width: calc(100% - 32px);
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .player-row {
+    gap: 12px;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  /* top row: art + info + time */
+  .player-art         { width: 44px; height: 44px; }
+  .player-art img,
+  .player-art-ph      { width: 44px; height: 44px; }
+  .player-info        { flex: 1; min-width: 0; }
+  .player-title       { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-artist      { display: none; }
+  .player-time        { font-size: 15px; min-width: 0; text-align: right; }
+
+  /* bottom row: controls full-width */
+  .player-controls {
+    width: 100%;
+    justify-content: center;
+    gap: 12px;
+    border-top: 1px solid rgba(74, 173, 255, 0.12);
+    padding-top: 10px;
+  }
+  .pctl { font-size: 16px; }
+
+  /* title island: constrain width and left-align on mobile */
+  .title-island          { width: calc(100vw - 40px); max-width: calc(100vw - 40px); }
+  .title-island::before  { width: 500px; height: 500px; }
+  .album-description     { max-width: 280px; }
+
+  /* arrows: always visible on mobile */
+  .nav-arrow             { opacity: 0.6; }
+  .nav-arrow:active      { opacity: 1; }
+
+  /* flush to screen edges on mobile */
+  #arrow-up    { top: 4px; }
+  #arrow-left  { left: 4px; }
+  #arrow-right { right: 4px; }
+  #arrow-down  { bottom: 4px; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="viewport">
+  <div id="world"></div>
+</div>
+<div id="world-border"></div>
+
+<!-- first-visit navigation hint -->
+<div id="nav-hint">use arrows to navigate</div>
+
+<!-- directional nav arrows -->
+<div class="nav-arrow" id="arrow-up"    data-dir="up">
+  <div class="arrow-sprite up-sprite"></div>
+</div>
+<div class="nav-arrow" id="arrow-down"  data-dir="down">
+  <div class="arrow-sprite down-sprite"></div>
+</div>
+<div class="nav-arrow" id="arrow-left"  data-dir="left">
+  <div class="arrow-sprite left-sprite"></div>
+</div>
+<div class="nav-arrow" id="arrow-right" data-dir="right">
+  <div class="arrow-sprite right-sprite"></div>
+</div>
+
+<!-- music player -->
+<div id="player">
+  <div class="player-row">
+    <div class="player-art">
+      <img id="playerArt" src="images/kintsugi-art.png" alt=""
+           onerror="this.outerHTML='<div class=\'player-art-ph\'><span>k</span></div>'">
+    </div>
+    <div class="player-info">
+      <div class="player-title"  id="playerTitle">—</div>
+      <div class="player-artist">inigo365</div>
+    </div>
+    <div class="player-time" id="playerTime">0:00 / 0:00</div>
+    <div class="player-controls">
+      <span class="pctl dim" id="pPrev">[ &lt;&lt; ]</span>
+      <span class="pctl"     id="pPlayPause">[ play ]</span>
+      <span class="pctl dim" id="pNext">[ &gt;&gt; ]</span>
+      <span class="pctl dim" id="pRepeat">[ loop ]</span>
+      <span class="pctl dim" id="pStop">[ stop ]</span>
+    </div>
+  </div>
+  <input type="range" id="pScrub" min="0" max="1" value="0" step="0.001">
+</div>
+
+<script>
+// =====================================================================
+//  ISLANDS — edit content here only
+// =====================================================================
+const ISLANDS = [
+
+  {
+    type: 'tracklist',
+    x: 0,
+    y: 0,
+    tracks: [
+      { title: 'homesick_ (intr0)', state: 'locked', duration: null, file: 'audio/homesick.mp3', unlockable: true },
+      { title: 'pin: 1021', state: 'locked', duration: null, file: 'audio/thread.mp3', unlockTitle: 'hanging0n2a_thread' },
+      { title: 'track 03', state: 'locked', duration: null, file: 'audio/spliff-demo.mp3', hidden: true },
+      { title: '22.04.2026', state: 'locked', duration: null, countdown: true, unlockTitle: '' },
+      { title: 'track 05', state: 'locked', duration: null },
+      { title: 'track 06', state: 'locked', duration: null },
+      { title: 'track 07', state: 'locked', duration: null },
+      { title: 'track 08', state: 'locked', duration: null },
+      { title: 'track 09', state: 'locked', duration: null },
+      { title: 'track 10', state: 'locked', duration: null }
+    ]
+  },
+
+  {
+    type: 'title',
+    x: 0,
+    y: -550,
+    // edit lines to update description
+    lines: [
+      'Kintsugi takes its name from the Japanese art of repairing broken ceramics with gold&nbsp;&mdash; the philosophy that damage made visible becomes the most beautiful part of the&nbsp;whole.',
+    ]
+  },
+
+  {
+    type: 'description',
+    // x must clear tracklist right edge (width ~460px) plus breathing room
+    x: 600,
+    y: 100,
+    lines: [
+      'produced, written, recorded &',
+      'schemed upon between 2021-2026',
+      'over a variety of locations including',
+      'the abbey road canteen,',
+      'E8, N16, 1021,',
+      'morris blitz court, evans bay,',
+      'bond st, henderson kiwi bake,',
+      '& te atatu peninsula roast shop',
+      'thank you 4 listening <3',
+    ]
+  },
+
+  {
+    type: 'image',
+    x: 600,
+    y: 600,
+    src: 'images/kintsugi-brain.png',
+    caption: ''
+  },
+
+  { type: 'bandcamp', x: 642, y: -100 },
+  { type: 'image', x: 600, y: -500, src: 'images/profile.png', caption: '' },
+
+  { type: 'nokia', x: -500, y: 0 },
+  { type: 'image', id: 'morrisblitz', x: -510, y: -620, src: 'images/morrisblitz.png', caption: '' },
+  /*{ type: 'image', x: -370, y: -500, src: 'images/brainblur.png', caption: '' },*/
+  { type: 'image', id: 'skytower',    x: -420, y: -590, src: 'images/skytower.png',    caption: '' },
+
+];
+
+// Restore unlock state from a previous kintsugi session.
+// kintsugi_nokia_stage is the canonical progression key (0-N).
+// Migrate: if old puzzleComplete exists but stage key doesn't, promote to stage 1.
+(function() {
+  if (localStorage.getItem('puzzleComplete') === 'true' &&
+      !localStorage.getItem('kintsugi_nokia_stage')) {
+    localStorage.setItem('kintsugi_nokia_stage', '1');
+  }
+})();
+const _nokiaStage = parseInt(localStorage.getItem('kintsugi_nokia_stage') || '0', 10);
+
+if (localStorage.getItem('kintsugi_track1_unlocked') === 'true') {
+  const _tl = ISLANDS.find(i => i.type === 'tracklist');
+  if (_tl) _tl.tracks[0].state = 'released';
+}
+if (localStorage.getItem('kintsugi_track2_unlocked') === 'true') {
+  const _tl = ISLANDS.find(i => i.type === 'tracklist');
+  if (_tl) { _tl.tracks[2].state = 'released'; _tl.tracks[2].title = '[tinny_h0use][demo]'; }
+}
+// Track 3 is gated by nokia stage:
+//   stage 0 → show pin hint (default)
+//   stage 1 → show [ unlock ] button (nokia game 2 not yet done)
+//   stage 2 → released
+(function() {
+  const _tl = ISLANDS.find(i => i.type === 'tracklist');
+  if (!_tl) return;
+  const t3 = _tl.tracks[1];
+  if (_nokiaStage >= 2) {
+    t3.state = 'released';
+    t3.title = t3.unlockTitle || 'track 02';
+    t3.file  = t3.file || 'audio/thread.mp3';
+  } else if (_nokiaStage >= 1) {
+    t3.unlockable = true; // shows [ unlock ] → navigates to Nokia for game 2
+  }
+  // stage 0: leave as-is — shows the 'pin: 1021' hint title
+})();
+if (localStorage.getItem('kintsugi_track4_unlocked') === 'true') {
+  const _tl = ISLANDS.find(i => i.type === 'tracklist');
+  if (_tl) {
+    const t = _tl.tracks[3];
+    t.state = 'released';
+    if (t.unlockTitle) t.title = t.unlockTitle;
+  }
+}
+
+// =====================================================================
+//  AUDIO STATE
+// =====================================================================
+let audioEl      = null;
+let isPlaying    = false;
+let isLooping    = false;
+let currentTrack = null;
+let releaseList  = [];
+
+function formatTime(s) {
+  if (!isFinite(s) || isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
+
+let _scrubbing = false;
+
+function updateTimeDisplay() {
+  const pScrub = document.getElementById('pScrub');
+  if (!audioEl) {
+    document.getElementById('playerTime').textContent = '0:00 / 0:00';
+    if (pScrub) pScrub.value = 0;
+    return;
+  }
+  document.getElementById('playerTime').textContent =
+    formatTime(audioEl.currentTime) + ' / ' + formatTime(audioEl.duration);
+  if (pScrub && !_scrubbing && isFinite(audioEl.duration) && audioEl.duration > 0) {
+    pScrub.value = audioEl.currentTime / audioEl.duration;
+  }
+  if ('mediaSession' in navigator && isFinite(audioEl.duration) && audioEl.duration > 0) {
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: audioEl.duration,
+        playbackRate: audioEl.playbackRate || 1,
+        position: audioEl.currentTime
+      });
+    } catch (e) {}
+  }
+}
+
+function stopAudio() {
+  cancelPlayCount();
+  if (audioEl) { audioEl.pause(); audioEl = null; }
+  isPlaying = false;
+  currentTrack = null;
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.playbackState = 'none';
+    ['play','pause','stop'].forEach(a => {
+      try { navigator.mediaSession.setActionHandler(a, null); } catch(e) {}
+    });
+  }
+  document.getElementById('player').classList.remove('visible');
+  document.body.classList.remove('music-active');
+  document.getElementById('pPlayPause').textContent = '[ play ]';
+  updateTrackStates();
+  updateTimeDisplay();
+}
+
+let _nextAudioEl = null; // preloaded next-track audio element
+
+function _preloadNext(track) {
+  const tlIsland = ISLANDS.find(ii => ii.type === 'tracklist');
+  if (!tlIsland) { _nextAudioEl = null; return; }
+  const idx = tlIsland.tracks.findIndex(t => t === track);
+  const next = tlIsland.tracks.slice(idx + 1).find(t => t.state === 'released' && t.file);
+  if (next) {
+    _nextAudioEl = new Audio(next.file);
+    _nextAudioEl.preload = 'auto';
+    _nextAudioEl._track = next;
+  } else {
+    _nextAudioEl = null;
+  }
+}
+
+function playTrack(track, _preloaded) {
+  if (currentTrack === track && audioEl) {
+    isPlaying = !isPlaying;
+    isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
+  } else {
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+    currentTrack = track;
+    // Use a preloaded element if available and correct, otherwise create fresh
+    if (_preloaded && _preloaded._track === track) {
+      audioEl = _preloaded;
+    } else {
+      if (_nextAudioEl && _nextAudioEl._track !== track) _nextAudioEl = null;
+      audioEl = new Audio(track.file);
+    }
+    _nextAudioEl = null;
+    audioEl.loop = isLooping;
+    audioEl.addEventListener('ended', () => {
+      if (isLooping) return;
+      // Use `track` (closed over param), not `currentTrack`, so navigation can't corrupt it
+      const tlIsland = ISLANDS.find(ii => ii.type === 'tracklist');
+      if (tlIsland) {
+        const idx = tlIsland.tracks.findIndex(t => t === track);
+        const next = tlIsland.tracks.slice(idx + 1).find(t => t.state === 'released' && t.file);
+        if (next) { playTrack(next, _nextAudioEl); return; }
+      }
+      stopAudio();
+    });
+    audioEl.addEventListener('loadedmetadata', updateTimeDisplay);
+    isPlaying = true;
+    audioEl.play().catch(() => {});
+    // Start preloading the next track immediately
+    _preloadNext(track);
+    document.getElementById('playerTitle').textContent = track.title;
+    document.getElementById('player').classList.add('visible');
+    document.body.classList.add('music-active');
+
+    // Schedule play count (fires after 10 seconds of continuous listening)
+    const tlIsland = ISLANDS.find(ii => ii.type === 'tracklist');
+    const trackIdx = tlIsland ? tlIsland.tracks.findIndex(t => t === track) : -1;
+    if (trackIdx >= 0) schedulePlayCount(trackIdx);
+
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title, artist: 'inigo365', album: 'kintsugi',
+        artwork: [
+          { src: 'images/kintsugi-art.png', sizes: '512x512', type: 'image/png' }
+        ]
+      });
+      navigator.mediaSession.setActionHandler('play', () => {
+        isPlaying = true;
+        if (audioEl) audioEl.play().catch(() => {});
+        navigator.mediaSession.playbackState = 'playing';
+        syncPlayerUI();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        isPlaying = false;
+        if (audioEl) audioEl.pause();
+        navigator.mediaSession.playbackState = 'paused';
+        syncPlayerUI();
+      });
+      try {
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+          if (audioEl && details.seekTime != null) {
+            audioEl.currentTime = Math.min(details.seekTime, audioEl.duration - 0.1);
+            updateTimeDisplay();
+          }
+        });
+        navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+          if (audioEl) audioEl.currentTime = Math.max(0, audioEl.currentTime - (details.seekOffset || 10));
+        });
+        navigator.mediaSession.setActionHandler('seekforward', (details) => {
+          if (audioEl) audioEl.currentTime = Math.min(audioEl.duration - 0.1, audioEl.currentTime + (details.seekOffset || 10));
+        });
+      } catch (e) {}
+    }
+  }
+
+  if ('mediaSession' in navigator)
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+
+  syncPlayerUI();
+  updateTrackStates();
+}
+
+function syncPlayerUI() {
+  document.getElementById('pPlayPause').textContent = isPlaying ? '[ pause ]' : '[ play ]';
+  document.getElementById('pRepeat').className = 'pctl ' + (isLooping ? 'active' : 'dim');
+}
+
+function updateTrackStates() {
+  document.querySelectorAll('.track-row.released').forEach(row => {
+    const isActive = !!(currentTrack && currentTrack.file === row.dataset.file && isPlaying);
+    const wasActive = row.classList.contains('playing');
+    const numEl = row.querySelector('.track-num');
+    if (isActive && !wasActive) {
+      row.classList.add('playing');
+      if (numEl) {
+        if (!numEl.dataset.origNum) numEl.dataset.origNum = numEl.textContent;
+        numEl.style.opacity = '0';
+        setTimeout(() => { numEl.textContent = '▶'; numEl.style.opacity = ''; }, 150);
+      }
+    } else if (!isActive && wasActive) {
+      row.classList.remove('playing');
+      if (numEl && numEl.dataset.origNum) {
+        const orig = numEl.dataset.origNum;
+        numEl.style.opacity = '0';
+        setTimeout(() => { numEl.textContent = orig; numEl.style.opacity = ''; }, 150);
+      }
+    }
+  });
+}
+
+document.getElementById('pPlayPause').addEventListener('click', () => {
+  if (!currentTrack) return;
+  sfxPlay('click');
+  isPlaying = !isPlaying;
+  isPlaying ? audioEl.play().catch(() => {}) : audioEl.pause();
+  if ('mediaSession' in navigator)
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  syncPlayerUI();
+  updateTrackStates();
+});
+
+document.getElementById('pRepeat').addEventListener('click', () => {
+  sfxPlay('click');
+  isLooping = !isLooping;
+  if (audioEl) audioEl.loop = isLooping;
+  syncPlayerUI();
+});
+
+document.getElementById('pStop').addEventListener('click', () => {
+  if (!currentTrack) return;
+  sfxPlay('click');
+  stopAudio();
+});
+
+document.getElementById('pPrev').addEventListener('click', () => {
+  if (!releaseList.length) return;
+  sfxPlay('click');
+  const idx = currentTrack ? releaseList.indexOf(currentTrack) : 0;
+  playTrack(releaseList[(idx - 1 + releaseList.length) % releaseList.length]);
+});
+
+document.getElementById('pNext').addEventListener('click', () => {
+  if (!releaseList.length) return;
+  sfxPlay('click');
+  const idx = currentTrack ? releaseList.indexOf(currentTrack) : -1;
+  playTrack(releaseList[(idx + 1) % releaseList.length]);
+});
+
+// scrubber
+(function() {
+  const pScrub = document.getElementById('pScrub');
+  pScrub.addEventListener('mousedown',  () => { _scrubbing = true; });
+  pScrub.addEventListener('touchstart', () => { _scrubbing = true; }, { passive: true });
+  pScrub.addEventListener('input', () => {
+    if (audioEl && isFinite(audioEl.duration)) {
+      audioEl.currentTime = pScrub.value * audioEl.duration;
+    }
+  });
+  pScrub.addEventListener('mouseup',  () => { _scrubbing = false; });
+  pScrub.addEventListener('touchend', () => { _scrubbing = false; }, { passive: true });
+  pScrub.addEventListener('change',   () => { _scrubbing = false; });
+})();
+
+// =====================================================================
+//  SUPABASE PLAY COUNTER
+// =====================================================================
+const SUPABASE_URL  = 'https://rlxtggsefecwcpgkjern.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_4mNOVz4GqFxtlJWOtzfXIQ_OaI1hLGT';
+
+let _sbClient        = null;
+const _kintsugiCounts = {};  // track_index -> play_count
+let _playTimer        = null;
+
+(function initSupabase() {
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  s.onload = () => {
+    if (window.supabase) {
+      _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+      fetchKintsugiCounts();
+    }
+  };
+  document.head.appendChild(s);
+})();
+
+async function fetchKintsugiCounts() {
+  if (!_sbClient) return;
+  try {
+    const { data, error } = await _sbClient
+      .from('kintsugi_plays')
+      .select('track_index, play_count');
+    if (error) throw error;
+    (data || []).forEach(r => { _kintsugiCounts[r.track_index] = r.play_count; });
+    _updateCountDisplay();
+  } catch (e) { /* silently ignore */ }
+}
+
+function _updateCountDisplay() {
+  const tl = ISLANDS.find(i => i.type === 'tracklist');
+  Object.entries(_kintsugiCounts).forEach(([idx, count]) => {
+    const el = document.getElementById('tk-count-' + idx);
+    if (!el) return;
+    const track = tl && tl.tracks[+idx];
+    if (!track || track.state !== 'released') return;
+    el.innerHTML = count > 0 ? '<span class="play-icon">▶</span> ' + count : '—';
+  });
+}
+
+function schedulePlayCount(trackIdx) {
+  if (_playTimer) clearTimeout(_playTimer);
+  _playTimer = setTimeout(() => {
+    _incrementKintsugiCount(trackIdx);
+    _playTimer = null;
+  }, 10000);
+}
+
+function cancelPlayCount() {
+  if (_playTimer) { clearTimeout(_playTimer); _playTimer = null; }
+}
+
+async function _incrementKintsugiCount(idx) {
+  if (!_sbClient) return;
+  try {
+    await _sbClient.rpc('increment_kintsugi_play', { p_index: idx });
+    _kintsugiCounts[idx] = (_kintsugiCounts[idx] || 0) + 1;
+    _updateCountDisplay();
+  } catch (e) {}
+}
+
+// =====================================================================
+//  ISLAND RENDERERS
+// =====================================================================
+function renderTracklist(island) {
+  const el = document.createElement('div');
+  el.className = 'island tracklist-island';
+
+  const header = document.createElement('div');
+  header.className = 'tracklist-header';
+
+  const artWrap = document.createElement('div');
+  artWrap.className = 'artwork-wrap';
+
+  const img = document.createElement('img');
+  img.src = 'images/kintsugi-art.png';
+  img.alt = 'kintsugi';
+  img.onerror = () => {
+    const ph = document.createElement('div');
+    ph.className = 'artwork-placeholder';
+    ph.innerHTML = '<span>kintsugi</span>';
+    artWrap.replaceChild(ph, img);
+  };
+  artWrap.appendChild(img);
+
+  const meta = document.createElement('div');
+  meta.className = 'album-meta';
+  meta.innerHTML =
+    '<div class="album-artist">inigo365</div>' +
+    '<div class="title-wip-row"><div class="album-title">kintsugi</div><span class="wip-badge">[ wip ]</span></div>' +
+    '<div class="album-detail">2021-2026 · ' + island.tracks.length + ' tracks</div>' +
+    '<a href="../index.html" class="reset-btn" id="home-btn">[ home ]</a>' +
+    '<button class="reset-btn" id="nokia-reset-btn">[ reset unlock ]</button>';
+  meta.querySelector('#home-btn').addEventListener('click', () => sfxPlay('click'));
+  meta.querySelector('#nokia-reset-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    sfxPlay('click');
+    // Wipe all progression keys
+    ['kintsugi_track1_unlocked', 'kintsugi_track2_unlocked',
+     'kintsugi_track3_unlocked', 'kintsugi_track4_unlocked',
+     'kintsugi_nokia_stage', 'puzzleComplete'].forEach(k => localStorage.removeItem(k));
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    if (tl) {
+      tl.tracks[0].state = 'locked';
+      tl.tracks[1].state = 'locked'; tl.tracks[1].title = 'pin: 1021'; tl.tracks[1].unlockable = false;
+      tl.tracks[2].state = 'locked'; tl.tracks[2].title = 'track 03';
+    }
+    if (window._resetImageSecret) window._resetImageSecret();
+    refreshTracklist();
+  });
+
+  header.appendChild(artWrap);
+  header.appendChild(meta);
+  el.appendChild(header);
+
+  const list = document.createElement('div');
+  list.className = 'track-list';
+
+  island.tracks.forEach((track, i) => {
+    const row = document.createElement('div');
+
+    if (track.countdown) {
+      row.className = 'track-row locked';
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title">' + track.title + '</span>' +
+        '<span class="track-duration countdown-timer"></span>';
+      const timerEl = row.querySelector('.countdown-timer');
+      const bdayTarget = new Date('2026-04-22T00:00:00');
+
+      const showUnlockBtn = () => {
+        row.innerHTML =
+          '<span class="track-num">' + (i + 1) + '</span>' +
+          '<span class="track-title" style="opacity:0.35">???</span>' +
+          '<span class="track-duration"><button class="unlock-btn">[ tap to unlock ]</button></span>';
+        row.querySelector('.unlock-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          sfxPlay('click');
+          const resolvedTitle = track.unlockTitle || ('track 0' + (i + 1));
+          track.title = resolvedTitle;
+          track.state = 'released';
+          localStorage.setItem('kintsugi_track4_unlocked', 'true');
+          refreshTracklist();
+          // typewriter reveal
+          setTimeout(() => {
+            const rows = document.querySelectorAll('.tracklist-island .track-row');
+            const targetRow = rows[i];
+            if (targetRow) {
+              const span = targetRow.querySelector('.track-title');
+              if (span) {
+                const full = resolvedTitle;
+                span.textContent = '';
+                const stopTw = sfxPlay('typewriter');
+                let c = 0;
+                const tw = setInterval(() => {
+                  span.textContent = full.slice(0, ++c);
+                  if (c >= full.length) { clearInterval(tw); if (stopTw) stopTw(); }
+                }, 52);
+              }
+            }
+          }, 300);
+        });
+      };
+
+      const tickBday = () => {
+        const diff = bdayTarget - Date.now();
+        if (diff <= 0) {
+          clearInterval(bdayInterval); // fix: clear the interval when done
+          showUnlockBtn();
+          return;
+        }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        timerEl.textContent = d + 'd ' + String(h).padStart(2,'0') + 'h ' + String(m).padStart(2,'0') + 'm ' + String(s).padStart(2,'0') + 's';
+      };
+      tickBday();
+      const bdayInterval = setInterval(tickBday, 1000);
+    } else if (track.state === 'locked' && track.unlockable) {
+      row.className = 'track-row unlockable';
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title" style="opacity:0.35">???</span>' +
+        '<span class="track-duration"><button class="unlock-btn">[ unlock ]</button></span>';
+      row.querySelector('.unlock-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        sfxPlay('click');
+        navigateToNokia();
+      });
+    } else if (track.state === 'locked' && track.hidden) {
+      row.className = 'track-row locked';
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title" style="opacity:0.35">???</span>' +
+        '<span class="track-duration"><span class="unlock-btn hidden-hint" style="pointer-events:auto;cursor:default">[ hidden ]</span></span>';
+    } else {
+      row.className = 'track-row ' + track.state;
+      const countVal = _kintsugiCounts[i];
+      const countStr = track.state !== 'released'
+        ? ''
+        : (countVal != null && countVal > 0)
+          ? '<span class="play-icon">▶</span> ' + countVal
+          : '—';
+      row.innerHTML =
+        '<span class="track-num">' + (i + 1) + '</span>' +
+        '<span class="track-title">' + track.title + '</span>' +
+        '<span class="track-duration" id="tk-count-' + i + '">' + countStr + '</span>';
+      if (track.state === 'released') {
+        row.dataset.file = track.file;
+        row.addEventListener('click', () => { sfxPlay('click'); playTrack(track); });
+        releaseList.push(track);
+      }
+    }
+
+    list.appendChild(row);
+  });
+
+  el.appendChild(list);
+
+  return el;
+}
+
+function renderTitle(island) {
+  const el = document.createElement('div');
+  el.className = 'island title-island';
+
+  const title = document.createElement('div');
+  title.className = 'album-title-large';
+  title.textContent = 'kintsugi';
+  el.appendChild(title);
+
+  const desc = document.createElement('div');
+  desc.className = 'album-description';
+  desc.innerHTML = island.lines.map(l => l + '<br>').join('');
+  el.appendChild(desc);
+
+  return el;
+}
+
+function renderDescription(island) {
+  const el = document.createElement('div');
+  el.className = 'island liner-island';
+
+  const text = document.createElement('div');
+  text.className = 'liner-text';
+  text.innerHTML = island.lines.map(l => l + '<br>').join('');
+  el.appendChild(text);
+
+  return el;
+}
+
+function renderImage(island) {
+  const el = document.createElement('div');
+  el.className = 'island image-island';
+
+  const img = document.createElement('img');
+  img.src = island.src;
+  img.alt = 'kintsugi';
+  img.onerror = () => {
+    const ph = document.createElement('div');
+    ph.className = 'image-placeholder';
+    ph.innerHTML = '<span>[ brain ]</span>';
+    el.replaceChild(ph, img);
+  };
+  el.appendChild(img);
+
+  if (island.caption) {
+    const cap = document.createElement('div');
+    cap.className = 'image-caption';
+    cap.textContent = island.caption;
+    el.appendChild(cap);
+  }
+
+  return el;
+}
+
+function renderBandcamp() {
+  const el = document.createElement('div');
+  el.className = 'island bandcamp-island';
+  el.innerHTML = '<a href="https://inigo365.bandcamp.com/" target="_blank" rel="noopener" class="bc-link">support me on bandcamp →</a>';
+  return el;
+}
+
+function renderNokia() {
+  const el = document.createElement('div');
+  el.className = 'island nokia-island';
+
+  const iframe = document.createElement('iframe');
+  iframe.src = '../nokia/nokia.html';
+  iframe.id  = 'nokia-iframe';
+  iframe.setAttribute('allowtransparency', 'true');
+  iframe.style.background = 'transparent';
+  el.appendChild(iframe);
+
+  return el;
+}
+
+// =====================================================================
+//  BUILD WORLD
+// =====================================================================
+const world      = document.getElementById('world');
+const WORLD_SIZE = 4000;
+const CENTER     = WORLD_SIZE / 2;
+const islandDriftParams = [];
+
+function buildIslands() {
+  ISLANDS.forEach((island, idx) => {
+    let el;
+    if      (island.type === 'tracklist')   el = renderTracklist(island);
+    else if (island.type === 'title')       el = renderTitle(island);
+    else if (island.type === 'description') el = renderDescription(island);
+    else if (island.type === 'image')       el = renderImage(island);
+    else if (island.type === 'bandcamp')    el = renderBandcamp();
+    else if (island.type === 'nokia')       el = renderNokia();
+    else return;
+
+    island._el = el;
+    if (island.id) el.dataset.islandId = island.id;
+
+    const baseLeft = CENTER + island.x;
+    const baseTop  = CENTER + island.y;
+    el.style.left = baseLeft + 'px';
+    el.style.top  = baseTop  + 'px';
+    island._baseLeft = baseLeft;
+    island._baseTop  = baseTop;
+
+    islandDriftParams.push({
+      el,
+      phase:     Math.random() * Math.PI * 2,
+      amplitude: 4 + Math.random() * 2,
+      period:    7000 + Math.random() * 3000,
+      baseLeft, baseTop
+    });
+
+    world.appendChild(el);
+    setTimeout(() => el.classList.add('visible'), 300 + idx * 120);
+  });
+}
+
+// =====================================================================
+//  CANVAS NAVIGATION — edge-velocity mouse + touch drag
+// =====================================================================
+let worldX = 0, worldY = 0;
+let targetX = 0, targetY = 0;
+
+const PAN_STEP  = 420;  // px moved per arrow click
+const MAX_SPEED = 1.5;  // desktop mouse-follow: subtle drift
+const DEAD_ZONE = 0.40; // large dead zone — only triggers near screen edge
+
+let mouseNX = 0, mouseNY = 0;
+
+function edgeVelocity(norm) {
+  const abs = Math.abs(norm);
+  if (abs < DEAD_ZONE) return 0;
+  const t = (abs - DEAD_ZONE) / (1 - DEAD_ZONE);
+  return Math.sign(norm) * t * t * MAX_SPEED;
+}
+
+// Desktop only: slow mouse-edge drift.
+if (!('ontouchstart' in window)) {
+  document.addEventListener('mousemove', e => {
+    mouseNX = (e.clientX - window.innerWidth  / 2) / (window.innerWidth  / 2);
+    mouseNY = (e.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+  });
+  document.addEventListener('mouseleave', () => { mouseNX = 0; mouseNY = 0; });
+}
+
+// Touch drag — free pan on mobile; arrows give an additional boost on top.
+let touchStartX = 0, touchStartY = 0, touchWorldStartX = 0, touchWorldStartY = 0;
+
+document.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1) return;
+  touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+  touchWorldStartX = targetX;         touchWorldStartY = targetY;
+}, { passive: true });
+
+document.addEventListener('touchmove', e => {
+  if (e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - touchStartX;
+  const dy = e.touches[0].clientY - touchStartY;
+  const [nx, ny] = clampWorld(touchWorldStartX + dx, touchWorldStartY + dy);
+  targetX = nx; targetY = ny;
+}, { passive: true });
+
+function clampWorld(x, y) {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const extra = 80;
+  const cL = CENTER - 510;  // left edge: morrisblitz x=-510
+  const cR = CENTER + 940;  // right edge: brain/profile/desc x=600+340px
+  const cT = CENTER - 700;  // top edge: title island now at y=-550, images/morrisblitz at y=-620
+  const cB = CENTER + 800;  // bottom edge: brain image y=400+340px
+  // Right-scroll bound: at minimum allow centering the nokia island (wx=-310)
+  // so the phone is never clamped left of centre on any screen width.
+  const staticRight  = -(cL - extra);
+  const nokiaRight   = vw / 2 - (CENTER - 310);
+  const rightBound   = Math.max(staticRight, nokiaRight);
+  return [
+    Math.max(-(cR + extra - vw), Math.min(rightBound, x)),
+    Math.max(-(cB + extra - vh), Math.min(-(cT - extra), y))
+  ];
+}
+
+function initPosition() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const isMobile = vw <= 600;
+
+  // Land on the tracklist island
+  const tl = ISLANDS.find(i => i.type === 'tracklist');
+  const iwx = CENTER + (tl ? tl.x : 0);
+  const iwy = CENTER + (tl ? tl.y : 0);
+
+  let landX, landY;
+  if (isMobile) {
+    // 20px left margin, small top gap so artwork clears the top edge
+    landX = 20 - iwx;
+    landY = 48 - iwy;
+  } else {
+    // Desktop: tracklist at ~24% from left so production credit
+    // island (580px to the right) is also visible in the same view
+    landX = vw * 0.34 - iwx;
+    landY = vh * 0.10 - iwy;
+  }
+
+  const [cx, cy] = clampWorld(landX, landY);
+  worldX = targetX = cx;
+  worldY = targetY = cy;
+  applyWorldTransform();
+}
+
+function applyWorldTransform() {
+  world.style.transform = 'translate(' + worldX + 'px,' + worldY + 'px)';
+}
+
+
+// =====================================================================
+//  DIRECTIONAL ARROWS
+// =====================================================================
+const arrowEls = {
+  up:    document.getElementById('arrow-up'),
+  down:  document.getElementById('arrow-down'),
+  left:  document.getElementById('arrow-left'),
+  right: document.getElementById('arrow-right')
+};
+
+// Pan so the bottom of the tracklist island sits just above the player/arrow.
+function panToTracklistBottom() {
+  const tlEl = document.querySelector('.tracklist-island');
+  if (!tlEl) return;
+  const tlIsland = ISLANDS.find(i => i.type === 'tracklist');
+  if (!tlIsland) return;
+  const tlH = tlEl.offsetHeight;
+  // When music is active the fixed player is ~160px tall (content + padding + bottom offset).
+  // Add 16px breathing room so the last track never slides under it.
+  const clearance = document.body.classList.contains('music-active') ? 176 : 40;
+  // Island top in world pixels = CENTER + island.y.  We want its bottom on screen at vh-clearance.
+  // screen_y_of_bottom = (CENTER + island.y + tlH) + targetY  →  set = vh - clearance
+  const newY = window.innerHeight - clearance - (CENTER + tlIsland.y + tlH);
+  const [nx, ny] = clampWorld(targetX, newY);
+  targetX = nx; targetY = ny;
+}
+
+function panInDirection(dir) {
+  if (window.innerWidth <= 600) {
+    const neighbor = MOBILE_GRID[mobileCurrentIsland] && MOBILE_GRID[mobileCurrentIsland][dir];
+    if (neighbor) mobileNavigateTo(neighbor);
+    return;
+  }
+  // On desktop, if 'down' is pressed and the tracklist bottom is currently clipped
+  // (extends below the player/arrow clearance zone), snap to the tracklist bottom instead
+  // of doing a generic pan step.
+  if (dir === 'down') {
+    const tlEl = document.querySelector('.tracklist-island');
+    if (tlEl) {
+      const rect = tlEl.getBoundingClientRect();
+      const clearance = document.body.classList.contains('music-active') ? 176 : 40;
+      const visibleFloor = window.innerHeight - clearance;
+      // Tracklist top is still on-screen and its bottom extends below the safe zone
+      if (rect.top > -rect.height * 0.3 && rect.bottom > visibleFloor) {
+        panToTracklistBottom();
+        return;
+      }
+    }
+  }
+  let dx = 0, dy = 0;
+  if (dir === 'right') dx = -PAN_STEP;
+  if (dir === 'left')  dx =  PAN_STEP;
+  if (dir === 'up')    dy =  PAN_STEP;
+  if (dir === 'down')  dy = -PAN_STEP;
+  const [nx, ny] = clampWorld(targetX + dx, targetY + dy);
+  targetX = nx; targetY = ny;
+}
+
+Object.entries(arrowEls).forEach(([dir, el]) => {
+  el.addEventListener('click', e => { e.stopPropagation(); sfxPlay('click'); panInDirection(dir); });
+});
+
+function updateArrows() {
+  if (window.innerWidth > 600) {
+    // Desktop: show all arrows (free pan)
+    ['up', 'down', 'left', 'right'].forEach(dir => {
+      const el = arrowEls[dir];
+      if (!el) return;
+      el.style.visibility = '';
+      el.style.pointerEvents = '';
+    });
+    return;
+  }
+  const neighbors = MOBILE_GRID[mobileCurrentIsland] || {};
+  ['up', 'down', 'left', 'right'].forEach(dir => {
+    const el = arrowEls[dir];
+    if (!el) return;
+    el.style.visibility = neighbors[dir] ? '' : 'hidden';
+    el.style.pointerEvents = neighbors[dir] ? '' : 'none';
+  });
+}
+
+// =====================================================================
+//  ANIMATION LOOP
+// =====================================================================
+const LERP = 0.08;
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+function tick(now) {
+  requestAnimationFrame(tick);
+
+  const vx = edgeVelocity(mouseNX);
+  const vy = edgeVelocity(mouseNY);
+  if (vx !== 0 || vy !== 0) {
+    const [nx, ny] = clampWorld(targetX - vx, targetY - vy);
+    targetX = nx; targetY = ny;
+  }
+
+  worldX = lerp(worldX, targetX, LERP);
+  worldY = lerp(worldY, targetY, LERP);
+  applyWorldTransform();
+
+  islandDriftParams.forEach(p => {
+    const drift = Math.sin(now / p.period * Math.PI * 2 + p.phase) * p.amplitude;
+    p.el.style.top = (p.baseTop + drift) + 'px';
+  });
+
+  updateTimeDisplay();
+}
+
+// =====================================================================
+//  NOKIA ISLAND — navigation & unlock
+// =====================================================================
+
+// Tracks which node the mobile grid navigator is currently on
+let mobileCurrentIsland = 'tracklist';
+
+// =====================================================================
+//  MOBILE GRID — adjacency map
+//  To add a new node: add an entry here, add its position in
+//  MOBILE_POSITIONS below, and wire up its neighbours.
+// =====================================================================
+const MOBILE_GRID = {
+  //                    left                  up                   right              down
+  nokia:               { right: 'tracklist',   up: 'images'                                            },
+  tracklist:           { left:  'nokia',        up: 'title',         right: 'description', down: 'tracklist-bottom' },
+  'tracklist-bottom':  { left:  'nokia',        up: 'tracklist',     right: 'description'               },
+  title:               { left:  'images',       down: 'tracklist',   right: 'bandcamp'                  },
+  images:              { right: 'title',        down: 'nokia'                                           },
+  bandcamp:            { left:  'title',        down: 'description'                                     },
+  description:         { left:  'tracklist',    up: 'bandcamp',      down: 'image'                      },
+  image:               { left:  'tracklist',    up: 'description'                                       },
+};
+
+// =====================================================================
+//  MOBILE POSITIONS
+//
+//  wx  = world X to pin (island x, or island x + half-width to centre it)
+//  sx  = screen X pixel where wx lands ('c' = screen centre vw/2, or a px value)
+//  wy  = world Y to pin (island y = top edge, or island y + half-height to centre)
+//  sy  = screen Y pixel where wy lands ('c' = screen centre vh/2, or a px from top)
+//
+//  Reading it: "put world point (wx,wy) at screen pixel (sx,sy)."
+//  e.g. sy:48 = that world Y lands 48px from the top of the screen.
+//       sy:'c' = that world Y lands at vertical screen centre.
+//
+//  To add a new node: add one line here + wire neighbours in MOBILE_GRID above.
+//  Island sizes: images 340×340px, description max 360px wide, tracklist ~460px.
+// =====================================================================
+const MOBILE_POSITIONS = {
+  //                       wx      sx    wy      sy
+  tracklist:            { wx:    0, sx: 20,  wy:    0, sy: 48  },  // left edge at 20px, top at 48px — identical to initial page load
+  'tracklist-bottom':   { wx:    0, sx: 20,  wy:  560, sy: 'c' },  // same x as tracklist; wy≈560 (near bottom of 640px island) centred vertically
+  nokia:       { wx: -310, sx:'c',  wy:  300, sy:'c'  },
+  title:       { wx:    0, sx: 20,  wy: -550, sy: 220  },  // 20px left margin centres the island (width: vw-40px) on screen
+  images:      { wx: -295, sx:'c',  wy: -605, sy: 30 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
+  description: { wx:  750, sx: 'c',   wy:   50, sy: 70  },  // centre of island (x:600 + fixed-mobile-w:300/2) centred on screen
+  bandcamp:    { wx:  740, sx:'c',  wy: -520, sy: 110 },  // profile centred x; profile top 130px from screen top
+  image:       { wx:  750, sx:'c',  wy:  660, sy:'c'  },  // brain centred on screen (island x:600 w:340, y:400 h:340, centre y=570)
+};
+
+function mobileNavigateTo(key) {
+  const pos = MOBILE_POSITIONS[key];
+  if (!pos) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const sx = pos.sx === 'c' ? vw / 2 : pos.sx;
+  // When navigating to nokia, shift wy up by 75 if the music player is active
+  const playerActive = key === 'nokia' &&
+    document.getElementById('player').classList.contains('visible');
+  const wy = pos.wy + (playerActive ? 75 : 0);
+  const sy = pos.sy === 'c' ? vh / 2 : pos.sy;
+  const [nx, ny] = clampWorld(
+    sx - (CENTER + pos.wx),
+    sy - (CENTER + wy)
+  );
+  targetX = nx; targetY = ny;
+  mouseNX = 0; mouseNY = 0;
+  mobileCurrentIsland = key;
+  updateArrows();
+}
+
+// navigateToTracklist is called from nokia-return so keep it as a named function
+function navigateToTracklist() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const isMobileNow = vw <= 600;
+  if (isMobileNow) {
+    mobileNavigateTo('tracklist');
+  } else {
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    const [nx, ny] = clampWorld(
+      vw * 0.34 - (CENTER + tl.x),
+      vh * 0.10 - (CENTER + tl.y)
+    );
+    targetX = nx; targetY = ny;
+    mouseNX = 0; mouseNY = 0;
+  }
+  mobileCurrentIsland = 'tracklist';
+  updateArrows();
+}
+
+// navigateToNokia is called from the unlock button so keep it too
+function navigateToNokia() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  if (vw <= 600) {
+    mobileNavigateTo('nokia');
+  } else {
+    const nokia = ISLANDS.find(i => i.type === 'nokia');
+    const [nx, ny] = clampWorld(
+      vw / 2 - (CENTER + nokia.x) - 190,
+      vh / 2 - (CENTER + nokia.y) - 300
+    );
+    targetX = nx; targetY = ny;
+    mouseNX = 0; mouseNY = 0;
+  }
+  mobileCurrentIsland = 'nokia';
+  updateArrows();
+}
+
+function refreshTracklist() {
+  const tlIsland = ISLANDS.find(i => i.type === 'tracklist');
+  if (!tlIsland) return;
+  const driftIdx = islandDriftParams.findIndex(p =>
+    p.el.classList.contains('tracklist-island'));
+  if (driftIdx === -1) return;
+
+  const params = islandDriftParams[driftIdx];
+  const oldEl  = params.el;
+
+  releaseList = [];
+  const newEl = renderTracklist(tlIsland);
+  newEl.style.left = params.baseLeft + 'px';
+  newEl.style.top  = params.baseTop  + 'px';
+  newEl.classList.add('visible');
+
+  world.appendChild(newEl);
+  oldEl.remove();
+  params.el = newEl;
+}
+
+function triggerTypewrite() {
+  const tlIsland = ISLANDS.find(i => i.type === 'tracklist');
+  if (!tlIsland) return;
+  const firstReleasedRow = document.querySelector('.tracklist-island .track-row.released');
+  if (!firstReleasedRow) return;
+  const titleSpan = firstReleasedRow.querySelector('.track-title');
+  if (!titleSpan) return;
+  const fullTitle = tlIsland.tracks[0].title;
+  titleSpan.textContent = '';
+  const stopTw1 = sfxPlay('typewriter');
+  let i = 0;
+  const tw = setInterval(() => {
+    titleSpan.textContent = fullTitle.slice(0, ++i);
+    if (i >= fullTitle.length) { clearInterval(tw); if (stopTw1) stopTw1(); }
+  }, 52);
+}
+
+// Typewriter for track 2 — used after the image secret is triggered
+function triggerTypewriteTrack2() {
+  const rows = document.querySelectorAll('.tracklist-island .track-row');
+  const row = rows[2];
+  if (!row) return;
+  const titleSpan = row.querySelector('.track-title');
+  if (!titleSpan) return;
+  const tl = ISLANDS.find(i => i.type === 'tracklist');
+  const fullTitle = tl.tracks[2].title;
+  titleSpan.textContent = '';
+  const stopTw2 = sfxPlay('typewriter');
+  let j = 0;
+  const tw = setInterval(() => {
+    titleSpan.textContent = fullTitle.slice(0, ++j);
+    if (j >= fullTitle.length) { clearInterval(tw); if (stopTw2) stopTw2(); }
+  }, 52);
+}
+
+// Wire up the morrisblitz + skytower image parting easter-egg
+function setupImageSecret() {
+  const mbIsland = ISLANDS.find(i => i.id === 'morrisblitz');
+  const stIsland = ISLANDS.find(i => i.id === 'skytower');
+  if (!mbIsland || !stIsland || !mbIsland._el || !stIsland._el) return;
+  const mbEl = mbIsland._el;
+  const stEl = stIsland._el;
+
+  // Secret button — centred on the stacked images in world space
+  // x = midpoint of the two image centres; y = approximate vertical centre of images
+  const secretBtn = document.createElement('button');
+  secretBtn.className = 'secret-btn';
+  // horizontal centre of the two 340px-wide images
+  const gapCentreX = Math.round((mbIsland._baseLeft + 170 + stIsland._baseLeft + 170) / 2);
+  // vertical centre: average of tops + ~half image height + 150px lower per user preference
+  const gapCentreY = Math.round((mbIsland._baseTop + stIsland._baseTop) / 2 + 310);
+  secretBtn.style.left = gapCentreX + 'px';
+  secretBtn.style.top  = gapCentreY + 'px';
+  world.appendChild(secretBtn);
+
+  mbEl.classList.add('image-secret');
+  stEl.classList.add('image-secret');
+
+  let parted = false;
+  let closeTimer = null;
+  let secretCaught = false;
+
+  function closeImages() {
+    secretBtn.classList.remove('visible');
+    // Snap back — firm but not jarring (~0.5s)
+    mbEl.style.transition = 'left 0.5s cubic-bezier(0.6, 0, 0.8, 1)';
+    stEl.style.transition = 'left 0.5s cubic-bezier(0.6, 0, 0.8, 1)';
+    mbEl.style.left = mbIsland._baseLeft + 'px';
+    stEl.style.left = stIsland._baseLeft + 'px';
+    setTimeout(() => { parted = false; }, 550);
+  }
+
+  function partImages() {
+    if (parted || secretCaught) return;
+    parted = true;
+    sfxPlay('click');
+    // Drift just far enough to reveal the secret (~150px each side)
+    mbEl.style.transition = 'left 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
+    stEl.style.transition = 'left 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
+    mbEl.style.left = (mbIsland._baseLeft - 150) + 'px';
+    stEl.style.left = (stIsland._baseLeft + 150) + 'px';
+    // Secret visible for ~1.1 s — total animation ~2.3 s
+    setTimeout(() => { secretBtn.classList.add('visible'); sfxPlay('egg'); }, 420);
+    closeTimer = setTimeout(() => closeImages(), 420 + 1100);
+  }
+
+  mbEl.addEventListener('click', partImages);
+  stEl.addEventListener('click', partImages);
+
+  // Exposed so the reset-unlock button can restore the secret to its default state
+  window._resetImageSecret = () => {
+    secretCaught = false;
+    parted = false;
+    clearTimeout(closeTimer);
+    secretBtn.classList.remove('visible');
+    mbEl.style.transition = 'left 0.4s ease';
+    stEl.style.transition = 'left 0.4s ease';
+    mbEl.style.left = mbIsland._baseLeft + 'px';
+    stEl.style.left = stIsland._baseLeft + 'px';
+  };
+
+  secretBtn.addEventListener('click', () => {
+    if (secretCaught) return;
+    secretCaught = true;
+    clearTimeout(closeTimer);
+    sfxPlay('click');
+    // Return images to base position
+    closeImages();
+    // Gold glow — hold for 1 second, then proceed
+    secretBtn.classList.add('glowing');
+    setTimeout(() => {
+      secretBtn.classList.remove('visible');
+      secretBtn.classList.remove('glowing');
+      const tl = ISLANDS.find(i => i.type === 'tracklist');
+      if (tl) {
+        tl.tracks[2].title = '[tinny_h0use][demo]';
+        tl.tracks[2].state = 'released';
+      }
+      localStorage.setItem('kintsugi_track2_unlocked', 'true');
+      navigateToTracklist();
+      setTimeout(() => {
+        refreshTracklist();
+        triggerTypewriteTrack2();
+      }, 1400);
+    }, 1000);
+  });
+}
+
+window.addEventListener('message', e => {
+  if (!e.data) return;
+
+  // ── Game 1: brain puzzle ─────────────────────────────────────────────
+  if (e.data.type === 'nokia-puzzle-complete') {
+    localStorage.setItem('kintsugi_track1_unlocked', 'true');
+    localStorage.setItem('kintsugi_nokia_stage', '1');
+    // Expose track 3 unlock button now that stage is 1
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    if (tl) tl.tracks[1].unlockable = true;
+  }
+  if (e.data.type === 'nokia-return') {
+    navigateToTracklist();
+    setTimeout(() => {
+      const tl = ISLANDS.find(i => i.type === 'tracklist');
+      if (tl && tl.tracks[0].state !== 'released') tl.tracks[0].state = 'released';
+      refreshTracklist();
+      triggerTypewrite();
+    }, 1400);
+  }
+
+  // ── Game 2: new nokia game ───────────────────────────────────────────
+  if (e.data.type === 'nokia-game2-complete') {
+    localStorage.setItem('kintsugi_nokia_stage', '2');
+    localStorage.setItem('kintsugi_track3_unlocked', 'true');
+    const tl = ISLANDS.find(i => i.type === 'tracklist');
+    if (tl) {
+      const t3 = tl.tracks[1];
+      t3.state = 'released';
+      t3.title = t3.unlockTitle || 'track 02';
+      t3.file  = t3.file || 'audio/thread.mp3';
+    }
+  }
+  if (e.data.type === 'nokia-game2-return') {
+    navigateToTracklist();
+    setTimeout(() => {
+      const tl = ISLANDS.find(i => i.type === 'tracklist');
+      if (!tl) return;
+      refreshTracklist();
+      // Typewriter for track 2 (index 1)
+      const rows = document.querySelectorAll('.tracklist-island .track-row');
+      const row3 = rows[1];
+      if (row3) {
+        const span = row3.querySelector('.track-title');
+        if (span) {
+          const full = tl.tracks[1].title;
+          span.textContent = '';
+          const stopTw = sfxPlay('typewriter');
+          let c = 0;
+          const tw = setInterval(() => {
+            span.textContent = full.slice(0, ++c);
+            if (c >= full.length) { clearInterval(tw); if (stopTw) stopTw(); }
+          }, 52);
+        }
+      }
+    }, 1400);
+  }
+});
+
+// =====================================================================
+//  INIT
+// =====================================================================
+// =====================================================================
+//  SFX ENGINE  (Web Audio API + pooled <audio> fallback)
+//  Usage: sfxPlay('click')
+// =====================================================================
+(function () {
+  var SOUNDS  = { click: 0.6, typewriter: 0.75, egg: 0.8 };
+  var POOL_SZ = { click: 6,   typewriter: 2,    egg: 1   };
+  var ctx = null, master = null, unlocked = false;
+  var fetched = {}, buffers = {}, pools = {};
+
+  function ensurePool(name) {
+    if (pools[name]) return pools[name];
+    var els = [];
+    for (var j = 0; j < (POOL_SZ[name] || 3); j++) {
+      var a = new Audio('sfx/' + name + '.mp3');
+      a.preload = 'auto'; a.volume = SOUNDS[name] || 1;
+      els.push(a);
+    }
+    pools[name] = { els: els, i: 0 };
+    return pools[name];
+  }
+  Object.keys(SOUNDS).forEach(function(n) { ensurePool(n); });
+
+  function playFromPool(name) {
+    var pool = ensurePool(name);
+    var a = pool.els[pool.i];
+    pool.i = (pool.i + 1) % pool.els.length;
+    try { a.pause(); a.currentTime = 0; var p = a.play(); if (p && p.catch) p.catch(function(){}); } catch(e) {}
+    return function stopPool() { try { a.pause(); a.currentTime = 0; } catch(e) {} };
+  }
+
+  function fetchAll() {
+    Object.keys(SOUNDS).forEach(function(name) {
+      fetch('sfx/' + name + '.mp3', { cache: 'force-cache' })
+        .then(function(r) { return r.arrayBuffer(); })
+        .then(function(ab) { fetched[name] = ab; })
+        .catch(function() {});
+    });
+  }
+
+  function ensureCtx() {
+    if (ctx) return;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC(); master = ctx.createGain(); master.gain.value = 1; master.connect(ctx.destination);
+  }
+
+  function decodeAll() {
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(function(){});
+    Object.keys(SOUNDS).forEach(function(name) {
+      if (buffers[name] || !fetched[name]) return;
+      ctx.decodeAudioData(fetched[name].slice(0),
+        function(buf) { buffers[name] = buf; }, function() {});
+    });
+  }
+
+  function unlockOnce() {
+    if (unlocked) return; unlocked = true;
+    ensureCtx(); decodeAll();
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(function(){});
+  }
+
+  function playWebAudio(name) {
+    if (!ctx || !master || !buffers[name]) return null;
+    try {
+      var src = ctx.createBufferSource(); src.buffer = buffers[name];
+      var g = ctx.createGain(); g.gain.value = SOUNDS[name] || 1;
+      src.connect(g); g.connect(master); src.start(0);
+      return function stopWA() { try { src.stop(); } catch(e) {} };
+    } catch(e) { return null; }
+  }
+
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && ctx && ctx.state === 'suspended') ctx.resume().catch(function(){});
+  });
+
+  fetchAll();
+  var _evts = ['touchstart','pointerdown','mousedown','keydown'];
+  _evts.forEach(function(ev) {
+    document.addEventListener(ev, function _p() {
+      unlockOnce();
+      _evts.forEach(function(e2) { document.removeEventListener(e2, _p, true); });
+    }, { capture: true, passive: true });
+  });
+
+  // Returns a stop() function so callers can cut the sound at a precise moment.
+  window.sfxPlay = function(name) {
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(function(){});
+    var stopFn = playWebAudio(name);
+    return stopFn || playFromPool(name);
+  };
+}());
+
+buildIslands();
+setupImageSecret();
+initPosition();
+updateArrows();
+requestAnimationFrame(tick);
+requestAnimationFrame(() => { document.body.style.opacity = '1'; });
+
+// Navigation hint — fades in after 1.2s, fades out after ~4.8s, removed from DOM after
+(function () {
+  const _hint = document.getElementById('nav-hint');
+  if (!_hint) return;
+  setTimeout(() => _hint.classList.add('visible'), 1200);
+  setTimeout(() => {
+    _hint.style.opacity = '0';
+    setTimeout(() => _hint.remove(), 900);
+  }, 4800);
+}());
+
+</script>
+</body>
+</html>
