@@ -6,6 +6,7 @@
 <title>KINTSUGI — inigo365</title>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <style>
 @font-face {
   font-family: 'RuneScape';
@@ -141,6 +142,10 @@ const rIC = window.requestIdleCallback
   ? fn => window.requestIdleCallback(fn, {timeout: 4000})
   : fn => setTimeout(fn, 1);
 
+const dracoLoader = new THREE.DRACOLoader();
+dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
+dracoLoader.preload();
+
 let pageHidden = false;
 document.addEventListener('visibilitychange', () => { pageHidden = document.hidden; });
 
@@ -162,18 +167,23 @@ function calcDist(camera, maxDim, fillAmt) {
 
 function loadGLB(url, onLoad, onError, maxBytes) {
   fetch(url)
-    .then(r => r.arrayBuffer())
+    .then(r => {
+      if (!r.ok) throw new Error('fetch ' + url + ' → ' + r.status);
+      return r.arrayBuffer();
+    })
     .then(rawBuf => {
-      if (maxBytes && rawBuf.byteLength > maxBytes) { onError(new Error('GLB too large')); return; }
+      if (maxBytes && rawBuf.byteLength > maxBytes) { onError(new Error('GLB too large: ' + rawBuf.byteLength)); return; }
       rIC(() => {
         let buf = rawBuf;
-        new THREE.GLTFLoader().parse(buf, '',
+        const loader = new THREE.GLTFLoader();
+        loader.setDRACOLoader(dracoLoader);
+        loader.parse(buf, '',
           gltf => { buf = null; onLoad(gltf); },
-          err  => { buf = null; onError(err); }
+          err  => { buf = null; console.error('GLTFLoader.parse error for', url, err); onError(err); }
         );
       });
     })
-    .catch(onError);
+    .catch(err => { console.error('loadGLB fetch error for', url, err); onError(err); });
 }
 
 // Hides canvas + loading overlay; panel caption text remains visible on bg colour
