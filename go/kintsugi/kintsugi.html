@@ -23,7 +23,7 @@ nav {
   display:flex; justify-content:space-between; align-items:center;
   padding:24px 40px; pointer-events:none;
 }
-.nav-brand { font-size:12px; letter-spacing:0.12em; color:#aaa; pointer-events:all; }
+.nav-brand { font-size:12px; letter-spacing:0.12em; color:#aaa; pointer-events:all; text-decoration:none; }
 .nav-links { display:flex; gap:24px; list-style:none; pointer-events:all; }
 .nav-links a { font-size:12px; color:#bbb; text-decoration:none; transition:color 0.3s; }
 .nav-links a:hover { color:#333; }
@@ -38,7 +38,7 @@ nav {
   position:absolute; bottom:44px; left:44px;
   z-index:10; pointer-events:none;
 }
-.caption-num { font-size:11px; color:#bbb; letter-spacing:0.15em; margin-bottom:6px; }
+.caption-num { font-size:18px; color:#bbb; letter-spacing:0.15em; margin-bottom:6px; }
 .caption-title { font-size:clamp(28px,3.5vw,52px); color:#222; line-height:1.2; letter-spacing:0.02em; }
 
 .scroll-hint {
@@ -61,7 +61,7 @@ nav {
   display:flex; flex-direction:column; justify-content:center;
   padding:0 56px 0 0; z-index:10;
 }
-.friend-num { font-size:11px; color:#bbb; letter-spacing:0.15em; margin-bottom:18px; }
+.friend-num { font-size:18px; color:#bbb; letter-spacing:0.15em; margin-bottom:18px; }
 .friend-title { font-size:clamp(28px,3.5vw,52px); color:#222; line-height:1.2; letter-spacing:0.02em; }
 
 .loading-msg {
@@ -91,7 +91,7 @@ nav {
 <body>
 
 <nav>
-  <span class="nav-brand">inigo365</span>
+  <a href="../../index.html" class="nav-brand">inigo365</a>
   <ul class="nav-links">
     <li><a href="#brain-panel">i</a></li>
     <li><a href="#friend-panel">ii</a></li>
@@ -102,8 +102,8 @@ nav {
   <canvas id="brain-canvas"></canvas>
   <div class="loading-msg" id="brain-loading">loading...</div>
   <div class="brain-caption">
-    <div class="caption-num">001 — the mind</div>
-    <div class="caption-title">what lives<br>inside.</div>
+    <div class="caption-num">001</div>
+    <div class="caption-title">kintsugi [wip]</div>
   </div>
   <div class="scroll-hint">scroll ↓</div>
 </div>
@@ -114,8 +114,8 @@ nav {
     <div class="loading-msg" id="friend-loading">loading...</div>
   </div>
   <div class="friend-text">
-    <div class="friend-num">002 — the form</div>
-    <div class="friend-title">what gets<br>seen.</div>
+    <div class="friend-num">002</div>
+    <div class="friend-title">friend</div>
   </div>
 </div>
 
