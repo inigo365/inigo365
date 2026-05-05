@@ -698,6 +698,12 @@ video {
   image-rendering: crisp-edges;
 }
 
+.portal-sprite-gif{
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+
 .portal-hint{
   width: 100%;
   margin-top: 2px;
@@ -1692,7 +1698,7 @@ const DOCK_VIEWS = {
   main: [
     { key: "home",        title: "creative portfolio",    sub: "main page", glyph: "→", sprite: "images/portfoliosprite.png" },
     { key: "mediaplayer", title: "media player",          sub: "music",      glyph: "→", sprite: "images/mediasprite.png" },
-    { key: "games",       title: "games",                 sub: "inigo365",  glyph: "→", sprite: "images/gamesprite.png",      viewSwitch: "games" }
+    { key: "games",       title: "games",                 sub: "inigo365",  glyph: "→", sprite: "images/brain-spin.gif",      viewSwitch: "games" }
   ],
   games: [
     { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bagsprite.png" },
@@ -1715,8 +1721,9 @@ function renderPortalDock(viewName) {
     btn.className = "portal-tile";
     btn.setAttribute("data-key", item.key);
 
+    const spriteClass = item.sprite && item.sprite.endsWith(".gif") ? "portal-sprite-gif" : "portal-sprite";
     const spriteHTML = item.sprite
-      ? `<img class="portal-sprite" src="${item.sprite}" alt="">`
+      ? `<img class="${spriteClass}" src="${item.sprite}" alt="">`
       : "";
 
     btn.innerHTML = `
