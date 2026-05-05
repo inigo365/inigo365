@@ -120,10 +120,9 @@ nav {
 </div>
 
 <script>
-// (1) Simple UA-only iOS detection as specified
 const IS_IOS    = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const IS_MOBILE = IS_IOS || window.innerWidth <= 768;
-const FRAME_MS  = IS_IOS ? 34 : 0;  // ~30fps on iOS, uncapped on desktop
+const FRAME_MS  = IS_IOS ? 34 : 0;
 
 const rIC = window.requestIdleCallback
   ? fn => window.requestIdleCallback(fn, {timeout: 4000})
@@ -132,23 +131,7 @@ const rIC = window.requestIdleCallback
 let pageHidden = false;
 document.addEventListener('visibilitychange', () => { pageHidden = document.hidden; });
 
-// (5) iOS WebGL context settings — all four flags
-function makeRenderer(canvas, bgCol) {
-  const r = new THREE.WebGLRenderer({
-    canvas,
-    alpha:                false,
-    antialias:            !IS_IOS,
-    powerPreference:      IS_IOS ? 'low-power' : 'default',
-    preserveDrawingBuffer: false
-  });
-  r.setPixelRatio(IS_IOS ? 1 : Math.min(devicePixelRatio, IS_MOBILE ? 1.5 : 2));
-  r.outputEncoding = THREE.sRGBEncoding;
-  r.toneMapping = THREE.ACESFilmicToneMapping;
-  r.toneMappingExposure = 1.3;
-  r.setClearColor(bgCol, 1);
-  return r;
-}
-
+// Shared helpers used by both paths
 function addLights(scene) {
   scene.add(new THREE.AmbientLight(0xffffff, 2.0));
   const key = new THREE.DirectionalLight(0xffffff, 2.5);
@@ -164,7 +147,6 @@ function calcDist(camera, maxDim, fillAmt) {
   return (maxDim / 2) / (Math.tan(fovRad / 2) * fillAmt);
 }
 
-// Fetch → defer parse via rIC → null buf immediately after parse
 function loadGLB(url, onLoad, onError) {
   fetch(url)
     .then(r => r.arrayBuffer())
@@ -180,8 +162,7 @@ function loadGLB(url, onLoad, onError) {
     .catch(onError);
 }
 
-// (7) Graceful fallback — hides canvas, hides loading overlay;
-//     the panel's existing caption markup remains visible on the background colour
+// Hides canvas + loading overlay; panel caption text remains visible on bg colour
 function showFallback(canvasId, loadingId) {
   const c = document.getElementById(canvasId);
   const l = document.getElementById(loadingId);
@@ -189,118 +170,202 @@ function showFallback(canvasId, loadingId) {
   if (l) l.style.display = 'none';
 }
 
-// Sequential gate — friend fetch never starts until brain parse is complete
-let brainDone    = false;
-let friendLoader = null;
-function tryStartFriend() {
-  if (brainDone && friendLoader) {
-    const fn = friendLoader;
-    friendLoader = null;
-    fn();
-  }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// iOS — SINGLE SHARED RENDERER
+//
+// One WebGL context on a fixed full-viewport canvas; both scenes drawn in one
+// rAF loop using setScissor/setViewport.  The per-panel <canvas> elements are
+// hidden and the panels become transparent overlays so text/loading UI still
+// shows.  Brain is loaded first; friend fetch is nested inside brain's callback
+// so it never starts until brain's ArrayBuffer has been nulled.
+// ─────────────────────────────────────────────────────────────────────────────
+if (IS_IOS) {
 
-// (6) Brain rAF pause controls (iOS only — stops scheduling, not just skipping render)
-let brainPaused = false;
-let resumeBrain = null;   // assigned inside brain block, called by observers
+  // Fixed canvas behind all panel content (z-index 1; captions/nav are 10+)
+  const iosCanvas = document.createElement('canvas');
+  iosCanvas.style.cssText =
+    'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+  document.body.insertBefore(iosCanvas, document.body.firstChild);
 
-// ── BRAIN ──
-let brainVisible = true;
+  // Panels become transparent so the fixed canvas shows through
+  document.getElementById('brain-panel').style.background  = 'transparent';
+  document.getElementById('friend-panel').style.background = 'transparent';
 
-try {
-  const canvas   = document.getElementById('brain-canvas');
-  const panel    = document.getElementById('brain-panel');
-  const bgCol    = new THREE.Color(0xf5f2ec);
-  const renderer = makeRenderer(canvas, bgCol);
-  const scene    = new THREE.Scene();
-  scene.background = bgCol;
-  const camera   = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
-  addLights(scene);
-
-  const pivot = new THREE.Group();
-  pivot.rotation.x = 0.15;
-  scene.add(pivot);
-
-  let modelSize = new THREE.Vector3();
-
-  function updateBrainCamera() {
-    const W = panel.clientWidth, H = panel.clientHeight;
-    camera.aspect = W / H;
-    const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
-    if (maxDim > 0) camera.position.set(0, 0, calcDist(camera, maxDim, IS_MOBILE ? 0.45 : 0.65));
-    camera.updateProjectionMatrix();
-  }
-
-  // On iOS: resume brain rAF when user scrolls back to this panel
-  new IntersectionObserver(entries => {
-    brainVisible = entries[0].isIntersecting;
-    if (IS_IOS && brainVisible && brainPaused) {
-      brainPaused = false;
-      resumeBrain && resumeBrain();
-    }
-  }, {threshold: 0}).observe(panel);
-
-  loadGLB('brain.glb', gltf => {
-    const model  = gltf.scene;
-    const box    = new THREE.Box3().setFromObject(model);
-    const centre = box.getCenter(new THREE.Vector3());
-    box.getSize(modelSize);
-    model.position.sub(centre);
-    pivot.add(model);
-    // (4) Touch geometry attributes to prime GPU upload on next render,
-    //     then release — raw ArrayBuffer already nulled inside loadGLB
-    scene.traverse(obj => { if (obj.isMesh) void obj.geometry.attributes; });
-    updateBrainCamera();
-    document.getElementById('brain-loading').style.opacity = '0';
-    brainDone = true;
-    tryStartFriend();
-  }, err => {
-    console.error('brain', err);
-    showFallback('brain-canvas', 'brain-loading');
-    brainDone = true;
-    tryStartFriend();
-  });
-
-  let angle = 0, lastBrainT = 0;
-
-  // (6) Hard-stop pattern: when brainPaused, return WITHOUT scheduling next rAF
-  function loopBrain(ts) {
-    if (brainPaused) return;
-    requestAnimationFrame(loopBrain);
-    if (pageHidden || !brainVisible) return;
-    if (FRAME_MS && ts - lastBrainT < FRAME_MS) return;
-    lastBrainT = ts;
-    angle += 0.003;
-    pivot.rotation.y = angle;
-    renderer.render(scene, camera);
-  }
-  resumeBrain = () => requestAnimationFrame(loopBrain);
-
-  function resizeBrain() {
-    renderer.setSize(panel.clientWidth, panel.clientHeight);
-    updateBrainCamera();
-  }
-  requestAnimationFrame(loopBrain);
-  resizeBrain();
-  window.addEventListener('resize', resizeBrain);
-} catch(e) {
-  console.error('brain init', e);
-  showFallback('brain-canvas', 'brain-loading');
-  brainDone = true;
-  tryStartFriend();
-}
-
-// ── FRIEND — WebGL context created lazily on first intersection ──
-let friendVisible = false;
-let friendInited  = false;
-
-function initFriend() {
-  if (friendInited) return;
-  friendInited = true;
+  // Original per-panel canvases are no longer used on iOS
+  document.getElementById('brain-canvas').style.display  = 'none';
+  document.getElementById('friend-canvas').style.display = 'none';
 
   try {
-    const canvas   = document.getElementById('friend-canvas');
-    const stage    = document.getElementById('friend-stage');
+    const BG = new THREE.Color(0xf5f2ec);
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas:               iosCanvas,
+      alpha:                false,
+      antialias:            false,
+      powerPreference:      'low-power',
+      preserveDrawingBuffer: false
+    });
+    renderer.setPixelRatio(1);
+    renderer.outputEncoding   = THREE.sRGBEncoding;
+    renderer.toneMapping      = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.3;
+    renderer.autoClear        = false; // we scissor-clear each region manually
+    renderer.setScissorTest(true);
+
+    function syncSize() {
+      renderer.setSize(window.innerWidth, window.innerHeight, true);
+    }
+    syncSize();
+
+    // ── Brain scene ──────────────────────────────────────────────────────────
+    const brainScene = new THREE.Scene();
+    brainScene.background = BG;
+    const brainCam   = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
+    addLights(brainScene);
+    const brainPivot = new THREE.Group();
+    brainPivot.rotation.x = 0.15;
+    brainScene.add(brainPivot);
+    let brainSize = new THREE.Vector3();
+
+    function syncBrainCam() {
+      const W = window.innerWidth, H = window.innerHeight;
+      brainCam.aspect = W / H;
+      const d = Math.max(brainSize.x, brainSize.y, brainSize.z);
+      if (d > 0) brainCam.position.set(0, 0, calcDist(brainCam, d, 0.45));
+      brainCam.updateProjectionMatrix();
+    }
+
+    // ── Friend scene ─────────────────────────────────────────────────────────
+    const friendScene = new THREE.Scene();
+    friendScene.background = BG;
+    const friendCam   = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
+    addLights(friendScene);
+    const friendPivot = new THREE.Group();
+    friendScene.add(friendPivot);
+    let friendSize = new THREE.Vector3();
+
+    function syncFriendCam() {
+      const W = window.innerWidth, H = window.innerHeight;
+      friendCam.aspect = W / H;
+      const d = Math.max(friendSize.x, friendSize.y, friendSize.z);
+      if (d > 0) friendCam.position.set(0, 0, calcDist(friendCam, d, 0.62));
+      friendCam.updateProjectionMatrix();
+    }
+
+    window.addEventListener('resize', () => { syncSize(); syncBrainCam(); syncFriendCam(); });
+
+    // ── Sequential load: friend fetch nested inside brain callback ────────────
+    loadGLB('brain.glb', brainGltf => {
+      const m = brainGltf.scene;
+      const box = new THREE.Box3().setFromObject(m);
+      m.position.sub(box.getCenter(new THREE.Vector3()));
+      box.getSize(brainSize);
+      brainPivot.add(m);
+      // Touch attributes to prime GPU upload; raw buffer already nulled in loadGLB
+      brainScene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
+      syncBrainCam();
+      document.getElementById('brain-loading').style.opacity = '0';
+
+      // Brain buffer released — now safe to fetch friend
+      loadGLB('friend.glb', friendGltf => {
+        const m2 = friendGltf.scene;
+        const box2 = new THREE.Box3().setFromObject(m2);
+        m2.position.sub(box2.getCenter(new THREE.Vector3()));
+        box2.getSize(friendSize);
+        friendPivot.add(m2);
+        friendScene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
+        syncFriendCam();
+        document.getElementById('friend-loading').style.opacity = '0';
+      }, err => {
+        console.error('friend', err);
+        showFallback('friend-canvas', 'friend-loading');
+      });
+
+    }, err => {
+      console.error('brain', err);
+      showFallback('brain-canvas', 'brain-loading');
+    });
+
+    // ── Single rAF loop — both scenes in one frame via scissor ───────────────
+    // Brain occupies the top (H − scrollY) px; friend occupies the bottom scrollY px.
+    // Using setViewport(0,0,W,H) for both means each camera renders its full scene
+    // and the scissor simply reveals only the portion visible at the current scroll.
+    let brainAngle = 0, friendAngle = 0, lastT = 0;
+
+    (function loop(ts) {
+      requestAnimationFrame(loop);
+      if (pageHidden) return;
+      if (ts - lastT < FRAME_MS) return;
+      lastT = ts;
+
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const S = Math.max(0, Math.min(Math.round(window.scrollY), H));
+
+      brainAngle  += 0.003;
+      brainPivot.rotation.y  = brainAngle;
+      friendAngle += 0.003;
+      friendPivot.rotation.y = friendAngle;
+
+      // Brain: visible in top (H−S) rows of the viewport (GL y = S … H)
+      if (S < H) {
+        renderer.setScissor(0, S, W, H - S);
+        renderer.setViewport(0, 0, W, H);
+        renderer.render(brainScene, brainCam);
+      }
+
+      // Friend: visible in bottom S rows of the viewport (GL y = 0 … S)
+      if (S > 0) {
+        renderer.setScissor(0, 0, W, S);
+        renderer.setViewport(0, 0, W, H);
+        renderer.render(friendScene, friendCam);
+      }
+    })(0);
+
+  } catch(e) {
+    console.error('iOS init', e);
+    showFallback('brain-canvas', 'brain-loading');
+    showFallback('friend-canvas', 'friend-loading');
+  }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DESKTOP — two separate renderers, two canvases, drag on friend, unchanged
+// ─────────────────────────────────────────────────────────────────────────────
+} else {
+
+  function makeRenderer(canvas, bgCol) {
+    const r = new THREE.WebGLRenderer({
+      canvas,
+      alpha:                false,
+      antialias:            true,
+      powerPreference:      'default',
+      preserveDrawingBuffer: false
+    });
+    r.setPixelRatio(Math.min(devicePixelRatio, IS_MOBILE ? 1.5 : 2));
+    r.outputEncoding      = THREE.sRGBEncoding;
+    r.toneMapping         = THREE.ACESFilmicToneMapping;
+    r.toneMappingExposure = 1.3;
+    r.setClearColor(bgCol, 1);
+    return r;
+  }
+
+  // Sequential gate — friend fetch waits for brain parse to complete
+  let brainDone    = false;
+  let friendLoader = null;
+  function tryStartFriend() {
+    if (brainDone && friendLoader) {
+      const fn = friendLoader;
+      friendLoader = null;
+      fn();
+    }
+  }
+
+  // ── Brain (desktop) ────────────────────────────────────────────────────────
+  let brainVisible = true;
+
+  try {
+    const canvas   = document.getElementById('brain-canvas');
+    const panel    = document.getElementById('brain-panel');
     const bgCol    = new THREE.Color(0xf5f2ec);
     const renderer = makeRenderer(canvas, bgCol);
     const scene    = new THREE.Scene();
@@ -309,56 +374,112 @@ function initFriend() {
     addLights(scene);
 
     const pivot = new THREE.Group();
+    pivot.rotation.x = 0.15;
     scene.add(pivot);
 
     let modelSize = new THREE.Vector3();
 
-    function updateFriendCamera() {
-      const W = stage.clientWidth, H = stage.clientHeight;
+    function updateBrainCamera() {
+      const W = panel.clientWidth, H = panel.clientHeight;
       camera.aspect = W / H;
-      const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
-      if (maxDim > 0) camera.position.set(0, 0, calcDist(camera, maxDim, IS_MOBILE ? 0.62 : 0.60));
+      const d = Math.max(modelSize.x, modelSize.y, modelSize.z);
+      if (d > 0) camera.position.set(0, 0, calcDist(camera, d, IS_MOBILE ? 0.45 : 0.65));
       camera.updateProjectionMatrix();
     }
 
-    function doFriendLoad() {
-      loadGLB('friend.glb', gltf => {
-        const model  = gltf.scene;
-        const box    = new THREE.Box3().setFromObject(model);
-        const centre = box.getCenter(new THREE.Vector3());
-        box.getSize(modelSize);
-        model.position.sub(centre);
-        pivot.add(model);
-        scene.traverse(obj => { if (obj.isMesh) void obj.geometry.attributes; });
-        updateFriendCamera();
-        document.getElementById('friend-loading').style.opacity = '0';
-      }, err => {
-        console.error('friend', err);
-        showFallback('friend-canvas', 'friend-loading');
-      });
+    new IntersectionObserver(entries => {
+      brainVisible = entries[0].isIntersecting;
+    }, {threshold: 0}).observe(panel);
+
+    loadGLB('brain.glb', gltf => {
+      const model  = gltf.scene;
+      const box    = new THREE.Box3().setFromObject(model);
+      const centre = box.getCenter(new THREE.Vector3());
+      box.getSize(modelSize);
+      model.position.sub(centre);
+      pivot.add(model);
+      scene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
+      updateBrainCamera();
+      document.getElementById('brain-loading').style.opacity = '0';
+      brainDone = true;
+      tryStartFriend();
+    }, err => {
+      console.error('brain', err);
+      showFallback('brain-canvas', 'brain-loading');
+      brainDone = true;
+      tryStartFriend();
+    });
+
+    let angle = 0;
+    function resizeBrain() {
+      renderer.setSize(panel.clientWidth, panel.clientHeight);
+      updateBrainCamera();
     }
-
-    friendLoader = doFriendLoad;
+    (function loopBrain() {
+      requestAnimationFrame(loopBrain);
+      if (pageHidden || !brainVisible) return;
+      angle += 0.003;
+      pivot.rotation.y = angle;
+      renderer.render(scene, camera);
+    })();
+    resizeBrain();
+    window.addEventListener('resize', resizeBrain);
+  } catch(e) {
+    console.error('brain init', e);
+    showFallback('brain-canvas', 'brain-loading');
+    brainDone = true;
     tryStartFriend();
+  }
 
-    let lastFriendT = 0;
+  // ── Friend (desktop) — lazy init via IntersectionObserver ─────────────────
+  let friendVisible = false;
+  let friendInited  = false;
 
-    if (IS_IOS) {
-      // (2) iOS: Y-axis auto-spin only — no drag, no touch listeners, identical
-      //     loop structure to brain so there is no extra interaction overhead
-      let angle = 0;
-      (function loopFriendIOS(ts) {
-        requestAnimationFrame(loopFriendIOS);
-        if (!friendVisible || pageHidden) return;
-        if (ts - lastFriendT < FRAME_MS) return;
-        lastFriendT = ts;
-        angle += 0.003;
-        pivot.rotation.y = angle;
-        renderer.render(scene, camera);
-      })(0);
+  function initFriend() {
+    if (friendInited) return;
+    friendInited = true;
 
-    } else {
-      // (3) Desktop: full drag + inertia interaction, unchanged
+    try {
+      const canvas   = document.getElementById('friend-canvas');
+      const stage    = document.getElementById('friend-stage');
+      const bgCol    = new THREE.Color(0xf5f2ec);
+      const renderer = makeRenderer(canvas, bgCol);
+      const scene    = new THREE.Scene();
+      scene.background = bgCol;
+      const camera   = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
+      addLights(scene);
+
+      const pivot = new THREE.Group();
+      scene.add(pivot);
+
+      let modelSize = new THREE.Vector3();
+
+      function updateFriendCamera() {
+        const W = stage.clientWidth, H = stage.clientHeight;
+        camera.aspect = W / H;
+        const d = Math.max(modelSize.x, modelSize.y, modelSize.z);
+        if (d > 0) camera.position.set(0, 0, calcDist(camera, d, IS_MOBILE ? 0.62 : 0.60));
+        camera.updateProjectionMatrix();
+      }
+
+      friendLoader = () => {
+        loadGLB('friend.glb', gltf => {
+          const model  = gltf.scene;
+          const box    = new THREE.Box3().setFromObject(model);
+          const centre = box.getCenter(new THREE.Vector3());
+          box.getSize(modelSize);
+          model.position.sub(centre);
+          pivot.add(model);
+          scene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
+          updateFriendCamera();
+          document.getElementById('friend-loading').style.opacity = '0';
+        }, err => {
+          console.error('friend', err);
+          showFallback('friend-canvas', 'friend-loading');
+        });
+      };
+      tryStartFriend();
+
       let rotY=0, rotX=0, drag=false, px=0, py=0, velY=0, velX=0;
       const MAX_X = Math.PI * 0.38;
       const F=0.88, MIN=0.0001;
@@ -382,7 +503,11 @@ function initFriend() {
       stage.addEventListener('touchmove',  e => { e.preventDefault(); mv(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
       stage.addEventListener('touchend',   up);
 
-      (function loopFriend(ts) {
+      function resizeFriend() {
+        renderer.setSize(stage.clientWidth, stage.clientHeight);
+        updateFriendCamera();
+      }
+      (function loopFriend() {
         requestAnimationFrame(loopFriend);
         if (pageHidden || !friendVisible) return;
         if (!drag) {
@@ -391,30 +516,20 @@ function initFriend() {
           pivot.rotation.set(rotX,rotY,0);
         }
         renderer.render(scene, camera);
-      })(0);
+      })();
+      resizeFriend();
+      window.addEventListener('resize', resizeFriend);
+    } catch(e) {
+      console.error('friend init', e);
+      showFallback('friend-canvas', 'friend-loading');
     }
-
-    function resizeFriend() {
-      renderer.setSize(stage.clientWidth, stage.clientHeight);
-      updateFriendCamera();
-    }
-    resizeFriend();
-    window.addEventListener('resize', resizeFriend);
-  } catch(e) {
-    console.error('friend init', e);
-    showFallback('friend-canvas', 'friend-loading');
   }
+
+  new IntersectionObserver(entries => {
+    friendVisible = entries[0].isIntersecting;
+    if (friendVisible) initFriend();
+  }, {threshold: 0}).observe(document.getElementById('friend-panel'));
 }
-
-// Single observer drives visibility flag, lazy init, AND iOS brain-pause
-new IntersectionObserver(entries => {
-  friendVisible = entries[0].isIntersecting;
-  if (friendVisible) {
-    // (6) On iOS: pause brain rAF BEFORE creating the second WebGL context
-    if (IS_IOS) brainPaused = true;
-    initFriend();
-  }
-}, {threshold: 0}).observe(document.getElementById('friend-panel'));
 </script>
 </body>
 </html>
