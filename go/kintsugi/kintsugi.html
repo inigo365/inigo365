@@ -86,18 +86,20 @@ nav {
 @media (max-width:768px) {
   nav { padding:18px 20px; }
   .nav-links { display:none; }
-  .brain-caption { left:20px; bottom:28px; }
-  .scroll-hint { right:20px; bottom:28px; }
+  /* Hide all text labels */
+  .brain-caption, .scroll-hint, .friend-text { display:none; }
+  /* Brain panel: flex-center a square canvas */
+  #brain-panel { display:flex; align-items:center; justify-content:center; }
+  #brain-canvas {
+    position:relative !important; inset:auto !important;
+    width:80vw !important; height:80vw !important;
+  }
+  /* Friend panel: drop text column, flex-center the stage */
   #friend-panel {
     grid-template-columns:1fr;
-    grid-template-rows:58vh 42vh;
-    height:100vh;
+    display:flex; align-items:center; justify-content:center;
   }
-  #friend-stage { height:58vh; width:100vw; }
-  .friend-text { padding:20px 24px 32px; justify-content:flex-start; }
-  .friend-title { font-size:26px; }
-  .caption-title { font-size:26px; }
-  .friend-num { margin-bottom:10px; }
+  #friend-stage { width:80vw; height:80vw; cursor:default; }
 }
 </style>
 </head>
@@ -194,6 +196,20 @@ function showFallback(canvasId, loadingId) {
   if (l) l.style.display = 'none';
 }
 
+function boostSaturation(scene) {
+  const hsl = {};
+  scene.traverse(o => {
+    if (!o.isMesh) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    mats.forEach(m => {
+      if (m && m.color) {
+        m.color.getHSL(hsl);
+        m.color.setHSL(hsl.h, Math.min(1, hsl.s + 0.3), hsl.l);
+      }
+    });
+  });
+}
+
 function showFriendPoster() {
   showFallback('friend-canvas', 'friend-loading');
   const stage = document.getElementById('friend-stage');
@@ -266,10 +282,9 @@ if (IS_IOS) {
     let brainSize = new THREE.Vector3();
 
     function syncBrainCam() {
-      const W = window.innerWidth, H = window.innerHeight;
-      brainCam.aspect = W / H;
+      brainCam.aspect = 1;
       const d = Math.max(brainSize.x, brainSize.y, brainSize.z);
-      if (d > 0) brainCam.position.set(0, 0, calcDist(brainCam, d, 0.45));
+      if (d > 0) brainCam.position.set(0, 0, calcDist(brainCam, d, 0.65));
       brainCam.updateProjectionMatrix();
     }
 
@@ -283,10 +298,9 @@ if (IS_IOS) {
     let friendSize = new THREE.Vector3();
 
     function syncFriendCam() {
-      const W = window.innerWidth, H = window.innerHeight;
-      friendCam.aspect = W / H;
+      friendCam.aspect = 1;
       const d = Math.max(friendSize.x, friendSize.y, friendSize.z);
-      if (d > 0) friendCam.position.set(0, 0, calcDist(friendCam, d, 0.62));
+      if (d > 0) friendCam.position.set(0, 0, calcDist(friendCam, d, 0.65));
       friendCam.updateProjectionMatrix();
     }
 
@@ -299,6 +313,7 @@ if (IS_IOS) {
       m.position.sub(box.getCenter(new THREE.Vector3()));
       box.getSize(brainSize);
       brainPivot.add(m);
+      boostSaturation(brainScene);
       // Touch attributes to prime GPU upload; raw buffer already nulled in loadGLB
       brainScene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
       syncBrainCam();
@@ -336,26 +351,32 @@ if (IS_IOS) {
       if (ts - lastT < FRAME_MS) return;
       lastT = ts;
 
-      const W = window.innerWidth;
-      const H = window.innerHeight;
-      const S = Math.max(0, Math.min(Math.round(window.scrollY), H));
+      const W    = window.innerWidth;
+      const H    = window.innerHeight;
+      // Centered 80 vw square — both models render here
+      const size = Math.floor(W * 0.8);
+      const cx   = Math.floor((W - size) / 2);
+      const cy   = Math.floor((H - size) / 2);
+      // Scroll progress mapped to square height (0 = all brain, size = all friend)
+      const S    = Math.max(0, Math.min(Math.round(window.scrollY), H));
+      const slip = Math.round(S * size / H);
 
-      brainAngle  += 0.003;
+      brainAngle  += 0.006;
       brainPivot.rotation.y  = brainAngle;
-      friendAngle += 0.003;
+      friendAngle += 0.006;
       friendPivot.rotation.y = friendAngle;
 
-      // Brain: visible in top (H−S) rows of the viewport (GL y = S … H)
-      if (S < H) {
-        renderer.setScissor(0, S, W, H - S);
-        renderer.setViewport(0, 0, W, H);
+      // Brain: top (size − slip) px of the square
+      if (slip < size) {
+        renderer.setScissor(cx, cy + slip, size, size - slip);
+        renderer.setViewport(cx, cy, size, size);
         renderer.render(brainScene, brainCam);
       }
 
-      // Friend: visible in bottom S rows of the viewport (GL y = 0 … S)
-      if (S > 0) {
-        renderer.setScissor(0, 0, W, S);
-        renderer.setViewport(0, 0, W, H);
+      // Friend: bottom slip px of the square
+      if (slip > 0) {
+        renderer.setScissor(cx, cy, size, slip);
+        renderer.setViewport(cx, cy, size, size);
         renderer.render(friendScene, friendCam);
       }
     })(0);
@@ -418,10 +439,11 @@ if (IS_IOS) {
     let modelSize = new THREE.Vector3();
 
     function updateBrainCamera() {
-      const W = panel.clientWidth, H = panel.clientHeight;
+      const W = isMobile ? Math.floor(window.innerWidth * 0.8) : panel.clientWidth;
+      const H = isMobile ? W : panel.clientHeight;
       camera.aspect = W / H;
       const d = Math.max(modelSize.x, modelSize.y, modelSize.z);
-      if (d > 0) camera.position.set(0, 0, calcDist(camera, d, IS_MOBILE ? 0.45 : 0.65));
+      if (d > 0) camera.position.set(0, 0, calcDist(camera, d, 0.65));
       camera.updateProjectionMatrix();
     }
 
@@ -436,6 +458,7 @@ if (IS_IOS) {
       box.getSize(modelSize);
       model.position.sub(centre);
       pivot.add(model);
+      boostSaturation(scene);
       scene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
       updateBrainCamera();
       document.getElementById('brain-loading').style.opacity = '0';
@@ -450,13 +473,15 @@ if (IS_IOS) {
 
     let angle = 0;
     function resizeBrain() {
-      renderer.setSize(panel.clientWidth, panel.clientHeight);
+      const W = isMobile ? Math.floor(window.innerWidth * 0.8) : panel.clientWidth;
+      const H = isMobile ? W : panel.clientHeight;
+      renderer.setSize(W, H);
       updateBrainCamera();
     }
     (function loopBrain() {
       requestAnimationFrame(loopBrain);
       if (pageHidden || !brainVisible) return;
-      angle += 0.003;
+      angle += isMobile ? 0.006 : 0.003;
       pivot.rotation.y = angle;
       renderer.render(scene, camera);
     })();
@@ -493,10 +518,11 @@ if (IS_IOS) {
       let modelSize = new THREE.Vector3();
 
       function updateFriendCamera() {
-        const W = stage.clientWidth, H = stage.clientHeight;
+        const W = isMobile ? Math.floor(window.innerWidth * 0.8) : stage.clientWidth;
+        const H = isMobile ? W : stage.clientHeight;
         camera.aspect = W / H;
         const d = Math.max(modelSize.x, modelSize.y, modelSize.z);
-        if (d > 0) camera.position.set(0, 0, calcDist(camera, d, IS_MOBILE ? 0.62 : 0.60));
+        if (d > 0) camera.position.set(0, 0, calcDist(camera, d, 0.65));
         camera.updateProjectionMatrix();
       }
 
@@ -542,7 +568,9 @@ if (IS_IOS) {
       stage.addEventListener('touchend',   up);
 
       function resizeFriend() {
-        renderer.setSize(stage.clientWidth, stage.clientHeight);
+        const W = isMobile ? Math.floor(window.innerWidth * 0.8) : stage.clientWidth;
+        const H = isMobile ? W : stage.clientHeight;
+        renderer.setSize(W, H);
         updateFriendCamera();
       }
       (function loopFriend() {
