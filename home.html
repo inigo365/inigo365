@@ -244,8 +244,7 @@
           // piece.offsetTop is the raw CSS top = exact seam Y relative to portfolio
           // portfolio.offsetTop gives its document position
           const seamDocY = portfolio.offsetTop + piece.offsetTop;
-          const scroller = document.scrollingElement || document.documentElement;
-          scroller.scrollTop = seamDocY - window.innerHeight / 2;
+          document.body.scrollTop = seamDocY - window.innerHeight / 2;
         }
       }
     });
