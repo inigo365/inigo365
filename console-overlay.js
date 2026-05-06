@@ -6,8 +6,12 @@
   // Fetch + decode to raw PCM immediately. By the time the user first touches,
   // the buffer is in memory and playback starts with zero I/O latency.
   var AC = window.AudioContext || window.webkitAudioContext;
-  var audioCtx    = AC ? new AC() : null;
+  var audioCtx    = null;
   var audioBuffer = null;
+
+  // new AudioContext() throws on older iOS Safari before a user gesture.
+  // Wrap in try-catch so a failure here never crashes the rest of the IIFE.
+  if (AC) { try { audioCtx = new AC(); } catch(e) {} }
 
   if (audioCtx) {
     fetch('sfx/typewriter.mp3')
@@ -15,7 +19,7 @@
       .then(function(ab) {
         audioCtx.decodeAudioData(ab,
           function(buf) { audioBuffer = buf; },
-          function()    { audioCtx = null;   } // decode failed → fall through to HTML5
+          function()    { audioCtx = null;   }
         );
       })
       .catch(function() { audioCtx = null; });
@@ -118,6 +122,10 @@
     document.removeEventListener('keydown', onAnyKey);
     overlay.removeEventListener('click',      onAnyClick);
     overlay.removeEventListener('touchstart', onAnyTouch);
+
+    // If AudioContext creation failed earlier (old iOS blocks it before gesture),
+    // try again now that we're inside a user gesture handler.
+    if (!audioCtx && AC) { try { audioCtx = new AC(); } catch(e) {} }
 
     // Ensure AudioContext is running before we start — resume is ~1ms on desktop.
     var run = function() {
