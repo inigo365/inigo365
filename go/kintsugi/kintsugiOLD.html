@@ -60,17 +60,17 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .island.visible { opacity: 1; }
 
 /* ===================== TRACKLIST ===================== */
-.tracklist-island { width: 460px; background: rgba(255,255,255,0.5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 32px rgba(255,255,255,0.7); }
+.tracklist-island { width: 460px; background: rgba(255,255,255,0.35); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 32px rgba(255,255,255,0.5); }
 
 .tracklist-header {
   display: flex; align-items: flex-start;
   gap: 28px; margin-bottom: 36px;
 }
 
-.artwork-wrap { flex-shrink: 0; width: 200px; height: 200px; }
+.artwork-wrap { flex-shrink: 0; width: 170px; height: 170px; }
 
 .artwork-wrap img, .artwork-placeholder {
-  width: 200px; height: 200px; display: block;
+  width: 170px; height: 170px; display: block;
 }
 
 .artwork-placeholder {
@@ -159,7 +159,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
 .album-description { font-size: 20px; line-height: 1.7; letter-spacing: 0.03em; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 0 #4AADFF; position: relative; z-index: 1; max-width: 280px; margin: 0 auto; text-align: center; }
 
 /* ===================== LINER NOTE ===================== */
-.liner-island { text-align: center; max-width: 360px; z-index: 5; background: rgba(255,255,255,0.7); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 28px rgba(255,255,255,0.7); }
+.liner-island { text-align: center; max-width: 360px; z-index: 5; background: rgba(255,255,255,0.5); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-radius: 16px; box-shadow: 0 0 0 28px rgba(255,255,255,0.5); }
 .liner-text   { font-size: 20px; line-height: 2.4; letter-spacing: 0.04em; color: #4AADFF; text-shadow: 1px 1px 0 #A8D8FF; }
 
 /* ===================== BANDCAMP ISLAND ===================== */
@@ -332,7 +332,7 @@ button, a, .track-row.released, .pctl, .nav-arrow {
   position: fixed; z-index: 60;
   width: 56px; height: 56px;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0.6;
+  opacity: 0.85;
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
 }
 .nav-arrow:hover { opacity: 1; }
@@ -533,7 +533,7 @@ body.music-active #arrow-down { bottom: 118px; }
 @media (max-width: 600px) {
 
   /* scale down world islands */
-  .tracklist-island { width: min(420px, calc(100vw - 40px)); box-shadow: 0 0 0 16px rgba(255,255,255,0.7); }
+  .tracklist-island { width: min(420px, calc(100vw - 40px)); box-shadow: 0 0 0 16px rgba(255,255,255,0.5); }
   .album-title      { font-size: 28px; }
   .album-artist     { font-size: 17px; }
   .album-detail     { font-size: 16px; }
@@ -541,7 +541,7 @@ body.music-active #arrow-down { bottom: 118px; }
   .track-num,
   .track-duration   { font-size: 16px; }
   .album-description{ max-width: 280px; }
-  .liner-island     { width: 300px; max-width: 300px; box-shadow: 0 0 0 16px rgba(255,255,255,1); }
+  .liner-island     { width: 300px; max-width: 300px; box-shadow: 0 0 0 16px rgba(255,255,255,0.5); }
   .liner-text       { font-size: 20px; }
   .bc-link          { font-size: 20px; }
   .artwork-wrap, .artwork-wrap img, .artwork-placeholder { width: 160px; height: 160px; }
@@ -585,7 +585,7 @@ body.music-active #arrow-down { bottom: 118px; }
   .album-description     { max-width: 280px; }
 
   /* arrows: always visible on mobile */
-  .nav-arrow             { opacity: 0.6; }
+  .nav-arrow             { opacity: 0.85; }
   .nav-arrow:active      { opacity: 1; }
 
   /* flush to screen edges on mobile */
@@ -671,7 +671,7 @@ const ISLANDS = [
   {
     type: 'title',
     x: 0,
-    y: -550,
+    y: -450,
     // edit lines to update description
     lines: [
       'Kintsugi takes its name from the Japanese art of repairing broken ceramics with gold&nbsp;&mdash; the philosophy that damage made visible becomes the most beautiful part of the&nbsp;whole.',
@@ -1351,8 +1351,8 @@ let worldX = 0, worldY = 0;
 let targetX = 0, targetY = 0;
 
 const PAN_STEP  = 420;  // px moved per arrow click
-const MAX_SPEED = 1.5;  // desktop mouse-follow: subtle drift
-const DEAD_ZONE = 0.40; // large dead zone — only triggers near screen edge
+const MAX_SPEED = 0.8;  // desktop mouse-follow: subtle drift
+const DEAD_ZONE = 0.65; // large dead zone — only triggers near screen edge
 
 let mouseNX = 0, mouseNY = 0;
 
@@ -1593,7 +1593,7 @@ const MOBILE_POSITIONS = {
   tracklist:            { wx:    0, sx: 20,  wy:    0, sy: 48  },  // left edge at 20px, top at 48px — identical to initial page load
   'tracklist-bottom':   { wx:    0, sx: 20,  wy:  560, sy: 'c' },  // same x as tracklist; wy≈560 (near bottom of 640px island) centred vertically
   nokia:       { wx: -310, sx:'c',  wy:  300, sy:'c'  },
-  title:       { wx:    0, sx: 20,  wy: -550, sy: 220  },  // 20px left margin centres the island (width: vw-40px) on screen
+  title:       { wx:    0, sx: 20,  wy: -450, sy: 220  },  // 20px left margin centres the island (width: vw-40px) on screen
   images:      { wx: -295, sx:'c',  wy: -605, sy: 30 },  // midpoint of morrisblitz(-510,-620) + skytower(-420,-590); sy=px from top
   description: { wx:  750, sx: 'c',   wy:   50, sy: 70  },  // centre of island (x:600 + fixed-mobile-w:300/2) centred on screen
   bandcamp:    { wx:  740, sx:'c',  wy: -520, sy: 110 },  // profile centred x; profile top 130px from screen top
@@ -1969,15 +1969,22 @@ updateArrows();
 requestAnimationFrame(tick);
 requestAnimationFrame(() => { document.body.style.opacity = '1'; });
 
-// Navigation hint — fades in after 1.2s, fades out after ~4.8s, removed from DOM after
+// Navigation hint — cycles: 2s visible, fade, 7s off, repeat ~4 times then done
 (function () {
   const _hint = document.getElementById('nav-hint');
   if (!_hint) return;
-  setTimeout(() => _hint.classList.add('visible'), 1200);
-  setTimeout(() => {
-    _hint.style.opacity = '0';
-    setTimeout(() => _hint.remove(), 900);
-  }, 4800);
+  const SHOW = 2000, FADE = 900, OFF = 7000, CYCLES = 4;
+  let cycle = 0;
+  function show() {
+    if (cycle >= CYCLES) { _hint.remove(); return; }
+    cycle++;
+    _hint.classList.add('visible');
+    setTimeout(() => {
+      _hint.classList.remove('visible');
+      setTimeout(show, OFF);
+    }, SHOW);
+  }
+  setTimeout(show, 1200);
 }());
 
 </script>

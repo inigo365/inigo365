@@ -676,10 +676,61 @@ video {
     text-decoration: none;
   }
 }
+/* shared typography for all bg buttons */
 .portal-tile--bg .portal-title,
 .portal-tile--bg .portal-sub{
-  color: white;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
 }
+
+/* =============================================
+   MAIN VIEW — BUTTON 1  (creative portfolio)
+   ============================================= */
+[data-key="home"] .portal-title  { color: rgb(255, 255, 255);   /* ← M1 MAIN TEXT COLOUR  */ }
+[data-key="home"] .portal-sub    { color: white;                /* ← M1 SUB TEXT COLOUR   */ }
+[data-key="home"] .portal-title,
+[data-key="home"] .portal-sub    { text-shadow: 1px 1px 0 #e993d7; /* ← M1 SHADOW COLOUR  */ }
+
+/* =============================================
+   MAIN VIEW — BUTTON 2  (games)
+   ============================================= */
+[data-key="games"] .portal-title { color: white;                /* ← M2 MAIN TEXT COLOUR  */ }
+[data-key="games"] .portal-sub   { color: white;                /* ← M2 SUB TEXT COLOUR   */ }
+[data-key="games"] .portal-title,
+[data-key="games"] .portal-sub   { text-shadow: 1px 1px 0 #407bdf; /* ← M2 SHADOW COLOUR  */ }
+
+/* =============================================
+   MAIN VIEW — BUTTON 3  (kintsugi)
+   ============================================= */
+[data-key="mediaplayer"] .portal-title { color: white;          /* ← M3 MAIN TEXT COLOUR  */ }
+[data-key="mediaplayer"] .portal-sub   { color: white;          /* ← M3 SUB TEXT COLOUR   */ }
+[data-key="mediaplayer"] .portal-title,
+[data-key="mediaplayer"] .portal-sub   { text-shadow: 1px 1px 0 #eeca1a; /* ← M3 SHADOW COLOUR */ }
+
+/* =============================================
+   GAMES VIEW — BUTTON 1  (put the bag in the bag)
+   ============================================= */
+[data-key="bag"] .portal-title  { color: rgb(255, 255, 255);    /* ← G1 MAIN TEXT COLOUR  */ }
+[data-key="bag"] .portal-sub    { color: white;                 /* ← G1 SUB TEXT COLOUR   */ }
+[data-key="bag"] .portal-title,
+[data-key="bag"] .portal-sub    { text-shadow: 1px 1px 0 #e993d7; /* ← G1 SHADOW COLOUR   */ }
+
+/* =============================================
+   GAMES VIEW — BUTTON 2  (1millionfrogs)
+   ============================================= */
+[data-key="1millionfrogs"] .portal-title { color: white;        /* ← G2 MAIN TEXT COLOUR  */ }
+[data-key="1millionfrogs"] .portal-sub   { color: white;        /* ← G2 SUB TEXT COLOUR   */ }
+[data-key="1millionfrogs"] .portal-title,
+[data-key="1millionfrogs"] .portal-sub   { text-shadow: 1px 1px 0 #407bdf; /* ← G2 SHADOW COLOUR */ }
+
+/* =============================================
+   GAMES VIEW — BUTTON 3  (main menu)
+   ============================================= */
+[data-key="mainmenu"] .portal-title { color: white;             /* ← G3 MAIN TEXT COLOUR  */ }
+[data-key="mainmenu"] .portal-sub   { color: white;             /* ← G3 SUB TEXT COLOUR   */ }
+[data-key="mainmenu"] .portal-title,
+[data-key="mainmenu"] .portal-sub   { text-shadow: 1px 1px 0 #eeca1a; /* ← G3 SHADOW COLOUR */ }
 
 .portal-left{
   display: flex;
@@ -1747,9 +1798,9 @@ const DOCK_VIEWS = {
     { key: "mediaplayer", title: "kintsugi",               sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif",  bgImage: "images/50.png" }
   ],
   games: [
-    { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/5.png" },
-    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",  glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/10.png" },
-    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main", bgImage: "images/50.png" }
+    { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/100.png" },
+    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",  glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/50.png" },
+    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main", bgImage: "images/20.png" }
   ]
 };
 
