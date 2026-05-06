@@ -687,42 +687,48 @@ video {
 /* =============================================
    MAIN VIEW — BUTTON 1  (creative portfolio)
    ============================================= */
-[data-key="home"] .portal-title  { color: rgb(255, 255, 255);   /* ← M1 MAIN TEXT COLOUR  */ }
+[data-key="home"] .portal-title  { color: white;                /* ← M1 MAIN TEXT COLOUR  */ }
 [data-key="home"] .portal-sub    { color: white;                /* ← M1 SUB TEXT COLOUR   */ }
 [data-key="home"] .portal-title,
-[data-key="home"] .portal-sub    { text-shadow: 1px 1px 0 #e993d7; /* ← M1 SHADOW COLOUR  */ }
+[data-key="home"] .portal-sub    { text-shadow: 1px 1px 0 #7a2200; /* ← M1 SHADOW COLOUR  */ }
+/* two-line title — same technique as bag, height stays identical */
+[data-key="home"] .portal-left   { gap: 0; }
+[data-key="home"] .portal-sub    { font-size: 24px; line-height: 0.9; }
 
 /* =============================================
    MAIN VIEW — BUTTON 2  (games)
    ============================================= */
-[data-key="games"] .portal-title { color: white;                /* ← M2 MAIN TEXT COLOUR  */ }
-[data-key="games"] .portal-sub   { color: white;                /* ← M2 SUB TEXT COLOUR   */ }
+[data-key="games"] .portal-title { color: rgb(84, 217, 193);                /* ← M2 MAIN TEXT COLOUR  */ }
+[data-key="games"] .portal-sub   { color: rgb(84, 217, 193);              /* ← M2 SUB TEXT COLOUR   */ }
 [data-key="games"] .portal-title,
-[data-key="games"] .portal-sub   { text-shadow: 1px 1px 0 #407bdf; /* ← M2 SHADOW COLOUR  */ }
+[data-key="games"] .portal-sub   { text-shadow: 1px 1px 0 #003d3d; /* ← M2 SHADOW COLOUR  */ }
 
 /* =============================================
    MAIN VIEW — BUTTON 3  (kintsugi)
    ============================================= */
-[data-key="mediaplayer"] .portal-title { color: white;          /* ← M3 MAIN TEXT COLOUR  */ }
-[data-key="mediaplayer"] .portal-sub   { color: white;          /* ← M3 SUB TEXT COLOUR   */ }
+[data-key="mediaplayer"] .portal-title { color: #ffd700;        /* ← M3 MAIN TEXT COLOUR  */ }
+[data-key="mediaplayer"] .portal-sub   { color: #ffd700;        /* ← M3 SUB TEXT COLOUR   */ }
 [data-key="mediaplayer"] .portal-title,
-[data-key="mediaplayer"] .portal-sub   { text-shadow: 1px 1px 0 #eeca1a; /* ← M3 SHADOW COLOUR */ }
+[data-key="mediaplayer"] .portal-sub   { text-shadow: 1px 1px 0 #5c3800; /* ← M3 SHADOW COLOUR */ }
 
 /* =============================================
    GAMES VIEW — BUTTON 1  (put the bag in the bag)
    ============================================= */
-[data-key="bag"] .portal-title  { color: rgb(255, 255, 255);    /* ← G1 MAIN TEXT COLOUR  */ }
-[data-key="bag"] .portal-sub    { color: white;                 /* ← G1 SUB TEXT COLOUR   */ }
+[data-key="bag"] .portal-title  { color: rgb(25, 22, 231);    /* ← G1 MAIN TEXT COLOUR  */ }
+[data-key="bag"] .portal-sub    { color: rgb(25, 22, 231);    /* ← G1 SUB TEXT COLOUR   */ }
 [data-key="bag"] .portal-title,
 [data-key="bag"] .portal-sub    { text-shadow: 1px 1px 0 #34fcff; /* ← G1 SHADOW COLOUR   */ }
+/* sub row at title size — gap:0 + line-height:0.9 keeps total height identical */
+[data-key="bag"] .portal-left   { gap: 0; }
+[data-key="bag"] .portal-sub    { font-size: 24px; line-height: 0.9; }
 
 /* =============================================
    GAMES VIEW — BUTTON 2  (1millionfrogs)
    ============================================= */
-[data-key="1millionfrogs"] .portal-title { color: white;        /* ← G2 MAIN TEXT COLOUR  */ }
-[data-key="1millionfrogs"] .portal-sub   { color: white;        /* ← G2 SUB TEXT COLOUR   */ }
+[data-key="1millionfrogs"] .portal-title { color: #39ff14;                  /* ← G2 MAIN TEXT COLOUR  */ }
+[data-key="1millionfrogs"] .portal-sub   { color: #39ff14;                  /* ← G2 SUB TEXT COLOUR   */ }
 [data-key="1millionfrogs"] .portal-title,
-[data-key="1millionfrogs"] .portal-sub   { text-shadow: 1px 1px 0 #83f555; /* ← G2 SHADOW COLOUR */ }
+[data-key="1millionfrogs"] .portal-sub   { text-shadow: 1px 1px 0 #1a5c00; /* ← G2 SHADOW COLOUR */ }
 
 /* =============================================
    GAMES VIEW — BUTTON 3  (main menu)
@@ -731,6 +737,7 @@ video {
 [data-key="mainmenu"] .portal-sub   { color: white;             /* ← G3 SUB TEXT COLOUR   */ }
 [data-key="mainmenu"] .portal-title,
 [data-key="mainmenu"] .portal-sub   { text-shadow: 1px 1px 0 #e19aff; /* ← G3 SHADOW COLOUR */ }
+
 
 .portal-left{
   display: flex;
@@ -799,6 +806,14 @@ video {
 .portal-sprite-gif-chess{
   filter: brightness(1.3) saturate(1.8);
   transform: translateX(-6px) scale(1.6);
+}
+
+@media (max-width: 768px) {
+  .portal-sprite-gif-brain  { transform: translateX(-12px) scale(1.65); }
+  .portal-sprite-gif-chess  { transform: translateX(-9px) scale(1.6); }
+  .portal-sprite-gif-bag    { transform: translateX(-6px) translateY(-3px) scale(1.4); }
+  .portal-sprite-gif-frog   { transform: translateX(-15px) translateY(-4px) scale(1.8); }
+  .portal-sprite-gif:not([class*="portal-sprite-gif-"]) { transform: translateX(-12px) scale(1.8); } /* friend-spin fallback */
 }
 
 .portal-hint{
@@ -1793,13 +1808,13 @@ const actions = {
 // ===== PUBLIC DOCK (two views: main / games) =====
 const DOCK_VIEWS = {
   main: [
-    { key: "home",        title: "creative portfolio",    sub: "main page", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.png" },
+    { key: "home",        title: "creative",              sub: "portfolio", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.png" },
     { key: "games",       title: "games",                 sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    viewSwitch: "games", bgImage: "images/10.png" },
-    { key: "mediaplayer", title: "kintsugi",               sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif",  bgImage: "images/50.png" }
+    { key: "mediaplayer", title: "kintsugi",                  sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif",  bgImage: "images/50.png" }
   ],
   games: [
-    { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/100.png" },
-    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",  glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/50.png" },
+    { key: "bag",           title: "put the bag",            sub: "in the bag",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/100.png" },
+    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",   glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/50.png" },
     { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main", bgImage: "images/20.png" }
   ]
 };
@@ -1844,7 +1859,7 @@ function renderPortalDock(viewName) {
     btn.innerHTML = `
       <div class="portal-left">
         <div class="portal-title">${item.title}</div>
-        <div class="portal-sub">${item.sub}</div>
+        ${item.sub ? `<div class="portal-sub">${item.sub}</div>` : ""}
       </div>
       <div class="portal-right">${spriteHTML}${item.glyph}</div>
     `;
