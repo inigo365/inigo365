@@ -656,6 +656,23 @@ video {
 
 .portal-tile:hover{ text-decoration: underline; }
 
+.portal-tile--bg{
+  border-color: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.portal-tile--bg:hover{
+  text-decoration-color: gold;
+}
+.portal-tile--bg:hover .portal-right{
+  text-decoration: none;
+}
+.portal-tile--bg .portal-title,
+.portal-tile--bg .portal-sub{
+  color: white;
+}
+
 .portal-left{
   display: flex;
   flex-direction: column;
@@ -712,6 +729,17 @@ video {
 
 .portal-sprite-gif-bag{
   filter: brightness(1.4) saturate(1.9);
+  transform: translateX(4px) translateY(-3px) scale(1.4);
+}
+
+.portal-sprite-gif-frog{
+  filter: brightness(1.4) saturate(1.4);
+  transform: translateX(-12px) translateY(-4px) scale(1.8);
+}
+
+.portal-sprite-gif-chess{
+  filter: brightness(0.9) saturate(2);
+  transform: translateX(-6px) scale(1.6);
 }
 
 .portal-hint{
@@ -1706,14 +1734,14 @@ const actions = {
 // ===== PUBLIC DOCK (two views: main / games) =====
 const DOCK_VIEWS = {
   main: [
-    { key: "home",        title: "creative portfolio",    sub: "main page", glyph: "→", sprite: "images/chess-spin.gif" },
-    { key: "games",       title: "games",                 sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",     viewSwitch: "games" },
-    { key: "mediaplayer", title: "kintsugi",               sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif" }
+    { key: "home",        title: "creative portfolio",    sub: "main page", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.png" },
+    { key: "games",       title: "games",                 sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    viewSwitch: "games", bgImage: "images/10.png" },
+    { key: "mediaplayer", title: "kintsugi",               sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif",  bgImage: "images/50.png" }
   ],
   games: [
-    { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bag-spin.gif" },
-    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",  glyph: "→", sprite: "images/frog-spin.gif" },
-    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main" }
+    { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/5.png" },
+    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",  glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/10.png" },
+    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main", bgImage: "images/50.png" }
   ]
 };
 
@@ -1731,13 +1759,25 @@ function renderPortalDock(viewName) {
     btn.className = "portal-tile";
     btn.setAttribute("data-key", item.key);
 
+    if (item.bgImage) {
+      btn.classList.add("portal-tile--bg");
+      btn.style.backgroundImage = `url("${item.bgImage}")`;
+      btn.style.backgroundSize = "100% 100%";
+      btn.style.backgroundPosition = "center";
+      btn.style.backgroundRepeat = "no-repeat";
+    }
+
     const spriteClass = !item.sprite || !item.sprite.endsWith(".gif")
       ? "portal-sprite"
       : item.sprite.includes("brain-spin")
         ? "portal-sprite-gif portal-sprite-gif-brain"
         : item.sprite.includes("bag-spin")
           ? "portal-sprite-gif portal-sprite-gif-bag"
-          : "portal-sprite-gif";
+          : item.sprite.includes("frog-spin")
+            ? "portal-sprite-gif portal-sprite-gif-frog"
+            : item.sprite.includes("chess-spin")
+              ? "portal-sprite-gif portal-sprite-gif-chess"
+              : "portal-sprite-gif";
     const spriteHTML = item.sprite
       ? `<img class="${spriteClass}" src="${item.sprite}" alt="">`
       : "";
