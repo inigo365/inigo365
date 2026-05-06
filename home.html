@@ -211,11 +211,9 @@
         }
       } else {
         const xSeam = tiles[0].getBoundingClientRect().right - rect.left;
-        // Extra piece half off the top of the grid — chess2-spin to fit the existing order
-        intersections.push({ x: xSeam, y: 0, gif: 1 });
         for (let i = 0; i < 4; i++) {
           const ySeam = tiles[(i + 1) * 2].getBoundingClientRect().top - rect.top + portfolio.scrollTop;
-          intersections.push({ x: xSeam, y: ySeam, gif: i % 2 }); // locked: 0,1,0,1
+          intersections.push({ x: xSeam, y: ySeam });
         }
       }
 
@@ -223,7 +221,7 @@
 
       intersections.forEach(function (pos, idx) {
         const img = document.createElement('img');
-        img.src = GIFS[pos.gif !== undefined ? pos.gif : idx % 2];
+        img.src = GIFS[idx % 2];
         img.className = 'chess-intersection';
         img.alt = '';
         img.style.cssText =
