@@ -36,6 +36,11 @@
       .landing { display: none; }
     }
 
+    /* Mobile: hide landing image and buttons (remove this block to restore) */
+    @media (max-width: 1024px) {
+      .landing { display: none; }
+    }
+
     /* Mobile: hide tile titles (remove this block to restore them) */
     @media (hover: none) {
       .tile .overlay { display: none; }
@@ -207,9 +212,11 @@
         }
       } else {
         const xSeam = tiles[0].getBoundingClientRect().right - rect.left;
+        // Extra piece half off the top of the grid — chess2-spin to fit the existing order
+        intersections.push({ x: xSeam, y: 0, gif: 1 });
         for (let i = 0; i < 4; i++) {
           const ySeam = tiles[(i + 1) * 2].getBoundingClientRect().top - rect.top + portfolio.scrollTop;
-          intersections.push({ x: xSeam, y: ySeam });
+          intersections.push({ x: xSeam, y: ySeam, gif: i % 2 }); // locked: 0,1,0,1
         }
       }
 
@@ -217,7 +224,7 @@
 
       intersections.forEach(function (pos, idx) {
         const img = document.createElement('img');
-        img.src = GIFS[idx % 2];
+        img.src = GIFS[pos.gif !== undefined ? pos.gif : idx % 2];
         img.className = 'chess-intersection';
         img.alt = '';
         img.style.cssText =
@@ -237,15 +244,11 @@
     window.addEventListener('load', function () {
       placeChessPieces();
 
-      if (window.innerWidth > 768) {
-        const portfolio = document.querySelector('.portfolio');
-        const piece = document.querySelector('.chess-intersection');
-        if (portfolio && piece) {
-          // piece.offsetTop is the raw CSS top = exact seam Y relative to portfolio
-          // portfolio.offsetTop gives its document position
-          const seamDocY = portfolio.offsetTop + piece.offsetTop;
-          document.body.scrollTop = seamDocY - window.innerHeight / 2;
-        }
+      const portfolio = document.querySelector('.portfolio');
+      const piece = document.querySelector('.chess-intersection');
+      if (portfolio && piece) {
+        const seamDocY = portfolio.offsetTop + piece.offsetTop;
+        document.body.scrollTop = seamDocY - window.innerHeight / 2;
       }
     });
 
