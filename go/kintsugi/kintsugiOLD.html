@@ -1168,10 +1168,11 @@ function renderTracklist(island) {
         });
       };
 
+      let bdayInterval;
       const tickBday = () => {
         const diff = bdayTarget - Date.now();
         if (diff <= 0) {
-          clearInterval(bdayInterval); // fix: clear the interval when done
+          clearInterval(bdayInterval);
           showUnlockBtn();
           return;
         }
@@ -1182,7 +1183,7 @@ function renderTracklist(island) {
         timerEl.textContent = d + 'd ' + String(h).padStart(2,'0') + 'h ' + String(m).padStart(2,'0') + 'm ' + String(s).padStart(2,'0') + 's';
       };
       tickBday();
-      const bdayInterval = setInterval(tickBday, 1000);
+      bdayInterval = setInterval(tickBday, 1000);
     } else if (track.state === 'locked' && track.unlockable) {
       row.className = 'track-row unlockable';
       row.innerHTML =
