@@ -663,10 +663,18 @@ video {
   -webkit-backdrop-filter: none !important;
 }
 .portal-tile--bg:hover{
+  text-decoration: none !important;
+}
+.portal-tile--bg:hover .portal-title,
+.portal-tile--bg:hover .portal-sub{
+  text-decoration: underline;
   text-decoration-color: gold;
 }
-.portal-tile--bg:hover .portal-right{
-  text-decoration: none;
+@media (max-width: 768px){
+  .portal-tile--bg:hover .portal-title,
+  .portal-tile--bg:hover .portal-sub{
+    text-decoration: none;
+  }
 }
 .portal-tile--bg .portal-title,
 .portal-tile--bg .portal-sub{
@@ -738,7 +746,7 @@ video {
 }
 
 .portal-sprite-gif-chess{
-  filter: brightness(0.9) saturate(2);
+  filter: brightness(1.6) saturate(1.2);
   transform: translateX(-6px) scale(1.6);
 }
 
