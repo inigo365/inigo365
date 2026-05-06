@@ -406,6 +406,43 @@ section {
     width: 14%;
     height: 45%;
   }
+
+  /* Hide image footer on desktop */
+  .site-footer {
+    display: none;
+  }
+}
+
+/* =========================
+   SIMPLE DESKTOP FOOTER
+========================= */
+.simple-footer {
+  display: none; /* hidden on mobile */
+}
+
+@media (min-width: 1025px) {
+  .simple-footer {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: center;
+    background: rgba(20, 20, 20, 0.97);
+    padding: 18px 40px;
+    width: 100%;
+  }
+
+  .simple-footer-link {
+    color: #fff;
+    text-decoration: none;
+    font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+    font-size: 22px;
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
+  }
+
+  .simple-footer-link:hover {
+    opacity: 0.65;
+  }
 }
 
 /* =========================
@@ -455,7 +492,8 @@ section {
   .landing-link,
   .video-link,
   .back,
-  .footer-link {
+  .footer-link,
+  .simple-footer-link {
     cursor: url("./images/cursor/cursor-hover.png") 16 16, pointer;
   }
 }

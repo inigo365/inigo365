@@ -169,6 +169,14 @@
   </div>
 </footer>
 
+<!-- Desktop-only simple footer (replaces image footer on desktop) -->
+<footer class="simple-footer">
+  <a href="about.html" class="simple-footer-link">About Me</a>
+  <a href="https://www.imdb.com/name/nm17192091/" class="simple-footer-link" target="_blank" rel="noopener noreferrer">IMDB</a>
+  <a href="mailto:macdonald.iggy@gmail.com" class="simple-footer-link" target="_blank" rel="noopener noreferrer">Email</a>
+  <a href="https://wa.me/447432435885" class="simple-footer-link" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+  <a href="https://www.instagram.com/inigo365_/" class="simple-footer-link" target="_blank" rel="noopener noreferrer">Instagram</a>
+</footer>
 
 <script>
   (function () {
@@ -206,7 +214,7 @@
         }
       }
 
-      const size = isDesktop ? '200px' : '210px';
+      const size = isDesktop ? '200px' : '140px';
 
       intersections.forEach(function (pos, idx) {
         const img = document.createElement('img');
@@ -246,7 +254,7 @@
 
 <script>
   // Landing link fade-out behavior
-  document.querySelectorAll('.landing-link, .footer-link').forEach(link => {
+  document.querySelectorAll('.landing-link, .footer-link, .simple-footer-link').forEach(link => {
     link.addEventListener('click', function(e) {
       const href = this.href;
       const target = this.target;
