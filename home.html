@@ -242,9 +242,17 @@
       placeChessPieces();
 
       const portfolio = document.querySelector('.portfolio');
-      const piece = document.querySelector('.chess-intersection');
-      if (portfolio && piece) {
-        const seamDocY = portfolio.offsetTop + piece.offsetTop;
+      const pieces = portfolio.querySelectorAll('.chess-intersection');
+      if (portfolio && pieces.length) {
+        const isDesktop = window.innerWidth >= 1025;
+        let seamDocY;
+        if (isDesktop) {
+          seamDocY = portfolio.offsetTop + pieces[0].offsetTop;
+        } else {
+          // Centre between piece 1 and piece 2 so both are visible on load
+          const mid = (pieces[0].offsetTop + pieces[1].offsetTop) / 2;
+          seamDocY = portfolio.offsetTop + mid;
+        }
         document.body.scrollTop = seamDocY - window.innerHeight / 2;
       }
     });
