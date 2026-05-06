@@ -3,6 +3,7 @@
 ========================= */
 html,
 body {
+  height: 100%;
   margin: 0;
   padding: 0;
   width: 100%;
@@ -11,6 +12,7 @@ body {
 }
 
 body {
+  overflow-y: auto;
   font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
   background: #fff;
 }
@@ -124,6 +126,8 @@ section {
   margin: 0;
   padding: 0;
   position: relative;
+  -webkit-transform: translateZ(0); /* force compositing layer — fixes position:absolute children on iOS */
+  transform: translateZ(0);
 }
 
 /* Desktop: 5 columns (2 clean rows of 5) */
