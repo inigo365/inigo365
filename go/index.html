@@ -710,6 +710,10 @@ video {
   transform: translateX(-6px) scale(1.65);
 }
 
+.portal-sprite-gif-bag{
+  filter: brightness(1.4) saturate(1.9);
+}
+
 .portal-hint{
   width: 100%;
   margin-top: 2px;
@@ -1707,8 +1711,8 @@ const DOCK_VIEWS = {
     { key: "mediaplayer", title: "kintsugi",               sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif" }
   ],
   games: [
-    { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bagsprite.png" },
-    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",  glyph: "→", sprite: "images/frogsprite.png" },
+    { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bag-spin.gif" },
+    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",  glyph: "→", sprite: "images/frog-spin.gif" },
     { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main" }
   ]
 };
@@ -1731,7 +1735,9 @@ function renderPortalDock(viewName) {
       ? "portal-sprite"
       : item.sprite.includes("brain-spin")
         ? "portal-sprite-gif portal-sprite-gif-brain"
-        : "portal-sprite-gif";
+        : item.sprite.includes("bag-spin")
+          ? "portal-sprite-gif portal-sprite-gif-bag"
+          : "portal-sprite-gif";
     const spriteHTML = item.sprite
       ? `<img class="${spriteClass}" src="${item.sprite}" alt="">`
       : "";
