@@ -171,6 +171,80 @@
 
 
 <script>
+  (function () {
+    const GIFS = [
+      'go/images/chess-spin.gif',
+      'go/images/chess2-spin.gif'
+    ];
+
+    function placeChessPieces() {
+      const portfolio = document.querySelector('.portfolio');
+      if (!portfolio) return;
+
+      // Remove any previously placed pieces
+      portfolio.querySelectorAll('.chess-intersection').forEach(el => el.remove());
+
+      const tiles = Array.from(portfolio.querySelectorAll('.tile'));
+      const rect = portfolio.getBoundingClientRect();
+      const isDesktop = window.innerWidth >= 1025;
+
+      const intersections = [];
+
+      if (isDesktop) {
+        // 5 cols × 2 rows → 4 col seams × 1 row seam = 4 intersections
+        const ySeam = tiles[5].getBoundingClientRect().top - rect.top + portfolio.scrollTop;
+        for (let i = 0; i < 4; i++) {
+          const xSeam = tiles[i].getBoundingClientRect().right - rect.left;
+          intersections.push({ x: xSeam, y: ySeam });
+        }
+      } else {
+        // 2 cols × 5 rows → 1 col seam × 4 row seams = 4 intersections
+        const xSeam = tiles[0].getBoundingClientRect().right - rect.left;
+        for (let i = 0; i < 4; i++) {
+          const ySeam = tiles[(i + 1) * 2].getBoundingClientRect().top - rect.top + portfolio.scrollTop;
+          intersections.push({ x: xSeam, y: ySeam });
+        }
+      }
+
+      const size = isDesktop ? '200px' : '210px';
+
+      intersections.forEach(function (pos, idx) {
+        const img = document.createElement('img');
+        img.src = GIFS[idx % 2];
+        img.className = 'chess-intersection';
+        img.alt = '';
+        img.style.cssText =
+          'position:absolute;' +
+          'left:' + pos.x + 'px;' +
+          'top:' + pos.y + 'px;' +
+          'transform:translate(-50%,-50%);' +
+          'height:' + size + ';' +
+          'width:auto;' +
+          'pointer-events:none;' +
+          'z-index:10;';
+        portfolio.appendChild(img);
+      });
+    }
+
+    function scrollToSeam() {
+      if (window.innerWidth < 1025) return;
+      const tiles = Array.from(document.querySelectorAll('.portfolio .tile'));
+      if (tiles.length < 6) return;
+      const seamY = tiles[5].getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, seamY - window.innerHeight / 2);
+    }
+
+    window.addEventListener('load', function () {
+      placeChessPieces();
+      requestAnimationFrame(function () {
+        requestAnimationFrame(scrollToSeam);
+      });
+    });
+    window.addEventListener('resize', placeChessPieces);
+  })();
+</script>
+
+<script>
   // Landing link fade-out behavior
   document.querySelectorAll('.landing-link, .footer-link').forEach(link => {
     link.addEventListener('click', function(e) {

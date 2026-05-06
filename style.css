@@ -125,6 +125,7 @@ section {
   gap: 0;
   margin: 0;
   padding: 0;
+  position: relative;
 }
 
 /* Desktop: 5 columns (2 clean rows of 5) */
