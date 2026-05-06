@@ -37,17 +37,21 @@
 
   // Returns a stop() that cuts the sound at the precise moment called.
   function playTw() {
-    if (audioCtx && audioBuffer) {
-      if (audioCtx.state === 'suspended') audioCtx.resume().catch(function(){});
-      var gain = audioCtx.createGain();
-      gain.gain.value = 0.75;
-      gain.connect(audioCtx.destination);
-      var src = audioCtx.createBufferSource();
-      src.buffer = audioBuffer;
-      src.connect(gain);
-      src.start(0);
-      return function() { try { src.stop(); } catch(e) {} };
+    // Only use Web Audio if the context is actually running — never attempt it
+    // on a suspended context (can throw on iOS and produces no sound anyway).
+    if (audioCtx && audioCtx.state === 'running' && audioBuffer) {
+      try {
+        var gain = audioCtx.createGain();
+        gain.gain.value = 0.75;
+        gain.connect(audioCtx.destination);
+        var src = audioCtx.createBufferSource();
+        src.buffer = audioBuffer;
+        src.connect(gain);
+        src.start(0);
+        return function() { try { src.stop(); } catch(e) {} };
+      } catch(e) {}
     }
+    // HTML5 fallback — always works once the user has gestured.
     var a = twEl[twIdx];
     twIdx = 1 - twIdx;
     a.currentTime = 0;
@@ -122,44 +126,41 @@
     document.removeEventListener('keydown',    onAnyKey);
     document.removeEventListener('touchstart', onAnyTouch);
 
-    // If AudioContext creation failed earlier (old iOS blocks it before gesture),
-    // try again now that we're inside a user gesture handler.
+    // If AudioContext creation failed earlier (old iOS blocks before gesture),
+    // try once more now that we're inside a user gesture.
     if (!audioCtx && AC) { try { audioCtx = new AC(); } catch(e) {} }
 
-    // Ensure AudioContext is running before we start — resume is ~1ms on desktop.
-    var run = function() {
-      cursor.classList.remove('waiting');
-      cursor.style.opacity = '1';
-
-      var text     = 'inigo365.com';
-      var interval = 78;
-      var i        = 0;
-      var stopFwd  = playTw();
-
-      var fw = setInterval(function() {
-        typed.textContent = text.slice(0, ++i);
-        if (i < text.length) return;
-        clearInterval(fw);
-        stopFwd(); // cut sound exactly when typing finishes
-
-        setTimeout(function() {
-          var stopRev = playTw();
-          var rv = setInterval(function() {
-            typed.textContent = text.slice(0, --i);
-            if (i > 0) return;
-            clearInterval(rv);
-            stopRev(); // cut sound exactly when reverse finishes
-            dismiss();
-          }, interval);
-        }, 600);
-      }, interval);
-    };
-
+    // Resume in the background — never block the animation on this promise.
+    // iOS AudioContext.resume() can hang indefinitely; run() must fire now.
     if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().then(run).catch(run);
-    } else {
-      run();
+      audioCtx.resume().catch(function(){});
     }
+
+    cursor.classList.remove('waiting');
+    cursor.style.opacity = '1';
+
+    var text     = 'inigo365.com';
+    var interval = 78;
+    var i        = 0;
+    var stopFwd  = playTw();
+
+    var fw = setInterval(function() {
+      typed.textContent = text.slice(0, ++i);
+      if (i < text.length) return;
+      clearInterval(fw);
+      stopFwd();
+
+      setTimeout(function() {
+        var stopRev = playTw();
+        var rv = setInterval(function() {
+          typed.textContent = text.slice(0, --i);
+          if (i > 0) return;
+          clearInterval(rv);
+          stopRev();
+          dismiss();
+        }, interval);
+      }, 600);
+    }, interval);
   }
 
   // ── Interaction listeners ─────────────────────────────────────────────────
