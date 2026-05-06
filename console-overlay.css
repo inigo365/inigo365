@@ -5,6 +5,7 @@
   z-index: 5;
   opacity: 1;
   transition: opacity 1400ms ease;
+  cursor: pointer;
 }
 
 #console-overlay.fading {

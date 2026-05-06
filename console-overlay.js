@@ -119,9 +119,8 @@
     if (started) return;
     started = true;
 
-    document.removeEventListener('keydown', onAnyKey);
-    overlay.removeEventListener('click',      onAnyClick);
-    overlay.removeEventListener('touchstart', onAnyTouch);
+    document.removeEventListener('keydown',    onAnyKey);
+    document.removeEventListener('touchstart', onAnyTouch);
 
     // If AudioContext creation failed earlier (old iOS blocks it before gesture),
     // try again now that we're inside a user gesture handler.
@@ -164,13 +163,13 @@
   }
 
   // ── Interaction listeners ─────────────────────────────────────────────────
+  // All listeners on document — iOS Safari doesn't reliably fire touch events
+  // on plain divs, but document-level listeners always fire.
   function onAnyKey()    { startSequence(); }
-  function onAnyClick()  { startSequence(); }
   function onAnyTouch(e) { e.preventDefault(); startSequence(); }
 
-  document.addEventListener('keydown',   onAnyKey);
-  overlay.addEventListener('click',      onAnyClick);
-  overlay.addEventListener('touchstart', onAnyTouch, { passive: false });
+  document.addEventListener('keydown',    onAnyKey);
+  document.addEventListener('touchstart', onAnyTouch, { passive: false });
 
   // ── On load: position text (mobile) + clone chess pieces ─────────────────
   window.addEventListener('load', function() {
