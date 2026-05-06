@@ -13,6 +13,7 @@
   <title>inigo365</title>
   <link rel="icon" type="image/png" href="./images/icon.png">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="console-overlay.css">
 
   <!-- SEO Meta Tags -->
   <meta name="description" content="inigo365, a portfolio website showcasing creative projects across film, photography, music, and other media.">
@@ -31,10 +32,8 @@
       overflow: hidden;
     }
 
-    /* Desktop: hide landing image (remove this block to restore it) */
-    @media (min-width: 1025px) {
-      .landing { display: none; }
-    }
+    /* Hide landing image on all screen sizes */
+    .landing { display: none; }
 
     /* Mobile: hide tile titles (remove this block to restore them) */
     @media (hover: none) {
@@ -292,5 +291,6 @@
   });
 </script>
 
+<script src="console-overlay.js"></script>
 </body>
 </html>

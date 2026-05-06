@@ -1,0 +1,52 @@
+#console-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 5;
+  opacity: 1;
+  transition: opacity 1400ms ease;
+}
+
+#console-overlay.fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#console-text-wrap {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: left;
+  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+  font-size: 28px;
+  font-weight: bold;
+  color: #00ff41;
+  pointer-events: none;
+  white-space: nowrap;
+  will-change: transform;
+  line-height: 1;
+}
+
+#console-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.85em;
+  background: #00ff41;
+  vertical-align: text-bottom;
+  margin-left: 1px;
+}
+
+#console-cursor.waiting {
+  animation: cursorBlink 900ms steps(1, end) infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* Slow the page-level fade-in to match the cinematic overlay feel */
+body.fade-in-page {
+  animation-duration: 2.5s !important;
+}
