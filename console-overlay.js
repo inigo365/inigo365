@@ -124,6 +124,7 @@
     started = true;
 
     document.removeEventListener('keydown',    onAnyKey);
+    document.removeEventListener('click',      onAnyClick);
     document.removeEventListener('touchstart', onAnyTouch);
 
     // If AudioContext creation failed earlier (old iOS blocks before gesture),
@@ -164,12 +165,15 @@
   }
 
   // ── Interaction listeners ─────────────────────────────────────────────────
-  // All listeners on document — iOS Safari doesn't reliably fire touch events
-  // on plain divs, but document-level listeners always fire.
+  // All on document: iOS won't reliably fire touch events on plain divs;
+  // click covers desktop mouse; touchstart covers mobile with no 300ms delay.
+  // started flag prevents double-fire if both touchstart + click reach here.
   function onAnyKey()    { startSequence(); }
+  function onAnyClick()  { startSequence(); }
   function onAnyTouch(e) { e.preventDefault(); startSequence(); }
 
   document.addEventListener('keydown',    onAnyKey);
+  document.addEventListener('click',      onAnyClick);
   document.addEventListener('touchstart', onAnyTouch, { passive: false });
 
   // ── On load: position text (mobile) + clone chess pieces ─────────────────
