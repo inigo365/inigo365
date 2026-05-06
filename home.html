@@ -180,6 +180,9 @@
 
 <script>
   (function () {
+    // Prevent the browser restoring a previous scroll position on reload
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
     const GIFS = [
       'go/images/chess-spin.gif',
       'go/images/chess2-spin.gif'
@@ -189,24 +192,20 @@
       const portfolio = document.querySelector('.portfolio');
       if (!portfolio) return;
 
-      // Remove any previously placed pieces
       portfolio.querySelectorAll('.chess-intersection').forEach(el => el.remove());
 
       const tiles = Array.from(portfolio.querySelectorAll('.tile'));
       const rect = portfolio.getBoundingClientRect();
       const isDesktop = window.innerWidth >= 1025;
-
       const intersections = [];
 
       if (isDesktop) {
-        // 5 cols × 2 rows → 4 col seams × 1 row seam = 4 intersections
         const ySeam = tiles[5].getBoundingClientRect().top - rect.top + portfolio.scrollTop;
         for (let i = 0; i < 4; i++) {
           const xSeam = tiles[i].getBoundingClientRect().right - rect.left;
           intersections.push({ x: xSeam, y: ySeam });
         }
       } else {
-        // 2 cols × 5 rows → 1 col seam × 4 row seams = 4 intersections
         const xSeam = tiles[0].getBoundingClientRect().right - rect.left;
         for (let i = 0; i < 4; i++) {
           const ySeam = tiles[(i + 1) * 2].getBoundingClientRect().top - rect.top + portfolio.scrollTop;
@@ -234,20 +233,22 @@
       });
     }
 
-    function scrollToSeam() {
-      if (window.innerWidth < 1025) return;
-      const tiles = Array.from(document.querySelectorAll('.portfolio .tile'));
-      if (tiles.length < 6) return;
-      const seamY = tiles[5].getBoundingClientRect().top + window.scrollY;
-      window.scrollTo(0, seamY - window.innerHeight / 2);
-    }
-
+    // Place pieces once images are loaded (heights settled), then scroll seam to centre
     window.addEventListener('load', function () {
       placeChessPieces();
-      requestAnimationFrame(function () {
-        requestAnimationFrame(scrollToSeam);
-      });
+
+      if (window.innerWidth > 768) {
+        const portfolio = document.querySelector('.portfolio');
+        const piece = document.querySelector('.chess-intersection');
+        if (portfolio && piece) {
+          // piece.offsetTop is the raw CSS top = exact seam Y relative to portfolio
+          // portfolio.offsetTop gives its document position
+          const seamDocY = portfolio.offsetTop + piece.offsetTop;
+          window.scrollTo(0, seamDocY - window.innerHeight / 2);
+        }
+      }
     });
+
     window.addEventListener('resize', placeChessPieces);
   })();
 </script>
