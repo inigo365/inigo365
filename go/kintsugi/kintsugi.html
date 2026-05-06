@@ -16,7 +16,7 @@
 html { height:100%; }
 body {
   width:100%; height:100%; overflow:hidden;
-  background:#f5f2ec url('/images/background.png') center/cover no-repeat;
+  background:#f5f2ec url('images/background.png') center/cover no-repeat;
   font-family:'RuneScape',monospace;
 }
 
@@ -25,7 +25,7 @@ nav {
   display:flex; justify-content:space-between; align-items:center;
   padding:24px 40px; pointer-events:none;
 }
-.nav-brand { font-size:12px; letter-spacing:0.12em; color:#aaa; pointer-events:all; text-decoration:none; }
+.nav-brand { font-size:12px; letter-spacing:0.12em; color:#c9a84c; pointer-events:all; text-decoration:none; }
 .nav-links { display:flex; gap:24px; list-style:none; pointer-events:all; }
 .nav-links a { font-size:12px; color:#bbb; text-decoration:none; transition:color 0.3s; }
 .nav-links a:hover { color:#555; }
@@ -58,12 +58,12 @@ nav {
 
 /* Mobile: stack vertically, each panel a square, hide captions */
 @media (max-width:768px) {
-  html, body { height:auto; overflow:auto; }
   nav { padding:18px 20px; }
   .nav-links { display:none; }
   .brain-caption, .friend-caption { display:none; }
   #panels { flex-direction:column; }
-  #brain-panel, #friend-panel { height:100vw; flex:none; }
+  #brain-panel, #friend-panel { flex:1; }
+  .model-gif { object-fit:contain; }
 }
 </style>
 </head>
