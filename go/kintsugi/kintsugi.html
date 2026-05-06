@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KINTSUGI — inigo365</title>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <style>
 @font-face {
   font-family: 'RuneScape';
@@ -16,9 +13,12 @@
   font-style: normal;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-html, body { width:100%; overflow-x:hidden; background:#f5f2ec; }
-body { font-family:'RuneScape',monospace; }
-#brain-canvas, #friend-canvas { background:transparent; }
+html { height:100%; }
+body {
+  width:100%; height:100%; overflow:hidden;
+  background:#f5f2ec url('background.png') center/cover no-repeat;
+  font-family:'RuneScape',monospace;
+}
 
 nav {
   position:fixed; top:0; left:0; right:0; z-index:100;
@@ -28,14 +28,20 @@ nav {
 .nav-brand { font-size:12px; letter-spacing:0.12em; color:#aaa; pointer-events:all; text-decoration:none; }
 .nav-links { display:flex; gap:24px; list-style:none; pointer-events:all; }
 .nav-links a { font-size:12px; color:#bbb; text-decoration:none; transition:color 0.3s; }
-.nav-links a:hover { color:#333; }
+.nav-links a:hover { color:#555; }
 
-#brain-panel {
-  position:relative; width:100vw; height:100vh;
-  background:#f5f2ec; overflow:hidden;
+/* Desktop: brain left, friend right, filling the viewport */
+#panels { display:flex; width:100%; height:100%; }
+#brain-panel, #friend-panel { flex:1; position:relative; overflow:hidden; }
+
+/* GIFs fill their panel */
+.model-gif {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:contain; display:block;
 }
-#brain-canvas { position:absolute; inset:0; width:100% !important; height:100% !important; }
 
+/* Captions */
 .brain-caption {
   position:absolute; bottom:44px; left:44px;
   z-index:10; pointer-events:none;
@@ -43,57 +49,21 @@ nav {
 .caption-num { font-size:18px; color:#bbb; letter-spacing:0.15em; margin-bottom:6px; }
 .caption-title { font-size:clamp(28px,3.5vw,52px); color:#222; line-height:1.2; letter-spacing:0.02em; }
 
-.scroll-hint {
-  position:absolute; bottom:44px; right:44px; z-index:10;
-  font-size:11px; letter-spacing:0.15em; color:#ccc; pointer-events:none;
-  animation:pulse 3s ease-in-out infinite;
+.friend-caption {
+  position:absolute; bottom:44px; right:44px;
+  z-index:10; pointer-events:none; text-align:right;
 }
-@keyframes pulse { 0%,100%{opacity:0.3;} 50%{opacity:1;} }
-
-#friend-panel {
-  position:relative; width:100vw; height:100vh;
-  background:#f5f2ec; overflow:hidden;
-  display:grid; grid-template-columns:58% 42%;
-}
-#friend-stage { position:relative; width:100%; height:100%; cursor:grab; }
-#friend-stage:active { cursor:grabbing; }
-#friend-canvas { width:100% !important; height:100% !important; }
-
-.friend-text {
-  display:flex; flex-direction:column; justify-content:center;
-  padding:0 56px 0 0; z-index:10;
-}
-.friend-num { font-size:18px; color:#bbb; letter-spacing:0.15em; margin-bottom:18px; }
+.friend-num { font-size:18px; color:#bbb; letter-spacing:0.15em; margin-bottom:6px; }
 .friend-title { font-size:clamp(28px,3.5vw,52px); color:#222; line-height:1.2; letter-spacing:0.02em; }
 
-.loading-msg {
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  font-size:11px; letter-spacing:0.2em; color:#ccc;
-  z-index:5; pointer-events:none; transition:opacity 1s;
-}
-
-/* Friend poster fallback (shown when WebGL fails on mobile) */
-@keyframes spin-y { from { transform:rotateY(0deg); } to { transform:rotateY(360deg); } }
-.friend-poster-wrap {
-  position:absolute; inset:0; display:flex;
-  align-items:center; justify-content:center;
-  background:#f5f2ec; perspective:600px; overflow:hidden; z-index:5;
-}
-.friend-poster {
-  width:70%; max-width:320px; height:auto; display:block;
-  animation:spin-y 8s linear infinite; transform-style:preserve-3d;
-}
-
+/* Mobile: stack vertically, each panel a square, hide captions */
 @media (max-width:768px) {
+  html, body { height:auto; overflow:auto; }
   nav { padding:18px 20px; }
   .nav-links { display:none; }
-  .brain-caption, .scroll-hint, .friend-text { display:none; }
-  /* Both panels: 100vw square, stacked in normal flow */
-  #brain-panel { height:100vw; background:#f5f2ec; }
-  #friend-panel { display:block; height:100vw; background:#f5f2ec; }
-  /* Stage fills full panel; canvas fills stage */
-  #friend-stage { width:100%; height:100vw; cursor:default; }
-  #friend-canvas { width:100% !important; height:100% !important; }
+  .brain-caption, .friend-caption { display:none; }
+  #panels { flex-direction:column; }
+  #brain-panel, #friend-panel { height:100vw; flex:none; }
 }
 </style>
 </head>
@@ -107,462 +77,21 @@ nav {
   </ul>
 </nav>
 
-<div id="brain-panel">
-  <canvas id="brain-canvas"></canvas>
-  <div class="loading-msg" id="brain-loading">loading...</div>
-  <div class="brain-caption">
-    <div class="caption-num">001</div>
-    <div class="caption-title">kintsugi [wip]</div>
+<div id="panels">
+  <div id="brain-panel">
+    <img src="brain-spin.gif" class="model-gif" alt="brain">
+    <div class="brain-caption">
+      <div class="caption-num">001</div>
+      <div class="caption-title">kintsugi [wip]</div>
+    </div>
   </div>
-  <div class="scroll-hint">scroll ↓</div>
-</div>
-
-<div id="friend-panel">
-  <div id="friend-stage">
-    <canvas id="friend-canvas"></canvas>
-    <div class="loading-msg" id="friend-loading">loading...</div>
-  </div>
-  <div class="friend-text">
-    <div class="friend-num">002</div>
-    <div class="friend-title">friend</div>
+  <div id="friend-panel">
+    <img src="friend-spin.gif" class="model-gif" alt="friend">
+    <div class="friend-caption">
+      <div class="friend-num">002</div>
+      <div class="friend-title">friend</div>
+    </div>
   </div>
 </div>
-
-<script>
-const IS_IOS    = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isMobile  = /iPhone|iPad|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-const IS_MOBILE = isMobile;
-const FRAME_MS  = IS_IOS ? 34 : 0;
-
-const rIC = window.requestIdleCallback
-  ? fn => window.requestIdleCallback(fn, {timeout: 4000})
-  : fn => setTimeout(fn, 1);
-
-const dracoLoader = new THREE.DRACOLoader();
-dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
-dracoLoader.preload();
-
-let pageHidden = false;
-document.addEventListener('visibilitychange', () => { pageHidden = document.hidden; });
-
-// Shared helpers used by both paths
-function addLights(scene) {
-  scene.add(new THREE.AmbientLight(0xffffff, 2.0));
-  const key = new THREE.DirectionalLight(0xffffff, 2.5);
-  key.position.set(-2,4,3); scene.add(key);
-  const fill = new THREE.DirectionalLight(0xdde8ff, 1.0);
-  fill.position.set(3,0,2); scene.add(fill);
-  const top = new THREE.DirectionalLight(0xffffff, 0.8);
-  top.position.set(0,5,0); scene.add(top);
-}
-
-function calcDist(camera, maxDim, fillAmt) {
-  const fovRad = camera.fov * Math.PI / 180;
-  return (maxDim / 2) / (Math.tan(fovRad / 2) * fillAmt);
-}
-
-function loadGLB(url, onLoad, onError, maxBytes) {
-  fetch(url)
-    .then(r => {
-      if (!r.ok) throw new Error('fetch ' + url + ' → ' + r.status);
-      return r.arrayBuffer();
-    })
-    .then(rawBuf => {
-      if (maxBytes && rawBuf.byteLength > maxBytes) { onError(new Error('GLB too large: ' + rawBuf.byteLength)); return; }
-      rIC(() => {
-        let buf = rawBuf;
-        const loader = new THREE.GLTFLoader();
-        loader.setDRACOLoader(dracoLoader);
-        loader.parse(buf, '',
-          gltf => { buf = null; onLoad(gltf); },
-          err  => { buf = null; console.error('GLTFLoader.parse error for', url, err); onError(err); }
-        );
-      });
-    })
-    .catch(err => { console.error('loadGLB fetch error for', url, err); onError(err); });
-}
-
-// Hides canvas + loading overlay; panel caption text remains visible on bg colour
-function showFallback(canvasId, loadingId) {
-  const c = document.getElementById(canvasId);
-  const l = document.getElementById(loadingId);
-  if (c) c.style.display = 'none';
-  if (l) l.style.display = 'none';
-}
-
-function boostSaturation(scene) {
-  const hsl = {};
-  scene.traverse(o => {
-    if (!o.isMesh) return;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    mats.forEach(m => {
-      if (m && m.color) {
-        m.color.getHSL(hsl);
-        m.color.setHSL(hsl.h, Math.min(1, hsl.s + 0.3), hsl.l);
-      }
-    });
-  });
-}
-
-function showFriendPoster() {
-  showFallback('friend-canvas', 'friend-loading');
-  const stage = document.getElementById('friend-stage');
-  if (!stage) return;
-  const wrap = document.createElement('div');
-  wrap.className = 'friend-poster-wrap';
-  const img = document.createElement('img');
-  img.src = 'friend-poster.jpg';
-  img.className = 'friend-poster';
-  img.alt = 'friend';
-  wrap.appendChild(img);
-  stage.appendChild(wrap);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MOBILE — two transparent renderers, normal DOM stack, sequential GLB load
-// Both canvases are always in the DOM; no fixed overlay, no scroll tricks.
-// ─────────────────────────────────────────────────────────────────────────────
-if (isMobile) {
-
-  let lastTB = 0, lastTF = 0;
-  let friendStarted = false;
-
-  // Friend renderer — hoisted so brain callbacks can call startFriend()
-  function startFriend() {
-    if (friendStarted) return;
-    friendStarted = true;
-    try {
-      const fCanvas = document.getElementById('friend-canvas');
-      const fR = new THREE.WebGLRenderer({
-        canvas: fCanvas, alpha: true, antialias: false,
-        powerPreference: 'low-power', preserveDrawingBuffer: false
-      });
-      fR.setPixelRatio(1);
-      fR.setClearColor(0x000000, 0);
-      fR.outputEncoding      = THREE.sRGBEncoding;
-      fR.toneMapping         = THREE.ACESFilmicToneMapping;
-      fR.toneMappingExposure = 1.3;
-
-      const fScene = new THREE.Scene();
-      const fCam   = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
-      addLights(fScene);
-      const fPivot = new THREE.Group();
-      fScene.add(fPivot);
-      let fSize    = new THREE.Vector3();
-      let fVisible = false;
-      new IntersectionObserver(e => { fVisible = e[0].isIntersecting; }, {threshold: 0})
-        .observe(document.getElementById('friend-panel'));
-
-      function sizeFriend() {
-        const S = window.innerWidth;
-        fR.setSize(S, S);
-        fCam.aspect = 1;
-        const d = Math.max(fSize.x, fSize.y, fSize.z);
-        if (d > 0) fCam.position.set(0, 0, calcDist(fCam, d, 0.65));
-        fCam.updateProjectionMatrix();
-      }
-
-      loadGLB('friend-mobile.glb', gltf => {
-        const m = gltf.scene;
-        const box = new THREE.Box3().setFromObject(m);
-        m.position.sub(box.getCenter(new THREE.Vector3()));
-        box.getSize(fSize);
-        fPivot.add(m);
-        fScene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
-        sizeFriend();
-        document.getElementById('friend-loading').style.opacity = '0';
-      }, err => {
-        console.error('friend mobile', err);
-        showFriendPoster();
-      }, 1.5 * 1024 * 1024);
-
-      let fAngle = 0;
-      (function loopFriend(ts) {
-        requestAnimationFrame(loopFriend);
-        if (pageHidden || !fVisible) return;
-        if (ts - lastTF < FRAME_MS) return;
-        lastTF = ts;
-        fAngle += 0.006;
-        fPivot.rotation.y = fAngle;
-        fR.render(fScene, fCam);
-      })(0);
-      sizeFriend();
-      window.addEventListener('resize', sizeFriend);
-    } catch(e) {
-      console.error('friend mobile init', e);
-      showFriendPoster();
-    }
-  }
-
-  // Brain renderer
-  try {
-    const bCanvas = document.getElementById('brain-canvas');
-    const bR = new THREE.WebGLRenderer({
-      canvas: bCanvas, alpha: true, antialias: false,
-      powerPreference: 'low-power', preserveDrawingBuffer: false
-    });
-    bR.setPixelRatio(1);
-    bR.setClearColor(0x000000, 0);
-    bR.outputEncoding      = THREE.sRGBEncoding;
-    bR.toneMapping         = THREE.ACESFilmicToneMapping;
-    bR.toneMappingExposure = 1.3;
-
-    const bScene = new THREE.Scene();
-    const bCam   = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
-    addLights(bScene);
-    const bPivot = new THREE.Group();
-    bPivot.rotation.x = 0.15;
-    bScene.add(bPivot);
-    let bSize    = new THREE.Vector3();
-    let bVisible = true;
-    new IntersectionObserver(e => { bVisible = e[0].isIntersecting; }, {threshold: 0})
-      .observe(document.getElementById('brain-panel'));
-
-    function sizeBrain() {
-      const S = window.innerWidth;
-      bR.setSize(S, S);
-      bCam.aspect = 1;
-      const d = Math.max(bSize.x, bSize.y, bSize.z);
-      if (d > 0) bCam.position.set(0, 0, calcDist(bCam, d, 0.65));
-      bCam.updateProjectionMatrix();
-    }
-
-    loadGLB('brain-mobile.glb', gltf => {
-      const m = gltf.scene;
-      const box = new THREE.Box3().setFromObject(m);
-      m.position.sub(box.getCenter(new THREE.Vector3()));
-      box.getSize(bSize);
-      bPivot.add(m);
-      boostSaturation(bScene);
-      bScene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
-      sizeBrain();
-      document.getElementById('brain-loading').style.opacity = '0';
-      startFriend(); // sequential: friend context created after brain buffer released
-    }, err => {
-      console.error('brain mobile', err);
-      showFallback('brain-canvas', 'brain-loading');
-      startFriend();
-    }, 1.5 * 1024 * 1024);
-
-    let bAngle = 0;
-    (function loopBrain(ts) {
-      requestAnimationFrame(loopBrain);
-      if (pageHidden || !bVisible) return;
-      if (ts - lastTB < FRAME_MS) return;
-      lastTB = ts;
-      bAngle += 0.006;
-      bPivot.rotation.y = bAngle;
-      bR.render(bScene, bCam);
-    })(0);
-    sizeBrain();
-    window.addEventListener('resize', sizeBrain);
-  } catch(e) {
-    console.error('brain mobile init', e);
-    showFallback('brain-canvas', 'brain-loading');
-    startFriend();
-  }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DESKTOP — two separate renderers, two canvases, drag on friend
-// ─────────────────────────────────────────────────────────────────────────────
-} else {
-
-  function makeRenderer(canvas, bgCol) {
-    const r = new THREE.WebGLRenderer({
-      canvas,
-      alpha:                false,
-      antialias:            true,
-      powerPreference:      'default',
-      preserveDrawingBuffer: false
-    });
-    r.setPixelRatio(Math.min(devicePixelRatio, 2));
-    r.outputEncoding      = THREE.sRGBEncoding;
-    r.toneMapping         = THREE.ACESFilmicToneMapping;
-    r.toneMappingExposure = 1.3;
-    r.setClearColor(bgCol, 1);
-    return r;
-  }
-
-  // Sequential gate — friend fetch waits for brain parse to complete
-  let brainDone    = false;
-  let friendLoader = null;
-  function tryStartFriend() {
-    if (brainDone && friendLoader) {
-      const fn = friendLoader;
-      friendLoader = null;
-      fn();
-    }
-  }
-
-  // ── Brain (desktop) ────────────────────────────────────────────────────────
-  let brainVisible = true;
-
-  try {
-    const canvas   = document.getElementById('brain-canvas');
-    const panel    = document.getElementById('brain-panel');
-    const bgCol    = new THREE.Color(0xf5f2ec);
-    const renderer = makeRenderer(canvas, bgCol);
-    const scene    = new THREE.Scene();
-    scene.background = bgCol;
-    const camera   = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
-    addLights(scene);
-
-    const pivot = new THREE.Group();
-    pivot.rotation.x = 0.15;
-    scene.add(pivot);
-
-    let modelSize = new THREE.Vector3();
-
-    function updateBrainCamera() {
-      camera.aspect = panel.clientWidth / panel.clientHeight;
-      const d = Math.max(modelSize.x, modelSize.y, modelSize.z);
-      if (d > 0) camera.position.set(0, 0, calcDist(camera, d, 0.65));
-      camera.updateProjectionMatrix();
-    }
-
-    new IntersectionObserver(entries => {
-      brainVisible = entries[0].isIntersecting;
-    }, {threshold: 0}).observe(panel);
-
-    loadGLB('brain.glb', gltf => {
-      const model  = gltf.scene;
-      const box    = new THREE.Box3().setFromObject(model);
-      const centre = box.getCenter(new THREE.Vector3());
-      box.getSize(modelSize);
-      model.position.sub(centre);
-      pivot.add(model);
-      boostSaturation(scene);
-      scene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
-      updateBrainCamera();
-      document.getElementById('brain-loading').style.opacity = '0';
-      brainDone = true;
-      tryStartFriend();
-    }, err => {
-      console.error('brain', err);
-      showFallback('brain-canvas', 'brain-loading');
-      brainDone = true;
-      tryStartFriend();
-    });
-
-    let angle = 0;
-    function resizeBrain() {
-      renderer.setSize(panel.clientWidth, panel.clientHeight);
-      updateBrainCamera();
-    }
-    (function loopBrain() {
-      requestAnimationFrame(loopBrain);
-      if (pageHidden || !brainVisible) return;
-      angle += 0.003;
-      pivot.rotation.y = angle;
-      renderer.render(scene, camera);
-    })();
-    resizeBrain();
-    window.addEventListener('resize', resizeBrain);
-  } catch(e) {
-    console.error('brain init', e);
-    showFallback('brain-canvas', 'brain-loading');
-    brainDone = true;
-    tryStartFriend();
-  }
-
-  // ── Friend (desktop) — lazy init via IntersectionObserver ─────────────────
-  let friendVisible = false;
-  let friendInited  = false;
-
-  function initFriend() {
-    if (friendInited) return;
-    friendInited = true;
-
-    try {
-      const canvas   = document.getElementById('friend-canvas');
-      const stage    = document.getElementById('friend-stage');
-      const bgCol    = new THREE.Color(0xf5f2ec);
-      const renderer = makeRenderer(canvas, bgCol);
-      const scene    = new THREE.Scene();
-      scene.background = bgCol;
-      const camera   = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
-      addLights(scene);
-
-      const pivot = new THREE.Group();
-      scene.add(pivot);
-
-      let modelSize = new THREE.Vector3();
-
-      function updateFriendCamera() {
-        camera.aspect = stage.clientWidth / stage.clientHeight;
-        const d = Math.max(modelSize.x, modelSize.y, modelSize.z);
-        if (d > 0) camera.position.set(0, 0, calcDist(camera, d, 0.60));
-        camera.updateProjectionMatrix();
-      }
-
-      friendLoader = () => {
-        loadGLB('friend.glb', gltf => {
-          const model  = gltf.scene;
-          const box    = new THREE.Box3().setFromObject(model);
-          const centre = box.getCenter(new THREE.Vector3());
-          box.getSize(modelSize);
-          model.position.sub(centre);
-          pivot.add(model);
-          scene.traverse(o => { if (o.isMesh) void o.geometry.attributes; });
-          updateFriendCamera();
-          document.getElementById('friend-loading').style.opacity = '0';
-        }, err => {
-          console.error('friend', err);
-          showFallback('friend-canvas', 'friend-loading');
-        });
-      };
-      tryStartFriend();
-
-      let rotY=0, rotX=0, drag=false, px=0, py=0, velY=0, velX=0;
-      const MAX_X = Math.PI * 0.38;
-      const F=0.88, MIN=0.0001;
-
-      function dn(x,y) { drag=true; px=x; py=y; velY=0; velX=0; }
-      function mv(x,y) {
-        if (!drag) return;
-        const dx=x-px, dy=y-py;
-        velY=dx*0.009; velX=dy*0.009;
-        rotY+=velY;
-        rotX=Math.max(-MAX_X, Math.min(MAX_X, rotX+velX));
-        pivot.rotation.set(rotX, rotY, 0);
-        px=x; py=y;
-      }
-      function up() { drag=false; }
-
-      stage.addEventListener('mousedown',  e => dn(e.clientX, e.clientY));
-      window.addEventListener('mousemove', e => mv(e.clientX, e.clientY));
-      window.addEventListener('mouseup',   up);
-      stage.addEventListener('touchstart', e => { e.preventDefault(); dn(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
-      stage.addEventListener('touchmove',  e => { e.preventDefault(); mv(e.touches[0].clientX, e.touches[0].clientY); }, {passive:false});
-      stage.addEventListener('touchend',   up);
-
-      function resizeFriend() {
-        renderer.setSize(stage.clientWidth, stage.clientHeight);
-        updateFriendCamera();
-      }
-      (function loopFriend() {
-        requestAnimationFrame(loopFriend);
-        if (pageHidden || !friendVisible) return;
-        if (!drag) {
-          if (Math.abs(velY)>MIN) { velY*=F; rotY+=velY; }
-          if (Math.abs(velX)>MIN) { velX*=F; rotX=Math.max(-MAX_X,Math.min(MAX_X,rotX+velX)); }
-          pivot.rotation.set(rotX,rotY,0);
-        }
-        renderer.render(scene, camera);
-      })();
-      resizeFriend();
-      window.addEventListener('resize', resizeFriend);
-    } catch(e) {
-      console.error('friend init', e);
-      showFallback('friend-canvas', 'friend-loading');
-    }
-  }
-
-  new IntersectionObserver(entries => {
-    friendVisible = entries[0].isIntersecting;
-    if (friendVisible) initFriend();
-  }, {threshold: 0}).observe(document.getElementById('friend-panel'));
-}
-</script>
 </body>
 </html>
