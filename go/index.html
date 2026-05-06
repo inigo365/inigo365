@@ -706,6 +706,10 @@ video {
   transform: translateX(-6px) scale(1.8);
 }
 
+.portal-sprite-gif-brain{
+  transform: translateX(-6px) scale(1.65);
+}
+
 .portal-hint{
   width: 100%;
   margin-top: 2px;
@@ -1698,14 +1702,14 @@ const actions = {
 // ===== PUBLIC DOCK (two views: main / games) =====
 const DOCK_VIEWS = {
   main: [
-    { key: "home",        title: "creative portfolio",    sub: "main page", glyph: "→", sprite: "images/portfoliosprite.png" },
+    { key: "home",        title: "creative portfolio",    sub: "main page", glyph: "→", sprite: "images/chess-spin.gif" },
     { key: "mediaplayer", title: "kintsugi",               sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif" },
     { key: "games",       title: "games",                 sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",     viewSwitch: "games" }
   ],
   games: [
     { key: "bag",           title: "put the bag in the bag", sub: "game/music",  glyph: "→", sprite: "images/bagsprite.png" },
     { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",  glyph: "→", sprite: "images/frogsprite.png" },
-    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/portfoliosprite.png", viewSwitch: "main" }
+    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main" }
   ]
 };
 
@@ -1723,7 +1727,11 @@ function renderPortalDock(viewName) {
     btn.className = "portal-tile";
     btn.setAttribute("data-key", item.key);
 
-    const spriteClass = item.sprite && item.sprite.endsWith(".gif") ? "portal-sprite-gif" : "portal-sprite";
+    const spriteClass = !item.sprite || !item.sprite.endsWith(".gif")
+      ? "portal-sprite"
+      : item.sprite.includes("brain-spin")
+        ? "portal-sprite-gif portal-sprite-gif-brain"
+        : "portal-sprite-gif";
     const spriteHTML = item.sprite
       ? `<img class="${spriteClass}" src="${item.sprite}" alt="">`
       : "";
