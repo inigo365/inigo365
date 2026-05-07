@@ -131,7 +131,7 @@ section {
 }
 
 /* Desktop: 5 columns (2 clean rows of 5) */
-@media (min-width: 1025px) {
+@media (min-width: 768px) {
   .portfolio {
     grid-template-columns: repeat(5, 1fr);
   }
@@ -394,7 +394,7 @@ section {
 }
 
 /* Desktop footerdesktop.jpg positions */
-@media (min-width: 1025px) {
+@media (min-width: 768px) {
   .footer-about-link {
     left: 2%;
     top: 25%;
@@ -422,13 +422,13 @@ section {
   display: none;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 767px) {
   .simple-footer {
     display: none !important;
   }
 }
 
-@media (min-width: 1025px) {
+@media (min-width: 768px) {
   .simple-footer {
     display: flex;
     gap: 40px;

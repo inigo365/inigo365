@@ -1,16 +1,21 @@
 // CONSOLE OVERLAY
 (function () {
+  // ── Skip when returning from a project page ───────────────────────────────
+  // Tiles set 'skipOverlay' in sessionStorage before navigating away.
+  // On bfcache restore (pageshow persisted) we also skip.
+  var SKIP_KEY = 'skipOverlay';
+  if (sessionStorage.getItem(SKIP_KEY)) {
+    sessionStorage.removeItem(SKIP_KEY);
+    return; // no overlay at all
+  }
+
   var isMobile = window.matchMedia('(pointer: coarse)').matches;
 
   // ── Audio ─────────────────────────────────────────────────────────────────
-  // Fetch + decode to raw PCM immediately. By the time the user first touches,
-  // the buffer is in memory and playback starts with zero I/O latency.
   var AC = window.AudioContext || window.webkitAudioContext;
   var audioCtx    = null;
   var audioBuffer = null;
 
-  // new AudioContext() throws on older iOS Safari before a user gesture.
-  // Wrap in try-catch so a failure here never crashes the rest of the IIFE.
   if (AC) { try { audioCtx = new AC(); } catch(e) {} }
 
   if (audioCtx) {
@@ -35,10 +40,7 @@
     a.load();
   });
 
-  // Returns a stop() that cuts the sound at the precise moment called.
   function playTw() {
-    // Only use Web Audio if the context is actually running — never attempt it
-    // on a suspended context (can throw on iOS and produces no sound anyway).
     if (audioCtx && audioCtx.state === 'running' && audioBuffer) {
       try {
         var gain = audioCtx.createGain();
@@ -51,7 +53,6 @@
         return function() { try { src.stop(); } catch(e) {} };
       } catch(e) {}
     }
-    // HTML5 fallback — always works once the user has gestured.
     var a = twEl[twIdx];
     twIdx = 1 - twIdx;
     a.currentTime = 0;
@@ -85,10 +86,30 @@
   overlay.appendChild(wrap);
   document.body.appendChild(overlay);
 
+  // ── Set skipOverlay flag when user clicks a project tile ──────────────────
+  // We wire this at load time so the flag is always set before navigation.
+  window.addEventListener('load', function() {
+    document.querySelectorAll('.tile').forEach(function(tile) {
+      tile.addEventListener('click', function() {
+        sessionStorage.setItem(SKIP_KEY, '1');
+      });
+    });
+  });
+
+  // ── bfcache: if page is restored from cache, skip overlay immediately ─────
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+      // Remove any leftover clones from before navigation
+      chessClones.forEach(function(c) { c.parentNode && c.parentNode.removeChild(c); });
+      chessClones = [];
+      // Hide overlay instantly — page content is already visible
+      overlay.style.display = 'none';
+      // Remove the skip flag if it was set (navigation back without tile click)
+      sessionStorage.removeItem(SKIP_KEY);
+    }
+  });
+
   // ── Chess-piece clones ────────────────────────────────────────────────────
-  // .portfolio has transform:translateZ(0) → own stacking context → chess gifs
-  // (z-index 10 inside it) are trapped below the overlay (z-index 5 at root).
-  // Clone each as position:fixed at its current viewport coordinates instead.
   var chessClones = [];
 
   function cloneChessPieces() {
@@ -96,7 +117,7 @@
       var r  = img.getBoundingClientRect();
       var cx = r.left + r.width  / 2;
       var cy = r.top  + r.height / 2;
-      var sz = window.innerWidth >= 1025 ? '200px' : '210px';
+      var sz = window.innerWidth >= 768 ? '200px' : '210px';
       var cl = img.cloneNode(true);
       cl.style.cssText =
         'position:fixed;left:'   + cx + 'px;top:' + cy +
@@ -112,7 +133,16 @@
     overlay.classList.add('fading');
     setTimeout(function() {
       overlay.style.display = 'none';
+      // Remove fixed clones — originals in .portfolio are now visible again
       chessClones.forEach(function(c) { c.parentNode && c.parentNode.removeChild(c); });
+      chessClones = [];
+      // Force-reload the original GIFs so they aren't frozen from being
+      // behind the overlay. Toggling src off/on restarts the animation.
+      document.querySelectorAll('.chess-intersection').forEach(function(img) {
+        var src = img.src;
+        img.src = '';
+        img.src = src;
+      });
     }, 1400);
   }
 
@@ -127,12 +157,8 @@
     document.removeEventListener('click',      onAnyClick);
     document.removeEventListener('touchstart', onAnyTouch);
 
-    // If AudioContext creation failed earlier (old iOS blocks before gesture),
-    // try once more now that we're inside a user gesture.
     if (!audioCtx && AC) { try { audioCtx = new AC(); } catch(e) {} }
 
-    // Resume in the background — never block the animation on this promise.
-    // iOS AudioContext.resume() can hang indefinitely; run() must fire now.
     if (audioCtx && audioCtx.state === 'suspended') {
       audioCtx.resume().catch(function(){});
     }
@@ -165,9 +191,6 @@
   }
 
   // ── Interaction listeners ─────────────────────────────────────────────────
-  // All on document: iOS won't reliably fire touch events on plain divs;
-  // click covers desktop mouse; touchstart covers mobile with no 300ms delay.
-  // started flag prevents double-fire if both touchstart + click reach here.
   function onAnyKey()    { startSequence(); }
   function onAnyClick()  { startSequence(); }
   function onAnyTouch(e) { e.preventDefault(); startSequence(); }

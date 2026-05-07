@@ -200,7 +200,7 @@
 
       const tiles = Array.from(portfolio.querySelectorAll('.tile'));
       const rect = portfolio.getBoundingClientRect();
-      const isDesktop = window.innerWidth >= 1025;
+      const isDesktop = window.innerWidth >= 768;
       const intersections = [];
 
       if (isDesktop) {
@@ -244,7 +244,7 @@
       const portfolio = document.querySelector('.portfolio');
       const pieces = portfolio.querySelectorAll('.chess-intersection');
       if (portfolio && pieces.length) {
-        const isDesktop = window.innerWidth >= 1025;
+        const isDesktop = window.innerWidth >= 768;
         let seamDocY;
         if (isDesktop) {
           seamDocY = portfolio.offsetTop + pieces[0].offsetTop;
