@@ -1,0 +1,96 @@
+/* ============================================================
+   CHESSBOARD TILE OVERLAY
+   Adds a true alternating light/dark tint to portfolio tiles
+   via ::after pseudo-elements. No markup changes required.
+   ============================================================ */
+
+/* ── Base pseudo-element on every tile ───────────────────────────────────── */
+.tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;   /* never block clicks */
+  transition: background 200ms ease;
+  z-index: 1;             /* above the tile image */
+}
+
+/* Ensure the text label sits above the chessboard tint */
+.tile .overlay {
+  z-index: 2;
+}
+
+/* ── 2-column layout  (< 768px, mobile-first default) ───────────────────────
+   Grid:  col1  col2
+   row1:  [1]   [2]     dark  light
+   row2:  [3]   [4]     light dark
+   row3:  [5]   [6]     dark  light  …repeats every 4 tiles
+
+   Dark  → :nth-child(4n+1)  positions 1, 5,  9 … (col1, odd rows)
+         + :nth-child(4n)    positions 4, 8, 12 … (col2, even rows)
+   Light → :nth-child(4n+2)  positions 2, 6, 10 … (col2, odd rows)
+         + :nth-child(4n+3)  positions 3, 7, 11 … (col1, even rows)
+──────────────────────────────────────────────────────────────────────────── */
+
+/* Dark tiles */
+.tile:nth-child(4n+1)::after,
+.tile:nth-child(4n)::after {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Light tiles */
+.tile:nth-child(4n+2)::after,
+.tile:nth-child(4n+3)::after {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Hover (only on pointer-capable devices) */
+@media (hover: hover) {
+  .tile:nth-child(4n+1):hover::after,
+  .tile:nth-child(4n):hover::after {
+    background: rgba(0, 0, 0, 0.35);
+  }
+
+  .tile:nth-child(4n+2):hover::after,
+  .tile:nth-child(4n+3):hover::after {
+    background: rgba(255, 255, 255, 0.22);
+  }
+}
+
+/* ── 5-column layout  (≥ 768px, tablet + desktop) ───────────────────────────
+   Grid:  col1  col2  col3  col4  col5
+   row1:  [1]   [2]   [3]   [4]   [5]   dark  light dark  light dark
+   row2:  [6]   [7]   [8]   [9]  [10]   light dark  light dark  light
+
+   Because the column count (5) is ODD, the row-wrap naturally inverts the
+   pattern — every globally-odd tile is dark, every globally-even tile is light.
+   No 10n formula needed; :nth-child(odd/even) is exact.
+──────────────────────────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  /* Dark tiles — col1/3/5 row1, col2/4 row2, etc. */
+  .tile:nth-child(odd)::after {
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  /* Light tiles — col2/4 row1, col1/3/5 row2, etc. */
+  .tile:nth-child(even)::after {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (min-width: 768px) and (hover: hover) {
+  .tile:nth-child(odd):hover::after {
+    background: rgba(0, 0, 0, 0.35);
+  }
+
+  .tile:nth-child(even):hover::after {
+    background: rgba(255, 255, 255, 0.22);
+  }
+}
+
+/* ── Text readability on both square colours ─────────────────────────────── */
+/* Desktop only — mobile already has stronger text-shadow in style.css */
+@media (min-width: 768px) {
+  .tile .overlay {
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+  }
+}
