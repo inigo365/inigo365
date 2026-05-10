@@ -83,10 +83,14 @@
     var origImgs = Array.from(project.querySelectorAll(':scope > img'));
     if (origImgs.length === 0) return;
 
-    // Snapshot src + alt
+    // Snapshot src + alt, and record the sibling immediately after the last image
+    // so the carousel can be inserted in the same position (preserving any content
+    // that follows the images, e.g. interactive elements on minecraft.html).
     var slides = origImgs.map(function (img) {
       return { src: img.getAttribute('src'), alt: img.alt || '' };
     });
+    var lastImg = origImgs[origImgs.length - 1];
+    var insertBeforeNode = lastImg.nextSibling;
 
     // Remove originals from DOM
     origImgs.forEach(function (img) { img.parentNode.removeChild(img); });
@@ -130,7 +134,13 @@
     counter.className = 'pt-carousel-counter';
     carousel.appendChild(counter);
 
-    project.appendChild(carousel);
+    // Insert carousel where the images were — before whatever followed them.
+    // Falls back to appendChild if nothing followed (all other project pages).
+    if (insertBeforeNode && insertBeforeNode.parentNode === project) {
+      project.insertBefore(carousel, insertBeforeNode);
+    } else {
+      project.appendChild(carousel);
+    }
 
     // Navigation
     function updateCounter() {
