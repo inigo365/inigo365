@@ -1,22 +1,12 @@
 // CONSOLE OVERLAY
 (function () {
-  // ── Skip when arriving from a project page ────────────────────────────────
-  // Rules:
-  //   • No referrer (fresh load / address-bar)   → show overlay
-  //   • External referrer                        → show overlay
-  //   • Same-domain referrer, /go/index          → show overlay
-  //   • Same-domain referrer, /projects/*        → SKIP overlay
-  // No sessionStorage, localStorage, or cookies involved.
-  function comingFromProjectPage() {
-    var ref = document.referrer;
-    if (!ref) return false;
-    try {
-      var u = new URL(ref);
-      if (u.hostname !== window.location.hostname) return false; // external → show
-      return u.pathname.indexOf('/projects/') !== -1;            // project page → skip
-    } catch(e) { return false; }
+  // ── Skip when returning from a project page ──────────────────────────────
+  // Tile clicks set sessionStorage 'fromProject' = 'true' before navigating.
+  // We check and immediately clear it here so it only fires once.
+  if (sessionStorage.getItem('fromProject') === 'true') {
+    sessionStorage.removeItem('fromProject');
+    return;
   }
-  if (comingFromProjectPage()) return;
 
   var isMobile = window.matchMedia('(pointer: coarse)').matches;
 
@@ -208,6 +198,17 @@
 
   // ── On load: position text (mobile) + clone chess pieces ─────────────────
   window.addEventListener('load', function() {
+    // Set flag on every tile click so the overlay is skipped on return
+    document.querySelectorAll('a.tile').forEach(function(tile) {
+      tile.addEventListener('click', function() {
+        // go/index.html is the homepage — arriving from there should still
+        // show the overlay, so only set the flag for genuine project pages.
+        if (tile.getAttribute('href') !== 'go/index.html') {
+          sessionStorage.setItem('fromProject', 'true');
+        }
+      });
+    });
+
     if (isMobile) {
       var gifs = document.querySelectorAll('.chess-intersection');
       if (gifs.length >= 2) {

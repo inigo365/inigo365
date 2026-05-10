@@ -1,0 +1,57 @@
+/* ============================================================
+   FOOTER — console aesthetic
+   Works alongside style.css; loaded after it so overrides win.
+   ============================================================ */
+
+@media (min-width: 768px) {
+
+  /* ── Container ───────────────────────────────────────────────────────────── */
+  .simple-footer {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0;
+    align-items: center;
+    justify-content: center;
+    background: #000000;
+    border-top: 1px solid rgba(0, 255, 65, 0.15);
+    padding: 16px 40px 18px;
+  }
+
+  /* ── · separators ────────────────────────────────────────────────────────── */
+  .footer-sep {
+    font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+    font-size: 22px;
+    color: #00ff41;
+    padding: 0 10px;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* ── Link styles ─────────────────────────────────────────────────────────── */
+  .simple-footer-link {
+    color: #00ff41;
+    text-decoration: none;
+    font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+    font-size: 22px;
+    white-space: nowrap;
+    opacity: 1;
+    transition: text-shadow 0.2s ease;
+    line-height: 1;
+  }
+
+  /* Reserve "> " width on all links to prevent layout shift on hover */
+  .simple-footer-link::before {
+    content: '> ';
+    visibility: hidden;
+  }
+
+  .simple-footer-link:hover {
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+  }
+
+  .simple-footer-link:hover::before {
+    visibility: visible;
+  }
+
+}

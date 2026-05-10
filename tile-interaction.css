@@ -1,0 +1,114 @@
+/* ============================================================
+   TILE INTERACTION
+   Replaces the built-in .overlay hover behaviour with a
+   JS-driven cursor-on-hover → typewriter-on-click system.
+   ============================================================ */
+
+/* Suppress the existing .overlay entirely — tile-interaction.js takes over */
+.tile .overlay {
+  display: none !important;
+}
+
+/* ── Permanent dark readability layer ────────────────────────────────────────
+   z-index 1: sits above the tile image but below ::after (chessboard, z-index 1
+   — same level, but ::before always paints before ::after so it's beneath it)
+   and well below cursor/label overlays (z-index 3).                          */
+.tile {
+  position: relative;
+}
+
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 1;
+  transition: background 250ms ease;
+}
+
+@media (hover: hover) {
+  .tile:hover::before {
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ── Cursor overlay (> █, shows on hover / tap) ───────────────────────────── */
+.tile-cursor {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 3;
+}
+
+.tile-cursor.visible {
+  opacity: 1;
+}
+
+/* Static "> " prefix — sits before the blinking block */
+.tile-cursor::before {
+  content: '> ';
+  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  color: #00ff41;
+  line-height: 1;
+}
+
+.tile-cursor-char {
+  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  color: #00ff41;
+  line-height: 1;
+  animation: tileCursorBlink 500ms steps(1, end) infinite;
+}
+
+@keyframes tileCursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── Typewriter label overlay (click/tap reveal) ─────────────────────────── */
+/* .tile-label is the flex container — centres the inner text span */
+.tile-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 3;
+}
+
+.tile-label.visible {
+  opacity: 1;
+}
+
+/* .tile-label-text holds the actual typewriter characters */
+.tile-label-text {
+  display: block;
+  max-width: 100%;
+  font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  color: #00ff41;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  text-align: center;
+  white-space: pre-wrap;  /* preserves \n from innerText on desktop */
+}
+
+/* ── Mobile: single-line truncation (< 1025px) ───────────────────────────── */
+@media (max-width: 1024px) {
+  .tile-label-text {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+  }
+}

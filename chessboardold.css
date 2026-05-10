@@ -1,7 +1,8 @@
 /* ============================================================
    CHESSBOARD TILE OVERLAY
-   Adds a true alternating light/dark tint to portfolio tiles
-   via ::after pseudo-elements. No markup changes required.
+   Alternating dark tint on portfolio tiles via ::after.
+   Dark squares: heavily dimmed by default, lifts on hover.
+   Light squares: no overlay — raw image shows through.
    ============================================================ */
 
 /* ── Base pseudo-element on every tile ───────────────────────────────────── */
@@ -10,7 +11,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;   /* never block clicks */
-  transition: background 200ms ease;
+  transition: background 350ms ease;
   z-index: 1;             /* above the tile image */
 }
 
@@ -27,32 +28,20 @@
 
    Dark  → :nth-child(4n+1)  positions 1, 5,  9 … (col1, odd rows)
          + :nth-child(4n)    positions 4, 8, 12 … (col2, even rows)
-   Light → :nth-child(4n+2)  positions 2, 6, 10 … (col2, odd rows)
-         + :nth-child(4n+3)  positions 3, 7, 11 … (col1, even rows)
+   Light → :nth-child(4n+2) / :nth-child(4n+3) — no overlay
 ──────────────────────────────────────────────────────────────────────────── */
 
 /* Dark tiles */
 .tile:nth-child(4n+1)::after,
 .tile:nth-child(4n)::after {
-  background: rgba(0, 0, 0, 0.15);
-}
-
-/* Light tiles */
-.tile:nth-child(4n+2)::after,
-.tile:nth-child(4n+3)::after {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.82);
 }
 
 /* Hover (only on pointer-capable devices) */
 @media (hover: hover) {
   .tile:nth-child(4n+1):hover::after,
   .tile:nth-child(4n):hover::after {
-    background: rgba(0, 0, 0, 0.35);
-  }
-
-  .tile:nth-child(4n+2):hover::after,
-  .tile:nth-child(4n+3):hover::after {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.15);
   }
 }
 
@@ -68,22 +57,18 @@
 @media (min-width: 768px) {
   /* Dark tiles — col1/3/5 row1, col2/4 row2, etc. */
   .tile:nth-child(odd)::after {
-    background: rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.82);
   }
 
-  /* Light tiles — col2/4 row1, col1/3/5 row2, etc. */
+  /* Light tiles — no overlay, background left transparent (inherits none) */
   .tile:nth-child(even)::after {
-    background: rgba(255, 255, 255, 0.08);
+    background: transparent;
   }
 }
 
 @media (min-width: 768px) and (hover: hover) {
   .tile:nth-child(odd):hover::after {
-    background: rgba(0, 0, 0, 0.35);
-  }
-
-  .tile:nth-child(even):hover::after {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.15);
   }
 }
 

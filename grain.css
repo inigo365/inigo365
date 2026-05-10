@@ -1,0 +1,20 @@
+/* ============================================================
+   GRAIN OVERLAY
+   The #grain-overlay div is injected by tile-interaction.js,
+   which generates a 200×200 random-noise PNG via Canvas API
+   and sets it as background-image. This file handles positioning.
+   Sits above portfolio tiles / chessboard tint (z-index 1–2)
+   but below the console overlay (z-index 5) and chessmen (z-index 10).
+   pointer-events: none — never blocks clicks.
+   ============================================================ */
+
+#grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.00;
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
