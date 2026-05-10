@@ -93,16 +93,22 @@
   var chessClones = [];
 
   function cloneChessPieces() {
+    var portfolio = document.querySelector('.portfolio');
+    if (!portfolio) return;
+    var pr = portfolio.getBoundingClientRect();
+
     document.querySelectorAll('.chess-intersection').forEach(function(img) {
-      var r  = img.getBoundingClientRect();
-      var cx = r.left + r.width  / 2;
-      var cy = r.top  + r.height / 2;
-      var sz = window.innerWidth >= 768 ? '200px' : '210px';
+      // The original is position:absolute inside .portfolio with left/top set
+      // directly in its inline style by placeChessPieces(). Read those values
+      // directly so we don't depend on the GIF image having loaded its dimensions.
+      // Convert to viewport coords by adding the portfolio's getBoundingClientRect offset.
+      var origLeft = parseFloat(img.style.left) || 0;
+      var origTop  = parseFloat(img.style.top)  || 0;
       var cl = img.cloneNode(true);
-      cl.style.cssText =
-        'position:fixed;left:'   + cx + 'px;top:' + cy +
-        'px;transform:translate(-50%,-50%);height:' + sz +
-        ';width:auto;pointer-events:none;z-index:10;';
+      cl.style.position = 'fixed';
+      cl.style.left     = (pr.left + origLeft) + 'px';
+      cl.style.top      = (pr.top  + origTop)  + 'px';
+      // height, width, transform, pointerEvents, zIndex all inherited from cloneNode
       document.body.appendChild(cl);
       chessClones.push(cl);
     });

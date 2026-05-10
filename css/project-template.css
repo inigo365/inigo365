@@ -7,7 +7,7 @@
 /* Overrides any body background-color set by style.css so the image shows. */
 body {
   background-color: transparent;
-  background-image: url('images/background.png');
+  background-image: url('../images/background.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

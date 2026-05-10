@@ -128,6 +128,7 @@ section {
   position: relative;
   -webkit-transform: translateZ(0); /* force compositing layer — fixes position:absolute children on iOS */
   transform: translateZ(0);
+  overflow: hidden;
 }
 
 /* Desktop: 5 columns (2 clean rows of 5) */

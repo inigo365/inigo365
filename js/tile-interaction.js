@@ -133,41 +133,18 @@
 
       // ── Click / tap ───────────────────────────────────────────────────────
       tile.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (isAnimating) return;
-
         var consoleOverlay = document.getElementById('console-overlay');
-        if (consoleOverlay && consoleOverlay.style.display !== 'none') return;
-
-        isAnimating = true;
-
-        if (!audioCtx && AC) { try { audioCtx = new AC(); } catch(e) {} }
-        if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume().catch(function() {});
+        if (consoleOverlay && consoleOverlay.style.display !== 'none') {
+          e.preventDefault();
+          return;
         }
 
-        function startTypewriter() {
-          cursorEl.classList.remove('visible');
-          labelEl.classList.add('visible');
-          typewriterReveal(labelText, '> ' + titleText, function() {
-            setTimeout(function() {
-              // go/index.html is the homepage — arriving from there should
-              // still show the overlay, so only set the flag for project pages.
-              if (href !== 'go/index.html') {
-                sessionStorage.setItem('fromProject', 'true');
-              }
-              window.location.href = href;
-            }, 300);
-          });
+        // go/index.html is the homepage — arriving from there should
+        // still show the overlay, so only set the flag for project pages.
+        if (href !== 'go/index.html') {
+          sessionStorage.setItem('fromProject', 'true');
         }
-
-        if (isMobile) {
-          // Brief cursor flash (one blink cycle) before typewriter begins
-          cursorEl.classList.add('visible');
-          setTimeout(startTypewriter, 300);
-        } else {
-          startTypewriter();
-        }
+        // Navigate immediately — no typewriter delay
       });
     });
   }
