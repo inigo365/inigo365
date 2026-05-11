@@ -28,6 +28,13 @@ body {
     margin-top: 0;
     padding: 56px 16px 80px; /* bottom clears fixed nav bar */
   }
+
+  /* background-attachment: fixed renders incorrectly on mobile browsers,
+     causing a gap on the right edge. Switch to scroll on small screens. */
+  body {
+    background-attachment: scroll;
+    overflow-x: hidden;
+  }
 }
 
 /* ── Project header ──────────────────────────────────────────────────────── */

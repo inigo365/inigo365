@@ -11,108 +11,49 @@
   </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-
   <title>inigo365 — About</title>
   <link rel="icon" type="image/png" href="./images/icon.png" />
   <link rel="stylesheet" href="css/style.css" />
-
+  <link rel="stylesheet" href="css/project-template.css" />
   <!-- SEO -->
   <meta name="description" content="Iggy Macdonald — Multidisciplinary artist working across film, photography, fashion, art & music. London / Aotearoa." />
 
   <style>
-    @font-face {
-      font-family: "RuneScape UF";
-      src: url("./fonts/RuneScape-UF.woff2") format("woff2"),
-           url("./fonts/RuneScape-UF.woff") format("woff");
-      font-display: swap;
+    /* ── About page: path fix + theme vars ───────────────────────────────────
+       about.html lives at root (not /projects/), so background.png path
+       needs to override the one in project-template.css which uses ../images/.
+       All other project-template.css rules apply as-is.
+    ──────────────────────────────────────────────────────────────────────── */
+    body {
+      background-image: url('images/background.png');
     }
 
     :root {
-      --bg: #0a0a0a;
-      --text: #e8e8e8;
-      --dim: #666;
-      --accent: #2d93ea;
-      --glow: rgba(45, 147, 234, 0.15);
+      --about-accent: #8B5CF6;
+      --about-glow:   rgba(139, 92, 246, 0.15);
+      --about-dim:    #555;
     }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      overflow-x: hidden;
-      overscroll-behavior: none;
-      background: var(--bg);
-      color: var(--text);
-      font-family: "RuneScape UF", Arial, sans-serif;
-      -webkit-text-size-adjust: 100%;
-    }
-
-    body {
-      overflow-y: auto;
-    }
-
-    *, *::before, *::after { box-sizing: border-box; }
-
-    /* =========================
-       BACK LINK
-    ========================= */
-    .back.back-about {
-      position: fixed;
-      z-index: 100;
-      top: max(14px, env(safe-area-inset-top));
-      left: max(18px, env(safe-area-inset-left));
-      font-family: "RuneScape UF", Arial, sans-serif;
-      font-size: 26px;
-      color: var(--dim);
-      text-decoration: none;
-      line-height: 1;
-      padding: 6px 10px;
-      transition: color 0.2s ease;
-    }
-    .back.back-about:hover { color: var(--text); }
-
-    @media (max-width: 520px) {
-      .back.back-about {
-        top: max(10px, env(safe-area-inset-top));
-        left: max(10px, env(safe-area-inset-left));
-        font-size: 22px;
-      }
-    }
-
-    /* =========================
-       MAIN CONTAINER
-    ========================= */
-    .about-wrap {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 80px 24px 60px;
-      opacity: 0;
-      transition: opacity 800ms ease;
-    }
-    body.fade-in-page .about-wrap { opacity: 1; }
-
-    @media (max-width: 520px) {
-      .about-wrap { padding: 64px 18px 48px; }
-    }
-
-    /* =========================
-       PROFILE
-    ========================= */
+    /* ── Profile block ───────────────────────────────────────────────────── */
     .about-profile-wrap {
       display: flex;
       align-items: center;
       gap: 20px;
-      margin-bottom: 32px;
+      min-width: 0;
+      flex: 1 1 auto;
     }
 
+    /* !important overrides .project img { width: 100% } from style.css */
     .about-profile {
-      width: 90px;
-      height: 90px;
+      width: 90px !important;
+      height: 90px !important;
+      max-width: 90px !important;
+      margin-bottom: 0 !important;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid #222;
+      border: 2px solid rgba(0, 0, 0, 0.2);
       flex-shrink: 0;
+      display: inline-block;
     }
 
     .about-id {
@@ -122,40 +63,38 @@
     }
 
     .about-name {
-      font-size: clamp(22px, 4vw, 32px);
-      font-weight: 900;
-      letter-spacing: 0.02em;
-      line-height: 1.1;
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: clamp(24px, 5vw, 40px);
+      font-weight: bold;
+      line-height: 1.2;
+      color: #000;
     }
 
     .about-loc {
-      font-size: clamp(13px, 2vw, 16px);
-      color: var(--accent);
-      letter-spacing: 0.04em;
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 16px;
+      color: var(--about-accent);
     }
 
     .about-passport {
-      font-size: clamp(12px, 1.6vw, 14px);
-      color: var(--dim);
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 14px;
+      color: var(--about-dim);
       margin-top: 2px;
     }
 
-    /* =========================
-       BIO TEXT
-    ========================= */
+    /* ── Bio text ────────────────────────────────────────────────────────── */
     .about-bio {
-      font-size: clamp(16px, 3vw, 22px);
-      line-height: 1.6;
-      color: var(--text);
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 18px;
+      line-height: 1.8;
+      color: #000;
       margin-bottom: 36px;
-      letter-spacing: 0.01em;
     }
 
-    /* =========================
-       EXPANDABLE SECTIONS
-    ========================= */
+    /* ── Expandable sections ─────────────────────────────────────────────── */
     .about-section {
-      border-top: 1px solid #1a1a1a;
+      border-top: 1px solid rgba(0, 0, 0, 0.15);
       padding: 0;
       margin-bottom: 0;
     }
@@ -165,30 +104,30 @@
       justify-content: space-between;
       align-items: center;
       padding: 16px 0;
-      cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
 
-    .section-header:hover .section-title { color: var(--accent); }
+    .section-header:hover .section-title { color: var(--about-accent); }
 
     .section-title {
-      font-size: clamp(16px, 2.8vw, 22px);
-      font-weight: 900;
-      letter-spacing: 0.03em;
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 18px;
+      font-weight: bold;
+      color: #000;
       transition: color 0.2s ease;
     }
 
     .section-arrow {
       font-size: 18px;
-      color: var(--dim);
+      color: var(--about-dim);
       transition: transform 0.3s ease, color 0.3s ease;
       flex-shrink: 0;
     }
 
     .about-section.open .section-arrow {
       transform: rotate(90deg);
-      color: var(--accent);
+      color: var(--about-accent);
     }
 
     .section-body {
@@ -198,17 +137,11 @@
       opacity: 0;
     }
 
-    .about-section.open .section-body {
-      opacity: 1;
-    }
+    .about-section.open .section-body { opacity: 1; }
 
-    .section-inner {
-      padding: 0 0 20px 0;
-    }
+    .section-inner { padding: 0 0 20px 0; }
 
-    /* =========================
-       CREDIT ITEMS
-    ========================= */
+    /* ── Credit items ────────────────────────────────────────────────────── */
     .credit {
       display: flex;
       justify-content: space-between;
@@ -216,38 +149,31 @@
       padding: 6px 0;
       gap: 12px;
       text-decoration: none;
+      color: #000;
       transition: opacity 0.2s ease;
     }
 
-   @media (hover: hover) and (pointer: fine) {
-
-  a.credit:hover { 
-    opacity: 0.7; 
-  }
-
-  a.credit:hover .credit-title { 
-    color: var(--accent); 
-  }
-
-}
-
+    @media (hover: hover) and (pointer: fine) {
+      a.credit:hover { opacity: 0.7; }
+      a.credit:hover .credit-title { color: var(--about-accent); }
+    }
 
     .credit-title {
-      font-size: clamp(14px, 2.2vw, 18px);
-      color: var(--text);
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 18px;
+      color: #000;
       transition: color 0.2s ease;
     }
 
     .credit-role {
-      font-size: clamp(12px, 1.8vw, 15px);
-      color: var(--dim);
+      font-family: "RuneScape UF", Arial, sans-serif;
+      font-size: 15px;
+      color: var(--about-dim);
       text-align: right;
       flex-shrink: 0;
     }
 
-    /* =========================
-       DISCIPLINE CHIPS
-    ========================= */
+    /* ── Discipline chips ────────────────────────────────────────────────── */
     .disciplines {
       display: flex;
       flex-wrap: wrap;
@@ -256,75 +182,70 @@
     }
 
     .disc-chip {
+      font-family: "RuneScape UF", Arial, sans-serif;
       padding: 6px 12px;
-      font-size: clamp(12px, 1.8vw, 15px);
-      font-weight: 900;
-      letter-spacing: 0.03em;
-      border: 1px solid #2a2a2a;
-      color: var(--text);
+      font-size: 16px;
+      font-weight: bold;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      color: #000;
       background: transparent;
       transition: border-color 0.2s ease, color 0.2s ease;
     }
 
     .disc-chip:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+      border-color: var(--about-accent);
+      color: var(--about-accent);
     }
 
-    /* =========================
-       CONTACT ROW
-    ========================= */
+    /* ── Contact row ─────────────────────────────────────────────────────── */
     .about-contact {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       margin-top: 36px;
       padding-top: 24px;
-      border-top: 1px solid #1a1a1a;
+      border-top: 1px solid rgba(0, 0, 0, 0.15);
     }
 
     .contact-btn {
       padding: 10px 16px;
       font-family: "RuneScape UF", Arial, sans-serif;
-      font-size: clamp(14px, 2vw, 18px);
-      font-weight: 900;
+      font-size: 18px;
+      font-weight: bold;
       text-decoration: none;
-      letter-spacing: 0.03em;
-      border: 1px solid #2a2a2a;
-      color: var(--text);
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      color: #000;
       background: transparent;
       transition: all 0.2s ease;
     }
 
     .contact-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      box-shadow: 0 0 12px var(--glow);
+      border-color: var(--about-accent);
+      color: var(--about-accent);
+      box-shadow: 0 0 12px var(--about-glow);
     }
 
-    /* =========================
-       HANDLE + NOTE
-    ========================= */
+    /* ── Handle + note ───────────────────────────────────────────────────── */
     .about-handle {
+      font-family: "RuneScape UF", Arial, sans-serif;
       margin-top: 20px;
-      font-size: clamp(14px, 2vw, 18px);
-      color: var(--accent);
-      font-weight: 900;
+      font-size: 18px;
+      color: var(--about-accent);
+      font-weight: bold;
     }
 
     .about-note {
+      font-family: "RuneScape UF", Arial, sans-serif;
       margin-top: 8px;
-      font-size: clamp(12px, 1.6vw, 14px);
-      color: var(--dim);
+      font-size: 15px;
+      color: var(--about-dim);
     }
 
-    /* =========================
-       SWIPE TO UNLOCK
-    ========================= */
+    /* ── Swipe to unlock ─────────────────────────────────────────────────── */
     .about-footer {
       margin-top: 48px;
       padding-top: 24px;
-      border-top: 1px solid #1a1a1a;
+      border-top: 1px solid rgba(0, 0, 0, 0.15);
       text-align: center;
     }
 
@@ -335,8 +256,8 @@
       height: 44px;
       margin: 0 auto;
       border-radius: 22px;
-      border: 1px solid #1a1a1a;
-      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      background: rgba(0, 0, 0, 0.05);
       overflow: hidden;
       touch-action: pan-x;
       user-select: none;
@@ -347,7 +268,7 @@
       .swipe-track,
       .section-header,
       .swipe-thumb {
-        cursor: url("./images/cursor/cursor-hover.png") 16 16, pointer;
+        cursor: url("images/cursor/cursor-hover.png") 16 16, pointer;
       }
     }
 
@@ -357,14 +278,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: "RuneScape UF", Arial, sans-serif;
       font-size: clamp(11px, 1.4vw, 13px);
-      color: #222;
+      color: rgba(0, 0, 0, 0.35);
       letter-spacing: 0.12em;
       pointer-events: none;
       transition: opacity 0.3s ease;
     }
 
-    .swipe-track:hover .swipe-label { color: #444; }
+    .swipe-track:hover .swipe-label { color: rgba(0, 0, 0, 0.55); }
 
     .swipe-shimmer {
       position: absolute;
@@ -372,14 +294,14 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
       animation: shimmer 3s ease-in-out infinite;
       pointer-events: none;
     }
 
     @keyframes shimmer {
       0%, 100% { left: -100%; }
-      50% { left: 100%; }
+      50%       { left: 100%; }
     }
 
     .swipe-thumb {
@@ -389,8 +311,8 @@
       width: 38px;
       height: 38px;
       border-radius: 50%;
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(0, 0, 0, 0.28);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -400,17 +322,13 @@
 
     .swipe-thumb::after {
       content: "\2192";
-      color: #444;
+      color: rgba(0, 0, 0, 0.45);
       font-size: 16px;
       transition: color 0.2s ease;
     }
 
-    .swipe-track:hover .swipe-thumb {
-      border-color: #333;
-    }
-    .swipe-track:hover .swipe-thumb::after {
-      color: var(--accent);
-    }
+    .swipe-track:hover .swipe-thumb { border-color: rgba(0, 0, 0, 0.4); }
+    .swipe-track:hover .swipe-thumb::after { color: var(--about-accent); }
 
     .swipe-fill {
       position: absolute;
@@ -418,50 +336,73 @@
       left: 0;
       height: 100%;
       width: 0;
-      background: linear-gradient(90deg, transparent, var(--glow));
+      background: linear-gradient(90deg, transparent, var(--about-glow));
       border-radius: 22px;
       pointer-events: none;
       z-index: 1;
     }
 
-    .swipe-track.unlocked {
-      border-color: var(--accent);
-    }
-    .swipe-track.unlocked .swipe-thumb {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-    .swipe-track.unlocked .swipe-thumb::after {
-      color: #fff;
-    }
-    .swipe-track.unlocked .swipe-label {
-      color: var(--accent);
-      opacity: 1;
-    }
+    .swipe-track.unlocked { border-color: var(--about-accent); }
+    .swipe-track.unlocked .swipe-thumb { background: var(--about-accent); border-color: var(--about-accent); }
+    .swipe-track.unlocked .swipe-thumb::after { color: #fff; }
+    .swipe-track.unlocked .swipe-label { color: var(--about-accent); opacity: 1; }
 
-    /* =========================
-       SCROLLBAR (subtle)
-    ========================= */
+    /* ── Scrollbar ───────────────────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
-    ::-webkit-scrollbar-thumb:hover { background: #333; }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.35); }
+
+    /* ── Mobile: tighten swipe section spacing, keep bottom clear of nav bar ── */
+    @media (max-width: 600px) {
+      .project {
+        padding-bottom: 30px;
+      }
+      .about-footer {
+        margin-top: 20px;
+        padding-top: 16px;
+        padding-bottom: 0;
+      }
+    }
+
+    /* ── Brain gif — mobile only, below swipe element ───────────────────── */
+    .about-brain-gif {
+      display: none;
+    }
+
+    @media (max-width: 600px) {
+      .about-brain-gif {
+        display: block !important;
+        width: auto !important;
+        max-width: 144px !important;
+        height: auto !important;
+        margin: -50px auto 70px !important;
+        mix-blend-mode: multiply;
+      }
+    }
   </style>
 </head>
 
 <body class="fade-in-page">
-  <a class="back back-about" href="home.html">← Back</a>
 
-  <div class="about-wrap">
+  <section class="project">
 
-    <!-- PROFILE -->
-    <div class="about-profile-wrap">
-      <img src="images/about/profile.jpg" class="about-profile" alt="Iggy Macdonald" loading="lazy">
-      <div class="about-id">
-        <div class="about-name">Iggy Macdonald</div>
-        <div class="about-loc">London, UK / Aotearoa, New Zealand</div>
-        <div class="about-passport">UK/NZ licence &amp; passport</div>
+    <div class="project-header">
+      <div class="about-profile-wrap">
+        <img src="images/about/profile.jpg" class="about-profile" alt="Iggy Macdonald" loading="lazy">
+        <div class="about-id">
+          <div class="about-name">Iggy Macdonald</div>
+          <div class="about-loc">London, UK / Aotearoa, New Zealand</div>
+          <div class="about-passport">UK/NZ licence &amp; passport</div>
+        </div>
       </div>
+      <nav class="proj-nav">
+        <a href="projects/remz.html" class="proj-nav-btn" aria-label="Previous project" id="aboutPrev">←</a>
+        <a href="home.html#projects" class="proj-nav-btn proj-nav-home" aria-label="Back to portfolio" id="aboutHome">
+          <img class="proj-nav-home-img" src="go/images/chess-spin.gif" alt="" aria-hidden="true">
+        </a>
+        <a href="projects/minecraft.html" class="proj-nav-btn" aria-label="Next project" id="aboutNext">→</a>
+      </nav>
     </div>
 
     <!-- BIO -->
@@ -547,7 +488,7 @@
       </div>
       <div class="section-body">
         <div class="section-inner">
-          <div class="about-bio" style="margin-bottom: 0; font-size: clamp(14px, 2.4vw, 18px); color: var(--dim);">
+          <div class="about-bio" style="margin-bottom: 0; font-size: clamp(14px, 2.4vw, 18px); color: var(--about-dim);">
             This website is a creative project in itself. All music, graphic design, games &amp; website design built by me. There might be more here than you think.
           </div>
         </div>
@@ -575,24 +516,37 @@
       </div>
     </div>
 
-  </div>
+  </section>
+
+  <img src="go/images/brain-spin.gif" alt="" aria-hidden="true" class="about-brain-gif">
 
 <script src="js/click-sfx.js"></script>
 <script>
-  // Click SFX: section headers + back button
+  // ── Nav fade transitions ───────────────────────────────────────────────────
+  ['aboutPrev', 'aboutHome', 'aboutNext'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (window.clickSFX) clickSFX.play();
+      document.body.classList.add('fade-out');
+      var dest = el.href;
+      setTimeout(function() { window.location.href = dest; }, 1000);
+    });
+  });
+
+  // ── Click SFX: section headers ────────────────────────────────────────────
   document.addEventListener('click', function(e) {
-    const header = e.target.closest('.section-header');
-    const back = e.target.closest('.back');
-    if (header || back) clickSFX.play();
+    var header = e.target.closest('.section-header');
+    if (header) clickSFX.play();
   }, true);
 
-  // Expandable sections
-  document.querySelectorAll('.section-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const section = header.parentElement;
-      const body = section.querySelector('.section-body');
-      const isOpen = section.classList.contains('open');
-
+  // ── Expandable sections ───────────────────────────────────────────────────
+  document.querySelectorAll('.section-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+      var section = header.parentElement;
+      var body    = section.querySelector('.section-body');
+      var isOpen  = section.classList.contains('open');
       if (isOpen) {
         body.style.maxHeight = '0px';
         section.classList.remove('open');
@@ -604,67 +558,51 @@
   });
 
   // Set initial max-height for sections that start open
-  document.querySelectorAll('.about-section.open .section-body').forEach(body => {
+  document.querySelectorAll('.about-section.open .section-body').forEach(function(body) {
     body.style.maxHeight = body.scrollHeight + 'px';
   });
 
-  // Back button fade
-  const backBtn = document.querySelector('.back');
-  if (backBtn) {
-    backBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      document.body.classList.add('fade-out');
-      setTimeout(() => { window.location = this.href; }, 1000);
-    });
-  }
-
-  // =========================
-  // SWIPE TO UNLOCK
-  // =========================
+  // ── Swipe to unlock ───────────────────────────────────────────────────────
   (function() {
-    const track = document.getElementById('swipeTrack');
-    const thumb = document.getElementById('swipeThumb');
-    const fill = document.getElementById('swipeFill');
-    const label = document.getElementById('swipeLabel');
+    var track = document.getElementById('swipeTrack');
+    var thumb = document.getElementById('swipeThumb');
+    var fill  = document.getElementById('swipeFill');
+    var label = document.getElementById('swipeLabel');
     if (!track || !thumb) return;
 
-    let dragging = false;
-    let startX = 0;
-    let thumbX = 0;
-    const thumbW = 38;
-    const padding = 3;
-    let unlocked = false;
+    var dragging = false;
+    var startX   = 0;
+    var thumbX   = 0;
+    var thumbW   = 38;
+    var padding  = 3;
+    var unlocked = false;
 
-    function getMaxX() {
-      return track.offsetWidth - thumbW - (padding * 2);
-    }
+    function getMaxX() { return track.offsetWidth - thumbW - (padding * 2); }
 
     function setPos(x) {
-      const max = getMaxX();
+      var max = getMaxX();
       x = Math.max(0, Math.min(x, max));
       thumbX = x;
       thumb.style.left = (padding + x) + 'px';
       fill.style.width = (padding + x + thumbW / 2) + 'px';
-
-      // fade out label as thumb moves
-      const pct = x / max;
+      var pct = x / max;
       label.style.opacity = 1 - pct * 1.5;
     }
 
     function onStart(e) {
       if (unlocked) return;
       dragging = true;
-      clickSFX.unlockNow(); // prime Web Audio inside the gesture so correct.mp3 is ready
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      clickSFX.unlockNow();
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
       startX = clientX - thumbX;
       thumb.style.transition = 'none';
-      fill.style.transition = 'none';
+      fill.style.transition  = 'none';
       e.preventDefault();
     }
 
     function onMove(e) {
       if (!dragging) return;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
       setPos(clientX - startX);
       e.preventDefault();
     }
@@ -673,41 +611,71 @@
       if (!dragging) return;
       dragging = false;
       thumb.style.transition = 'left 0.3s ease, background 0.2s ease, border-color 0.2s ease';
-      fill.style.transition = 'width 0.3s ease';
+      fill.style.transition  = 'width 0.3s ease';
 
-      const max = getMaxX();
+      var max = getMaxX();
       if (thumbX >= max * 0.85) {
-        // UNLOCKED
         unlocked = true;
         setPos(max);
         track.classList.add('unlocked');
         label.textContent = '2001';
         label.style.opacity = '1';
         clickSFX.playCorrect();
-
-        setTimeout(() => {
+        setTimeout(function() {
           document.body.classList.add('fade-out');
-          setTimeout(() => { window.location.href = 'go/nokia/nokia.html'; }, 1000);
+          setTimeout(function() { window.location.href = 'go/index.html'; }, 1000);
         }, 400);
       } else {
-        // snap back
         setPos(0);
         label.style.opacity = '1';
       }
     }
 
-    // Mouse events
     thumb.addEventListener('mousedown', onStart);
     window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('mouseup',   onEnd);
 
-    // Touch events
     thumb.addEventListener('touchstart', onStart, { passive: false });
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onEnd);
-  })();
+    window.addEventListener('touchmove',  onMove,  { passive: false });
+    window.addEventListener('touchend',   onEnd);
+  }());
 
-  // Disable right-click (consistent with rest of site)
+  // ── Flanking chessmen (desktop only) ─────────────────────────────────────
+  // about.html is at root, so path is go/images/ (no ../)
+  (function() {
+    var flankerLeft = null, flankerRight = null;
+
+    function hasFlankSpace() { return (window.innerWidth - 800) / 2 > 200; }
+
+    function makeFlanker(side) {
+      var img = document.createElement('img');
+      img.src       = 'go/images/chess2-spin.gif';
+      img.className = 'pt-flanker pt-flanker-' + side;
+      img.alt       = '';
+      img.setAttribute('aria-hidden', 'true');
+      return img;
+    }
+
+    function showFlankers() {
+      if (flankerLeft) return;
+      flankerLeft  = makeFlanker('left');
+      flankerRight = makeFlanker('right');
+      document.body.appendChild(flankerLeft);
+      document.body.appendChild(flankerRight);
+    }
+
+    function hideFlankers() {
+      if (flankerLeft)  { flankerLeft.parentNode.removeChild(flankerLeft);   flankerLeft  = null; }
+      if (flankerRight) { flankerRight.parentNode.removeChild(flankerRight); flankerRight = null; }
+    }
+
+    function syncFlankers() { hasFlankSpace() ? showFlankers() : hideFlankers(); }
+
+    syncFlankers();
+    window.addEventListener('resize', syncFlankers);
+  }());
+
+  // Disable right-click
   document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 </script>
 

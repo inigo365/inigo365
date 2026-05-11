@@ -199,7 +199,8 @@
       'chopova.html',
       'ash.html',
       'nanushka.html',
-      'remz.html'
+      'remz.html',
+      '../about.html'
     ];
 
     var current = window.location.pathname.split('/').pop();
