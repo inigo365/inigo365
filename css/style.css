@@ -530,7 +530,8 @@ section {
   .video-link,
   .back,
   .footer-link,
-  .simple-footer-link {
+  .simple-footer-link,
+  .proj-nav-btn {
     cursor: url("../images/cursor/cursor-hover.png") 16 16, pointer;
   }
 }
