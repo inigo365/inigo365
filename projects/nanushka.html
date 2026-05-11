@@ -36,7 +36,7 @@
 
 <script src="../js/click-sfx.js"></script>
 <script>
-  document.querySelector('.back').addEventListener('click', function(e) {
+  var _b = document.querySelector('.back'); if (_b) _b.addEventListener('click', function(e) {
     clickSFX.play();
     e.preventDefault();
     document.body.classList.add('fade-out');

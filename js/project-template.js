@@ -183,11 +183,84 @@
     updateCounter();
   }
 
+  // ── Project navigation (prev / home / next) ───────────────────────────────
+  // Replaces the .back link with a three-element nav. Order matches the
+  // portfolio grid on home.html. Wraps around at both ends.
+  function buildProjNav() {
+    var back = document.querySelector('.project-header .back');
+    if (!back) return;
+
+    var PROJECTS = [
+      'minecraft.html',
+      'canyon.html',
+      'eve.html',
+      'ols.html',
+      'martino.html',
+      'chopova.html',
+      'ash.html',
+      'nanushka.html',
+      'remz.html'
+    ];
+
+    var current = window.location.pathname.split('/').pop();
+    var idx     = PROJECTS.indexOf(current);
+    if (idx === -1) return; // unknown page — leave .back as-is
+
+    var total    = PROJECTS.length;
+    var prevPage = PROJECTS[(idx - 1 + total) % total];
+    var nextPage = PROJECTS[(idx + 1) % total];
+
+    var nav = document.createElement('nav');
+    nav.className = 'proj-nav';
+
+    function makeLink(text, href, label) {
+      var a = document.createElement('a');
+      a.textContent = text;
+      a.href        = href;
+      a.className   = 'proj-nav-btn';
+      a.setAttribute('aria-label', label);
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.clickSFX) clickSFX.play();
+        document.body.classList.add('fade-out');
+        var dest = a.href;
+        setTimeout(function() { window.location.href = dest; }, 1000);
+      });
+      return a;
+    }
+
+    nav.appendChild(makeLink('←', prevPage, 'Previous project'));
+
+    // Home button — chess-spin.gif sized to match the surrounding text
+    var homeA = document.createElement('a');
+    homeA.href      = '../home.html#projects';
+    homeA.className = 'proj-nav-btn proj-nav-home';
+    homeA.setAttribute('aria-label', 'Back to portfolio');
+    var homeImg = document.createElement('img');
+    homeImg.src    = '../go/images/chess-spin.gif';
+    homeImg.alt    = '';
+    homeImg.setAttribute('aria-hidden', 'true');
+    homeImg.className = 'proj-nav-home-img';
+    homeA.appendChild(homeImg);
+    homeA.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (window.clickSFX) clickSFX.play();
+      document.body.classList.add('fade-out');
+      setTimeout(function() { window.location.href = '../home.html#projects'; }, 1000);
+    });
+    nav.appendChild(homeA);
+
+    nav.appendChild(makeLink('→', nextPage, 'Next project'));
+
+    back.parentNode.replaceChild(nav, back);
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
   function init() {
     var project = document.querySelector('.project');
     if (!project) return;
 
+    buildProjNav();
     syncFlankers();
     window.addEventListener('resize', syncFlankers);
     buildCarousel(project);
