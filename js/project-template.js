@@ -62,7 +62,7 @@
 
   function showFlankers() {
     if (flankerLeft) return;
-    flankerLeft  = makeFlanker('chess-spin.gif',  'left');
+    flankerLeft  = makeFlanker('chess2-spin.gif', 'left');
     flankerRight = makeFlanker('chess2-spin.gif', 'right');
     document.body.appendChild(flankerLeft);
     document.body.appendChild(flankerRight);

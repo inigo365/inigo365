@@ -33,7 +33,7 @@
   }
 }
 
-/* ── Cursor overlay (> █, shows on hover / tap) ───────────────────────────── */
+/* ── Cursor overlay (> █, shows on hover) ────────────────────────────────── */
 .tile-cursor {
   position: absolute;
   inset: 0;
@@ -53,14 +53,16 @@
 .tile-cursor::before {
   content: '> ';
   font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
-  font-size: 20px;
+  font-size: 24px;
+  font-weight: bold;
   color: #00ff41;
   line-height: 1;
 }
 
 .tile-cursor-char {
   font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
-  font-size: 20px;
+  font-size: 24px;
+  font-weight: bold;
   color: #00ff41;
   line-height: 1;
   animation: tileCursorBlink 500ms steps(1, end) infinite;
@@ -112,3 +114,4 @@
     max-width: 90%;
   }
 }
+

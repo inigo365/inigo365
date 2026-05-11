@@ -5,10 +5,12 @@
   var isMobile = window.matchMedia('(pointer: coarse)').matches;
 
   // ── Canvas-based grain overlay ────────────────────────────────────────────
-  // Generates a 200×200 random-noise PNG via Canvas and injects a fixed div
-  // styled by grain.css. Canvas toDataURL() produces a valid PNG data URL in
-  // every browser, sidestepping SVG feTurbulence filter-reference issues.
-  (function injectGrain() {
+  // Appended inside .portfolio (position:absolute) so it sits within
+  // portfolio's stacking context — z-index 5 keeps it above tiles but
+  // below the chess pieces (z-index 10). Must run after DOMContentLoaded.
+  function injectGrain() {
+    var portfolio = document.querySelector('.portfolio');
+    if (!portfolio) return;
     var canvas = document.createElement('canvas');
     canvas.width = canvas.height = 200;
     var ctx = canvas.getContext('2d');
@@ -23,8 +25,8 @@
     var grain = document.createElement('div');
     grain.id = 'grain-overlay';
     grain.style.backgroundImage = 'url(' + canvas.toDataURL('image/png') + ')';
-    document.body.appendChild(grain);
-  })();
+    portfolio.appendChild(grain);
+  }
 
   // ── Audio ─────────────────────────────────────────────────────────────────
   var AC = window.AudioContext || window.webkitAudioContext;
@@ -150,8 +152,12 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initTiles);
+    document.addEventListener('DOMContentLoaded', function() {
+      injectGrain();
+      initTiles();
+    });
   } else {
+    injectGrain();
     initTiles();
   }
 }());

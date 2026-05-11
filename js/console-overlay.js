@@ -83,8 +83,13 @@
   row.appendChild(typed);
   row.appendChild(cursor);
   wrap.appendChild(row);
-  overlay.appendChild(wrap);
+
+  // Append overlay (black bg) and wrap (cursor text) as siblings on body.
+  // wrap sits at z-index 6 — above the overlay (z-index 5) at all times,
+  // so it never needs to move and can never flicker on dismiss.
   document.body.appendChild(overlay);
+  wrap.style.zIndex = '6';
+  document.body.appendChild(wrap);
 
   // ── Chess-piece clones ────────────────────────────────────────────────────
   // .portfolio has transform:translateZ(0) → own stacking context → chess gifs
@@ -116,6 +121,9 @@
 
   // ── Dismiss ───────────────────────────────────────────────────────────────
   function dismiss() {
+    // Hide the cursor wrap as the overlay fades — nothing persists after.
+    wrap.style.display = 'none';
+
     overlay.classList.add('fading');
     setTimeout(function() {
       overlay.style.display = 'none';
@@ -141,6 +149,7 @@
       chessClones.forEach(function(c) { c.parentNode && c.parentNode.removeChild(c); });
       chessClones = [];
       overlay.style.display = 'none';
+      wrap.style.display = 'none'; /* hide cursor wrap wherever it lives */
     }
   });
 

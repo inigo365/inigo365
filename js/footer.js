@@ -7,10 +7,15 @@
     var footer = document.querySelector('.simple-footer');
     if (!footer) return;
 
-    // Collect existing link anchors before modifying the DOM
-    var links = Array.from(footer.querySelectorAll('.simple-footer-link'));
+    var isMobile = !window.matchMedia('(min-width: 768px)').matches;
 
-    // Rebuild as a single centred row: link · link · link · link · link
+    // On mobile, filter out links marked data-desktop-only (WhatsApp, Instagram)
+    var links = Array.from(footer.querySelectorAll('.simple-footer-link'))
+      .filter(function(link) {
+        return !isMobile || link.getAttribute('data-desktop-only') !== 'true';
+      });
+
+    // Rebuild as a single centred row: link · link · …
     footer.innerHTML = '';
 
     links.forEach(function(link, idx) {

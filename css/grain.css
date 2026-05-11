@@ -9,11 +9,11 @@
    ============================================================ */
 
 #grain-overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 3;
-  opacity: 0.00;
+  z-index: 5; /* above tiles (auto), below chess pieces (z-index 10) */
+  opacity: 0.12;
   mix-blend-mode: overlay;
   background-repeat: repeat;
   background-size: 200px 200px;

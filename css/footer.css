@@ -3,6 +3,42 @@
    Works alongside style.css; loaded after it so overrides win.
    ============================================================ */
 
+/* ── Mobile footer ───────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .simple-footer {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0;
+    align-items: center;
+    justify-content: center;
+    background:
+      linear-gradient(rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.38)),
+      url("../images/footerdesktop.png") center / cover;
+    border-top: 1px solid rgba(0, 255, 65, 0.15);
+    padding: 16px 24px 18px;
+    width: 100%;
+  }
+
+  .simple-footer .footer-sep {
+    font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    color: #00ff41;
+    padding: 0 10px;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .simple-footer .simple-footer-link {
+    color: #00ff41;
+    text-decoration: none;
+    font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    white-space: nowrap;
+    line-height: 1;
+  }
+}
+
+/* ── Desktop footer ──────────────────────────────────────────────────────── */
 @media (min-width: 768px) {
 
   /* ── Container ───────────────────────────────────────────────────────────── */
@@ -12,7 +48,9 @@
     gap: 0;
     align-items: center;
     justify-content: center;
-    background: #000000;
+    background:
+      linear-gradient(rgba(0, 0, 0, 0.38), rgba(0, 0, 0, 0.38)),
+      url("../images/footerdesktop.png") center / cover;
     border-top: 1px solid rgba(0, 255, 65, 0.15);
     padding: 16px 40px 18px;
   }

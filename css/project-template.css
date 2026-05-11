@@ -97,27 +97,33 @@ body {
 }
 
 /* ── Carousel ────────────────────────────────────────────────────────────── */
-/* No fixed height — grows naturally with the active image */
+/* Fixed 82vh frame — images letterboxed via object-fit: contain */
 .pt-carousel {
   position: relative;
   width: 100%;
-  margin-top: 40px;
+  height: 82vh;
   background: #000;
+  margin-top: 40px;
   clear: both;
+  overflow: hidden;
 }
 
-/* Inactive images hidden entirely; active image flows at natural height */
+/* All images fill the fixed frame; opacity driven by JS */
 .pt-carousel-img {
-  display: none !important;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: auto;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain !important;
+  opacity: 0;
+  transition: opacity 300ms ease;
 }
 
 .pt-carousel-img.active {
-  display: block !important;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
+  opacity: 1;
 }
 
 /* Arrow buttons — bare < > characters overlaid on image */

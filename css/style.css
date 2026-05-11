@@ -168,6 +168,40 @@ section {
   display: block;
 }
 
+/* Desktop: tiles fill full viewport height across 2 rows */
+@media (min-width: 768px) {
+  .tile img {
+    height: 50vh;
+    object-fit: cover;
+  }
+
+  /* Anchor to top so faces aren't cropped on fashion runway shots */
+  #tile-nanushka img,
+  #tile-chopova img {
+    object-position: top;
+  }
+}
+
+/* Over-saturated at rest — greyscale on hover */
+.tile img {
+  filter: saturate(140%);
+  transition: filter 0.35s ease;
+}
+
+/* Desktop: desaturate to greyscale on hover */
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover img {
+    filter: saturate(0%);
+  }
+}
+
+/* Touch devices: full colour */
+@media (hover: none) {
+  .tile img {
+    filter: saturate(100%);
+  }
+}
+
 /* Overlay — centred label */
 .tile .overlay {
   position: absolute;
@@ -340,12 +374,7 @@ section {
    8) FOOTER + HITBOX LINKS
 ========================= */
 .site-footer {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  margin-top: 0;  /* remove extra space above footer */
-  padding: 0;
-  padding-top: 0;
+  display: none; /* replaced by .simple-footer on all screen sizes */
 }
 
 .footer-inner {
@@ -425,7 +454,7 @@ section {
 
 @media (max-width: 767px) {
   .simple-footer {
-    display: none !important;
+    display: flex;
   }
 }
 
@@ -435,7 +464,6 @@ section {
     gap: 40px;
     justify-content: center;
     align-items: center;
-    background: rgba(20, 20, 20, 0.97);
     padding: 18px 40px;
     width: 100%;
   }
@@ -492,7 +520,7 @@ section {
 ========================= */
 @media (hover: hover) and (pointer: fine) {
   body {
-    cursor: url("./images/cursor/cursor.png") 16 16, auto;
+    cursor: url("../images/cursor/cursor.png") 16 16, auto;
   }
 
   a,
@@ -503,7 +531,7 @@ section {
   .back,
   .footer-link,
   .simple-footer-link {
-    cursor: url("./images/cursor/cursor-hover.png") 16 16, pointer;
+    cursor: url("../images/cursor/cursor-hover.png") 16 16, pointer;
   }
 }
 
