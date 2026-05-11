@@ -15,6 +15,10 @@
   <link rel="icon" type="image/png" href="../images/icon.png">
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/project-template.css">
+  <style>
+    .pt-carousel-btn,
+    .pt-carousel-counter { display: none !important; }
+  </style>
 </head>
 <body class="fade-in-page">
 
@@ -33,9 +37,10 @@
     </p>
 
     <img src="../images/projects/minecraft/01.jpg" alt="Minecraft project image 1" loading="lazy">
-    <img src="../images/projects/minecraft/02.jpg" alt="Minecraft project image 2" loading="lazy">
 
-    <!-- ⛏ Mine the block to reveal the password -->
+  </section>
+
+  <!-- ⛏ Mine the block to reveal the password — outside .project so it sits on background.png -->
     <div class="mc-section">
       <div class="mc-mine-wrap" id="mcMineWrap">
         <div class="mc-ore-block" id="mcOreBlock" role="button" tabindex="0" aria-label="Mine this block">
@@ -65,8 +70,8 @@
       </div>
     </div>
 
-    <style>
-      .mc-section { text-align:center; margin-bottom:40px; position:relative; min-height:200px; }
+  <style>
+      .mc-section { text-align:center; margin:0 auto 40px; position:relative; min-height:200px; max-width:800px; padding:24px; }
       .mc-mine-wrap {
         position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
         transition:opacity 0.3s ease;
@@ -202,8 +207,6 @@
         });
       })();
     </script>
-
-  </section>
 
 <script src="../js/click-sfx.js"></script>
 <script>
