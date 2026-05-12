@@ -230,7 +230,7 @@
       return a;
     }
 
-    nav.appendChild(makeLink('←', prevPage, 'Previous project'));
+    nav.appendChild(makeLink('<', prevPage, 'Previous project'));
 
     // Home button — chess-spin.gif sized to match the surrounding text
     var homeA = document.createElement('a');
@@ -251,7 +251,7 @@
     });
     nav.appendChild(homeA);
 
-    nav.appendChild(makeLink('→', nextPage, 'Next project'));
+    nav.appendChild(makeLink('>', nextPage, 'Next project'));
 
     back.parentNode.replaceChild(nav, back);
   }

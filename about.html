@@ -355,6 +355,9 @@
 
     /* ── Mobile: tighten swipe section spacing, keep bottom clear of nav bar ── */
     @media (max-width: 600px) {
+      .project-header {
+        margin-bottom: 24px;
+      }
       .project {
         padding-bottom: 30px;
       }
@@ -365,19 +368,19 @@
       }
     }
 
-    /* ── Brain gif — mobile only, below swipe element ───────────────────── */
+    /* ── Brain gif — below swipe element, all screen sizes ─────────────── */
     .about-brain-gif {
-      display: none;
+      display: block !important;
+      width: auto !important;
+      max-width: 432px !important;
+      height: auto !important;
+      margin: -50px auto 70px !important;
+      mix-blend-mode: multiply;
     }
 
     @media (max-width: 600px) {
       .about-brain-gif {
-        display: block !important;
-        width: auto !important;
         max-width: 144px !important;
-        height: auto !important;
-        margin: -50px auto 70px !important;
-        mix-blend-mode: multiply;
       }
     }
   </style>
@@ -397,11 +400,11 @@
         </div>
       </div>
       <nav class="proj-nav">
-        <a href="projects/remz.html" class="proj-nav-btn" aria-label="Previous project" id="aboutPrev">←</a>
+        <a href="projects/remz.html" class="proj-nav-btn" aria-label="Previous project" id="aboutPrev">&lt;</a>
         <a href="home.html#projects" class="proj-nav-btn proj-nav-home" aria-label="Back to portfolio" id="aboutHome">
           <img class="proj-nav-home-img" src="go/images/chess-spin.gif" alt="" aria-hidden="true">
         </a>
-        <a href="projects/minecraft.html" class="proj-nav-btn" aria-label="Next project" id="aboutNext">→</a>
+        <a href="projects/minecraft.html" class="proj-nav-btn" aria-label="Next project" id="aboutNext">&gt;</a>
       </nav>
     </div>
 
