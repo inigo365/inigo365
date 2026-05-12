@@ -26,7 +26,8 @@ body {
 @media (max-width: 767px) {
   .project {
     margin-top: 0;
-    padding: 56px 16px 65px; /* bottom padding matches fixed nav bar height */
+    margin-bottom: 80px;
+    padding: 56px 16px 55px; /* bottom padding clears fixed nav bar */
   }
 
   /* background-attachment: fixed renders incorrectly on mobile browsers,
@@ -200,7 +201,7 @@ body {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
-  height: 350px;
+  height: 325px;
   width: auto;
   z-index: 9999;
   pointer-events: none;
@@ -208,11 +209,11 @@ body {
 
 /* Centred in the gap between the 800px content card and the viewport edge */
 .pt-flanker-left {
-  left: calc(38% - 570px);
+  left: calc(39% - 570px);
 }
 
 .pt-flanker-right {
-  left: calc(46% + 430px);
+  left: calc(47% + 430px);
 }
 
 /* ── Carousel ────────────────────────────────────────────────────────────── */
