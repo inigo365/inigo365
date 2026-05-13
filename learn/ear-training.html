@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ear training — learn</title>
+  <link rel="icon" type="image/png" href="../images/icon.png">
+  <link rel="stylesheet" href="shared/learn.css">
+  <style>
+    @font-face {
+      font-family: 'RuneScape UF';
+      src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+           url('../../fonts/RuneScape-UF.woff')  format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    body { font-family: 'RuneScape UF', monospace; }
+    .friend-sprite { display: none !important; }
+    html {
+      height: auto !important;
+      overflow: hidden !important;
+    }
+    body {
+      height: auto !important;
+      min-height: unset !important;
+      overflow: hidden !important;
+      padding-bottom: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    .page {
+      padding-bottom: 8px !important;
+      margin-bottom: 0 !important;
+      min-height: unset !important;
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .score-row .label { font-size: 0.85rem; color: var(--ink); }
+    .score-row .value { font-size: 0.85rem; color: var(--c-main); }
+
+    .interval-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .interval-btn {
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      border-radius: 2px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .interval-btn:disabled { cursor: default; }
+    .interval-btn.correct {
+      background: #C0DD97;
+      border-color: #27500A;
+      color: #27500A;
+    }
+    .interval-btn.wrong {
+      background: #F09595;
+      border-color: #791F1F;
+      color: #791F1F;
+    }
+    .interval-btn.locked { opacity: 0.4; }
+    html, body {
+      background: transparent !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .page { background: transparent !important; padding-top: 8px !important; }
+  </style>
+</head>
+<body>
+<img class="friend-sprite" src="../go/images/friend-spin.gif" alt="" style="position:fixed;left:32px;bottom:40px;width:140px;pointer-events:none;z-index:10;image-rendering:pixelated;">
+<div class="page">
+
+  <nav class="learn-nav">
+    <a href="../go/index.html">← home</a>
+    <span class="sep">/</span>
+    <a href="index.html">← learn</a>
+    <span class="sep">/</span>
+    <span>ear training</span>
+  </nav>
+
+  <div class="tool-header">
+    <h1 class="tool-title">ear training</h1>
+    <p class="tool-subtitle">identify intervals by ear</p>
+  </div>
+
+  <div class="card col gap-16">
+
+    <!-- Score row -->
+    <div class="score-row">
+      <span class="label">identify the interval</span>
+      <span class="value" id="score-display">0/0 correct</span>
+    </div>
+
+    <!-- Play button -->
+    <button id="play-btn" class="btn-primary">▶ play interval</button>
+
+    <!-- Hint -->
+    <p class="hint-text" id="hint-text">
+      press play to hear an interval, then pick your answer below
+    </p>
+
+    <!-- Interval buttons -->
+    <div class="interval-grid" id="interval-grid"></div>
+
+  </div>
+</div>
+
+<script>
+// ── Interval data ──────────────────────────────────────────────────────────────
+const INTERVALS = [
+  { name: 'Unison',       semitones: 0  },
+  { name: 'Minor 2nd',    semitones: 1  },
+  { name: 'Major 2nd',    semitones: 2  },
+  { name: 'Minor 3rd',    semitones: 3  },
+  { name: 'Major 3rd',    semitones: 4  },
+  { name: 'Perfect 4th',  semitones: 5  },
+  { name: 'Tritone',      semitones: 6  },
+  { name: 'Perfect 5th',  semitones: 7  },
+  { name: 'Minor 6th',    semitones: 8  },
+  { name: 'Major 6th',    semitones: 9  },
+  { name: 'Minor 7th',    semitones: 10 },
+  { name: 'Major 7th',    semitones: 11 },
+  { name: 'Octave',       semitones: 12 },
+];
+
+const ROOT_FREQS = [220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00];
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ── Web Audio ──────────────────────────────────────────────────────────────────
+function playIntervalAudio(semitones) {
+  try {
+    const AudioCtxCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtxCtor) return;
+    const ctx = new AudioCtxCtor();
+    const rootFreq     = pick(ROOT_FREQS);
+    const intervalFreq = rootFreq * Math.pow(2, semitones / 12);
+
+    function playNote(freq, startOffset, duration) {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type            = 'triangle';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + startOffset;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + duration);
+    }
+
+    playNote(rootFreq,     0,   0.9);
+    playNote(intervalFreq, 0.6, 0.9);
+    setTimeout(() => ctx.close().catch(() => {}), 2200);
+  } catch {}
+}
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let current  = pick(INTERVALS);
+let answer   = null;
+let score    = { right: 0, total: 0 };
+let playing  = false;
+let hasPlayed = false;
+
+// ── Render ─────────────────────────────────────────────────────────────────────
+function renderScore() {
+  document.getElementById('score-display').textContent =
+    `${score.right}/${score.total} correct`;
+}
+
+function renderPlayBtn() {
+  const btn = document.getElementById('play-btn');
+  btn.disabled = playing;
+  btn.style.opacity = playing ? '0.65' : '1';
+  btn.textContent = playing
+    ? '⏸ playing…'
+    : answer !== null
+      ? '▶ next interval'
+      : '▶ play interval';
+}
+
+function renderGrid() {
+  const grid = document.getElementById('interval-grid');
+  grid.innerHTML = '';
+  INTERVALS.forEach(interval => {
+    const btn = document.createElement('button');
+    btn.className = 'interval-btn';
+    btn.textContent = interval.name;
+
+    if (!hasPlayed) {
+      btn.classList.add('locked');
+      btn.disabled = true;
+    } else if (answer !== null) {
+      btn.disabled = true;
+      if (interval.name === current.name)        btn.classList.add('correct');
+      else if (interval.name === answer)         btn.classList.add('wrong');
+    } else {
+      btn.onclick = () => handleAnswer(interval.name);
+    }
+
+    grid.appendChild(btn);
+  });
+}
+
+function renderHint() {
+  const hint = document.getElementById('hint-text');
+  hint.style.display = (!hasPlayed) ? '' : 'none';
+}
+
+function render() {
+  renderScore();
+  renderPlayBtn();
+  renderGrid();
+  renderHint();
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────────
+function handlePlay() {
+  if (playing) return;
+
+  if (answer !== null) {
+    current  = pick(INTERVALS);
+    answer   = null;
+  }
+
+  playing  = true;
+  hasPlayed = true;
+  render();
+
+  playIntervalAudio(current.semitones);
+  setTimeout(() => { playing = false; render(); }, 1600);
+}
+
+function handleAnswer(name) {
+  if (answer !== null || !hasPlayed) return;
+  answer = name;
+  const correct = name === current.name;
+  score = { right: score.right + (correct ? 1 : 0), total: score.total + 1 };
+  render();
+}
+
+document.getElementById('play-btn').onclick = handlePlay;
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+render();
+</script>
+<script>
+if (window.self !== window.top) {
+  const nav = document.querySelector('.learn-nav');
+  if (nav) nav.style.display = 'none';
+  const header = document.querySelector('.tool-header');
+  if (header) header.style.marginTop = '0';
+}
+</script>
+</body>
+</html>

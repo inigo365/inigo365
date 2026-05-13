@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>guitar tuner — learn</title>
+  <link rel="icon" type="image/png" href="../images/icon.png">
+  <link rel="stylesheet" href="shared/learn.css">
+  <style>
+    @font-face {
+      font-family: 'RuneScape UF';
+      src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+           url('../../fonts/RuneScape-UF.woff')  format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    body { font-family: 'RuneScape UF', monospace; }
+    .friend-sprite { display: none !important; }
+    html {
+      height: auto !important;
+      overflow: hidden !important;
+    }
+    body {
+      height: auto !important;
+      min-height: unset !important;
+      overflow: hidden !important;
+      padding-bottom: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    .page {
+      padding-bottom: 8px !important;
+      margin-bottom: 0 !important;
+      min-height: unset !important;
+    }
+    /* Needle meter */
+    .meter-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 0;
+    }
+    .note-display {
+      font-size: 2.4rem;
+      line-height: 1;
+      color: var(--ink);
+      transition: color 0.15s;
+    }
+    .note-display.in-tune { color: var(--green); }
+    .cents-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 1.2em;
+      transition: color 0.15s;
+    }
+    .cents-label.in-tune { color: var(--green); }
+    html, body {
+      background: transparent !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .page { background: transparent !important; padding-top: 8px !important; }
+  </style>
+</head>
+<body>
+<img class="friend-sprite" src="../go/images/friend-spin.gif" alt="" style="position:fixed;left:32px;bottom:40px;width:140px;pointer-events:none;z-index:10;image-rendering:pixelated;">
+<div class="page">
+
+  <nav class="learn-nav">
+    <a href="../go/index.html">← home</a>
+    <span class="sep">/</span>
+    <a href="index.html">← learn</a>
+    <span class="sep">/</span>
+    <span>guitar tuner</span>
+  </nav>
+
+  <div class="tool-header">
+    <h1 class="tool-title">guitar tuner</h1>
+    <p class="tool-subtitle">tune your instrument using your microphone</p>
+  </div>
+
+  <div class="card col gap-14">
+
+    <!-- Instrument selector -->
+    <div class="row wrap gap-6" id="tuning-selector"></div>
+
+    <!-- String reference badges -->
+    <div class="row wrap gap-6" id="string-badges"></div>
+
+    <!-- Needle meter -->
+    <div class="meter-wrap">
+      <svg id="needle-svg" width="160" height="100" viewBox="0 0 160 100" style="overflow:visible">
+        <!-- Arc -->
+        <path id="meter-arc"
+          d="M 16 88 A 64 64 0 0 1 144 88"
+          fill="none" stroke="var(--border)" stroke-width="2"/>
+        <!-- Tick marks — rendered by JS -->
+        <g id="tick-marks"></g>
+        <!-- Needle -->
+        <line id="needle-line" x1="80" y1="88" x2="80" y2="30"
+          stroke="var(--c-main)" stroke-width="2.5" stroke-linecap="round"
+          style="transition: all 0.08s linear"/>
+        <!-- Pivot -->
+        <circle id="needle-pivot" cx="80" cy="88" r="4" fill="var(--c-main)"
+          style="transition: fill 0.15s"/>
+      </svg>
+      <div class="note-display" id="note-display">—</div>
+      <div class="cents-label" id="cents-label"></div>
+    </div>
+
+    <!-- Start / stop -->
+    <button id="toggle-btn" class="btn-outline">start tuner</button>
+
+    <!-- Error -->
+    <p class="error-text" id="error-msg" style="display:none"></p>
+
+  </div>
+</div>
+
+<script>
+// ── Pitch detection ────────────────────────────────────────────────────────────
+function autoCorrelate(buf, sampleRate) {
+  const SIZE = buf.length;
+  let rms = 0;
+  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.01) return -1;
+
+  let r1 = 0, r2 = SIZE - 1;
+  const thres = 0.2;
+  for (let i = 0; i < SIZE / 2; i++) { if (Math.abs(buf[i]) < thres) { r1 = i; break; } }
+  for (let i = 1; i < SIZE / 2; i++) { if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; } }
+
+  const buf2 = buf.slice(r1, r2);
+  const c = new Array(buf2.length).fill(0);
+  for (let i = 0; i < buf2.length; i++)
+    for (let j = 0; j < buf2.length - i; j++)
+      c[i] += buf2[j] * buf2[j + i];
+
+  let d = 0;
+  while (c[d] > c[d + 1]) d++;
+  let maxval = -1, maxpos = -1;
+  for (let i = d; i < buf2.length; i++) {
+    if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+  }
+
+  let T0 = maxpos;
+  if (T0 <= 1 || T0 >= buf2.length - 1) return sampleRate / T0;
+  const x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+  const a = (x1 + x3 - 2 * x2) / 2;
+  const b = (x3 - x1) / 2;
+  if (a) T0 = T0 - b / (2 * a);
+  return sampleRate / T0;
+}
+
+function frequencyToNoteAndCents(frequency) {
+  const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const a4 = 440;
+  const midiNumber = 12 * (Math.log2(frequency / a4)) + 69;
+  const midiRounded = Math.round(midiNumber);
+  const cents = Math.round((midiNumber - midiRounded) * 100);
+  const noteIndex = ((midiRounded % 12) + 12) % 12;
+  const octave = Math.floor(midiRounded / 12) - 1;
+  return { note: noteNames[noteIndex], octave, cents };
+}
+
+// ── Tuning presets ─────────────────────────────────────────────────────────────
+const TUNINGS = [
+  { label: 'guitar',   strings: [{ name:'E2',freq:82.41},{ name:'A2',freq:110.00},{ name:'D3',freq:146.83},{ name:'G3',freq:196.00},{ name:'B3',freq:246.94},{ name:'E4',freq:329.63}] },
+  { label: 'bass',     strings: [{ name:'E1',freq:41.20},{ name:'A1',freq:55.00},{ name:'D2',freq:73.42},{ name:'G2',freq:98.00}] },
+  { label: '7-string', strings: [{ name:'B1',freq:61.74},{ name:'E2',freq:82.41},{ name:'A2',freq:110.00},{ name:'D3',freq:146.83},{ name:'G3',freq:196.00},{ name:'B3',freq:246.94},{ name:'E4',freq:329.63}] },
+];
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let tuningIdx   = 0;
+let isListening = false;
+let stream      = null;
+let audioCtx    = null;
+let analyser    = null;
+let rafId       = null;
+let frameCount  = 0;
+
+// ── Needle SVG ─────────────────────────────────────────────────────────────────
+(function buildTicks() {
+  const svg   = document.getElementById('tick-marks');
+  const cx = 80, cy = 88, r = 64;
+  const markers = [-50,-40,-30,-20,-10,0,10,20,30,40,50];
+  markers.forEach(m => {
+    const a = (m / 50) * 60 - 90;
+    const rad = a * Math.PI / 180;
+    const inner = m === 0 ? r - 14 : r - 8;
+    const x1 = cx + r * Math.cos(rad), y1 = cy + r * Math.sin(rad);
+    const x2 = cx + inner * Math.cos(rad), y2 = cy + inner * Math.sin(rad);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', m === 0 ? '#1A3A5C' : '#8A9BB0');
+    line.setAttribute('stroke-width', m === 0 ? 2.5 : 1);
+    svg.appendChild(line);
+  });
+})();
+
+function updateNeedle(cents, inTune) {
+  const cx = 80, cy = 88, needleLen = 58;
+  const clamped = Math.max(-50, Math.min(50, cents));
+  const angleDeg = (clamped / 50) * 60;
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  const nx = cx + needleLen * Math.cos(rad);
+  const ny = cy + needleLen * Math.sin(rad);
+
+  const color = inTune ? '#4caf50' : 'var(--c-main)';
+  const needleLine  = document.getElementById('needle-line');
+  const needlePivot = document.getElementById('needle-pivot');
+  needleLine.setAttribute('x2', nx);
+  needleLine.setAttribute('y2', ny);
+  needleLine.style.stroke = color;
+  needlePivot.style.fill  = color;
+}
+
+// ── Render tuning UI ───────────────────────────────────────────────────────────
+function renderTuningSelector() {
+  const el = document.getElementById('tuning-selector');
+  el.innerHTML = '';
+  TUNINGS.forEach((t, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-pill' + (i === tuningIdx ? ' active' : '');
+    btn.textContent = t.label;
+    btn.onclick = () => { tuningIdx = i; renderTuningSelector(); renderBadges(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderBadges() {
+  const el = document.getElementById('string-badges');
+  el.innerHTML = '';
+  TUNINGS[tuningIdx].strings.forEach(s => {
+    const span = document.createElement('span');
+    span.className = 'badge';
+    span.textContent = s.name;
+    el.appendChild(span);
+  });
+}
+
+// ── Audio loop ─────────────────────────────────────────────────────────────────
+function tick() {
+  rafId = requestAnimationFrame(tick);
+  frameCount++;
+  if (frameCount % 3 !== 0) return; // ~20 fps
+  const buf = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(buf);
+  const freq = autoCorrelate(buf, audioCtx.sampleRate);
+  if (freq > 20 && freq < 5000) {
+    const { note, octave, cents } = frequencyToNoteAndCents(freq);
+    const inTune = Math.abs(cents) <= 5;
+    const noteEl   = document.getElementById('note-display');
+    const centsEl  = document.getElementById('cents-label');
+    noteEl.textContent = note + octave;
+    noteEl.classList.toggle('in-tune', inTune);
+    centsEl.textContent = inTune ? 'in tune ✓' : cents > 0 ? `+${cents}¢ sharp` : `${cents}¢ flat`;
+    centsEl.classList.toggle('in-tune', inTune);
+    updateNeedle(cents, inTune);
+  }
+}
+
+async function startListening() {
+  document.getElementById('error-msg').style.display = 'none';
+  try {
+    stream   = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioCtx();
+    const source = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    source.connect(analyser);
+    isListening = true;
+    document.getElementById('toggle-btn').textContent = 'stop tuner';
+    document.getElementById('toggle-btn').classList.add('active');
+    tick();
+  } catch {
+    const errEl = document.getElementById('error-msg');
+    errEl.textContent = 'microphone access denied — allow mic in browser settings';
+    errEl.style.display = '';
+  }
+}
+
+function stopListening() {
+  cancelAnimationFrame(rafId);
+  stream?.getTracks().forEach(t => t.stop());
+  audioCtx?.close();
+  stream = null; audioCtx = null; analyser = null;
+  isListening = false;
+  frameCount  = 0;
+  document.getElementById('toggle-btn').textContent = 'start tuner';
+  document.getElementById('toggle-btn').classList.remove('active');
+  document.getElementById('note-display').textContent = '—';
+  document.getElementById('note-display').classList.remove('in-tune');
+  document.getElementById('cents-label').textContent = '';
+  document.getElementById('cents-label').classList.remove('in-tune');
+  updateNeedle(0, false);
+}
+
+document.getElementById('toggle-btn').onclick = () => {
+  isListening ? stopListening() : startListening();
+};
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+renderTuningSelector();
+renderBadges();
+updateNeedle(0, false);
+</script>
+<script>
+if (window.self !== window.top) {
+  const nav = document.querySelector('.learn-nav');
+  if (nav) nav.style.display = 'none';
+  const header = document.querySelector('.tool-header');
+  if (header) header.style.marginTop = '0';
+}
+</script>
+</body>
+</html>

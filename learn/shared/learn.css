@@ -1,0 +1,339 @@
+/* ── Learn tools — shared stylesheet ─────────────────────────────────────── */
+
+@font-face {
+  font-family: 'RuneScape UF';
+  src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+       url('../../fonts/RuneScape-UF.woff')  format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Tokens ─────────────────────────────────────────────────────────────── */
+:root {
+  --ink:        #1A3A5C;
+  --blue-deep:  #4A7FD4;
+  --blue-mid:   #8BB8E8;
+  --blue-light: #D6E8F7;
+  --border:     #C8DCF0;
+  --muted:      #8A9BB0;
+  --cream:      #FDFAF5;
+  --cream-dark: #F5EFE0;
+  --green:      #4caf50;
+  --red:        #b94040;
+
+  /* Matches summerrolls default profile colours */
+  --c-main:     #4A7FD4;
+  --c-sub:      #8BB8E8;
+
+  --green-terminal: #00ff00;
+  --ink-border:     2px solid #1A3A5C;
+}
+
+/* ── Cursors ─────────────────────────────────────────────────────────────── */
+html, body {
+  cursor: url('../../images/cursor/cursor.png'), auto;
+}
+button, input, a, select {
+  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+}
+label {
+  cursor: url('../../images/cursor/cursor.png'), auto;
+}
+
+/* ── Reset / base ────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  min-height: 100vh;
+  background: var(--cream);
+  background-image: url('../../images/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: 'RuneScape UF', monospace;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Page shell ──────────────────────────────────────────────────────────── */
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 20px 80px;
+}
+
+/* ── Nav breadcrumb ──────────────────────────────────────────────────────── */
+.learn-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 0 24px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.learn-nav a {
+  color: var(--c-main);
+  text-decoration: none;
+}
+.learn-nav a:hover { text-decoration: underline; }
+.learn-nav .sep { opacity: 0.4; }
+
+/* ── Tool card header ────────────────────────────────────────────────────── */
+.tool-header { margin-bottom: 24px; }
+.tool-title {
+  font-size: 1.5rem;
+  color: var(--ink);
+  margin: 0 0 4px;
+  font-weight: normal;
+}
+.tool-subtitle {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ── Card container ──────────────────────────────────────────────────────── */
+.card {
+  border: 2px solid #1A3A5C;
+  background: rgba(253, 250, 245, 0.18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 2px;
+  padding: 20px;
+}
+
+/* ── Shared button styles ────────────────────────────────────────────────── */
+button {
+  font-family: 'RuneScape UF', monospace;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: opacity 0.1s, background-color 0.12s, border-color 0.12s;
+}
+button:disabled { cursor: not-allowed; }
+
+.btn-primary {
+  width: 100%;
+  padding: 11px 0;
+  background: var(--c-sub);
+  color: #fff;
+  border: none;
+  font-size: 0.9rem;
+}
+.btn-primary:disabled { opacity: 0.65; }
+
+.btn-outline {
+  padding: 10px 0;
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.btn-outline.active {
+  background: var(--blue-light);
+  border-color: var(--c-main);
+}
+
+.btn-pill {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  background: var(--blue-light);
+  border: 1px solid rgba(74,127,212,0.4);
+  color: var(--c-main);
+}
+.btn-pill.active {
+  background: var(--c-main);
+  border-color: var(--c-main);
+  color: #fff;
+}
+
+.btn-ghost {
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+/* ── Badge/tag ───────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2px 7px;
+}
+
+/* ── Flex utilities ──────────────────────────────────────────────────────── */
+.row    { display: flex; align-items: center; }
+.col    { display: flex; flex-direction: column; }
+.gap-4  { gap: 4px; }
+.gap-6  { gap: 6px; }
+.gap-8  { gap: 8px; }
+.gap-10 { gap: 10px; }
+.gap-12 { gap: 12px; }
+.gap-14 { gap: 14px; }
+.gap-16 { gap: 16px; }
+.wrap   { flex-wrap: wrap; }
+.jsb    { justify-content: space-between; }
+.center { justify-content: center; }
+.flex-1 { flex: 1; }
+
+/* ── Error / status text ─────────────────────────────────────────────────── */
+.error-text {
+  font-size: 0.75rem;
+  color: var(--red);
+  margin: 0;
+}
+.muted-text {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 0;
+}
+.hint-text {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* ── Index hub grid ──────────────────────────────────────────────────────── */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+@media (max-width: 420px) {
+  .tool-grid { grid-template-columns: 1fr; }
+}
+
+.tool-card-link {
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 20px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.tool-card-link:hover {
+  border-color: var(--c-main);
+  box-shadow: 3px 3px 0 rgba(74,127,212,0.15);
+}
+.tool-card-link .card-icon {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+  display: block;
+}
+.tool-card-link .card-name {
+  font-size: 1rem;
+  color: var(--ink);
+  display: block;
+  margin-bottom: 4px;
+}
+.tool-card-link .card-desc {
+  font-size: 0.72rem;
+  color: var(--muted);
+  display: block;
+}
+
+/* ── Pokémon-style pill nav ───────────────────────────────────────────────── */
+.pokemon-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  background: rgba(253, 250, 245, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid #1A3A5C;
+  border-radius: 32px;
+  font-family: 'RuneScape UF', monospace;
+  font-size: 1.1rem;
+  color: #1A3A5C;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+.pokemon-pill:hover, .pokemon-pill.active {
+  background: rgba(214, 232, 247, 0.75);
+}
+.pokemon-pill::before {
+  content: '▶';
+  color: #00ff00;
+  font-size: 0.85rem;
+  opacity: 0;
+  margin-right: -4px;
+  transition: opacity 0.1s;
+}
+.pokemon-pill:hover::before, .pokemon-pill.active::before {
+  opacity: 1;
+}
+.pill-icon {
+  font-size: 1.3rem;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.pill-label {
+  font-family: 'RuneScape UF', monospace;
+  font-size: 1.1rem;
+  color: #1A3A5C;
+  flex: 1;
+}
+.pill-desc {
+  font-family: 'RuneScape UF', monospace;
+  font-size: 0.78rem;
+  color: #8A9BB0;
+}
+
+/* ── Fixed side sprites ──────────────────────────────────────────────────── */
+.friend-sprite {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(120px, 28vw, 420px);
+  pointer-events: none;
+  z-index: 10;
+  image-rendering: pixelated;
+}
+
+.brain-sprite {
+  position: fixed;
+  right: 5vw;
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(120px, 12vw, 200px);
+  pointer-events: none;
+  z-index: 10;
+  image-rendering: pixelated;
+}
+
+@media (max-width: 700px) {
+  .friend-sprite, .brain-sprite { display: none; }
+}
+
+/* ── Overrides ───────────────────────────────────────────────────────────── */
+.st-btn.active, .btn-pill.active {
+  background: var(--blue-light);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.st-progress-fill {
+  background: var(--green-terminal) !important;
+}
+
+.btn-primary {
+  background: var(--green-terminal) !important;
+  color: #1A3A5C !important;
+  border-color: var(--ink) !important;
+}

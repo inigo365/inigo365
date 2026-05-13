@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>learn — inigo365</title>
+  <link rel="icon" type="image/png" href="../images/icon.png">
+  <link rel="stylesheet" href="shared/learn.css">
+  <style>
+    @font-face {
+      font-family: 'RuneScape UF';
+      src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+           url('../../fonts/RuneScape-UF.woff')  format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'RuneScape UF', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      padding-bottom: 80px;
+    }
+
+    .learn-panel {
+      background: rgba(255, 255, 255, 0.69);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 2px solid #000;
+      border-radius: 0;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+      padding: 22px 22px 18px;
+      width: 100%;
+      max-width: none;
+      position: relative;
+      z-index: 20;
+    }
+
+    .panel-brand {
+      font-family: 'RuneScape UF', monospace;
+      font-size: 3.2rem;
+      color: #1A3A5C;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      font-weight: normal;
+      text-shadow:
+        3px 3px 0px #8BC4A8,
+        6px 6px 0px #8BB8E8;
+    }
+
+    .pill-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #tool-frame {
+      width: 100%;
+      border: none;
+      display: none;
+      background: transparent;
+      overflow: hidden;
+      transition: height 0.2s ease;
+    }
+
+    .pokemon-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 16px 14px;
+      background: white;
+      border: 2px solid #000;
+      border-radius: 0;
+      font-family: 'RuneScape UF', monospace;
+      font-size: 1rem;
+      color: #1A3A5C;
+      text-decoration: none;
+      cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+      position: relative;
+      transition: background 0.12s;
+    }
+    .pokemon-pill:hover, .pokemon-pill.active {
+      background: #D6E8F7;
+    }
+    .pokemon-pill::before {
+      content: '▶';
+      color: #00ff00;
+      font-size: 0.8rem;
+      opacity: 0;
+      transition: opacity 0.1s;
+      margin-right: -4px;
+    }
+    .pokemon-pill:hover::before, .pokemon-pill.active::before {
+      opacity: 1;
+    }
+
+    #tool-view {
+      padding-top: 4px;
+    }
+
+    .back-btn {
+      display: none;
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.85rem;
+      color: #1A3A5C;
+      background: none;
+      border: none;
+      cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+      margin-bottom: 14px;
+      padding: 0;
+      letter-spacing: 0.5px;
+    }
+    .back-btn:hover { color: #4A7FD4; }
+
+    /* Mobile bottom nav */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: rgba(253, 250, 245, 0.25);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-top: 2px solid #1A3A5C;
+      z-index: 100;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px;
+    }
+    .bottom-nav button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      transition: background 0.1s;
+    }
+    .bottom-nav button.active {
+      background: rgba(74,127,212,0.18);
+    }
+    .bottom-nav button img {
+      width: 36px;
+      height: 36px;
+      image-rendering: pixelated;
+      object-fit: contain;
+    }
+    .bottom-nav button span {
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.55rem;
+      color: #1A3A5C;
+    }
+    .home-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+    }
+    .home-btn span {
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.55rem;
+      color: #1A3A5C;
+    }
+
+    @media (max-width: 700px) {
+      .bottom-nav { display: flex; }
+      body {
+        justify-content: center;
+        padding: 16px;
+        padding-bottom: 90px;
+      }
+      .learn-panel {
+        width: 100%;
+        padding: 24px 16px;
+      }
+      .panel-brand { font-size: 2rem; }
+    }
+
+    @media (min-width: 701px) {
+      .bottom-nav { display: none; }
+      body {
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 40px;
+      }
+      .learn-panel {
+        width: 56vw;
+        max-width: none;
+        min-width: 420px;
+      }
+      .friend-sprite {
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 38vw;
+        max-width: 520px;
+        pointer-events: none;
+        z-index: 10;
+        image-rendering: pixelated;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Desktop sprite (left side) -->
+  <img class="friend-sprite" src="../go/images/friend-spin.gif" alt="">
+
+  <!-- Main panel -->
+  <div class="learn-panel" id="learn-panel">
+
+    <!-- Hub view -->
+    <div id="hub-view">
+      <p class="panel-brand">inigo365</p>
+      <div class="pill-stack">
+        <button class="pokemon-pill" onclick="loadTool('guitar-tuner.html', this)">
+          <span class="pill-icon">♩</span>
+          <span class="pill-label">guitar tuner</span>
+          <span class="pill-desc">tune via mic</span>
+        </button>
+        <button class="pokemon-pill" onclick="loadTool('ear-training.html', this)">
+          <span class="pill-icon">♪</span>
+          <span class="pill-label">ear training</span>
+          <span class="pill-desc">identify intervals</span>
+        </button>
+        <button class="pokemon-pill" onclick="loadTool('song-analyser.html', this)">
+          <span class="pill-icon">◎</span>
+          <span class="pill-label">song analyser</span>
+          <span class="pill-desc">key + bpm detection</span>
+        </button>
+        <button class="pokemon-pill" onclick="loadTool('scale-trainer.html', this)">
+          <span class="pill-icon">▦</span>
+          <span class="pill-label">scale trainer</span>
+          <span class="pill-desc">scales, chords + progressions</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tool view -->
+    <div id="tool-view" style="display:none;">
+      <button class="back-btn" id="back-btn" onclick="goBack()">← back</button>
+      <iframe id="tool-frame" class="tool-frame" src="" title="tool"></iframe>
+    </div>
+
+  </div>
+
+  <!-- Mobile bottom nav -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button onclick="goHome()" class="home-btn" id="nav-home">
+      <img src="../go/images/chess2-spin.gif" alt="home">
+      <span>home</span>
+    </button>
+    <button onclick="loadTool('guitar-tuner.html', this)" id="nav-tuner">
+      <img src="../go/images/friend-spin.gif" alt="tuner">
+      <span>tuner</span>
+    </button>
+    <button onclick="loadTool('ear-training.html', this)" id="nav-ear">
+      <img src="../go/images/brain-spin.gif" alt="ear training">
+      <span>ear</span>
+    </button>
+    <button onclick="loadTool('song-analyser.html', this)" id="nav-song">
+      <img src="../go/images/chess-spin.gif" alt="song analyser">
+      <span>analyser</span>
+    </button>
+    <button onclick="loadTool('scale-trainer.html', this)" id="nav-scale">
+      <img src="../go/images/bag-spin.gif" alt="scale trainer">
+      <span>scales</span>
+    </button>
+  </nav>
+
+  <script>
+    function loadTool(src, btn) {
+      document.getElementById('hub-view').style.display = 'none';
+      document.getElementById('tool-view').style.display = 'block';
+      document.getElementById('back-btn').style.display = 'block';
+      const frame = document.getElementById('tool-frame');
+      frame.style.display = 'block';
+      frame.src = src;
+      // update bottom nav active state
+      document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+      if (btn && btn.closest('.bottom-nav')) btn.classList.add('active');
+    }
+    function goBack() {
+      document.getElementById('hub-view').style.display = 'block';
+      document.getElementById('tool-view').style.display = 'none';
+      document.getElementById('tool-frame').src = '';
+      document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+    }
+    function goHome() {
+      goBack();
+    }
+    document.getElementById('tool-frame').onload = function() {
+      this.style.height = '0px';
+      try {
+        const doc = this.contentDocument || this.contentWindow.document;
+        const body = doc.body;
+        body.style.overflow = 'hidden';
+        const height = body.getBoundingClientRect().height || body.scrollHeight;
+        this.style.height = Math.ceil(height) + 'px';
+      } catch(e) {
+        this.style.height = '600px';
+      }
+    };
+  </script>
+
+</body>
+</html>

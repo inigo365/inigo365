@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>scale trainer — learn</title>
+  <link rel="icon" type="image/png" href="../images/icon.png">
+  <link rel="stylesheet" href="shared/learn.css">
+  <style>
+    @font-face {
+      font-family: 'RuneScape UF';
+      src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+           url('../../fonts/RuneScape-UF.woff')  format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    body { font-family: 'RuneScape UF', monospace; }
+    .friend-sprite { display: none !important; }
+    html {
+      height: auto !important;
+      overflow: hidden !important;
+    }
+    body {
+      height: auto !important;
+      min-height: unset !important;
+      overflow: hidden !important;
+      padding-bottom: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    .page {
+      padding-bottom: 8px !important;
+      margin-bottom: 0 !important;
+      min-height: unset !important;
+    }
+
+    /* ── Scale trainer layout ─────────────────────────────────────────────── */
+    .st-section { display: flex; flex-direction: column; gap: 12px; }
+    .st-row      { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .st-grid2    { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .st-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+
+    /* ── Buttons ──────────────────────────────────────────────────────────── */
+    .st-btn {
+      font-family: inherit; font-size: 0.78rem; padding: 5px 10px;
+      border: 1px solid var(--blue-deep); border-radius: 2px;
+      background: #FDFAF5; color: var(--blue-deep);
+      cursor: pointer; transition: all 0.1s;
+    }
+    .st-btn.active   { background: var(--blue-deep); color: #fff; }
+    .st-btn.danger   { border-color: #b94040; color: #b94040; }
+    .st-btn.disabled { opacity: 0.45; pointer-events: none; }
+    .st-btn-sm {
+      font-family: inherit; font-size: 0.75rem; padding: 4px 9px;
+      border: 1px solid var(--blue-deep); border-radius: 2px;
+      background: #FDFAF5; color: var(--blue-deep);
+      cursor: pointer; transition: all 0.1s;
+    }
+    .st-btn-sm.active { background: var(--blue-deep); color: #fff; }
+    .st-opt-btn {
+      font-family: inherit; font-size: 0.75rem;
+      padding: 6px 10px; min-height: 36px;
+      border: 1px solid var(--blue-deep); border-radius: 2px;
+      background: #FDFAF5; color: var(--blue-deep);
+      cursor: pointer; transition: all 0.1s; flex: 1 0 auto;
+    }
+    .st-opt-btn.active { background: var(--blue-deep); color: #fff; }
+
+    /* ── Status bar ───────────────────────────────────────────────────────── */
+    .st-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.68rem; color: var(--muted); }
+    .st-stat   { white-space: nowrap; }
+    .st-stat strong { color: var(--blue-deep); }
+    .st-progress { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .st-progress-fill { height: 100%; border-radius: 2px; background: var(--blue-deep); transition: width 0.3s; }
+    .st-dots { display: inline-flex; gap: 3px; margin-left: 4px; }
+    .st-dot  { width: 8px; height: 8px; border-radius: 50%; display: inline-block; transition: background-color 0.2s; }
+
+    /* ── Piano keyboard ───────────────────────────────────────────────────── */
+    .st-kbd { position: relative; width: 100%; height: 150px; user-select: none; touch-action: manipulation; }
+    .st-kbd-sm { position: relative; width: 100%; height: 42px; user-select: none; }
+    .st-key {
+      position: absolute; display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 8px; border-radius: 0 0 3px 3px;
+      cursor: pointer; font-family: inherit; font-size: 13px; box-sizing: border-box;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.1s;
+    }
+    .st-key-sm { position: absolute; border-radius: 0 0 2px 2px; box-sizing: border-box; }
+
+    /* ── Chord cards ──────────────────────────────────────────────────────── */
+    .st-chord-card {
+      font-family: inherit; padding: 8px 6px;
+      border: 1px solid var(--border); border-radius: 2px; background: transparent;
+      cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center;
+      text-align: center; transition: all 0.15s;
+    }
+    .st-chord-card.active { border-color: var(--blue-deep); background: var(--blue-light); }
+
+    /* ── Progression rows ─────────────────────────────────────────────────── */
+    .prog-row {
+      font-family: inherit; cursor: pointer; padding: 14px 10px; width: 100%;
+      border: 1px solid var(--border); border-radius: 2px; background: transparent;
+      display: flex; flex-direction: column; gap: 4px; text-align: left; transition: all 0.1s;
+    }
+    .prog-row.active { border-color: var(--blue-deep); background: var(--blue-light); }
+    .prog-row__numerals { font-size: 0.82rem; color: var(--ink); }
+    .prog-row__chords   { font-size: 0.82rem; display: flex; gap: 8px; flex-wrap: wrap; color: var(--blue-deep); }
+    .prog-row__desc     { font-size: 0.72rem; color: var(--muted); }
+
+    /* ── MIDI options panel ───────────────────────────────────────────────── */
+    .midi-opts {
+      border: 1px solid var(--blue-deep); border-top: none;
+      border-radius: 0 0 2px 2px; background: #FDFAF5;
+      padding: 12px 10px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .midi-row { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; }
+    .midi-label { font-size: 0.7rem; color: var(--muted); min-width: 52px; padding-top: 5px; }
+    .midi-btns  { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
+
+    /* ── Palette cards ────────────────────────────────────────────────────── */
+    .palette-card {
+      font-family: inherit; padding: 6px 5px;
+      border-radius: 2px; background: transparent;
+      cursor: pointer; display: flex; flex-direction: column; gap: 3px; align-items: center;
+      text-align: center; min-width: 0; user-select: none;
+    }
+    .slot-card {
+      min-height: 64px; border-radius: 2px; cursor: default;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; padding: 4px 2px; transition: background-color 0.1s, border-color 0.1s;
+      position: relative;
+    }
+
+    /* ── Answer buttons ───────────────────────────────────────────────────── */
+    .ans-btn {
+      font-family: inherit; font-size: 0.82rem; padding: 10px 8px;
+      border: 1px solid var(--blue-deep); border-radius: 2px;
+      background: #FDFAF5; color: var(--blue-deep);
+      cursor: pointer; transition: all 0.1s; text-align: center;
+      width: 100%; min-height: 52px; white-space: normal;
+    }
+    .ans-btn:disabled { cursor: default; }
+    .ans-btn.correct  { background: #4caf5020; border-color: #4caf50; color: #2d7a31; }
+    .ans-btn.wrong    { background: #e052521a; border-color: #e05252; color: #b94040; }
+    .ans-btn.reveal   { background: #4caf5012; border-color: #4caf50; color: #2d7a31; }
+
+    /* ── Feedback bar ─────────────────────────────────────────────────────── */
+    .feedback-bar {
+      padding: 8px 12px; border-radius: 2px; font-size: 0.75rem; line-height: 1.5;
+    }
+    .feedback-bar.correct { border: 1px solid #4caf5055; background: #4caf5012; color: #2d7a31; }
+    .feedback-bar.wrong   { border: 1px solid #e0525255; background: #e052521a; color: #b94040; }
+
+    /* ── Celebration ──────────────────────────────────────────────────────── */
+    .celebration {
+      padding: 20px 16px; text-align: center; border-radius: 2px;
+      border: 1px solid var(--blue-deep); background: #FDFAF5;
+      font-size: 1rem; font-weight: 700; color: var(--blue-deep);
+    }
+
+    /* ── Misc ─────────────────────────────────────────────────────────────── */
+    .section-header {
+      font-size: 1rem; color: var(--ink); font-weight: 600; cursor: pointer;
+      padding: 10px 0; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      background: transparent; border-bottom: none; border-left: none; border-right: none;
+      font-family: inherit; width: 100%;
+    }
+    .hint-inline { font-size: 0.72rem; color: var(--blue-mid); margin-left: 8px; }
+    select.st-select {
+      font-family: inherit; font-size: 0.82rem; padding: 5px 8px;
+      border: 1px solid var(--border); border-radius: 2px;
+      background: #FDFAF5; color: var(--ink); cursor: pointer;
+    }
+    input.st-input {
+      font-family: inherit; font-size: 0.78rem; padding: 5px 8px; width: 72px;
+      border: 1px solid var(--border); border-radius: 2px;
+      background: #FDFAF5; color: var(--ink);
+    }
+    .level-up {
+      padding: 6px 12px; border-radius: 2px; border: 1px solid var(--blue-deep);
+      background: var(--blue-light); font-size: 0.78rem; font-weight: 700;
+      color: var(--blue-deep); text-align: center;
+    }
+
+    /* ── Controls tab overrides ───────────────────────────────────────────── */
+    #st-controls .st-btn {
+      font-family: 'RuneScape UF', monospace;
+      border-radius: 24px;
+      border: 2px solid #1A3A5C;
+      padding: 8px 18px;
+      background: rgba(253,250,245,0.92);
+      color: #1A3A5C;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    #st-controls .st-btn.active {
+      background: #D6E8F7;
+      border-color: #1A3A5C;
+    }
+    #st-controls .st-btn:hover {
+      background: #D6E8F7;
+    }
+    #st-controls .st-btn.active::before {
+      content: '▶ ';
+      color: #00ff00;
+      font-size: 0.75rem;
+    }
+    html, body {
+      background: transparent !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .page { background: transparent !important; padding-top: 8px !important; }
+  </style>
+</head>
+<body>
+<img class="friend-sprite" src="../go/images/friend-spin.gif" alt="" style="position:fixed;left:32px;bottom:40px;width:140px;pointer-events:none;z-index:10;image-rendering:pixelated;">
+<div class="page">
+
+  <nav class="learn-nav">
+    <a href="../go/index.html">← home</a>
+    <span class="sep">/</span>
+    <a href="index.html">← learn</a>
+    <span class="sep">/</span>
+    <span>scale trainer</span>
+  </nav>
+
+  <div class="tool-header">
+    <h1 class="tool-title">scale trainer</h1>
+    <p class="tool-subtitle">scales, chords and progressions</p>
+  </div>
+
+  <div id="st-root"></div>
+
+</div>
+<script src="shared/synth.js"></script>
+<script>
+'use strict'
+
+// ── Scale data ─────────────────────────────────────────────────────────────────
+const SCALES = [
+  // Major
+  { name: 'C Major',   notes: ['C','D','E','F','G','A','B'] },
+  { name: 'Db Major',  notes: ['Db','Eb','F','Gb','Ab','Bb','C'] },
+  { name: 'D Major',   notes: ['D','E','F#','G','A','B','C#'] },
+  { name: 'Eb Major',  notes: ['Eb','F','G','Ab','Bb','C','D'] },
+  { name: 'E Major',   notes: ['E','F#','G#','A','B','C#','D#'] },
+  { name: 'F Major',   notes: ['F','G','A','Bb','C','D','E'] },
+  { name: 'F# Major',  notes: ['F#','G#','A#','B','C#','D#','E#'] },
+  { name: 'G Major',   notes: ['G','A','B','C','D','E','F#'] },
+  { name: 'Ab Major',  notes: ['Ab','Bb','C','Db','Eb','F','G'] },
+  { name: 'A Major',   notes: ['A','B','C#','D','E','F#','G#'] },
+  { name: 'Bb Major',  notes: ['Bb','C','D','Eb','F','G','A'] },
+  { name: 'B Major',   notes: ['B','C#','D#','E','F#','G#','A#'] },
+  // Natural Minor
+  { name: 'C Minor',   notes: ['C','D','Eb','F','G','Ab','Bb'] },
+  { name: 'C# Minor',  notes: ['C#','D#','E','F#','G#','A','B'] },
+  { name: 'D Minor',   notes: ['D','E','F','G','A','Bb','C'] },
+  { name: 'Eb Minor',  notes: ['Eb','F','Gb','Ab','Bb','Cb','Db'] },
+  { name: 'E Minor',   notes: ['E','F#','G','A','B','C','D'] },
+  { name: 'F Minor',   notes: ['F','G','Ab','Bb','C','Db','Eb'] },
+  { name: 'F# Minor',  notes: ['F#','G#','A','B','C#','D','E'] },
+  { name: 'G Minor',   notes: ['G','A','Bb','C','D','Eb','F'] },
+  { name: 'G# Minor',  notes: ['G#','A#','B','C#','D#','E','F#'] },
+  { name: 'A Minor',   notes: ['A','B','C','D','E','F','G'] },
+  { name: 'Bb Minor',  notes: ['Bb','C','Db','Eb','F','Gb','Ab'] },
+  { name: 'B Minor',   notes: ['B','C#','D','E','F#','G','A'] },
+  // Dorian
+  { name: 'C Dorian',  notes: ['C','D','Eb','F','G','A','Bb'] },
+  { name: 'C# Dorian', notes: ['C#','D#','E','F#','G#','A#','B'] },
+  { name: 'D Dorian',  notes: ['D','E','F','G','A','B','C'] },
+  { name: 'Eb Dorian', notes: ['Eb','F','Gb','Ab','Bb','C','Db'] },
+  { name: 'E Dorian',  notes: ['E','F#','G','A','B','C#','D'] },
+  { name: 'F Dorian',  notes: ['F','G','Ab','Bb','C','D','Eb'] },
+  { name: 'F# Dorian', notes: ['F#','G#','A','B','C#','D#','E'] },
+  { name: 'G Dorian',  notes: ['G','A','Bb','C','D','E','F'] },
+  { name: 'G# Dorian', notes: ['G#','A#','B','C#','D#','E#','F#'] },
+  { name: 'A Dorian',  notes: ['A','B','C','D','E','F#','G'] },
+  { name: 'Bb Dorian', notes: ['Bb','C','Db','Eb','F','G','Ab'] },
+  { name: 'B Dorian',  notes: ['B','C#','D','E','F#','G#','A'] },
+  // Pentatonic Major
+  { name: 'C Pentatonic Major',   notes: ['C','D','E','G','A'] },
+  { name: 'Db Pentatonic Major',  notes: ['Db','Eb','F','Ab','Bb'] },
+  { name: 'D Pentatonic Major',   notes: ['D','E','F#','A','B'] },
+  { name: 'Eb Pentatonic Major',  notes: ['Eb','F','G','Bb','C'] },
+  { name: 'E Pentatonic Major',   notes: ['E','F#','G#','B','C#'] },
+  { name: 'F Pentatonic Major',   notes: ['F','G','A','C','D'] },
+  { name: 'F# Pentatonic Major',  notes: ['F#','G#','A#','C#','D#'] },
+  { name: 'G Pentatonic Major',   notes: ['G','A','B','D','E'] },
+  { name: 'Ab Pentatonic Major',  notes: ['Ab','Bb','C','Eb','F'] },
+  { name: 'A Pentatonic Major',   notes: ['A','B','C#','E','F#'] },
+  { name: 'Bb Pentatonic Major',  notes: ['Bb','C','D','F','G'] },
+  { name: 'B Pentatonic Major',   notes: ['B','C#','D#','F#','G#'] },
+  // Pentatonic Minor
+  { name: 'C Pentatonic Minor',   notes: ['C','Eb','F','G','Bb'] },
+  { name: 'C# Pentatonic Minor',  notes: ['C#','E','F#','G#','B'] },
+  { name: 'D Pentatonic Minor',   notes: ['D','F','G','A','C'] },
+  { name: 'Eb Pentatonic Minor',  notes: ['Eb','Gb','Ab','Bb','Db'] },
+  { name: 'E Pentatonic Minor',   notes: ['E','G','A','B','D'] },
+  { name: 'F Pentatonic Minor',   notes: ['F','Ab','Bb','C','Eb'] },
+  { name: 'F# Pentatonic Minor',  notes: ['F#','A','B','C#','E'] },
+  { name: 'G Pentatonic Minor',   notes: ['G','Bb','C','D','F'] },
+  { name: 'G# Pentatonic Minor',  notes: ['G#','B','C#','D#','F#'] },
+  { name: 'A Pentatonic Minor',   notes: ['A','C','D','E','G'] },
+  { name: 'Bb Pentatonic Minor',  notes: ['Bb','Db','Eb','F','Ab'] },
+  { name: 'B Pentatonic Minor',   notes: ['B','D','E','F#','A'] },
+  // Blues
+  { name: 'C Blues',   notes: ['C','Eb','F','F#','G','Bb'] },
+  { name: 'C# Blues',  notes: ['C#','E','F#','G','G#','B'] },
+  { name: 'D Blues',   notes: ['D','F','G','G#','A','C'] },
+  { name: 'Eb Blues',  notes: ['Eb','Gb','Ab','A','Bb','Db'] },
+  { name: 'E Blues',   notes: ['E','G','A','A#','B','D'] },
+  { name: 'F Blues',   notes: ['F','Ab','Bb','B','C','Eb'] },
+  { name: 'F# Blues',  notes: ['F#','A','B','C','C#','E'] },
+  { name: 'G Blues',   notes: ['G','Bb','C','C#','D','F'] },
+  { name: 'G# Blues',  notes: ['G#','B','C#','D','D#','F#'] },
+  { name: 'A Blues',   notes: ['A','C','D','D#','E','G'] },
+  { name: 'Bb Blues',  notes: ['Bb','Db','Eb','E','F','Ab'] },
+  { name: 'B Blues',   notes: ['B','D','E','F','F#','A'] },
+]
+
+const FILTER_CATEGORIES = ['major','minor','dorian','pentatonic','blues']
+
+// ── Reference mode data ────────────────────────────────────────────────────────
+const REF_ROOTS = ['C','C#','Db','D','Eb','E','F','F#','Gb','G','Ab','A','Bb','B']
+const REF_TYPES = ['major','natural minor','dorian','pentatonic major','pentatonic minor','blues']
+const REF_TYPE_SUFFIX = {
+  'major':'Major','natural minor':'Minor','dorian':'Dorian',
+  'pentatonic major':'Pentatonic Major','pentatonic minor':'Pentatonic Minor','blues':'Blues',
+}
+const SCALE_DESCRIPTIONS = {
+  'major':'bright, happy','natural minor':'dark, emotional',
+  'dorian':'minor with a raised 6th — soulful, funky',
+  'pentatonic major':'open, universal — used everywhere',
+  'pentatonic minor':'dark and simple — foundation of blues and rock',
+  'blues':'minor pentatonic + flat 5 — tension and grit',
+}
+
+// ── Chord progressions ─────────────────────────────────────────────────────────
+const PROGRESSIONS = [
+  { label:'I — V — vi — IV', indices:[0,4,5,3], description:'the most common progression in pop' },
+  { label:'I — IV — V — I',  indices:[0,3,4,0], description:'classic blues and rock foundation' },
+  { label:'ii — V — I',      indices:[1,4,0],   description:'the jazz staple' },
+  { label:'vi — IV — I — V', indices:[5,3,0,4], description:'emotional and cinematic' },
+  { label:'I — vi — IV — V', indices:[0,5,3,4], description:'50s progression — timeless' },
+]
+const COMPLEX_PROGRESSIONS = [
+  { description:'floating, lush — great for pads',
+    chords:[{degreeIdx:0,extension:'maj7',label:'Imaj7'},{degreeIdx:4,extension:'dom7',label:'V7'},{degreeIdx:5,extension:'min7',label:'vi7'},{degreeIdx:3,extension:'maj7',label:'IVmaj7'}] },
+  { description:'jazz ii-V-I — smooth resolution',
+    chords:[{degreeIdx:1,extension:'min7',label:'ii7'},{degreeIdx:4,extension:'dom7',label:'V7'},{degreeIdx:0,extension:'maj7',label:'Imaj7'}] },
+  { description:'suspended and unresolved — ethereal',
+    chords:[{degreeIdx:0,extension:'maj9',label:'Imaj9'},{degreeIdx:5,extension:'sus2',label:'VIsus2'},{degreeIdx:3,extension:'maj7',label:'IVmaj7'},{degreeIdx:4,extension:'sus4',label:'Vsus4'}] },
+  { description:'dreamy and cinematic',
+    chords:[{degreeIdx:5,extension:'min9',label:'vi9'},{degreeIdx:3,extension:'maj7',label:'IVmaj7'},{degreeIdx:0,extension:'maj9',label:'Imaj9'},{degreeIdx:4,extension:'7sus4',label:'V7sus4'}] },
+  { description:'major to minor IV — emotional shift',
+    chords:[{degreeIdx:0,extension:'maj7',label:'Imaj7'},{degreeIdx:2,extension:'min7',label:'iii7'},{degreeIdx:3,extension:'maj7',label:'IVmaj7'},{degreeIdx:3,extension:'min7',label:'iv7'}] },
+]
+
+// ── Chord ear training ─────────────────────────────────────────────────────────
+const CHORD_EAR_QUALITIES = [
+  { name:'major',  label:'major',       intervals:[0,4,7] },
+  { name:'minor',  label:'minor',       intervals:[0,3,7] },
+  { name:'maj7',   label:'major 7',     intervals:[0,4,7,11] },
+  { name:'min7',   label:'minor 7',     intervals:[0,3,7,10] },
+  { name:'dom7',   label:'dominant 7',  intervals:[0,4,7,10] },
+  { name:'dim',    label:'diminished',  intervals:[0,3,6] },
+  { name:'sus4',   label:'sus 4',       intervals:[0,5,7] },
+  { name:'maj9',   label:'major 9',     intervals:[0,4,7,11,2] },
+]
+
+// ── Interval training ──────────────────────────────────────────────────────────
+const INTERVAL_DEFS = [
+  { name:'minor 2nd',   semitones:1,  mnemonic:'Jaws theme' },
+  { name:'major 2nd',   semitones:2,  mnemonic:'Happy Birthday' },
+  { name:'minor 3rd',   semitones:3,  mnemonic:'Smoke on the Water' },
+  { name:'major 3rd',   semitones:4,  mnemonic:'When the Saints Go Marching' },
+  { name:'perfect 4th', semitones:5,  mnemonic:'Here Comes the Bride' },
+  { name:'tritone',     semitones:6,  mnemonic:'The Simpsons theme' },
+  { name:'perfect 5th', semitones:7,  mnemonic:'Star Wars theme' },
+  { name:'minor 6th',   semitones:8,  mnemonic:'The Entertainer' },
+  { name:'major 6th',   semitones:9,  mnemonic:'My Bonnie Lies Over the Ocean' },
+  { name:'minor 7th',   semitones:10, mnemonic:'Somewhere (West Side Story)' },
+  { name:'major 7th',   semitones:11, mnemonic:'Take On Me' },
+  { name:'octave',      semitones:12, mnemonic:'Somewhere Over the Rainbow' },
+]
+
+// ── Note / pitch-class data ────────────────────────────────────────────────────
+const NOTE_TO_PC = {
+  'C':0,'B#':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'Fb':4,
+  'F':5,'E#':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,
+  'A#':10,'Bb':10,'B':11,'Cb':11,
+}
+const CHROMATIC_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
+const CHROMATIC_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B']
+const CHROMATIC_ROOTS = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
+const FLAT_ROOTS      = new Set(['F','Bb','Eb','Ab','Db','Gb'])
+
+// ── Piano keyboard layout ──────────────────────────────────────────────────────
+const WHITE_KEYS = ['C','D','E','F','G','A','B']
+const BLACK_KEYS = [
+  { note:'C#', lf:1/7 - 0.035 },
+  { note:'D#', lf:2/7 - 0.035 },
+  { note:'F#', lf:4/7 - 0.035 },
+  { note:'G#', lf:5/7 - 0.035 },
+  { note:'A#', lf:6/7 - 0.035 },
+]
+
+// ── Extension intervals ────────────────────────────────────────────────────────
+const EXTENSION_INTERVALS = {
+  'maj7':[0,4,7,11],'dom7':[0,4,7,10],'min7':[0,3,7,10],
+  'maj9':[0,4,7,11,2],'min9':[0,3,7,10,2],
+  'sus2':[0,2,7],'sus4':[0,5,7],'7sus4':[0,5,7,10],
+}
+const EXTENSION_SUFFIX = {
+  'maj7':'maj7','dom7':'7','min7':'m7','maj9':'maj9','min9':'m9',
+  'sus2':'sus2','sus4':'sus4','7sus4':'7sus4',
+}
+const DIATONIC_DEGREES = [
+  { numeral:'I',    offsets:[0,2,4] },
+  { numeral:'ii',   offsets:[1,3,5] },
+  { numeral:'iii',  offsets:[2,4,6] },
+  { numeral:'IV',   offsets:[3,5,0] },
+  { numeral:'V',    offsets:[4,6,1] },
+  { numeral:'vi',   offsets:[5,0,2] },
+  { numeral:'vii°', offsets:[6,1,3] },
+]
+const QUALITY_SUFFIX = { major:'', minor:'m', diminished:'°', augmented:'+' }
+const OC = {
+  diatonic:  { bg:'#D6E8F7', border:'#2A5BA8', dot:'#2A5BA8', hl:'#2A5BA8' },
+  borrowed:  { bg:'#FEF3E2', border:'#C4860A', dot:'#C4860A', hl:'#C4860A' },
+  secondary: { bg:'#FEEFED', border:'#B84040', dot:'#B84040', hl:'#B84040' },
+}
+const STREAK_MILESTONES = [7,14,30,60,100]
+const MILESTONE_MSGS = { 7:'7 day streak — one week strong', 14:'14 day streak — two weeks', 30:'30 day streak — one month', 60:'60 day streak — two months', 100:'100 day streak — legend' }
+
+// ── SECTION 2: STATE + LOCALSTORAGE + SM-2 ────────────────────────────────────
+
+// ── Utility functions ──────────────────────────────────────────────────────────
+function pc(note) { return NOTE_TO_PC[note] ?? -1 }
+
+function noteSetsMatch(selected, scaleNotes) {
+  const scalePCs = new Set(scaleNotes.map(pc))
+  const selPCs   = new Set([...selected].map(pc))
+  if (scalePCs.size !== selPCs.size) return false
+  for (const p of scalePCs) if (!selPCs.has(p)) return false
+  return true
+}
+
+function shuffle(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+function addToRecentlyShown(arr, item, max = 5) {
+  return [...arr.filter(x => x !== item), item].slice(-max)
+}
+
+function scaleMatchesFilter(s, cat) {
+  if (cat === 'major')      return /Major$/.test(s.name) && !/Pentatonic/.test(s.name)
+  if (cat === 'minor')      return /Minor$/.test(s.name) && !/Pentatonic/.test(s.name)
+  if (cat === 'dorian')     return /Dorian$/.test(s.name)
+  if (cat === 'pentatonic') return /Pentatonic/.test(s.name)
+  if (cat === 'blues')      return /Blues$/.test(s.name)
+  return false
+}
+
+function scaleTypeName(scale) {
+  return scale.name.split(' ').slice(1).join(' ')
+}
+
+function todayStr() { return new Date().toISOString().slice(0, 10) }
+function yesterdayStr() { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0,10) }
+
+function toFilenameSlug(s) {
+  return s.replace(/ — /g,'-').replace(/°/g,'dim').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-#]/g,'')
+}
+
+// ── Scale / chord builders ─────────────────────────────────────────────────────
+function findRefScale(root, type) {
+  const suffix = REF_TYPE_SUFFIX[type]
+  const rootPc = pc(root)
+  return SCALES.find(s => s.name.endsWith(' ' + suffix) && pc(s.notes[0]) === rootPc) ?? null
+}
+
+function chordQuality(root, third, fifth) {
+  const i1 = (pc(third) - pc(root) + 12) % 12
+  const i2 = (pc(fifth) - pc(third) + 12) % 12
+  if (i1 === 4 && i2 === 3) return 'major'
+  if (i1 === 3 && i2 === 4) return 'minor'
+  if (i1 === 3 && i2 === 3) return 'diminished'
+  return 'augmented'
+}
+
+function buildDiatonicChords(scale) {
+  if (scale.notes.length !== 7) return null
+  const n = scale.notes
+  return DIATONIC_DEGREES.map(({ numeral, offsets }, idx) => {
+    const [ri, ti, fi] = offsets
+    const root = n[ri], third = n[ti], fifth = n[fi]
+    const quality = chordQuality(root, third, fifth)
+    return { numeral, numeralIdx: idx, notes: [root, third, fifth], quality, shortName: root + QUALITY_SUFFIX[quality] }
+  })
+}
+
+function buildChordFromIntervals(root, intervals) {
+  const rootPc = pc(root)
+  const useFlats = FLAT_ROOTS.has(root) || root.includes('b')
+  const chromatic = useFlats ? CHROMATIC_FLAT : CHROMATIC_SHARP
+  return intervals.map(i => chromatic[(rootPc + i) % 12])
+}
+
+function buildUpperNote(root, semitones) {
+  const rootPc = pc(root)
+  const upperPc = (rootPc + semitones) % 12
+  return (FLAT_ROOTS.has(root) || root.includes('b') ? CHROMATIC_FLAT : CHROMATIC_SHARP)[upperPc]
+}
+
+function buildExtendedChordNotes(scale, chord) {
+  const root = scale.notes[chord.degreeIdx]
+  return buildChordFromIntervals(root, EXTENSION_INTERVALS[chord.extension])
+}
+
+function complexChordShortName(scale, chord) {
+  return scale.notes[chord.degreeIdx] + EXTENSION_SUFFIX[chord.extension]
+}
+
+function assignOctaves(noteNames, baseOctave) {
+  const out = []; let octave = baseOctave, prevPc = -1
+  for (const note of noteNames) {
+    const p = pc(note)
+    if (p <= prevPc) octave++
+    prevPc = p
+    out.push({ note, octave })
+  }
+  return out
+}
+
+function buildVoicings(notes) {
+  if (notes.length < 3) return []
+  const root  = assignOctaves(notes, 4)
+  const inv1  = assignOctaves([...notes.slice(1), notes[0]], 4)
+  const inv2  = assignOctaves([...notes.slice(2), ...notes.slice(0,2)], 4)
+  const drop2 = root.map(v => ({...v}))
+  drop2[drop2.length - 2] = { ...drop2[drop2.length - 2], octave: drop2[drop2.length - 2].octave - 1 }
+  const drop2Sorted = [...drop2].sort((a,b) => a.octave !== b.octave ? a.octave - b.octave : pc(a.note) - pc(b.note))
+  return [
+    { name:'root position',    notes:root,       description:'grounded, clear and stable' },
+    { name:'first inversion',  notes:inv1,       description:'smoother voice leading' },
+    { name:'second inversion', notes:inv2,       description:'unstable — creates tension' },
+    { name:'drop 2',           notes:drop2Sorted, description:'open and spacious' },
+  ]
+}
+
+function buildBuilderCard(keyRoot, semitonesAbove, intervals, label, origin) {
+  const chordRoot = buildUpperNote(keyRoot, semitonesAbove)
+  const notes = buildChordFromIntervals(chordRoot, intervals)
+  const isMaj = intervals[1] === 4
+  const isMin = intervals[1] === 3 && (intervals[2] === 7 || intervals[2] === undefined)
+  const qualSuffix = isMaj ? '' : isMin ? 'm' : (intervals[2] === 6 ? '°' : 'm')
+  const extSuffix  = intervals.length === 4 && intervals[3] === 10 ? '7'
+                   : intervals.length === 4 && intervals[3] === 11 ? 'maj7' : ''
+  return { notes, name: chordRoot + qualSuffix + extSuffix, label, origin }
+}
+
+function buildBorrowedChords(keyRoot, isMajor) {
+  return isMajor
+    ? [buildBuilderCard(keyRoot,10,[0,4,7],'bVII','borrowed'), buildBuilderCard(keyRoot,8,[0,4,7],'bVI','borrowed'), buildBuilderCard(keyRoot,3,[0,4,7],'bIII','borrowed'), buildBuilderCard(keyRoot,5,[0,3,7],'iv','borrowed'), buildBuilderCard(keyRoot,1,[0,4,7],'bII','borrowed')]
+    : [buildBuilderCard(keyRoot,11,[0,4,7],'VII','borrowed'), buildBuilderCard(keyRoot,9,[0,4,7],'VI','borrowed'), buildBuilderCard(keyRoot,4,[0,4,7],'III','borrowed'), buildBuilderCard(keyRoot,5,[0,4,7],'IV','borrowed')]
+}
+
+function buildSecondaryDominants(diatonicChords) {
+  return diatonicChords.filter(ch => ch.quality !== 'diminished').map(ch => {
+    const sdRoot = buildUpperNote(ch.notes[0], 7)
+    const notes  = buildChordFromIntervals(sdRoot, [0,4,7,10])
+    return { notes, name: sdRoot + '7', label: `V/${ch.numeral}`, origin: 'secondary' }
+  })
+}
+
+// ── SM-2 ──────────────────────────────────────────────────────────────────────
+function defaultSM2Item() { return { interval:1, repetition:0, easiness:2.5, nextReview:Date.now(), lastReview:0 } }
+
+function sm2Update(item, quality) {
+  let { interval, repetition, easiness } = item
+  const q = Math.max(0, Math.min(5, quality))
+  if (q >= 3) {
+    if (repetition === 0) interval = 1
+    else if (repetition === 1) interval = 6
+    else interval = Math.round(interval * easiness)
+    repetition++
+  } else { interval = 1; repetition = 0 }
+  easiness = Math.max(1.3, easiness + (0.1 - (5-q) * (0.08 + (5-q) * 0.02)))
+  return { interval, repetition, easiness, nextReview: Date.now() + interval*86400000, lastReview: Date.now() }
+}
+
+// ── LocalStorage ───────────────────────────────────────────────────────────────
+const LS_KEY = 'inigo365'
+const lsGet = (k, def) => { try { const v = localStorage.getItem(`${LS_KEY}_${k}`); return v !== null ? JSON.parse(v) : def } catch { return def } }
+const lsSet = (k, v)    => { try { localStorage.setItem(`${LS_KEY}_${k}`, JSON.stringify(v)) } catch {} }
+
+// ── Quiz helpers ───────────────────────────────────────────────────────────────
+function pickNextSM2(sm2, pool, recentlyShown) {
+  const now = Date.now(); const excl = new Set(recentlyShown)
+  const due = shuffle(pool.filter(s => !excl.has(s.name) && sm2[s.name] && sm2[s.name].nextReview <= now))
+  if (due.length > 0) return due[0]
+  const newItems = shuffle(pool.filter(s => !excl.has(s.name) && !sm2[s.name]))
+  if (newItems.length > 0) return newItems[0]
+  const allDue = shuffle(pool.filter(s => sm2[s.name] && sm2[s.name].nextReview <= now))
+  if (allDue.length > 0) return allDue[0]
+  return shuffle([...pool])[0] ?? SCALES[0]
+}
+
+function pickNextFromPool(pool, recentlyShown) {
+  const excl = new Set(recentlyShown)
+  const candidates = shuffle(pool.filter(k => !excl.has(k)))
+  return candidates.length > 0 ? candidates[0] : shuffle([...pool])[0]
+}
+
+function generateOptions(correct, pool) {
+  const type = scaleTypeName(correct)
+  const sameType = shuffle(pool.filter(s => s.name !== correct.name && scaleTypeName(s) === type))
+  const distractors = sameType.slice(0, 3)
+  if (distractors.length < 3) {
+    const others = shuffle(pool.filter(s => s.name !== correct.name && !distractors.some(d => d.name === s.name)))
+    distractors.push(...others.slice(0, 3 - distractors.length))
+  }
+  return shuffle([correct, ...distractors].map(s => s.name))
+}
+
+function generateScaleEarOptions(correct, pool) {
+  const used = new Set([correct.name]); const type = scaleTypeName(correct)
+  const rootSemi = pc(correct.notes[0]); const distractors = []
+  function tryAdd(s) { if (s && !used.has(s.name)) { distractors.push(s); used.add(s.name); return true } return false }
+  if (/Minor/.test(type)) tryAdd(pool.find(s => pc(s.notes[0]) === (rootSemi+3)%12 && /Major/.test(scaleTypeName(s)) && !used.has(s.name)))
+  else if (/Major/.test(type)) tryAdd(pool.find(s => pc(s.notes[0]) === (rootSemi+9)%12 && /Minor/.test(scaleTypeName(s)) && !used.has(s.name)))
+  else tryAdd(pool.find(s => pc(s.notes[0]) === (rootSemi+3)%12 && !used.has(s.name)))
+  for (const offset of [7,5,2,10]) {
+    if (distractors.length >= 2) break
+    tryAdd(pool.find(s => pc(s.notes[0]) === (rootSemi+offset)%12 && scaleTypeName(s) === type && !used.has(s.name)))
+  }
+  if (distractors.length < 3) tryAdd(pool.find(s => pc(s.notes[0]) === rootSemi && scaleTypeName(s) !== type && !used.has(s.name)))
+  const sameType = shuffle(pool.filter(s => scaleTypeName(s) === type && !used.has(s.name)))
+  for (const s of sameType) { if (distractors.length >= 3) break; distractors.push(s); used.add(s.name) }
+  const anyLeft = shuffle(pool.filter(s => !used.has(s.name)))
+  for (const s of anyLeft) { if (distractors.length >= 3) break; distractors.push(s); used.add(s.name) }
+  return shuffle([correct.name, ...distractors.slice(0,3).map(d => d.name)])
+}
+
+// ── State ──────────────────────────────────────────────────────────────────────
+const ST = {
+  mode: 'builder', builderFormat: 'A', soundOn: true,
+  activeFilters: new Set(['major','minor']), filterError: '',
+  sm2: {}, score: 0, streak: 0, rounds: 0,
+  streakData: { currentStreak:0, longestStreak:0, lastPracticeDate:'', totalSessions:0 },
+  todayAnswered: 0, sessionDate: todayStr(), streakRecordedToday: false,
+  celebrationMsg: null, celebrationTimer: null,
+  currentScale: SCALES[0], selected: new Set(), checked: false, correct: false,
+  usedHint: false, hintShown: false,
+  refRoot: 'C', refType: 'major',
+  selectedChordIdx: null, playingProgIdx: null, playingChordPos: null, complexMode: false,
+  progTimeouts: [],
+  voicingChord: null, voicingOpen: false,
+  mcOptions: [], mcAnswer: null,
+  midiMode: false, midiOptionsProgIdx: null, midiOptionsComplex: false,
+  midiPattern: 'block', midiTotalBars: 8, midiOctaveLevel: 'mid', midiBpm: 120,
+  midiExportMode: 'chords', midiMelodyStyle: 'stepwise', midiPassingNotes: false,
+  midiBassOn: false, midiBassStyle: 'rootnotes', midiBassOctave: 2, midiBassRhythm: 'quarter', midiBass808Pattern: 'straight',
+  totalXp: 0, levelUpMsg: null, levelUpTimer: null,
+  dailyGoal: 20, dailyCorrect: 0, dailyGoalHit: false,
+  customSlots: Array(8).fill(null),
+  paletteOpen: { diatonic: false, borrowed: false, secondary: false },
+  chordearKey: null, chordearRoot: 'C', chordearNotes: [], chordearOptions: [], chordearAnswer: null,
+  scaleearOptions: [], scaleearAnswer: null,
+  intervalKey: null, intervalRoot: 'C', intervalRootOct: 4, intervalUpper: 'D', intervalUpperOct: 4,
+  intervalOptions: [], intervalAnswer: null, intervalAscending: true,
+  questionStart: Date.now(),
+  recentlyShownScale: [], recentlyShownChord: [], recentlyShownInterval: [],
+}
+
+function activePool() {
+  return SCALES.filter(s => FILTER_CATEGORIES.some(cat => ST.activeFilters.has(cat) && scaleMatchesFilter(s, cat)))
+}
+
+function masteredCount() {
+  return SCALES.filter(s => { const it = ST.sm2[s.name]; return !!it && it.repetition >= 4 && it.interval >= 21 }).length
+}
+
+function dueCount() {
+  const now = Date.now()
+  if (ST.mode === 'chordear') {
+    return CHORD_EAR_QUALITIES.map(q => 'chord:'+q.name).filter(k => { const it = ST.sm2[k]; return !it || it.nextReview <= now }).length
+  }
+  if (ST.mode === 'intervals') {
+    return INTERVAL_DEFS.map(i => 'interval:'+i.name).filter(k => { const it = ST.sm2[k]; return !it || it.nextReview <= now }).length
+  }
+  return activePool().filter(s => { const it = ST.sm2[s.name]; return !it || it.nextReview <= now }).length
+}
+
+// ── Load from localStorage ─────────────────────────────────────────────────────
+function loadAll() {
+  const savedFilters = lsGet('filters', ['major','minor'])
+  ST.activeFilters = new Set(Array.isArray(savedFilters) ? savedFilters : ['major','minor'])
+  ST.soundOn = lsGet('sound', true)
+  synth.setEnabled(ST.soundOn)
+  ST.sm2 = lsGet('sm2', {})
+  ST.streakData = lsGet('streak', { currentStreak:0, longestStreak:0, lastPracticeDate:'', totalSessions:0 })
+  const today = todayStr()
+  ST.sessionDate = today
+  ST.streakRecordedToday = ST.streakData.lastPracticeDate === today
+  ST.todayAnswered = ST.streakRecordedToday ? 5 : 0
+  ST.totalXp = lsGet('xp', 0)
+  ST.dailyGoal = lsGet('dailyGoal', 20)
+  ST.dailyCorrect = lsGet('dailyCorrect_' + today, 0)
+  ST.dailyGoalHit = ST.dailyCorrect >= ST.dailyGoal
+  ST.customSlots = lsGet('customProg', Array(8).fill(null))
+  if (!Array.isArray(ST.customSlots) || ST.customSlots.length !== 8) ST.customSlots = Array(8).fill(null)
+  const savedMode = lsGet('mode', 'builder')
+  const validModes = ['builder','namekey','chordear','intervals','scaleear','chart']
+  ST.mode = validModes.includes(savedMode) ? savedMode : 'builder'
+  const pool = activePool(); const initPool = pool.length > 0 ? pool : SCALES
+  ST.currentScale = pickNextSM2(ST.sm2, initPool, [])
+}
+
+function saveFilters() { lsSet('filters', [...ST.activeFilters]) }
+function saveSM2()     { lsSet('sm2', ST.sm2) }
+function saveStreak()  { lsSet('streak', ST.streakData) }
+function saveXp()      { lsSet('xp', ST.totalXp) }
+function saveDailyCorrect() { lsSet('dailyCorrect_' + todayStr(), ST.dailyCorrect) }
+function saveCustomProg()   { lsSet('customProg', ST.customSlots) }
+function saveMode()         { lsSet('mode', ST.mode) }
+
+// ── SM-2 apply ────────────────────────────────────────────────────────────────
+function applyAndSaveSM2(key, quality) {
+  ST.sm2[key] = sm2Update(ST.sm2[key] ?? defaultSM2Item(), quality)
+  saveSM2()
+}
+
+// ── Session / streak / XP ──────────────────────────────────────────────────────
+function handleSessionAnswer() {
+  const today = todayStr()
+  if (ST.sessionDate !== today) { ST.sessionDate = today; ST.streakRecordedToday = false; ST.dailyCorrect = 0; ST.dailyGoalHit = false; ST.todayAnswered = 0 }
+  ST.todayAnswered++
+  if (ST.todayAnswered >= 5 && !ST.streakRecordedToday && ST.streakData.lastPracticeDate !== today) {
+    let { currentStreak, longestStreak, totalSessions } = ST.streakData
+    currentStreak = ST.streakData.lastPracticeDate === yesterdayStr() ? currentStreak + 1 : 1
+    if (currentStreak > longestStreak) longestStreak = currentStreak
+    ST.streakData = { currentStreak, longestStreak, lastPracticeDate: today, totalSessions: totalSessions + 1 }
+    saveStreak(); ST.streakRecordedToday = true
+    if (STREAK_MILESTONES.includes(currentStreak)) showCelebration(MILESTONE_MSGS[currentStreak])
+  }
+}
+
+function awardXp(xp, isCorrect) {
+  const oldLvl = Math.floor(ST.totalXp / 100) + 1
+  ST.totalXp += xp; saveXp()
+  const newLvl = Math.floor(ST.totalXp / 100) + 1
+  if (newLvl > oldLvl) { showLevelUp(`level ${newLvl}!`) }
+  if (isCorrect) { ST.dailyCorrect++; saveDailyCorrect() }
+  if (ST.dailyCorrect >= ST.dailyGoal && ST.dailyGoal > 0 && !ST.dailyGoalHit) {
+    ST.dailyGoalHit = true
+    showCelebration(`daily goal: ${ST.dailyGoal} correct today! 🎯`)
+  }
+}
+
+function showCelebration(msg) {
+  if (ST.celebrationTimer) clearTimeout(ST.celebrationTimer)
+  ST.celebrationMsg = msg
+  ST.celebrationTimer = setTimeout(() => { ST.celebrationMsg = null; renderModeContent() }, 2500)
+}
+
+function showLevelUp(msg) {
+  if (ST.levelUpTimer) clearTimeout(ST.levelUpTimer)
+  ST.levelUpMsg = msg
+  const el = document.getElementById('st-levelup')
+  if (el) { el.textContent = msg; el.style.display = '' }
+  ST.levelUpTimer = setTimeout(() => { ST.levelUpMsg = null; const e = document.getElementById('st-levelup'); if (e) e.style.display = 'none' }, 2500)
+}
+
+function stopProgression() {
+  synth.stopAll()
+  ST.progTimeouts.forEach(t => clearTimeout(t))
+  ST.progTimeouts = []
+  ST.playingProgIdx = null; ST.playingChordPos = null
+}
+
+function resetQuizState() {
+  ST.selected = new Set(); ST.checked = false; ST.correct = false
+  ST.usedHint = false; ST.hintShown = false; ST.mcAnswer = null
+}
+
+function compactSlots(slots) {
+  const filled = slots.filter(s => s !== null)
+  return [...filled, ...Array(8 - filled.length).fill(null)]
+}
+
+// ── SECTION 3: RENDER FUNCTIONS ───────────────────────────────────────────────
+
+// ── Mini keyboard (static display) ────────────────────────────────────────────
+function buildMiniKeyboard(highlightPCs, highlightColor) {
+  highlightColor = highlightColor || 'var(--blue-deep)'
+  const wrap = document.createElement('div')
+  wrap.style.cssText = 'position:relative;width:100%;height:42px;user-select:none;'
+  WHITE_KEYS.forEach((note, i) => {
+    const el = document.createElement('div')
+    const hl = highlightPCs.has(pc(note))
+    el.style.cssText = `position:absolute;left:${(i/7)*100}%;width:${(1/7)*100 - 1}%;height:100%;` +
+      `background:${hl ? highlightColor : '#fff'};border:1px solid var(--border);` +
+      `border-radius:0 0 2px 2px;box-sizing:border-box;z-index:1;`
+    wrap.appendChild(el)
+  })
+  BLACK_KEYS.forEach(({ note, lf }) => {
+    const el = document.createElement('div')
+    const hl = highlightPCs.has(pc(note))
+    el.style.cssText = `position:absolute;left:${lf*100}%;width:${(0.7/7)*100}%;height:62%;` +
+      `background:${hl ? highlightColor : '#2a2a3a'};border:1px solid rgba(0,0,0,0.4);` +
+      `border-radius:0 0 2px 2px;box-sizing:border-box;z-index:2;`
+    wrap.appendChild(el)
+  })
+  return wrap
+}
+
+// ── Interactive piano keyboard ─────────────────────────────────────────────────
+function buildPianoKeyboard(opts) {
+  // opts: { scalePCs, selectedPCs, checkedState, hintNote, interactive, onNote }
+  // checkedState: null | { correct: Set<pc>, wrong: Set<pc>, missed: Set<pc> }
+  const wrap = document.createElement('div')
+  wrap.className = 'st-kbd'
+
+  function keyColorWhite(note) {
+    const p = pc(note)
+    if (opts.checkedState) {
+      const { correct, wrong, missed } = opts.checkedState
+      if (correct.has(p)) return '#C0DD97'
+      if (wrong.has(p))   return '#F09595'
+      if (missed.has(p))  return '#FAC775'
+    }
+    if (opts.hintNote === note) return 'var(--blue-mid)'
+    if (opts.selectedPCs && opts.selectedPCs.has(p)) return 'var(--blue-deep)'
+    if (opts.scalePCs && opts.scalePCs.has(p)) return 'var(--blue-deep)'
+    return '#FDFAF5'
+  }
+  function keyColorBlack(note) {
+    const p = pc(note)
+    if (opts.checkedState) {
+      const { correct, wrong, missed } = opts.checkedState
+      if (correct.has(p)) return '#5A9E35'
+      if (wrong.has(p))   return '#C04545'
+      if (missed.has(p))  return '#C07820'
+    }
+    if (opts.selectedPCs && opts.selectedPCs.has(p)) return '#1A3A5C'
+    if (opts.scalePCs && opts.scalePCs.has(p)) return '#1A3A5C'
+    return '#1A2535'
+  }
+  function labelColor(note, isBlack) {
+    const p = pc(note)
+    if (isBlack) return '#fff'
+    if (opts.checkedState) {
+      const { correct, wrong, missed } = opts.checkedState
+      if (correct.has(p)) return '#27500A'
+      if (wrong.has(p))   return '#791F1F'
+      if (missed.has(p))  return '#633806'
+    }
+    if (opts.selectedPCs && opts.selectedPCs.has(p)) return '#fff'
+    if (opts.scalePCs && opts.scalePCs.has(p)) return '#fff'
+    return 'var(--ink)'
+  }
+
+  WHITE_KEYS.forEach((note, i) => {
+    const btn = document.createElement('button')
+    const bg = keyColorWhite(note)
+    btn.style.cssText = `position:absolute;left:${(i/7)*100}%;width:${(1/7)*100 - 0.8}%;height:100%;` +
+      `background:${bg};border:1px solid var(--border);border-radius:0 0 3px 3px;` +
+      `display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;` +
+      `box-sizing:border-box;z-index:1;font-family:inherit;font-size:13px;` +
+      `cursor:${opts.interactive ? 'pointer' : 'default'};touch-action:manipulation;`
+    btn.style.color = labelColor(note, false)
+    btn.textContent = note
+    if (opts.interactive && !opts.checkedState) {
+      btn.addEventListener('pointerdown', e => { e.preventDefault(); opts.onNote && opts.onNote(note) })
+    } else if (!opts.interactive) {
+      btn.addEventListener('pointerdown', e => { e.preventDefault(); synth.playNote(note, 4) })
+    }
+    wrap.appendChild(btn)
+  })
+  BLACK_KEYS.forEach(({ note, lf }) => {
+    const btn = document.createElement('button')
+    btn.style.cssText = `position:absolute;left:${lf*100}%;width:${(0.7/7)*100}%;height:90px;` +
+      `background:${keyColorBlack(note)};border:1px solid rgba(0,0,0,0.4);border-radius:0 0 3px 3px;` +
+      `display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;` +
+      `box-sizing:border-box;z-index:2;font-family:inherit;font-size:11px;color:#fff;` +
+      `cursor:${opts.interactive ? 'pointer' : 'default'};touch-action:manipulation;`
+    btn.textContent = note
+    if (opts.interactive && !opts.checkedState) {
+      btn.addEventListener('pointerdown', e => { e.preventDefault(); opts.onNote && opts.onNote(note) })
+    } else if (!opts.interactive) {
+      btn.addEventListener('pointerdown', e => { e.preventDefault(); synth.playNote(note, 4) })
+    }
+    wrap.appendChild(btn)
+  })
+  return wrap
+}
+
+// ── Status bar ────────────────────────────────────────────────────────────────
+function renderStatusBar() {
+  const el = document.getElementById('st-status-bar')
+  if (!el) return
+  const sd = ST.streakData
+  const streakHtml = sd.currentStreak > 0
+    ? `<span class="st-stat">🔥 <strong>${sd.currentStreak}</strong> day streak</span>`
+    : `<span class="st-stat">start your streak today</span>`
+  const bestHtml = sd.longestStreak > 0 ? `<span class="st-stat">best: ${sd.longestStreak}</span>` : ''
+  const goalColor = ST.dailyGoalHit ? '#4caf50' : 'var(--muted)'
+  const goalPct = ST.dailyGoal > 0 ? Math.min(100, (ST.dailyCorrect / ST.dailyGoal) * 100) : 0
+  const goalFillColor = ST.dailyGoalHit ? '#4caf50' : 'var(--blue-deep)'
+  const due = dueCount()
+  const goalBtns = [10,20,50].map(g =>
+    `<button onclick="setDailyGoal(${g})" style="font-family:inherit;font-size:0.68rem;padding:1px 5px;border:1px solid ${ST.dailyGoal===g?'var(--blue-deep)':'var(--border)'};border-radius:2px;cursor:pointer;background:${ST.dailyGoal===g?'var(--blue-light)':'#FDFAF5'};color:${ST.dailyGoal===g?'var(--blue-deep)':'var(--muted)'}">${g}</button>`
+  ).join('')
+  el.innerHTML = `
+    <div class="st-status">
+      ${streakHtml}${bestHtml}
+      <span class="st-stat" style="color:var(--blue-deep);font-weight:600">${ST.totalXp} xp</span>
+      <span class="st-stat">lvl ${Math.floor(ST.totalXp/100)+1}</span>
+      <span class="st-stat" style="color:${goalColor}">${ST.dailyCorrect} / ${ST.dailyGoal} today</span>
+      <span style="display:flex;gap:3px">${goalBtns}</span>
+      <span style="margin-left:auto;font-size:0.68rem;color:var(--muted)">${due === 0 ? 'all caught up' : `${due} due`}</span>
+    </div>
+    <div id="st-levelup" class="level-up" style="display:${ST.levelUpMsg?'':'none'}">${ST.levelUpMsg||''}</div>
+    <div class="st-progress"><div class="st-progress-fill" style="width:${goalPct}%;background:${goalFillColor}"></div></div>`
+}
+
+function setDailyGoal(g) { ST.dailyGoal = g; lsSet('dailyGoal', g); renderStatusBar() }
+
+// ── Controls (filters + mode tabs) ────────────────────────────────────────────
+function renderControls() {
+  const el = document.getElementById('st-controls')
+  if (!el) return
+  const showFilters = !['chordear','intervals','chart'].includes(ST.mode) && ST.mode !== 'scaleear'
+  const filterBtns = FILTER_CATEGORIES.map(cat =>
+    `<button class="st-btn-sm${ST.activeFilters.has(cat)?' active':''}" onclick="toggleFilter('${cat}')">${cat}</button>`
+  ).join('')
+  const modeBtns = [
+    ['builder','scale builder'],['namekey','name the key'],
+    ['chordear','chord training'],['intervals','intervals'],
+    ['scaleear','scale ear'],['chart','scale chart / midi'],
+  ].map(([m,label]) =>
+    `<button class="st-btn${ST.mode===m?' active':''}" onclick="changeMode('${m}')">${label}</button>`
+  ).join('')
+  const soundBtn = `<button class="st-btn${ST.soundOn?' active':''}" onclick="toggleSound()">sound ${ST.soundOn?'on':'off'}</button>`
+  const filterErr = ST.filterError ? `<p style="font-size:0.72rem;color:#b94040;margin:0">${ST.filterError}</p>` : ''
+  el.innerHTML = `
+    ${filterErr}
+    <div class="st-row">
+      ${showFilters ? `<span style="font-size:0.72rem;color:var(--muted)">filter scales</span>${filterBtns}` : ''}
+      ${soundBtn}
+    </div>
+    <div class="st-row">${modeBtns}</div>`
+}
+
+// ── Stats row (shared across modes) ───────────────────────────────────────────
+function statsRowHtml() {
+  const dotColor = (i) => i < ST.streak ? 'var(--blue-deep)' : 'var(--border)'
+  const dots = [0,1,2,3,4].map(i => `<span class="st-dot" style="background:${dotColor(i)}"></span>`).join('')
+  const mastered = ['builder','namekey'].includes(ST.mode) ? `<span>mastered: <strong>${masteredCount()}/72</strong></span>` : ''
+  return `<div class="st-row" style="font-size:0.75rem;color:var(--muted)">
+    <span>score: <strong style="color:var(--ink)">${ST.score}</strong></span>
+    <span>rounds: <strong style="color:var(--ink)">${ST.rounds}</strong></span>
+    ${mastered}
+    <span>streak:<span class="st-dots">${dots}</span></span>
+  </div>`
+}
+
+// ── Render: builder + namekey ──────────────────────────────────────────────────
+function renderBuilderNamekey() {
+  const el = document.getElementById('st-mode-content')
+  if (!el) return
+
+  if (ST.celebrationMsg) { el.innerHTML = `${statsRowHtml()}<div class="celebration">${ST.celebrationMsg}</div>`; return }
+
+  const isBuilder  = ST.mode === 'builder'
+  const isNamekey  = ST.mode === 'namekey'
+  const scalePCs   = new Set(ST.currentScale.notes.map(pc))
+  const selPCs     = new Set([...ST.selected].map(pc))
+
+  let checkedState = null
+  if (ST.checked && isBuilder) {
+    const correct = new Set([...scalePCs].filter(p => selPCs.has(p)))
+    const wrong   = new Set([...selPCs].filter(p => !scalePCs.has(p)))
+    const missed  = new Set([...scalePCs].filter(p => !selPCs.has(p)))
+    checkedState = { correct, wrong, missed }
+  }
+
+  const promptText = isBuilder
+    ? (ST.builderFormat === 'A' ? `identify: ${ST.currentScale.name}` : `build: ${ST.currentScale.notes[0]} ${scaleTypeName(ST.currentScale)}`)
+    : 'name this scale:'
+  const hintSpan = (ST.hintShown && isBuilder && ST.builderFormat === 'A')
+    ? `<span class="hint-inline">hint: root is ${ST.currentScale.notes[0]}</span>` : ''
+
+  el.innerHTML = `
+    ${statsRowHtml()}
+    <div style="font-size:1rem;color:var(--ink);font-weight:600">${promptText}${hintSpan}</div>
+    <div id="st-kbd-wrap"></div>
+    ${isNamekey ? `<button class="st-btn" onclick="synth.playAscendingArpeggio(ST.currentScale.notes,4,100)" style="align-self:flex-start">play scale</button>` : ''}
+    <div id="st-mc-area"></div>
+    <div id="st-builder-btns"></div>
+    <div id="st-feedback"></div>`
+
+  // Piano keyboard
+  const kbdWrap = document.getElementById('st-kbd-wrap')
+  const kbd = buildPianoKeyboard({
+    scalePCs:    isNamekey ? scalePCs : null,
+    selectedPCs: isBuilder ? selPCs : null,
+    checkedState,
+    hintNote:    (ST.hintShown && isBuilder) ? ST.currentScale.notes[0] : null,
+    interactive: isBuilder,
+    onNote: (note) => {
+      if (ST.checked) return
+      synth.playNote(note, 4)
+      const p = pc(note); const existing = [...ST.selected].find(n => pc(n) === p)
+      if (existing) ST.selected.delete(existing); else ST.selected.add(note)
+      renderBuilderNamekey()
+    }
+  })
+  kbdWrap.appendChild(kbd)
+
+  // MC grid (namekey)
+  if (isNamekey && ST.mcOptions.length === 4) {
+    const mcEl = document.getElementById('st-mc-area')
+    const answered = ST.mcAnswer !== null
+    mcEl.innerHTML = `<div class="st-grid2">${ST.mcOptions.map(opt => {
+      const isChosen = ST.mcAnswer === opt, isRight = opt === ST.currentScale.name
+      let cls = 'ans-btn'
+      if (answered && isChosen && isRight)  cls += ' correct'
+      if (answered && isChosen && !isRight) cls += ' wrong'
+      if (answered && !isChosen && isRight) cls += ' reveal'
+      return `<button class="${cls}" ${answered?'disabled':''} onclick="handleMcAnswer('${opt.replace(/'/g,"\\'")}'">${opt}</button>`
+    }).join('')}</div>
+    ${answered ? `<div class="st-row"><button class="st-btn active" onclick="handleNext()">next</button><button class="st-btn danger" onclick="handleReset()">reset</button></div>` : ''}`
+  }
+
+  // Builder action buttons
+  if (isBuilder) {
+    const bbEl = document.getElementById('st-builder-btns')
+    if (!ST.checked) {
+      bbEl.innerHTML = `
+        <div class="st-row">
+          <button class="st-btn${ST.selected.size>0?' active':' disabled'}" ${ST.selected.size===0?'disabled':''} onclick="handleCheck()">check</button>
+          ${ST.builderFormat==='A' ? `<button class="st-btn${ST.hintShown?' disabled':''}" ${ST.hintShown?'disabled':''} onclick="handleHint()">hint</button>` : ''}
+          <button class="st-btn danger" onclick="handleReset()">reset</button>
+        </div>`
+    } else {
+      bbEl.innerHTML = `<div class="st-row"><button class="st-btn active" onclick="handleNext()">next</button><button class="st-btn danger" onclick="handleReset()">reset</button></div>`
+    }
+  }
+
+  // Feedback
+  if (ST.checked) {
+    const fbEl = document.getElementById('st-feedback')
+    if (isBuilder) {
+      fbEl.innerHTML = `<div class="feedback-bar ${ST.correct?'correct':'wrong'}">
+        ${ST.correct?'✓':'✗'} <strong>${ST.currentScale.name}</strong>: ${ST.currentScale.notes.join('  ')}
+      </div>`
+    }
+  }
+}
+
+// ── Render: chord ear ─────────────────────────────────────────────────────────
+function renderChordear() {
+  const el = document.getElementById('st-mode-content')
+  if (!el) return
+  if (ST.celebrationMsg) { el.innerHTML = `${statsRowHtml()}<div class="celebration">${ST.celebrationMsg}</div>`; return }
+  const answered = ST.chordearAnswer !== null
+  const correctQualityName = ST.chordearKey ? ST.chordearKey.replace('chord:','') : ''
+  el.innerHTML = `
+    ${statsRowHtml()}
+    ${ST.chordearKey ? `
+    <div style="font-size:1rem;color:var(--ink);font-weight:600">what kind of chord is this?</div>
+    <button class="st-btn" onclick="synth.playSustainedChord(ST.chordearNotes)">play</button>
+    <div class="st-grid2">${ST.chordearOptions.map(opt => {
+      const q = CHORD_EAR_QUALITIES.find(q => q.name === opt)
+      const isChosen = ST.chordearAnswer === opt, isRight = opt === correctQualityName
+      let cls = 'ans-btn'
+      if (answered && isChosen && isRight)  cls += ' correct'
+      if (answered && isChosen && !isRight) cls += ' wrong'
+      if (answered && !isChosen && isRight) cls += ' reveal'
+      return `<button class="${cls}" ${answered?'disabled':''} onclick="handleChordearAnswer('${opt}')">${q ? q.label : opt}</button>`
+    }).join('')}</div>
+    ${answered ? `
+      <div class="feedback-bar ${ST.chordearAnswer===correctQualityName?'correct':'wrong'}">
+        ${ST.chordearAnswer===correctQualityName?'✓':'✗'} <strong>${ST.chordearRoot} ${CHORD_EAR_QUALITIES.find(q=>q.name===correctQualityName)?.label||''}</strong>
+        — intervals: ${CHORD_EAR_QUALITIES.find(q=>q.name===correctQualityName)?.intervals.join(', ')} semitones
+      </div>
+      <div id="st-chordear-mini"></div>
+      <div class="st-row">
+        <button class="st-btn active" onclick="handleChordearNext()">next</button>
+        <button class="st-btn danger" onclick="handleReset()">reset</button>
+      </div>` : ''}
+    ` : ''}`
+  if (answered) {
+    const mini = document.getElementById('st-chordear-mini')
+    if (mini) { mini.style.maxWidth = '320px'; mini.appendChild(buildMiniKeyboard(new Set(ST.chordearNotes.map(pc)), 'var(--blue-deep)')) }
+  }
+}
+
+// ── Render: intervals ─────────────────────────────────────────────────────────
+function renderIntervals() {
+  const el = document.getElementById('st-mode-content')
+  if (!el) return
+  if (ST.celebrationMsg) { el.innerHTML = `${statsRowHtml()}<div class="celebration">${ST.celebrationMsg}</div>`; return }
+  const answered = ST.intervalAnswer !== null
+  const correctName = ST.intervalKey ? ST.intervalKey.replace('interval:','') : ''
+  const def = INTERVAL_DEFS.find(i => i.name === correctName)
+  el.innerHTML = `
+    ${statsRowHtml()}
+    <div class="st-row">
+      <button class="st-btn-sm${ST.intervalAscending?' active':''}" onclick="setIntervalDir(true)">ascending</button>
+      <button class="st-btn-sm${!ST.intervalAscending?' active':''}" onclick="setIntervalDir(false)">descending</button>
+    </div>
+    ${ST.intervalKey ? `
+    <div style="font-size:1rem;color:var(--ink);font-weight:600">what interval is this?</div>
+    <div style="font-size:0.75rem;color:var(--muted)">root: <strong style="color:var(--ink)">${ST.intervalRoot}</strong> — ${ST.intervalAscending?'ascending':'descending'}</div>
+    <button class="st-btn" onclick="playIntervalNotes()">play</button>
+    <div class="st-grid2">${ST.intervalOptions.map(opt => {
+      const isChosen = ST.intervalAnswer === opt, isRight = opt === correctName
+      let cls = 'ans-btn'
+      if (answered && isChosen && isRight)  cls += ' correct'
+      if (answered && isChosen && !isRight) cls += ' wrong'
+      if (answered && !isChosen && isRight) cls += ' reveal'
+      return `<button class="${cls}" ${answered?'disabled':''} onclick="handleIntervalAnswer('${opt.replace(/'/g,"\\'")}')">${opt}</button>`
+    }).join('')}</div>
+    ${answered ? `
+      <div class="feedback-bar ${ST.intervalAnswer===correctName?'correct':'wrong'}">
+        ${ST.intervalAnswer===correctName?'✓':'✗'} <strong>${correctName}</strong> (${def?def.semitones:''} semitones)
+      </div>
+      ${def ? `<div style="font-size:0.72rem;color:var(--muted)">mnemonic: ${def.mnemonic}</div>` : ''}
+      <div class="st-row">
+        <button class="st-btn active" onclick="handleIntervalNext()">next</button>
+        <button class="st-btn danger" onclick="handleReset()">reset</button>
+      </div>` : ''}
+    ` : ''}`
+}
+
+// ── Render: scale ear ─────────────────────────────────────────────────────────
+function renderScaleear() {
+  const el = document.getElementById('st-mode-content')
+  if (!el) return
+  if (ST.celebrationMsg) { el.innerHTML = `${statsRowHtml()}<div class="celebration">${ST.celebrationMsg}</div>`; return }
+  const answered = ST.scaleearAnswer !== null
+  el.innerHTML = `
+    ${statsRowHtml()}
+    ${ST.scaleearOptions.length > 0 ? `
+    <div style="font-size:1rem;color:var(--ink);font-weight:600">what scale is this?</div>
+    <button class="st-btn" style="min-height:44px;font-size:0.88rem" onclick="synth.playAscendingArpeggio(ST.currentScale.notes,4,120)">play again</button>
+    <div class="st-grid2">${ST.scaleearOptions.map(opt => {
+      const isChosen = ST.scaleearAnswer === opt, isRight = opt === ST.currentScale.name
+      let cls = 'ans-btn'
+      if (answered && isChosen && isRight)  cls += ' correct'
+      if (answered && isChosen && !isRight) cls += ' wrong'
+      if (answered && !isChosen && isRight) cls += ' reveal'
+      return `<button class="${cls}" ${answered?'disabled':''} onclick="handleScaleEarAnswer('${opt.replace(/'/g,"\\'")}')">${opt}</button>`
+    }).join('')}</div>
+    ${answered ? `
+      <div class="feedback-bar ${ST.scaleearAnswer===ST.currentScale.name?'correct':'wrong'}">
+        ${ST.scaleearAnswer===ST.currentScale.name?'✓':'✗'} <strong>${ST.currentScale.name}</strong>
+        — ${ST.currentScale.notes.join('  ')}
+      </div>
+      <div id="st-scaleear-mini" style="max-width:320px"></div>
+      <div class="st-row">
+        <button class="st-btn active" onclick="handleNext()">next</button>
+        <button class="st-btn danger" onclick="handleReset()">reset</button>
+      </div>` : ''}
+    ` : ''}`
+  if (answered) {
+    const mini = document.getElementById('st-scaleear-mini')
+    if (mini) mini.appendChild(buildMiniKeyboard(new Set(ST.currentScale.notes.map(pc)), 'var(--blue-deep)'))
+  }
+}
+
+// ── Render: chart (reference view) ────────────────────────────────────────────
+function renderChart() {
+  const el = document.getElementById('st-mode-content')
+  if (!el) return
+  const refScale = findRefScale(ST.refRoot, ST.refType)
+  el.innerHTML = `
+    <p style="font-size:0.72rem;color:var(--muted);margin:0">select a key in the midi studio to see its scale layout here</p>
+    ${refScale ? `
+      <div style="font-size:0.92rem;color:var(--ink);font-weight:600">${refScale.name}</div>
+      <div style="font-size:0.75rem;color:var(--muted);letter-spacing:0.04em">${refScale.notes.join('  ·  ')}</div>
+      <div id="st-chart-mini" style="max-width:320px"></div>
+    ` : ''}`
+  if (refScale) {
+    const mini = document.getElementById('st-chart-mini')
+    if (mini) mini.appendChild(buildMiniKeyboard(new Set(refScale.notes.map(pc)), 'var(--blue-deep)'))
+  }
+}
+
+// ── Dispatch mode render ───────────────────────────────────────────────────────
+function renderModeContent() {
+  if (ST.mode === 'builder' || ST.mode === 'namekey') renderBuilderNamekey()
+  else if (ST.mode === 'chordear')  renderChordear()
+  else if (ST.mode === 'intervals') renderIntervals()
+  else if (ST.mode === 'scaleear')  renderScaleear()
+  else if (ST.mode === 'chart')     renderChart()
+}
+
+// ── Action handlers ────────────────────────────────────────────────────────────
+function toggleFilter(cat) {
+  ST.filterError = ''
+  if (ST.activeFilters.has(cat) && ST.activeFilters.size === 1) {
+    ST.filterError = 'need at least one scale type active'; renderControls(); return
+  }
+  ST.activeFilters.has(cat) ? ST.activeFilters.delete(cat) : ST.activeFilters.add(cat)
+  saveFilters()
+  const pool = activePool(); if (pool.length > 0 && !pool.find(s => s.name === ST.currentScale.name)) {
+    ST.recentlyShownScale = []; ST.currentScale = pickNextSM2(ST.sm2, pool, []); resetQuizState()
+  }
+  renderControls(); renderModeContent()
+}
+
+function toggleSound() { ST.soundOn = !ST.soundOn; synth.setEnabled(ST.soundOn); lsSet('sound', ST.soundOn); renderControls() }
+
+function changeMode(m) {
+  stopProgression(); ST.midiMode = false; ST.selectedChordIdx = null; ST.mode = m; saveMode()
+  resetQuizState()
+  if (m === 'chordear') { ST.recentlyShownChord = []; const notes = setupChordearQuestion(); synth.playSustainedChord(notes) }
+  else if (m === 'intervals') { ST.recentlyShownInterval = []; const d = setupIntervalQuestion(); playIntervalNotes(d.root, d.rootOct, d.upper, d.upperOct, ST.intervalAscending) }
+  else if (['builder','namekey','scaleear'].includes(m)) {
+    ST.recentlyShownScale = []; const pool = activePool().length > 0 ? activePool() : SCALES
+    ST.currentScale = pickNextSM2(ST.sm2, pool, [])
+    ST.questionStart = Date.now()
+    if (m === 'namekey') { const pool2 = activePool().length >= 4 ? activePool() : SCALES; ST.mcOptions = generateOptions(ST.currentScale, pool2); synth.playAscendingArpeggio(ST.currentScale.notes,4,100) }
+    if (m === 'scaleear') { const pool2 = activePool().length >= 4 ? activePool() : SCALES; ST.scaleearOptions = generateScaleEarOptions(ST.currentScale, pool2); synth.playAscendingArpeggio(ST.currentScale.notes,4,120) }
+    if (m === 'builder') ST.builderFormat = Math.random() < 0.5 ? 'A' : 'B'
+  }
+  renderControls(); renderModeContent()
+}
+
+function handleCheck() {
+  if (ST.checked || ST.selected.size === 0) return
+  const isCorrect = noteSetsMatch(ST.selected, ST.currentScale.notes)
+  ST.checked = true; ST.correct = isCorrect; ST.rounds++
+  synth.playAscendingArpeggio(ST.currentScale.notes)
+  const elapsed = Date.now() - ST.questionStart
+  const quality = !isCorrect ? 1 : ST.usedHint ? 3 : elapsed < 5000 ? 5 : 4
+  applyAndSaveSM2(ST.currentScale.name, quality)
+  if (isCorrect) { ST.score += ST.usedHint ? 5 : 10; ST.streak++ } else ST.streak = 0
+  awardXp(!isCorrect ? 1 : ST.usedHint ? 5 : 10, isCorrect)
+  handleSessionAnswer(); renderStatusBar(); renderModeContent()
+}
+
+function handleHint() {
+  if (ST.checked || ST.hintShown) return
+  ST.hintShown = true; ST.usedHint = true; renderModeContent()
+}
+
+function handleNext() {
+  const pool = activePool().length > 0 ? activePool() : SCALES
+  ST.recentlyShownScale = addToRecentlyShown(ST.recentlyShownScale, ST.currentScale.name)
+  ST.currentScale = pickNextSM2(ST.sm2, pool, ST.recentlyShownScale)
+  ST.questionStart = Date.now()
+  if (ST.mode === 'builder') ST.builderFormat = Math.random() < 0.5 ? 'A' : 'B'
+  resetQuizState()
+  if (ST.mode === 'namekey') { const p = pool.length >= 4 ? pool : SCALES; ST.mcOptions = generateOptions(ST.currentScale, p) }
+  if (ST.mode === 'scaleear') { const p = pool.length >= 4 ? pool : SCALES; ST.scaleearOptions = generateScaleEarOptions(ST.currentScale, p); synth.playAscendingArpeggio(ST.currentScale.notes,4,120) }
+  renderModeContent()
+}
+
+function handleReset() {
+  ST.sm2 = {}; saveSM2(); ST.score = 0; ST.streak = 0; ST.rounds = 0
+  ST.recentlyShownScale = []; ST.recentlyShownChord = []; ST.recentlyShownInterval = []
+  const pool = activePool().length > 0 ? activePool() : SCALES
+  ST.currentScale = pickNextSM2(ST.sm2, pool, []); ST.questionStart = Date.now(); resetQuizState()
+  if (ST.mode === 'namekey') ST.mcOptions = generateOptions(ST.currentScale, pool.length>=4?pool:SCALES)
+  if (ST.mode === 'scaleear') { ST.scaleearOptions = generateScaleEarOptions(ST.currentScale, pool.length>=4?pool:SCALES); synth.playAscendingArpeggio(ST.currentScale.notes,4,120) }
+  renderStatusBar(); renderModeContent()
+}
+
+function handleMcAnswer(option) {
+  if (ST.mcAnswer !== null) return
+  ST.mcAnswer = option; const isCorrect = option === ST.currentScale.name
+  ST.checked = true; ST.correct = isCorrect; ST.rounds++
+  synth.playAscendingArpeggio(ST.currentScale.notes)
+  applyAndSaveSM2(ST.currentScale.name, isCorrect ? 4 : 2)
+  if (isCorrect) { ST.score += 10; ST.streak++ } else ST.streak = 0
+  awardXp(isCorrect ? 10 : 1, isCorrect); handleSessionAnswer(); renderStatusBar(); renderModeContent()
+}
+
+function setupChordearQuestion() {
+  const keys = CHORD_EAR_QUALITIES.map(q => 'chord:'+q.name)
+  const key = pickNextFromPool(keys, ST.recentlyShownChord)
+  ST.recentlyShownChord = addToRecentlyShown(ST.recentlyShownChord, key)
+  const qualityName = key.replace('chord:','')
+  const quality = CHORD_EAR_QUALITIES.find(q => q.name === qualityName)
+  const root = CHROMATIC_ROOTS[Math.floor(Math.random() * CHROMATIC_ROOTS.length)]
+  const notes = buildChordFromIntervals(root, quality.intervals)
+  const distractors = shuffle(CHORD_EAR_QUALITIES.filter(q => q.name !== qualityName)).slice(0,3).map(q => q.name)
+  ST.chordearKey = key; ST.chordearRoot = root; ST.chordearNotes = notes
+  ST.chordearOptions = shuffle([qualityName, ...distractors]); ST.chordearAnswer = null
+  ST.questionStart = Date.now()
+  return notes
+}
+
+function handleChordearAnswer(qualityName) {
+  if (ST.chordearAnswer !== null || !ST.chordearKey) return
+  ST.chordearAnswer = qualityName; const isCorrect = qualityName === ST.chordearKey.replace('chord:','')
+  const elapsed = Date.now() - ST.questionStart
+  applyAndSaveSM2(ST.chordearKey, !isCorrect ? 1 : elapsed < 5000 ? 5 : 4)
+  ST.rounds++
+  if (isCorrect) { ST.score += 10; ST.streak++ } else ST.streak = 0
+  awardXp(isCorrect ? 10 : 1, isCorrect); handleSessionAnswer()
+  synth.playSustainedChord(ST.chordearNotes)
+  renderStatusBar(); renderChordear()
+}
+
+function handleChordearNext() {
+  const notes = setupChordearQuestion(); synth.playSustainedChord(notes); renderChordear()
+}
+
+function setupIntervalQuestion() {
+  const recent = ST.recentlyShownInterval
+  const candidates = INTERVAL_DEFS.filter(i => !recent.includes(i.name))
+  const pool = candidates.length > 0 ? candidates : INTERVAL_DEFS
+  const def = pool[Math.floor(Math.random() * pool.length)]
+  ST.recentlyShownInterval = addToRecentlyShown(recent, def.name)
+  const rootIdx = Math.floor(Math.random() * 12)
+  let rootMidi = 60 + rootIdx
+  let upperMidi = ST.intervalAscending ? rootMidi + def.semitones : rootMidi - def.semitones
+  if (upperMidi < 48) { rootMidi += 12; upperMidi += 12 }
+  if (upperMidi > 84) { rootMidi -= 12; upperMidi -= 12 }
+  const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
+  const root = NAMES[rootMidi % 12], upper = NAMES[((upperMidi%12)+12)%12]
+  const rootOct = Math.floor(rootMidi/12)-1, upperOct = Math.floor(upperMidi/12)-1
+  const nearby = INTERVAL_DEFS.filter(i => i.name !== def.name)
+    .sort((a,b) => Math.abs(a.semitones-def.semitones) - Math.abs(b.semitones-def.semitones)).slice(0,3).map(i => i.name)
+  ST.intervalKey = 'interval:'+def.name
+  ST.intervalRoot = root; ST.intervalRootOct = rootOct; ST.intervalUpper = upper; ST.intervalUpperOct = upperOct
+  ST.intervalOptions = shuffle([def.name, ...nearby]); ST.intervalAnswer = null; ST.questionStart = Date.now()
+  return { root, rootOct, upper, upperOct }
+}
+
+function playIntervalNotes(root, rootOct, upper, upperOct, ascending) {
+  root = root ?? ST.intervalRoot; rootOct = rootOct ?? ST.intervalRootOct
+  upper = upper ?? ST.intervalUpper; upperOct = upperOct ?? ST.intervalUpperOct
+  ascending = ascending ?? ST.intervalAscending
+  if (ascending) { synth.playNote(root, rootOct); setTimeout(() => synth.playNote(upper, upperOct), 400) }
+  else { synth.playNote(upper, upperOct); setTimeout(() => synth.playNote(root, rootOct), 400) }
+}
+
+function setIntervalDir(asc) {
+  ST.intervalAscending = asc
+  if (ST.intervalKey) playIntervalNotes()
+  renderIntervals()
+}
+
+function handleIntervalAnswer(intervalName) {
+  if (ST.intervalAnswer !== null || !ST.intervalKey) return
+  ST.intervalAnswer = intervalName; const isCorrect = intervalName === ST.intervalKey.replace('interval:','')
+  const elapsed = Date.now() - ST.questionStart
+  applyAndSaveSM2(ST.intervalKey, !isCorrect ? 1 : elapsed < 5000 ? 5 : 4)
+  ST.rounds++
+  if (isCorrect) { ST.score += 10; ST.streak++ } else ST.streak = 0
+  awardXp(isCorrect ? 10 : 1, isCorrect); handleSessionAnswer()
+  playIntervalNotes()
+  renderStatusBar(); renderIntervals()
+}
+
+function handleIntervalNext() {
+  const d = setupIntervalQuestion(); playIntervalNotes(d.root, d.rootOct, d.upper, d.upperOct, ST.intervalAscending); renderIntervals()
+}
+
+function handleScaleEarAnswer(scaleName) {
+  if (ST.scaleearAnswer !== null) return
+  ST.scaleearAnswer = scaleName; const isCorrect = scaleName === ST.currentScale.name
+  ST.checked = true; ST.correct = isCorrect; ST.rounds++
+  synth.playAscendingArpeggio(ST.currentScale.notes, 4, 120)
+  applyAndSaveSM2(ST.currentScale.name, isCorrect ? 4 : 2)
+  if (isCorrect) { ST.score += 10; ST.streak++ } else ST.streak = 0
+  awardXp(isCorrect ? 10 : 1, isCorrect); handleSessionAnswer(); renderStatusBar(); renderScaleear()
+}
+
+// ── SECTION 4: MIDI STUDIO ────────────────────────────────────────────────────
+
+function renderMidiStudio() {
+  const el = document.getElementById('st-midi-studio')
+  if (!el) return
+  const refScale     = findRefScale(ST.refRoot, ST.refType)
+  const diatonic     = refScale ? buildDiatonicChords(refScale) : null
+  const isMajorType  = ST.refType === 'major' || ST.refType === 'pentatonic major'
+  const borrowed     = (refScale && diatonic) ? buildBorrowedChords(refScale.notes[0], isMajorType) : []
+  const secondary    = diatonic ? buildSecondaryDominants(diatonic) : []
+
+  el.innerHTML = ''
+
+  // ── Key / type selectors ───────────────────────────────────────────────────
+  const selRow = div('st-row', `
+    <select class="st-select" id="ref-root-sel">${REF_ROOTS.map(r => `<option${r===ST.refRoot?' selected':''}>${r}</option>`).join('')}</select>
+    <select class="st-select" id="ref-type-sel">${REF_TYPES.map(t => `<option${t===ST.refType?' selected':''}>${t}</option>`).join('')}</select>
+  `)
+  el.appendChild(selRow)
+  document.getElementById('ref-root-sel').addEventListener('change', e => handleRefRootChange(e.target.value))
+  document.getElementById('ref-type-sel').addEventListener('change', e => handleRefTypeChange(e.target.value))
+
+  // ── Scale description ──────────────────────────────────────────────────────
+  el.appendChild(p72(`${SCALE_DESCRIPTIONS[ST.refType]}`))
+
+  // ── Reference keyboard ─────────────────────────────────────────────────────
+  const scalePCs = refScale ? new Set(refScale.notes.map(pc)) : new Set()
+  const refKbd = buildPianoKeyboard({ scalePCs, interactive: false })
+  el.appendChild(refKbd)
+
+  // ── Notes list ─────────────────────────────────────────────────────────────
+  if (refScale) {
+    el.appendChild(div('', `<span style="font-size:0.88rem;color:var(--ink)">${refScale.notes.join(' — ')}</span>`))
+  }
+
+  if (!diatonic) { el.appendChild(p72('chord progressions not available for this scale type')); renderProgressionsOnly(el, refScale); return }
+
+  // ── Chord cards ────────────────────────────────────────────────────────────
+  el.appendChild(p72('chords in this scale'))
+  const chordGrid = document.createElement('div')
+  chordGrid.className = 'st-grid-auto'
+  diatonic.forEach((chord, idx) => {
+    const btn = document.createElement('button')
+    btn.className = 'st-chord-card' + (ST.selectedChordIdx === idx ? ' active' : '')
+    btn.innerHTML = `<span style="font-size:0.68rem;color:var(--muted)">${chord.numeral}</span>
+      <span style="font-size:0.92rem;font-weight:700;color:var(--ink)">${chord.shortName}</span>
+      <span style="font-size:0.68rem;color:var(--muted)">${chord.quality}</span>`
+    const mini = buildMiniKeyboard(new Set(chord.notes.map(pc)), 'var(--blue-deep)')
+    mini.style.width = '100%'; mini.style.marginTop = '2px'
+    btn.appendChild(mini)
+    btn.addEventListener('click', () => handleChordCardClick(chord, idx))
+    chordGrid.appendChild(btn)
+  })
+  el.appendChild(chordGrid)
+
+  // ── Voicing explorer ───────────────────────────────────────────────────────
+  const voicingSection = document.createElement('div')
+  voicingSection.id = 'st-voicing-section'
+  el.appendChild(voicingSection)
+  renderVoicingExplorer(voicingSection)
+
+  // ── Progression builder header ─────────────────────────────────────────────
+  el.appendChild(p72('build a progression — click chords to add to slots'))
+
+  // ── Palette ────────────────────────────────────────────────────────────────
+  const palette = document.createElement('div')
+  palette.id = 'st-palette'
+  palette.style.cssText = 'display:flex;flex-direction:column;gap:6px'
+  el.appendChild(palette)
+  renderPalette(palette, diatonic, borrowed, secondary, refScale)
+
+  // ── Builder slots ──────────────────────────────────────────────────────────
+  const slotsWrap = document.createElement('div')
+  slotsWrap.style.cssText = 'display:flex;flex-direction:column;gap:8px'
+  const slotsGrid = document.createElement('div')
+  slotsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(8,1fr);gap:4px'
+  slotsGrid.id = 'st-slots-grid'
+  slotsWrap.appendChild(slotsGrid)
+  renderSlots(slotsGrid)
+  const slotBtns = div('st-row', `
+    <button class="st-btn${ST.playingProgIdx===-1?' active':''}" id="st-play-custom" onclick="handlePlayCustom()">play custom</button>
+    <button class="st-btn" onclick="handleClearBuilder()">clear</button>
+  `)
+  slotsWrap.appendChild(slotBtns)
+  el.appendChild(slotsWrap)
+
+  // ── Progressions section ───────────────────────────────────────────────────
+  const progHeader = div('st-row', `
+    <span style="font-size:0.72rem;color:var(--muted)">progressions</span>
+    <button class="st-btn-sm${!ST.complexMode?' active':''}" onclick="setComplexMode(false)">common</button>
+    <button class="st-btn-sm${ST.complexMode?' active':''}" onclick="setComplexMode(true)">complex</button>
+    <button class="st-btn${ST.midiOptionsProgIdx!==null||ST.midiMode?' active':''}" onclick="toggleMidiMode()">generate midi</button>
+  `)
+  el.appendChild(progHeader)
+
+  const progList = document.createElement('div')
+  progList.style.cssText = 'display:flex;flex-direction:column;gap:14px'
+  progList.id = 'st-prog-list'
+  el.appendChild(progList)
+  renderProgressionList(progList, diatonic, refScale)
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function div(cls, html) { const d = document.createElement('div'); if (cls) d.className = cls; d.innerHTML = html || ''; return d }
+function p72(text) { const p = document.createElement('p'); p.style.cssText = 'font-size:0.72rem;color:var(--muted);margin:0'; p.textContent = text; return p }
+
+// ── Voicing explorer ───────────────────────────────────────────────────────────
+function renderVoicingExplorer(container) {
+  container.innerHTML = ''
+  const voicings  = ST.voicingChord ? buildVoicings(ST.voicingChord.notes) : []
+  const headerTxt = ST.voicingChord ? `voicings: ${ST.voicingChord.name}` : 'voicings'
+  const hdr = document.createElement('button')
+  hdr.className = 'section-header'
+  hdr.innerHTML = `<span>${headerTxt}</span><span style="font-size:0.68rem;color:var(--muted)">${ST.voicingOpen?'▲':'▼'}</span>`
+  hdr.addEventListener('click', () => { ST.voicingOpen = !ST.voicingOpen; renderVoicingExplorer(container) })
+  container.appendChild(hdr)
+  if (!ST.voicingOpen) return
+  if (!ST.voicingChord) { container.appendChild(p72('click a chord above to explore its voicings')); return }
+  const grid = document.createElement('div')
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding-top:10px'
+  voicings.forEach(v => {
+    const card = document.createElement('div')
+    card.style.cssText = 'border:1px solid var(--border);border-radius:2px;padding:10px;display:flex;flex-direction:column;gap:6px'
+    const mini = buildMiniKeyboard(new Set(v.notes.map(vn => pc(vn.note))), 'var(--blue-deep)')
+    card.innerHTML = `<span style="font-size:0.72rem;color:var(--muted)">${v.name}</span>`
+    card.appendChild(mini)
+    const noteList = document.createElement('span')
+    noteList.style.cssText = 'font-size:0.72rem;color:var(--ink)'
+    noteList.textContent = `${v.notes.map(vn => vn.note + vn.octave).join(' — ')}`
+    card.appendChild(noteList)
+    const playBtn = document.createElement('button')
+    playBtn.className = 'st-btn'; playBtn.textContent = 'play'
+    playBtn.addEventListener('click', () => { synth.stopAll(); v.notes.forEach(({ note, octave }) => synth.playNote(note, octave)) })
+    card.appendChild(playBtn)
+    grid.appendChild(card)
+  })
+  container.appendChild(grid)
+  const playAllBtn = document.createElement('button')
+  playAllBtn.className = 'st-btn'; playAllBtn.style.marginTop = '4px'; playAllBtn.textContent = 'play all — 1.5s apart'
+  playAllBtn.addEventListener('click', () => {
+    voicings.forEach((v, i) => setTimeout(() => { synth.stopAll(); v.notes.forEach(({ note, octave }) => synth.playNote(note, octave)) }, i * 1500))
+  })
+  container.appendChild(playAllBtn)
+  const descs = document.createElement('div')
+  descs.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-top:4px'
+  voicings.forEach(v => { const p = document.createElement('p'); p.style.cssText='font-size:0.72rem;color:var(--muted);margin:0'; p.textContent=`${v.name} — ${v.description}`; descs.appendChild(p) })
+  container.appendChild(descs)
+}
+
+// ── Palette ────────────────────────────────────────────────────────────────────
+function renderPalette(container, diatonic, borrowed, secondary, refScale) {
+  container.innerHTML = ''
+  const diatonicCards = diatonic.map(ch => ({ notes: ch.notes, name: ch.shortName, label: ch.numeral, origin: 'diatonic' }))
+  renderPaletteRow(container, 'diatonic',  'diatonic',            diatonicCards)
+  renderPaletteRow(container, 'borrowed',  'borrowed',            borrowed)
+  renderPaletteRow(container, 'secondary', 'secondary dominants', secondary)
+}
+
+function renderPaletteRow(container, id, label, cards) {
+  const wrap = document.createElement('div')
+  const hdr  = document.createElement('button')
+  const open = ST.paletteOpen[id]
+  hdr.className = 'st-btn' + (open ? ' active' : '')
+  hdr.style.cssText = 'text-align:left;display:flex;justify-content:space-between;align-items:center;width:100%'
+  hdr.innerHTML = `<span>${label}</span><span style="font-size:0.68rem;margin-left:8px">${open?'▲':'▼'}</span>`
+  hdr.addEventListener('click', () => { ST.paletteOpen[id] = !ST.paletteOpen[id]; renderMidiStudio() })
+  wrap.appendChild(hdr)
+  if (open) {
+    const grid = document.createElement('div')
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;margin-top:6px'
+    cards.forEach(card => {
+      const c = OC[card.origin]
+      const btn = document.createElement('button')
+      btn.className = 'palette-card'
+      btn.style.border = `1px solid ${c.border}`
+      btn.innerHTML = `<span style="font-size:0.68rem;color:${c.dot}">${card.label}</span><span style="font-size:0.82rem;font-weight:700;color:var(--ink)">${card.name}</span>`
+      const mini = buildMiniKeyboard(new Set(card.notes.map(pc)), c.hl)
+      mini.style.width = '100%'; mini.style.marginTop = '1px'
+      btn.appendChild(mini)
+      btn.addEventListener('click', () => {
+        synth.playSustainedChord(card.notes)
+        const firstEmpty = ST.customSlots.findIndex(s => s === null)
+        if (firstEmpty === -1) return
+        ST.customSlots[firstEmpty] = card
+        saveCustomProg()
+        renderSlots(document.getElementById('st-slots-grid'))
+      })
+      grid.appendChild(btn)
+    })
+    wrap.appendChild(grid)
+  }
+  container.appendChild(wrap)
+}
+
+// ── Builder slots ──────────────────────────────────────────────────────────────
+function renderSlots(grid) {
+  if (!grid) return
+  grid.innerHTML = ''
+  ST.customSlots.forEach((slot, idx) => {
+    const c   = slot ? OC[slot.origin] : null
+    const isP = ST.playingProgIdx === -1 && ST.playingChordPos === idx && slot !== null
+    const slotEl = document.createElement('div')
+    slotEl.className = 'slot-card'
+    slotEl.style.border = slot ? `1px solid ${c.border}` : '1px dashed var(--border)'
+    slotEl.style.background = isP ? 'var(--blue-light)' : slot ? c.bg : '#FDFAF5'
+    if (slot) {
+      const dot = document.createElement('span')
+      dot.style.cssText = `width:6px;height:6px;border-radius:50%;background:${c.dot};position:absolute;top:4px;right:4px`
+      slotEl.appendChild(dot)
+      slotEl.innerHTML += `<span style="font-size:0.68rem;color:var(--muted)">${slot.label}</span><span style="font-size:0.78rem;font-weight:700;color:var(--ink)">${slot.name}</span>`
+      const xBtn = document.createElement('button')
+      xBtn.style.cssText = 'position:absolute;bottom:1px;right:2px;font-family:inherit;font-size:0.65rem;padding:1px 3px;border:none;background:transparent;cursor:pointer;color:var(--muted)'
+      xBtn.textContent = '×'
+      xBtn.addEventListener('click', e => { e.stopPropagation(); ST.customSlots = compactSlots([...ST.customSlots.slice(0,idx), null, ...ST.customSlots.slice(idx+1)]); saveCustomProg(); renderSlots(document.getElementById('st-slots-grid')) })
+      slotEl.appendChild(xBtn)
+      slotEl.style.cursor = 'default'
+      slotEl.addEventListener('click', () => synth.playSustainedChord(slot.notes))
+    } else {
+      slotEl.innerHTML += `<span style="font-size:0.68rem;color:var(--border);text-align:center">${idx+1}</span>`
+    }
+    grid.appendChild(slotEl)
+  })
+  const playBtn = document.getElementById('st-play-custom')
+  if (playBtn) { const filled = ST.customSlots.filter(s=>s!==null).length >= 2; playBtn.disabled = !filled; playBtn.style.opacity = filled ? '1' : '0.45' }
+}
+
+function handlePlayCustom() {
+  const filled = ST.customSlots.filter(s => s !== null)
+  if (filled.length < 2) return
+  stopProgression(); ST.midiMode = false; ST.playingProgIdx = -1; ST.playingChordPos = 0
+  const chordArrays = filled.map(s => s.notes)
+  filled.slice(1).forEach((_, i) => { const t = setTimeout(() => { ST.playingChordPos = i+1; renderSlots(document.getElementById('st-slots-grid')) }, (i+1)*1200); ST.progTimeouts.push(t) })
+  synth.playProgressionSequence(chordArrays, 4, 1200, () => { ST.playingProgIdx = null; ST.playingChordPos = null; renderSlots(document.getElementById('st-slots-grid')) })
+}
+
+function handleClearBuilder() { ST.customSlots = Array(8).fill(null); saveCustomProg(); renderSlots(document.getElementById('st-slots-grid')) }
+
+// ── Chord card click ───────────────────────────────────────────────────────────
+function handleChordCardClick(chord, idx) {
+  const wasSelected = ST.selectedChordIdx === idx
+  ST.selectedChordIdx = wasSelected ? null : idx
+  synth.playSustainedChord(chord.notes)
+  ST.voicingChord = wasSelected ? null : { name: chord.shortName, notes: chord.notes }
+  if (!wasSelected) ST.voicingOpen = false
+  const sec = document.getElementById('st-voicing-section')
+  if (sec) renderVoicingExplorer(sec)
+  document.querySelectorAll('.st-chord-card').forEach((el, i) => { el.classList.toggle('active', i === ST.selectedChordIdx) })
+}
+
+// ── Progressions list ──────────────────────────────────────────────────────────
+function renderProgressionList(container, diatonic, refScale) {
+  if (!container) return
+  container.innerHTML = ''
+
+  // Custom row
+  const filled = ST.customSlots.filter(s => s !== null)
+  const canPlay = filled.length >= 2
+  const customRow = document.createElement('div')
+  customRow.style.cssText = 'display:flex;flex-direction:column;gap:0'
+  const customBtn = document.createElement('button')
+  customBtn.className = 'prog-row' + (ST.playingProgIdx===-1||ST.midiOptionsProgIdx===-1?' active':'')
+  customBtn.style.opacity = canPlay ? '1' : '0.6'
+  customBtn.innerHTML = `<span class="prog-row__numerals">custom</span>
+    <span class="prog-row__chords">${canPlay ? filled.map((s,j) => `<span style="font-weight:${ST.playingProgIdx===-1&&ST.playingChordPos===j?700:400};color:${OC[s.origin].dot}">${s.name}</span>`).join('') : '<span style="color:var(--border)">—</span>'}</span>
+    <span class="prog-row__desc">${canPlay ? 'your custom progression' : 'build above'}</span>`
+  if (canPlay) customBtn.addEventListener('click', () => { ST.midiMode && ST.midiOptionsProgIdx===-1 ? (ST.midiMode=false,ST.midiOptionsProgIdx=null,renderMidiStudio()) : handleProgressionPlay(-1, filled.map(s=>s.notes)) })
+  customRow.appendChild(customBtn)
+  if (ST.midiMode && ST.midiOptionsProgIdx === -1 && canPlay) { const panel = buildMidiOptionsPanel(() => renderMidiStudio()); customRow.appendChild(panel) }
+  container.appendChild(customRow)
+
+  const progs = ST.complexMode ? COMPLEX_PROGRESSIONS : PROGRESSIONS
+  progs.forEach((prog, i) => {
+    const chordArrays = ST.complexMode
+      ? prog.chords.map(ch => buildExtendedChordNotes(refScale, ch))
+      : prog.indices.map(idx => diatonic[idx].notes)
+    const chordNames = ST.complexMode
+      ? prog.chords.map(ch => complexChordShortName(refScale, ch))
+      : prog.indices.map(idx => diatonic[idx].shortName)
+    const labelText = ST.complexMode ? prog.chords.map(ch=>ch.label).join(' — ') : prog.label
+    const isPlaying = ST.playingProgIdx === i
+    const optOpen   = ST.midiMode && ST.midiOptionsProgIdx === i && ST.midiOptionsComplex === ST.complexMode
+
+    const row = document.createElement('div')
+    row.style.cssText = 'display:flex;flex-direction:column;gap:0'
+    const rowBtn = document.createElement('button')
+    rowBtn.className = 'prog-row' + (isPlaying||optOpen?' active':'')
+    rowBtn.innerHTML = `<span class="prog-row__numerals">${labelText}</span>
+      <span class="prog-row__chords">${chordNames.map((n,j) => `<span style="font-weight:${isPlaying&&ST.playingChordPos===j?700:400}">${n}</span>`).join('')}</span>
+      <span class="prog-row__desc">${prog.description}</span>`
+    rowBtn.addEventListener('click', () => {
+      if (optOpen) { ST.midiMode = false; ST.midiOptionsProgIdx = null; renderMidiStudio() }
+      else handleProgressionPlay(i, chordArrays)
+    })
+    row.appendChild(rowBtn)
+    if (optOpen) { const panel = buildMidiOptionsPanel(() => renderMidiStudio()); row.appendChild(panel) }
+    container.appendChild(row)
+  })
+}
+
+function renderProgressionsOnly(container, refScale) {
+  const progHeader = div('st-row', `
+    <span style="font-size:0.72rem;color:var(--muted)">progressions</span>
+    <button class="st-btn-sm${!ST.complexMode?' active':''}" onclick="setComplexMode(false)">common</button>
+    <button class="st-btn-sm${ST.complexMode?' active':''}" onclick="setComplexMode(true)">complex</button>
+    <button class="st-btn${ST.midiMode?' active':''}" onclick="toggleMidiMode()">generate midi</button>
+  `)
+  container.appendChild(progHeader)
+  const list = document.createElement('div'); list.style.cssText = 'display:flex;flex-direction:column;gap:14px'
+  container.appendChild(list)
+  list.innerHTML = '<p style="font-size:0.78rem;color:var(--muted)">chord progressions require a 7-note scale</p>'
+}
+
+function handleProgressionPlay(progIdx, chordArrays) {
+  stopProgression(); ST.midiMode = false
+  ST.playingProgIdx = progIdx; ST.playingChordPos = 0
+  ST.midiOptionsProgIdx = progIdx; ST.midiOptionsComplex = ST.complexMode
+  chordArrays.slice(1).forEach((_,i) => { const t = setTimeout(() => { ST.playingChordPos = i+1; renderProgressionList(document.getElementById('st-prog-list'), buildDiatonicChords(findRefScale(ST.refRoot, ST.refType)), findRefScale(ST.refRoot, ST.refType)) }, (i+1)*1200); ST.progTimeouts.push(t) })
+  synth.playProgressionSequence(chordArrays, 4, 1200, () => { ST.playingProgIdx = null; ST.playingChordPos = null; renderProgressionList(document.getElementById('st-prog-list'), buildDiatonicChords(findRefScale(ST.refRoot, ST.refType)), findRefScale(ST.refRoot, ST.refType)) })
+  renderProgressionList(document.getElementById('st-prog-list'), buildDiatonicChords(findRefScale(ST.refRoot, ST.refType)), findRefScale(ST.refRoot, ST.refType))
+}
+
+function setComplexMode(val) { if (ST.complexMode === val) return; stopProgression(); ST.midiMode = false; ST.midiOptionsProgIdx = null; ST.complexMode = val; renderMidiStudio() }
+function toggleMidiMode() {
+  if (ST.midiMode) { ST.midiMode = false; ST.midiOptionsProgIdx = null; renderMidiStudio(); return }
+  if (ST.midiOptionsProgIdx !== null) { ST.midiMode = true; renderMidiStudio(); return }
+  const refScale = findRefScale(ST.refRoot, ST.refType); const diatonic = refScale ? buildDiatonicChords(refScale) : null
+  if (!diatonic) return
+  const chords = ST.complexMode ? COMPLEX_PROGRESSIONS[0].chords.map(ch => buildExtendedChordNotes(refScale, ch)) : PROGRESSIONS[0].indices.map(i => diatonic[i].notes)
+  handleProgressionPlay(0, chords); ST.midiMode = true; renderMidiStudio()
+}
+
+function handleRefRootChange(root) { stopProgression(); ST.midiMode = false; ST.selectedChordIdx = null; ST.refRoot = root; const s = findRefScale(root, ST.refType); if (s) synth.playAscendingArpeggio(s.notes); renderMidiStudio(); if (ST.mode === 'chart') renderModeContent() }
+function handleRefTypeChange(type) { stopProgression(); ST.midiMode = false; ST.selectedChordIdx = null; ST.refType = type; const s = findRefScale(ST.refRoot, type); if (s) synth.playAscendingArpeggio(s.notes); renderMidiStudio(); if (ST.mode === 'chart') renderModeContent() }
+
+// ── MIDI options panel ─────────────────────────────────────────────────────────
+function buildMidiOptionsPanel(onRender) {
+  const wrap = document.createElement('div')
+  wrap.className = 'midi-opts'
+
+  function row(labelText, btnsHtml) {
+    const d = document.createElement('div'); d.className = 'midi-row'
+    d.innerHTML = `<span class="midi-label">${labelText}</span><div class="midi-btns">${btnsHtml}</div>`
+    return d
+  }
+  function oBtn(val, label, active, onclick) {
+    return `<button class="st-opt-btn${active?' active':''}" onclick="${onclick}">${label}</button>`
+  }
+
+  // Export mode
+  const exportModes = [['chords','chords'],['melody','melody'],['bass','bass'],['chords+melody','c + m'],['chords+bass','c + b'],['melody+bass','m + b'],['all','all three']]
+  wrap.appendChild(row('export:', exportModes.map(([v,l]) => oBtn(v,l,ST.midiExportMode===v,`setMidiOpt('midiExportMode','${v}')`)).join('')))
+
+  // Pattern (if chords included)
+  const showChords = !['melody','bass','melody+bass'].includes(ST.midiExportMode)
+  if (showChords) {
+    wrap.appendChild(row('pattern:', ['block','arpeggio','alberti','pad'].map(p => oBtn(p,p,ST.midiPattern===p,`setMidiOpt('midiPattern','${p}')`)).join('')))
+    const patDesc = { block:'block chords',arpeggio:'arpeggio',alberti:'alberti bass',pad:'pad (soft)' }
+    wrap.appendChild(div('',`<span style="font-size:0.68rem;color:var(--muted)">${patDesc[ST.midiPattern]}</span>`))
+  }
+
+  // Length
+  const refScale = findRefScale(ST.refRoot, ST.refType)
+  const progLen = ST.midiOptionsProgIdx === -1
+    ? ST.customSlots.filter(s=>s!==null).length
+    : ST.midiOptionsProgIdx !== null && ST.midiOptionsComplex
+      ? COMPLEX_PROGRESSIONS[ST.midiOptionsProgIdx]?.chords.length ?? 4
+      : ST.midiOptionsProgIdx !== null ? PROGRESSIONS[ST.midiOptionsProgIdx]?.indices.length ?? 4 : 4
+  const barsEach = Math.max(1, Math.round(ST.midiTotalBars / progLen))
+  wrap.appendChild(row('length:', [4,8,16].map(b => oBtn(b,`${b} bars`,ST.midiTotalBars===b,`setMidiOpt('midiTotalBars',${b})`)).join('')))
+  wrap.appendChild(div('',`<span style="font-size:0.68rem;color:var(--muted)">${ST.midiTotalBars} bars ÷ ${progLen} chords = ${barsEach} bar${barsEach!==1?'s':''} each</span>`))
+
+  // Octave
+  wrap.appendChild(row('octave:', ['low','mid','high'].map(o => oBtn(o,o,ST.midiOctaveLevel===o,`setMidiOpt('midiOctaveLevel','${o}')`)).join('')))
+
+  // BPM
+  const bpmRow = div('midi-row', `<span class="midi-label">bpm:</span><input class="st-input" type="number" id="midi-bpm-input" min="40" max="200" value="${ST.midiBpm}">`)
+  wrap.appendChild(bpmRow)
+  setTimeout(() => { const inp = document.getElementById('midi-bpm-input'); if (inp) inp.addEventListener('change', e => { const v = Math.max(40,Math.min(200,parseInt(e.target.value)||120)); ST.midiBpm=v; e.target.value=v }) }, 0)
+
+  // Melody toggle
+  const showMelody = ['melody','chords+melody','melody+bass','all'].includes(ST.midiExportMode)
+  const melodyToggle = div('', `<button class="st-opt-btn${showMelody?' active':''}" onclick="toggleMelody()">${showMelody?'▸ melody on':'+ melody'}</button>`)
+  wrap.appendChild(melodyToggle)
+  if (showMelody) {
+    wrap.appendChild(row('style:', [['stepwise','stepwise'],['leaping','leaping'],['callresponse','call & response']].map(([v,l]) => oBtn(v,l,ST.midiMelodyStyle===v,`setMidiOpt('midiMelodyStyle','${v}')`)).join('')))
+    wrap.appendChild(div('midi-row', `<span class="midi-label"></span><button class="st-opt-btn${ST.midiPassingNotes?' active':''}" onclick="togglePassingNotes()">passing notes</button>`))
+  }
+
+  // Bass toggle
+  const showBass = ['bass','chords+bass','melody+bass','all'].includes(ST.midiExportMode)
+  wrap.appendChild(div('', `<button class="st-opt-btn${showBass?' active':''}" onclick="toggleBass()">${showBass?'▸ bassline on':'+ bassline'}</button>`))
+  if (showBass) {
+    wrap.appendChild(row('style:', ['rootnotes','walking','808','subbass'].map(s => oBtn(s,s==='rootnotes'?'root notes':s==='subbass'?'sub bass':s,ST.midiBassStyle===s,`setMidiOpt('midiBassStyle','${s}')`)).join('')))
+    const bassDescs = { rootnotes:'root note per chord, locked to beat', walking:'stepwise movement — jazz feel', '808':'trap/hip-hop patterns, 140-150 bpm', subbass:'sustained root notes — warm and deep' }
+    wrap.appendChild(div('',`<span style="font-size:0.68rem;color:var(--muted)">${bassDescs[ST.midiBassStyle]}</span>`))
+    if (ST.midiBassStyle !== '808') wrap.appendChild(row('bass oct:', [2,3].map(o => oBtn(o,`oct ${o}`,ST.midiBassOctave===o,`setMidiOpt('midiBassOctave',${o})`)).join('')))
+    if (ST.midiBassStyle === 'rootnotes') wrap.appendChild(row('rhythm:', ['whole','half','quarter'].map(r => oBtn(r,r,ST.midiBassRhythm===r,`setMidiOpt('midiBassRhythm','${r}')`)).join('')))
+    if (ST.midiBassStyle === '808') {
+      wrap.appendChild(div('',`<span style="font-size:0.68rem;color:var(--muted)">808 works best at 140-150 bpm</span>`))
+      const p808 = { straight:'straight',boombap:'boom bap',trapbasic:'trap basic',trapsyncopated:'trap syncopated',halftime:'half time' }
+      wrap.appendChild(row('pattern:', Object.entries(p808).map(([v,l]) => oBtn(v,l,ST.midiBass808Pattern===v,`setMidiOpt('midiBass808Pattern','${v}')`)).join('')))
+    }
+  }
+
+  // Action buttons
+  const actionRow = div('midi-row', '')
+  const dlBtn = document.createElement('button'); dlBtn.className = 'st-btn active'; dlBtn.style.cssText = 'min-height:36px;flex:1 0 auto'; dlBtn.textContent = 'download midi'
+  dlBtn.addEventListener('click', handleMidiDownload)
+  const cancelBtn = document.createElement('button'); cancelBtn.className = 'st-btn'; cancelBtn.style.cssText = 'min-height:36px;flex:1 0 auto'; cancelBtn.textContent = 'cancel'
+  cancelBtn.addEventListener('click', () => { ST.midiMode = false; ST.midiOptionsProgIdx = null; renderMidiStudio() })
+  actionRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:2px'
+  actionRow.appendChild(dlBtn); actionRow.appendChild(cancelBtn)
+  wrap.appendChild(actionRow)
+  return wrap
+}
+
+function setMidiOpt(key, val) { ST[key] = val; renderMidiStudio() }
+function toggleMelody() {
+  const m = ST.midiExportMode
+  const show = ['melody','chords+melody','melody+bass','all'].includes(m)
+  if (show) { ST.midiExportMode = m==='melody'?'chords':m==='chords+melody'?'chords':m==='melody+bass'?'bass':'chords+bass' }
+  else { ST.midiExportMode = m==='chords'?'chords+melody':m==='bass'?'melody+bass':m==='chords+bass'?'all':'chords+melody' }
+  renderMidiStudio()
+}
+function toggleBass() {
+  const m = ST.midiExportMode, on = ['bass','chords+bass','melody+bass','all'].includes(m)
+  if (on) { ST.midiExportMode = m==='bass'?'chords':m==='chords+bass'?'chords':m==='melody+bass'?'melody':'chords+melody' }
+  else { ST.midiExportMode = m==='chords'?'chords+bass':m==='melody'?'melody+bass':m==='chords+melody'?'all':'chords+bass' }
+  renderMidiStudio()
+}
+function togglePassingNotes() { ST.midiPassingNotes = !ST.midiPassingNotes; renderMidiStudio() }
+
+// ── SECTION 5: MIDI WRITER + INIT ─────────────────────────────────────────────
+
+// ── Inline MIDI writer ─────────────────────────────────────────────────────────
+const PPQN = 480
+
+function noteToMidi(name, octave) { return (octave + 1) * 12 + (NOTE_TO_PC[name] ?? 0) }
+
+function varLen(n) {
+  if (n < 0) n = 0
+  const bytes = [n & 0x7F]; n >>= 7
+  while (n > 0) { bytes.unshift((n & 0x7F) | 0x80); n >>= 7 }
+  return bytes
+}
+
+function midiWord(n)  { return [(n >> 8) & 0xFF, n & 0xFF] }
+function midiDword(n) { return [(n>>24)&0xFF,(n>>16)&0xFF,(n>>8)&0xFF,n&0xFF] }
+
+function timelineToTrackBytes(events) {
+  events.sort((a, b) => {
+    if (a.t !== b.t) return a.t - b.t
+    const pri = e => e.type==='endTrack'?3:e.type==='noteOff'?1:e.type==='noteOn'?2:0
+    return pri(a) - pri(b)
+  })
+  const bytes = []; let prevT = 0
+  for (const ev of events) {
+    bytes.push(...varLen(ev.t - prevT)); prevT = ev.t
+    if (ev.type === 'tempo') {
+      bytes.push(0xFF,0x51,0x03,(ev.us>>16)&0xFF,(ev.us>>8)&0xFF,ev.us&0xFF)
+    } else if (ev.type === 'timesig') {
+      bytes.push(0xFF,0x58,0x04,4,2,24,8) // 4/4
+    } else if (ev.type === 'name') {
+      const nb = Array.from(new TextEncoder().encode(ev.text))
+      bytes.push(0xFF,0x03,...varLen(nb.length),...nb)
+    } else if (ev.type === 'noteOn') {
+      bytes.push(0x90|(ev.ch-1), ev.note&0x7F, ev.vel&0x7F)
+    } else if (ev.type === 'noteOff') {
+      bytes.push(0x80|(ev.ch-1), ev.note&0x7F, 0)
+    } else if (ev.type === 'endTrack') {
+      bytes.push(0xFF,0x2F,0x00)
+    }
+  }
+  return bytes
+}
+
+function buildMidiFile(tracks) {
+  const header = [0x4D,0x54,0x68,0x64,0,0,0,6, 0,tracks.length>1?1:0, ...midiWord(tracks.length), 0x01,0xE0]
+  const all = [...header]
+  for (const tl of tracks) {
+    const data = timelineToTrackBytes(tl)
+    all.push(0x4D,0x54,0x72,0x6B,...midiDword(data.length),...data)
+  }
+  return new Uint8Array(all)
+}
+
+// ── Chord track builder ────────────────────────────────────────────────────────
+function buildChordTimeline(progression, bpm, pattern, barsPerChord, octave, trackName, ch) {
+  const us = Math.round(60_000_000 / bpm)
+  const slotsPerChord = 4 * barsPerChord
+  const tl = [{ t:0,type:'tempo',us }, { t:0,type:'timesig' }]
+  if (trackName) tl.push({ t:0,type:'name',text:trackName })
+  let t = 0
+  progression.forEach(chordNotes => {
+    const pitches = chordNotes.map(n => noteToMidi(n, octave))
+    if (pattern === 'block') {
+      for (let s = 0; s < slotsPerChord; s++) {
+        const on = t + s*PPQN
+        pitches.forEach(p => { tl.push({t:on,type:'noteOn',ch,note:p,vel:80}); tl.push({t:on+PPQN,type:'noteOff',ch,note:p}) })
+      }
+    } else if (pattern === 'arpeggio') {
+      for (let s = 0; s < slotsPerChord; s++) {
+        const p = pitches[s % pitches.length], on = t + s*PPQN
+        tl.push({t:on,type:'noteOn',ch,note:p,vel:75}); tl.push({t:on+PPQN,type:'noteOff',ch,note:p})
+      }
+    } else if (pattern === 'alberti') {
+      const pat = pitches.length >= 3
+        ? [pitches[0],pitches[pitches.length-1],pitches[1],pitches[pitches.length-1]]
+        : [pitches[0],pitches[pitches.length-1]]
+      const eighth = PPQN/2, total = 8*barsPerChord
+      for (let s = 0; s < total; s++) {
+        const p = pat[s%pat.length], on = t + s*eighth
+        tl.push({t:on,type:'noteOn',ch,note:p,vel:70}); tl.push({t:on+eighth,type:'noteOff',ch,note:p})
+      }
+    } else { // pad
+      for (let bar = 0; bar < barsPerChord; bar++) {
+        const on = t + bar*4*PPQN
+        pitches.forEach(p => { tl.push({t:on,type:'noteOn',ch,note:p,vel:45}); tl.push({t:on+4*PPQN,type:'noteOff',ch,note:p}) })
+      }
+    }
+    t += (pattern==='alberti' ? 8*barsPerChord*(PPQN/2) : pattern==='pad' ? barsPerChord*4*PPQN : slotsPerChord*PPQN)
+  })
+  tl.push({t,type:'endTrack'}); return tl
+}
+
+// ── Melody track builder ───────────────────────────────────────────────────────
+function buildMelodyRange(scaleNotes, startOctave) {
+  const out = []; let octave = startOctave, prevSemi = NOTE_TO_PC[scaleNotes[0]] ?? 0
+  for (let rep = 0; rep < 2; rep++) {
+    scaleNotes.forEach((n, i) => {
+      const semi = NOTE_TO_PC[n] ?? 0
+      if (rep > 0 || i > 0) { if (semi <= prevSemi) octave++ }
+      prevSemi = semi; out.push((octave+1)*12 + semi)
+    })
+  }
+  return out
+}
+
+function closestIdx(midi, range) {
+  let best=0, bestD=Infinity
+  range.forEach((v,i) => { const d=Math.abs(v-midi); if(d<bestD){bestD=d;best=i} }); return best
+}
+
+function genStepwiseMelody(progression, scaleNotes, melOct, slots) {
+  const range=buildMelodyRange(scaleNotes,melOct-1), lo=Math.max(0,Math.floor(range.length*0.25)), hi=Math.min(range.length-1,Math.ceil(range.length*0.75))
+  let pos=Math.floor((lo+hi)/2), dir=1; const out=[]
+  progression.forEach(chord => {
+    const snap=Math.max(lo,Math.min(hi,closestIdx((melOct+1)*12+(NOTE_TO_PC[chord[0]]??0),range)))
+    if(pos<snap)pos=Math.min(pos+1,snap); else if(pos>snap)pos=Math.max(pos-1,snap)
+    for(let s=0;s<slots;s++){
+      out.push({midi:range[pos],dur:'4'})
+      const r=Math.random(); pos+=r<0.65?dir:r<0.82?-dir:r<0.92?dir*2:0
+      if(pos<lo){dir=1;pos=lo} if(pos>hi){dir=-1;pos=hi} if(Math.random()<0.14)dir=-dir
+    }
+  }); return out
+}
+
+function genLeapingMelody(progression, scaleNotes, melOct, slots) {
+  const range=buildMelodyRange(scaleNotes,melOct-1), lo=Math.max(0,Math.floor(range.length*0.2)), hi=Math.min(range.length-1,Math.ceil(range.length*0.8))
+  const out=[]
+  progression.forEach(chord => {
+    let pos=Math.max(lo,Math.min(hi,closestIdx((melOct+1)*12+(NOTE_TO_PC[chord[0]]??0),range)))
+    for(let s=0;s<slots;s++){
+      out.push({midi:range[pos],dur:'4'})
+      const leap=2+Math.floor(Math.random()*3), r=Math.random()
+      pos+=r<0.5?leap:r<0.85?-leap:1; pos=Math.max(lo,Math.min(hi,pos))
+    }
+  }); return out
+}
+
+function genCallResponseMelody(progression, scaleNotes, melOct, slots) {
+  const range=buildMelodyRange(scaleNotes,melOct-1), lo=Math.max(0,Math.floor(range.length*0.25)), hi=Math.min(range.length-1,Math.ceil(range.length*0.75))
+  const half=Math.floor(progression.length/2); let pos=Math.floor((lo+hi)/2); const out=[]
+  progression.forEach((_chord,ci) => {
+    const dir=ci<half?1:-1
+    for(let s=0;s<slots;s++){
+      out.push({midi:range[pos],dur:'4'})
+      const r=Math.random(); pos+=r<0.55?dir:r<0.75?dir*2:r<0.9?-dir:0; pos=Math.max(lo,Math.min(hi,pos))
+    }
+  }); return out
+}
+
+function applyPassingNotes(notes) {
+  const out=[]
+  for(let i=0;i<notes.length;i++){
+    const cur=notes[i], next=notes[i+1]
+    if(next&&cur.dur==='4'&&Math.random()<0.35){
+      const diff=next.midi-cur.midi
+      if(Math.abs(diff)===2){ out.push({...cur,dur:'8'}); out.push({midi:cur.midi+(diff>0?1:-1),dur:'8'}); continue }
+    }; out.push(cur)
+  }; return out
+}
+
+function buildMelodyTimeline(progression, scaleNotes, melOct, barsPerChord, style, passingNotes, trackName, ch) {
+  const us = Math.round(60_000_000 / ST.midiBpm)
+  const slots = 4 * barsPerChord
+  const tl = [{t:0,type:'tempo',us},{t:0,type:'timesig'}]
+  if (trackName) tl.push({t:0,type:'name',text:trackName})
+  let raw
+  if (style==='leaping') raw=genLeapingMelody(progression,scaleNotes,melOct,slots)
+  else if (style==='callresponse') raw=genCallResponseMelody(progression,scaleNotes,melOct,slots)
+  else raw=genStepwiseMelody(progression,scaleNotes,melOct,slots)
+  if (passingNotes) raw=applyPassingNotes(raw)
+  const DMAP = {'1':4*PPQN,'2':2*PPQN,'4':PPQN,'8':PPQN/2,'16':PPQN/4}
+  let t=0
+  raw.forEach(({midi,dur}) => {
+    const d=DMAP[dur]||PPQN
+    tl.push({t,type:'noteOn',ch,note:midi,vel:65}); tl.push({t:t+d,type:'noteOff',ch,note:midi}); t+=d
+  })
+  tl.push({t,type:'endTrack'}); return tl
+}
+
+// ── Bass track builder ─────────────────────────────────────────────────────────
+function buildBassTimeline(progression, bpm, barsPerChord, opts, trackName, ch) {
+  const us = Math.round(60_000_000 / bpm)
+  const tl = [{t:0,type:'tempo',us},{t:0,type:'timesig'}]
+  if (trackName) tl.push({t:0,type:'name',text:trackName})
+  let t=0
+  const bassOct = opts.style==='808' ? 2 : opts.bassOctave
+  function on(note,oct,dur,vel) { const m=noteToMidi(note,oct); tl.push({t,type:'noteOn',ch,note:m,vel}); tl.push({t:t+dur,type:'noteOff',ch,note:m}); t+=dur }
+  function rest(dur) { t+=dur }
+
+  progression.forEach((chordNotes, ci) => {
+    const root=chordNotes[0], third=chordNotes[1]??chordNotes[0], fifth=chordNotes[2]??chordNotes[0]
+    const nextRoot=progression[(ci+1)%progression.length][0]
+    const nextMidi=noteToMidi(nextRoot,bassOct), passMidi=nextMidi-2
+    const passChr=CHROMATIC_SHARP[((passMidi%12)+12)%12], passOct=Math.floor(passMidi/12)-1
+
+    for (let bar=0; bar<barsPerChord; bar++) {
+      const gBar=ci*barsPerChord+bar
+      if (opts.style==='rootnotes') {
+        if (opts.rhythm==='whole')   { on(root,bassOct,4*PPQN,90) }
+        else if (opts.rhythm==='half') { on(root,bassOct,2*PPQN,90); on(root,bassOct,2*PPQN,75) }
+        else { on(root,bassOct,PPQN,90); on(root,bassOct,PPQN,75); on(root,bassOct,PPQN,75); on(root,bassOct,PPQN,75) }
+      } else if (opts.style==='walking') {
+        on(root,bassOct,PPQN,80); on(gBar%2===0?third:fifth,bassOct,PPQN,80); on(passChr,passOct,PPQN,80); on(fifth,bassOct,PPQN,80)
+      } else if (opts.style==='subbass') {
+        on(root,bassOct,4*PPQN,85)
+      } else { // 808
+        if (opts.pattern808==='straight') { on(root,2,PPQN,95); on(root,2,PPQN,95); on(root,2,PPQN,95); on(root,2,PPQN,95) }
+        else if (opts.pattern808==='boombap') { on(root,2,PPQN,100); rest(PPQN); on(root,2,PPQN,85); rest(PPQN) }
+        else if (opts.pattern808==='halftime') { on(root,2,2*PPQN,100); on(root,2,2*PPQN,95) }
+        else { on(root,2,PPQN,100); on(root,2,PPQN/2,60); rest(PPQN/2); on(root,2,PPQN,95); on(root,2,PPQN/2,55); rest(PPQN/2) } // trapbasic approx
+      }
+    }
+  })
+  tl.push({t,type:'endTrack'}); return tl
+}
+
+// ── generateMidi ───────────────────────────────────────────────────────────────
+function generateMidi(progression, scaleNotes) {
+  const bpm          = ST.midiBpm
+  const pattern      = ST.midiPattern
+  const barsPerChord = Math.max(1, Math.round(ST.midiTotalBars / progression.length))
+  const octaveMap    = { low:3, mid:4, high:5 }
+  const octave       = octaveMap[ST.midiOctaveLevel]
+  const exportMode   = ST.midiExportMode
+  const inclChords   = ['chords','chords+melody','chords+bass','all'].includes(exportMode)
+  const inclMelody   = ['melody','chords+melody','melody+bass','all'].includes(exportMode)
+  const inclBass     = ['bass','chords+bass','melody+bass','all'].includes(exportMode)
+  const multiTrack   = [inclChords,inclMelody,inclBass].filter(Boolean).length > 1
+
+  const tracks = []
+  if (inclChords) tracks.push(buildChordTimeline(progression,bpm,pattern,barsPerChord,octave,multiTrack?'Chords':null,1))
+  if (inclMelody) {
+    const melOct = inclChords ? octave+1 : octave
+    tracks.push(buildMelodyTimeline(progression,scaleNotes,melOct,barsPerChord,ST.midiMelodyStyle,ST.midiPassingNotes,multiTrack?'Melody':null,2))
+  }
+  if (inclBass) {
+    const bassOpts = { style:ST.midiBassStyle, bassOctave:ST.midiBassOctave, rhythm:ST.midiBassRhythm, pattern808:ST.midiBass808Pattern }
+    tracks.push(buildBassTimeline(progression,bpm,barsPerChord,bassOpts,multiTrack?'Bass':null,3))
+  }
+  if (tracks.length === 0) tracks.push(buildChordTimeline(progression,bpm,pattern,barsPerChord,octave,null,1))
+  return new Blob([buildMidiFile(tracks)], { type:'audio/midi' })
+}
+
+// ── MIDI download ──────────────────────────────────────────────────────────────
+function handleMidiDownload() {
+  if (ST.midiOptionsProgIdx === null) return
+  const refScale = findRefScale(ST.refRoot, ST.refType)
+  const diatonic = refScale ? buildDiatonicChords(refScale) : null
+  let progression, progLabel
+
+  if (ST.midiOptionsProgIdx === -1) {
+    const filled = ST.customSlots.filter(s => s !== null); if (filled.length < 2) return
+    progression = filled.map(s => s.notes); progLabel = 'custom'
+  } else if (ST.midiOptionsComplex) {
+    const p = COMPLEX_PROGRESSIONS[ST.midiOptionsProgIdx]; if (!refScale) return
+    progression = p.chords.map(ch => buildExtendedChordNotes(refScale, ch)); progLabel = p.chords.map(c=>c.label).join('-')
+  } else {
+    if (!diatonic) return
+    const p = PROGRESSIONS[ST.midiOptionsProgIdx]
+    progression = p.indices.map(i => diatonic[i].notes); progLabel = p.label
+  }
+
+  const scaleNotes = refScale ? refScale.notes : ['C','D','E','F','G','A','B']
+  const blob = generateMidi(progression, scaleNotes)
+  const barsEach = Math.max(1, Math.round(ST.midiTotalBars / progression.length))
+  const prefix = ST.midiOptionsProgIdx === -1 ? 'custom' : toFilenameSlug(refScale?.name ?? 'scale')
+  const parts = []
+  if (['chords','chords+melody','chords+bass','all'].includes(ST.midiExportMode)) parts.push(ST.midiPattern)
+  if (['melody','chords+melody','melody+bass','all'].includes(ST.midiExportMode)) parts.push(ST.midiMelodyStyle)
+  if (['bass','chords+bass','melody+bass','all'].includes(ST.midiExportMode)) parts.push(ST.midiBassStyle)
+  const filename = `${prefix}-${toFilenameSlug(progLabel)}-${parts.join('-')||'export'}-${ST.midiTotalBars}bars-${ST.midiBpm}bpm.mid`
+
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+  ST.midiMode = false; ST.midiOptionsProgIdx = null; renderMidiStudio()
+}
+
+// ── Page init ──────────────────────────────────────────────────────────────────
+function init() {
+  loadAll()
+
+  const root = document.getElementById('st-root')
+  root.innerHTML = `
+    <div class="card col gap-14">
+      <div id="st-status-bar"></div>
+      <div id="st-controls" style="display:flex;flex-direction:column;gap:10px"></div>
+      <p id="st-tip" style="font-size:0.7rem;color:var(--muted);margin:0">tip: try the chord progressions in the midi studio panel</p>
+      <div id="st-mode-content" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+    <div class="card col gap-14" style="margin-top:12px">
+      <div>
+        <h2 style="font-size:1rem;color:var(--ink);font-weight:600;margin:0 0 4px">midi studio</h2>
+        <p style="font-size:0.78rem;color:var(--muted);margin:0">compose and export midi progressions</p>
+      </div>
+      <div id="st-midi-studio" style="display:flex;flex-direction:column;gap:16px"></div>
+    </div>`
+
+  // Hide tip for non-quiz modes
+  function updateTip() {
+    const tip = document.getElementById('st-tip')
+    if (tip) tip.style.display = ['builder','namekey'].includes(ST.mode) ? '' : 'none'
+  }
+
+  // Populate quiz state for loaded mode
+  const pool = activePool().length > 0 ? activePool() : SCALES
+  if (ST.mode === 'namekey') {
+    const p = pool.length >= 4 ? pool : SCALES; ST.mcOptions = generateOptions(ST.currentScale, p)
+  }
+  if (ST.mode === 'scaleear') {
+    const p = pool.length >= 4 ? pool : SCALES; ST.scaleearOptions = generateScaleEarOptions(ST.currentScale, p)
+  }
+  if (ST.mode === 'chordear') { const notes = setupChordearQuestion(); synth.playSustainedChord(notes) }
+  if (ST.mode === 'intervals') { const d = setupIntervalQuestion(); playIntervalNotes(d.root, d.rootOct, d.upper, d.upperOct, ST.intervalAscending) }
+
+  // Patch changeMode to also update tip
+  const _changeMode = changeMode
+  window.changeMode = function(m) { _changeMode(m); updateTip() }
+
+  renderStatusBar()
+  renderControls()
+  updateTip()
+  renderModeContent()
+  renderMidiStudio()
+}
+
+document.addEventListener('DOMContentLoaded', init)
+
+</script>
+<script>
+if (window.self !== window.top) {
+  const nav = document.querySelector('.learn-nav');
+  if (nav) nav.style.display = 'none';
+  const header = document.querySelector('.tool-header');
+  if (header) header.style.marginTop = '0';
+}
+</script>
+</body>
+</html>
