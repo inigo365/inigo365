@@ -256,11 +256,7 @@ render();
 </script>
 <script>
 if (window.self !== window.top) {
-  const nav = document.querySelector('.learn-nav');
-  if (nav) nav.style.display = 'none';
-  const header = document.querySelector('.tool-header');
-  if (header) header.style.marginTop = '0';
-
+  document.body.classList.add('in-iframe');
 }
 </script>
 </body>

@@ -34,7 +34,7 @@
 html, body {
   cursor: url('../../images/cursor/cursor.png'), auto;
 }
-button, input, a, select, [onclick], .rack-row {
+button, input, a, select {
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
 }
 label {
@@ -46,7 +46,7 @@ label {
 
 html, body {
   margin: 0; padding: 0;
-  min-height: 0;
+  min-height: 100vh;
   background: var(--cream);
   background-image: url('../../images/background.png');
   background-size: cover;
@@ -108,7 +108,7 @@ html, body {
 /* ── Shared button styles ────────────────────────────────────────────────── */
 button {
   font-family: 'RuneScape UF', monospace;
-  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  cursor: pointer;
   border-radius: 2px;
   transition: opacity 0.1s, background-color 0.12s, border-color 0.12s;
 }
@@ -258,7 +258,7 @@ button:disabled { cursor: not-allowed; }
   font-size: 1.1rem;
   color: #1A3A5C;
   text-decoration: none;
-  cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+  cursor: pointer;
   position: relative;
   transition: background 0.15s;
 }
@@ -320,17 +320,6 @@ button:disabled { cursor: not-allowed; }
 @media (max-width: 700px) {
   .friend-sprite, .brain-sprite { display: none; }
 }
-
-/* ── In-iframe overrides ─────────────────────────────────────────────────── */
-/* Collapse viewport-relative height so scrollHeight reflects content only  */
-body.in-iframe {
-  min-height: 0 !important;
-  height: auto !important;
-  overflow: visible !important;
-}
-.in-iframe .tool-header  { display: none; }
-.in-iframe .learn-nav    { display: none; }
-.in-iframe .site-banner  { display: none; }
 
 /* ── Overrides ───────────────────────────────────────────────────────────── */
 .st-btn.active, .btn-pill.active {

@@ -47,7 +47,7 @@
       font-family: inherit; font-size: 0.78rem; padding: 5px 10px;
       border: 1px solid var(--blue-deep); border-radius: 2px;
       background: #FDFAF5; color: var(--blue-deep);
-      cursor: pointer; transition: all 0.1s;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer; transition: all 0.1s;
     }
     .st-btn.active   { background: var(--blue-deep); color: #fff; }
     .st-btn.danger   { border-color: #b94040; color: #b94040; }
@@ -56,7 +56,7 @@
       font-family: inherit; font-size: 0.75rem; padding: 4px 9px;
       border: 1px solid var(--blue-deep); border-radius: 2px;
       background: #FDFAF5; color: var(--blue-deep);
-      cursor: pointer; transition: all 0.1s;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer; transition: all 0.1s;
     }
     .st-btn-sm.active { background: var(--blue-deep); color: #fff; }
     .st-opt-btn {
@@ -64,7 +64,7 @@
       padding: 6px 10px; min-height: 36px;
       border: 1px solid var(--blue-deep); border-radius: 2px;
       background: #FDFAF5; color: var(--blue-deep);
-      cursor: pointer; transition: all 0.1s; flex: 1 0 auto;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer; transition: all 0.1s; flex: 1 0 auto;
     }
     .st-opt-btn.active { background: var(--blue-deep); color: #fff; }
 
@@ -83,7 +83,7 @@
     .st-key {
       position: absolute; display: flex; align-items: flex-end; justify-content: center;
       padding-bottom: 8px; border-radius: 0 0 3px 3px;
-      cursor: pointer; font-family: inherit; font-size: 13px; box-sizing: border-box;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer; font-family: inherit; font-size: 13px; box-sizing: border-box;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
       transition: background-color 0.1s;
     }
@@ -93,14 +93,14 @@
     .st-chord-card {
       font-family: inherit; padding: 8px 6px;
       border: 1px solid var(--border); border-radius: 2px; background: transparent;
-      cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer; display: flex; flex-direction: column; gap: 4px; align-items: center;
       text-align: center; transition: all 0.15s;
     }
     .st-chord-card.active { border-color: var(--blue-deep); background: var(--blue-light); }
 
     /* ── Progression rows ─────────────────────────────────────────────────── */
     .prog-row {
-      font-family: inherit; cursor: pointer; padding: 14px 10px; width: 100%;
+      font-family: inherit; cursor: url('../images/cursor/cursor-hover.png'), pointer; padding: 14px 10px; width: 100%;
       border: 1px solid var(--border); border-radius: 2px; background: transparent;
       display: flex; flex-direction: column; gap: 4px; text-align: left; transition: all 0.1s;
     }
@@ -123,7 +123,7 @@
     .palette-card {
       font-family: inherit; padding: 6px 5px;
       border-radius: 2px; background: transparent;
-      cursor: pointer; display: flex; flex-direction: column; gap: 3px; align-items: center;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer; display: flex; flex-direction: column; gap: 3px; align-items: center;
       text-align: center; min-width: 0; user-select: none;
     }
     .slot-card {
@@ -138,7 +138,7 @@
       font-family: inherit; font-size: 0.82rem; padding: 10px 8px;
       border: 1px solid var(--blue-deep); border-radius: 2px;
       background: #FDFAF5; color: var(--blue-deep);
-      cursor: pointer; transition: all 0.1s; text-align: center;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer; transition: all 0.1s; text-align: center;
       width: 100%; min-height: 52px; white-space: normal;
     }
     .ans-btn:disabled { cursor: default; }
@@ -162,7 +162,7 @@
 
     /* ── Misc ─────────────────────────────────────────────────────────────── */
     .section-header {
-      font-size: 1rem; color: var(--ink); font-weight: 600; cursor: pointer;
+      font-size: 1rem; color: var(--ink); font-weight: 600; cursor: url('../images/cursor/cursor-hover.png'), pointer;
       padding: 10px 0; border-top: 1px solid var(--border);
       display: flex; justify-content: space-between; align-items: center;
       background: transparent; border-bottom: none; border-left: none; border-right: none;
@@ -172,7 +172,7 @@
     select.st-select {
       font-family: inherit; font-size: 0.82rem; padding: 5px 8px;
       border: 1px solid var(--border); border-radius: 2px;
-      background: #FDFAF5; color: var(--ink); cursor: pointer;
+      background: #FDFAF5; color: var(--ink); cursor: url('../images/cursor/cursor-hover.png'), pointer;
     }
     input.st-input {
       font-family: inherit; font-size: 0.78rem; padding: 5px 8px; width: 72px;
@@ -193,7 +193,7 @@
       padding: 8px 18px;
       background: rgba(253,250,245,0.92);
       color: #1A3A5C;
-      cursor: pointer;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer;
       transition: background 0.1s;
     }
     #st-controls .st-btn.active {
@@ -883,7 +883,7 @@ function buildPianoKeyboard(opts) {
       `background:${bg};border:1px solid var(--border);border-radius:0 0 3px 3px;` +
       `display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;` +
       `box-sizing:border-box;z-index:1;font-family:inherit;font-size:13px;` +
-      `cursor:${opts.interactive ? 'pointer' : 'default'};touch-action:manipulation;`
+      `cursor:${opts.interactive ? "url('../images/cursor/cursor-hover.png'), pointer" : 'default'};touch-action:manipulation;`
     btn.style.color = labelColor(note, false)
     btn.textContent = note
     if (opts.interactive && !opts.checkedState) {
@@ -899,7 +899,7 @@ function buildPianoKeyboard(opts) {
       `background:${keyColorBlack(note)};border:1px solid rgba(0,0,0,0.4);border-radius:0 0 3px 3px;` +
       `display:flex;align-items:flex-end;justify-content:center;padding-bottom:5px;` +
       `box-sizing:border-box;z-index:2;font-family:inherit;font-size:11px;color:#fff;` +
-      `cursor:${opts.interactive ? 'pointer' : 'default'};touch-action:manipulation;`
+      `cursor:${opts.interactive ? "url('../images/cursor/cursor-hover.png'), pointer" : 'default'};touch-action:manipulation;`
     btn.textContent = note
     if (opts.interactive && !opts.checkedState) {
       btn.addEventListener('pointerdown', e => { e.preventDefault(); opts.onNote && opts.onNote(note) })
@@ -925,7 +925,7 @@ function renderStatusBar() {
   const goalFillColor = ST.dailyGoalHit ? '#4caf50' : 'var(--blue-deep)'
   const due = dueCount()
   const goalBtns = [10,20,50].map(g =>
-    `<button onclick="setDailyGoal(${g})" style="font-family:inherit;font-size:0.68rem;padding:1px 5px;border:1px solid ${ST.dailyGoal===g?'var(--blue-deep)':'var(--border)'};border-radius:2px;cursor:pointer;background:${ST.dailyGoal===g?'var(--blue-light)':'#FDFAF5'};color:${ST.dailyGoal===g?'var(--blue-deep)':'var(--muted)'}">${g}</button>`
+    `<button onclick="setDailyGoal(${g})" style="font-family:inherit;font-size:0.68rem;padding:1px 5px;border:1px solid ${ST.dailyGoal===g?'var(--blue-deep)':'var(--border)'};border-radius:2px;cursor:url('../images/cursor/cursor-hover.png'), pointer;background:${ST.dailyGoal===g?'var(--blue-light)':'#FDFAF5'};color:${ST.dailyGoal===g?'var(--blue-deep)':'var(--muted)'}">${g}</button>`
   ).join('')
   el.innerHTML = `
     <div class="st-status">
@@ -1600,7 +1600,7 @@ function renderSlots(grid) {
       slotEl.appendChild(dot)
       slotEl.innerHTML += `<span style="font-size:0.68rem;color:var(--muted)">${slot.label}</span><span style="font-size:0.78rem;font-weight:700;color:var(--ink)">${slot.name}</span>`
       const xBtn = document.createElement('button')
-      xBtn.style.cssText = 'position:absolute;bottom:1px;right:2px;font-family:inherit;font-size:0.65rem;padding:1px 3px;border:none;background:transparent;cursor:pointer;color:var(--muted)'
+      xBtn.style.cssText = 'position:absolute;bottom:1px;right:2px;font-family:inherit;font-size:0.65rem;padding:1px 3px;border:none;background:transparent;cursor:url(\'../images/cursor/cursor-hover.png\'), pointer;color:var(--muted)'
       xBtn.textContent = '×'
       xBtn.addEventListener('click', e => { e.stopPropagation(); ST.customSlots = compactSlots([...ST.customSlots.slice(0,idx), null, ...ST.customSlots.slice(idx+1)]); saveCustomProg(); renderSlots(document.getElementById('st-slots-grid')) })
       slotEl.appendChild(xBtn)
@@ -2153,11 +2153,7 @@ document.addEventListener('DOMContentLoaded', init)
 </script>
 <script>
 if (window.self !== window.top) {
-  const nav = document.querySelector('.learn-nav');
-  if (nav) nav.style.display = 'none';
-  const header = document.querySelector('.tool-header');
-  if (header) header.style.marginTop = '0';
-
+  document.body.classList.add('in-iframe');
 }
 </script>
 </body>

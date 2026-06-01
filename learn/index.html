@@ -18,53 +18,39 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
-
     body {
       font-family: 'RuneScape UF', monospace;
       min-height: 100vh;
-      height: 100vh;
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      padding: 24px 40px 24px 24px;
-      overflow: hidden;
-      box-sizing: border-box;
+      justify-content: center;
+      padding: 20px;
+      padding-bottom: 80px;
     }
 
-    .learn-panel {
-      background: rgba(255, 255, 255, 0.69);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 2px solid #000;
-      border-radius: 0;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-      padding: 22px 22px 18px;
-      width: 56vw;
-      min-width: 420px;
-      height: calc(100vh - 48px);
-      max-height: calc(100vh - 48px);
-      display: flex;
-      flex-direction: column;
+    /* ── Rack panel ─────────────────────────────────────────────── */
+    .rack-panel {
+      width: 100%;
+      max-width: 860px;
+      background: #FDFAF5;
+      border: 2px solid #1A3A5C;
+      border-radius: 4px;
       overflow: hidden;
-      box-sizing: border-box;
       position: relative;
       z-index: 20;
     }
 
-    .site-banner {
+    /* ── Banner ─────────────────────────────────────────────────── */
+    .rack-banner {
       width: 100%;
+      background: #1A3A5C;
+      border-bottom: 3px solid #1A3A5C;
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 0 0 18px;
       flex: 0 0 auto;
-      flex-shrink: 0;
     }
-    .site-banner img {
+    .rack-banner img {
       width: min(980px, 100%);
       height: auto;
       max-height: clamp(60px, 10vw, 120px);
@@ -72,129 +58,197 @@
       image-rendering: crisp-edges;
       display: block;
     }
-    @media (max-width: 768px) {
-      .site-banner {
-        margin-bottom: 14px;
-      }
-      .site-banner img {
-        max-height: clamp(50px, 14vw, 90px);
-      }
-    }
 
-    .pill-stack {
+    /* ── Rack row ───────────────────────────────────────────────── */
+    .rack-row {
+      display: flex;
+      align-items: stretch;
+      height: 64px;
+      border-bottom: 1px solid rgba(26, 58, 92, 0.3);
+      transition: background 0.15s;
+      background: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .rack-row:last-of-type { border-bottom: none; }
+    .rack-row:hover        { background: rgba(74, 127, 212, 0.10); }
+    .rack-row.active       { background: #4A7FD4; }
+
+    /* ── Ear columns ────────────────────────────────────────────── */
+    .rack-ear {
+      width: 36px;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      justify-content: space-evenly;
+      background: rgba(26, 58, 92, 0.07);
+      padding: 10px 0;
+    }
+    .rack-ear.left  { border-right: 1px solid rgba(26, 58, 92, 0.18); }
+    .rack-ear.right { border-left:  1px solid rgba(26, 58, 92, 0.18); }
+    .rack-row.active .rack-ear             { background: rgba(0, 0, 0, 0.14); }
+    .rack-row.active .rack-ear.left        { border-right-color: rgba(255,255,255,0.12); }
+    .rack-row.active .rack-ear.right       { border-left-color:  rgba(255,255,255,0.12); }
+
+    /* ── Screws ─────────────────────────────────────────────────── */
+    .screw {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #C8DCF0;
+      border: 1px solid #8A9BB0;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.22), 0 1px 0 rgba(255,255,255,0.4);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .screw::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 15%;
+      width: 70%; height: 1.5px;
+      background: rgba(26, 58, 92, 0.3);
+      transform: translateY(-50%) rotate(45deg);
+      border-radius: 1px;
+    }
+    .rack-row.active .screw        { background: #8BB8E8; border-color: rgba(255,255,255,0.3); }
+    .rack-row.active .screw::after { background: rgba(255,255,255,0.35); }
+
+    /* ── Unit number ────────────────────────────────────────────── */
+    .rack-unit-num {
+      width: 26px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.58rem;
+      color: #8A9BB0;
+      letter-spacing: 0.04em;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
+    .rack-row.active .rack-unit-num { color: rgba(255,255,255,0.5); }
+
+    /* ── Main label area ────────────────────────────────────────── */
+    .rack-main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      min-width: 0;
       gap: 10px;
     }
-
-    #tool-frame {
-      display: none;
-      width: 100%;
-      height: calc(100vh - 180px);
-      min-height: 300px;
-      border: none;
-      background: transparent;
-      flex-shrink: 0;
-    }
-
-    .pokemon-pill {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      width: 100%;
-      padding: 14px 16px;
-      background: white;
-      border: 2px solid #000;
-      border-radius: 0;
+    .rack-name {
       font-family: 'RuneScape UF', monospace;
+      font-size: 1.375rem;
       color: #1A3A5C;
-      text-decoration: none;
-      cursor: url('../../images/cursor/cursor-hover.png'), pointer;
-      transition: background 0.12s;
-      gap: 0;
-    }
-    .pokemon-pill:hover, .pokemon-pill.active {
-      background: #D6E8F7;
-    }
-    .pill-icon {
-      width: 36px;
-      min-width: 36px;
-      text-align: center;
-      font-size: 1.1rem;
-      flex-shrink: 0;
-    }
-    .pill-label {
-      flex: 1;
-      font-family: 'RuneScape UF', monospace;
-      font-size: 1rem;
-      color: #1A3A5C;
-      text-align: center;
-    }
-    .pill-desc {
-      width: 140px;
-      min-width: 140px;
-      font-family: 'RuneScape UF', monospace;
-      font-size: 0.75rem;
-      color: #8A9BB0;
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    #hub-view {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding-right: 4px;
-    }
-
-    #tool-view {
-      display: none;
-      flex-direction: column;
+      line-height: 1;
+      white-space: nowrap;
       overflow: hidden;
-      padding-top: 4px;
+      text-overflow: ellipsis;
+      flex-shrink: 1;
     }
-
-    .back-btn {
-      display: none;
-      flex-shrink: 0;
+    .rack-desc {
       font-family: 'RuneScape UF', monospace;
-      font-size: 0.85rem;
-      color: #1A3A5C;
-      background: none;
+      font-size: 0.58rem;
+      color: #8A9BB0;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      text-align: right;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .rack-row.active .rack-name { color: #fff; }
+    .rack-row.active .rack-desc { color: rgba(255,255,255,0.6); }
+
+    /* ── LED ────────────────────────────────────────────────────── */
+    .rack-led-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 0 12px;
+      flex-shrink: 0;
+    }
+    .rack-led {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(138, 155, 176, 0.45);
+      border: 1px solid rgba(26, 58, 92, 0.18);
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    .rack-led.on {
+      background: #00ff00;
+      border-color: transparent;
+      box-shadow: 0 0 5px #00ff00, 0 0 10px rgba(0,255,0,0.35);
+    }
+    .rack-led-label {
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.5rem;
+      color: #8A9BB0;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: color 0.15s;
+    }
+    .rack-led-label.on { color: #00ff00; }
+
+    /* ── Drawer ─────────────────────────────────────────────────── */
+    .rack-drawer {
+      display: none;
+      background: #FDFAF5;
+      border-bottom: 1px solid rgba(26, 58, 92, 0.3);
+      padding: 16px 16px 0;
+    }
+    .rack-drawer.open { display: block; }
+    .rack-iframe {
+      width: 100%;
       border: none;
-      cursor: url('../../images/cursor/cursor-hover.png'), pointer;
-      margin-bottom: 14px;
-      padding: 0;
-      letter-spacing: 0.5px;
-    }
-    .back-btn:hover { color: #4A7FD4; }
-
-    @media (max-width: 700px) {
-      html, body {
-        height: auto;
-        overflow: auto;
-      }
-      body {
-        justify-content: center;
-        align-items: flex-start;
-        padding: 16px;
-        min-height: 100vh;
-        height: auto;
-      }
-      .learn-panel {
-        width: 100%;
-        height: auto;
-        max-height: none;
-        overflow: visible;
-      }
-      #hub-view, #tool-view, #tool-frame {
-        overflow: visible;
-        flex: none;
-        height: auto;
-      }
+      display: block;
+      background: transparent;
+      min-height: 0;
+      overflow: hidden;
     }
 
+    /* ── Footer ─────────────────────────────────────────────────── */
+    .rack-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(26, 58, 92, 0.06);
+      border-top: 2px solid #1A3A5C;
+    }
+    .rack-brand {
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.88rem;
+      color: #4A7FD4;
+      letter-spacing: 1.5px;
+    }
+    .rack-status {
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.62rem;
+      color: #8A9BB0;
+      letter-spacing: 0.06em;
+    }
+    .rack-status-dot {
+      color: #00ff00;
+      margin-right: 3px;
+    }
+
+    /* ── Desktop layout ─────────────────────────────────────────── */
     @media (min-width: 701px) {
+      body {
+        align-items: center;
+        justify-content: flex-end;
+      }
+      .rack-panel {
+        margin-left: auto;
+        margin-right: 4vw;
+      }
       .friend-sprite {
         position: fixed;
         left: 0;
@@ -202,96 +256,266 @@
         transform: translateY(-50%);
         width: 38vw;
         max-width: 520px;
-        pointer-events: none;
-        z-index: 10;
-        image-rendering: pixelated;
       }
+    }
+
+    /* ── Mobile ─────────────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      body            { padding-bottom: 20px; }
+      .rack-row       { height: 48px; }
+      .rack-ear       { width: 28px; }
+      .rack-name      { font-size: 1.1rem; white-space: normal; }
+      .rack-desc      { display: none; }
+      .rack-unit-num  { width: 20px; font-size: 0.52rem; }
+      .rack-led-wrap  { padding: 0 8px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Desktop sprite (left side) -->
   <img class="friend-sprite" src="../go/images/friend-spin.gif" alt="">
 
-  <!-- Main panel -->
-  <div class="learn-panel" id="learn-panel">
+  <div class="rack-panel">
 
-    <!-- Hub view -->
-    <div id="hub-view">
-      <div class="site-banner" aria-label="inigo365 banner">
-        <img src="../go/images/inigo365-banner.png" alt="inigo365">
-      </div>
-      <div class="pill-stack">
-        <button class="pokemon-pill" onclick="loadTool('guitar-tuner.html', this)">
-          <span class="pill-icon">♩</span>
-          <span class="pill-label">guitar tuner</span>
-          <span class="pill-desc">tune via mic</span>
-        </button>
-        <button class="pokemon-pill" onclick="loadTool('ear-training.html', this)">
-          <span class="pill-icon">♪</span>
-          <span class="pill-label">ear training</span>
-          <span class="pill-desc">identify intervals</span>
-        </button>
-        <button class="pokemon-pill" onclick="loadTool('song-analyser.html', this)">
-          <span class="pill-icon">◎</span>
-          <span class="pill-label">song analyser</span>
-          <span class="pill-desc">key + bpm detection</span>
-        </button>
-        <button class="pokemon-pill" onclick="loadTool('scale-trainer.html', this)">
-          <span class="pill-icon">▦</span>
-          <span class="pill-label">scale trainer</span>
-          <span class="pill-desc">scales, chords + progressions</span>
-        </button>
-        <button class="pokemon-pill" onclick="loadTool('midi-studio.html', this)">
-          <span class="pill-icon">♫</span>
-          <span class="pill-label">midi studio</span>
-          <span class="pill-desc">compose + export</span>
-        </button>
-      </div>
+    <!-- Banner -->
+    <div class="rack-banner">
+      <img src="../go/images/inigo365-banner.png" alt="inigo365">
     </div>
 
-    <!-- Tool view -->
-    <div id="tool-view" style="display:none;">
-      <div class="site-banner" aria-label="inigo365 banner">
-        <img src="../go/images/inigo365-banner.png" alt="inigo365">
+    <!-- ── 01 Guitar Tuner ───────────────────────────────────── -->
+    <div class="rack-row" id="row-0" onclick="toggleRow(0)">
+      <div class="rack-ear left">
+        <div class="screw"></div>
+        <div class="screw"></div>
       </div>
-      <button class="back-btn" id="back-btn" onclick="goBack()">← back</button>
-      <iframe id="tool-frame" class="tool-frame" src="" title="tool"></iframe>
+      <div class="rack-unit-num">01</div>
+      <div class="rack-main">
+        <span class="rack-name">guitar tuner</span>
+        <span class="rack-desc">pitch detection</span>
+      </div>
+      <div class="rack-led-wrap">
+        <div class="rack-led" id="led-0"></div>
+        <div class="rack-led-label" id="led-label-0">off</div>
+      </div>
+      <div class="rack-ear right">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+    </div>
+    <div class="rack-drawer" id="drawer-0">
+      <iframe id="frame-0" class="rack-iframe" src="" title="guitar tuner"></iframe>
+    </div>
+
+    <!-- ── 02 Ear Training ──────────────────────────────────── -->
+    <div class="rack-row" id="row-1" onclick="toggleRow(1)">
+      <div class="rack-ear left">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+      <div class="rack-unit-num">02</div>
+      <div class="rack-main">
+        <span class="rack-name">ear training</span>
+        <span class="rack-desc">interval recognition</span>
+      </div>
+      <div class="rack-led-wrap">
+        <div class="rack-led" id="led-1"></div>
+        <div class="rack-led-label" id="led-label-1">off</div>
+      </div>
+      <div class="rack-ear right">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+    </div>
+    <div class="rack-drawer" id="drawer-1">
+      <iframe id="frame-1" class="rack-iframe" src="" title="ear training"></iframe>
+    </div>
+
+    <!-- ── 03 Song Analyser ─────────────────────────────────── -->
+    <div class="rack-row" id="row-2" onclick="toggleRow(2)">
+      <div class="rack-ear left">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+      <div class="rack-unit-num">03</div>
+      <div class="rack-main">
+        <span class="rack-name">song analyser</span>
+        <span class="rack-desc">key + bpm detection</span>
+      </div>
+      <div class="rack-led-wrap">
+        <div class="rack-led" id="led-2"></div>
+        <div class="rack-led-label" id="led-label-2">off</div>
+      </div>
+      <div class="rack-ear right">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+    </div>
+    <div class="rack-drawer" id="drawer-2">
+      <iframe id="frame-2" class="rack-iframe" src="" title="song analyser"></iframe>
+    </div>
+
+    <!-- ── 04 Scale Trainer ─────────────────────────────────── -->
+    <div class="rack-row" id="row-3" onclick="toggleRow(3)">
+      <div class="rack-ear left">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+      <div class="rack-unit-num">04</div>
+      <div class="rack-main">
+        <span class="rack-name">scale trainer</span>
+        <span class="rack-desc">scales + progressions</span>
+      </div>
+      <div class="rack-led-wrap">
+        <div class="rack-led" id="led-3"></div>
+        <div class="rack-led-label" id="led-label-3">off</div>
+      </div>
+      <div class="rack-ear right">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+    </div>
+    <div class="rack-drawer" id="drawer-3">
+      <iframe id="frame-3" class="rack-iframe" src="" title="scale trainer"></iframe>
+    </div>
+
+    <!-- ── 05 MIDI Studio ──────────────────────────────────── -->
+    <div class="rack-row" id="row-4" onclick="toggleRow(4)">
+      <div class="rack-ear left">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+      <div class="rack-unit-num">05</div>
+      <div class="rack-main">
+        <span class="rack-name">midi studio</span>
+        <span class="rack-desc">compose + export</span>
+      </div>
+      <div class="rack-led-wrap">
+        <div class="rack-led" id="led-4"></div>
+        <div class="rack-led-label" id="led-label-4">off</div>
+      </div>
+      <div class="rack-ear right">
+        <div class="screw"></div>
+        <div class="screw"></div>
+      </div>
+    </div>
+    <div class="rack-drawer" id="drawer-4">
+      <iframe id="frame-4" class="rack-iframe" src="" title="midi studio"></iframe>
+    </div>
+
+    <!-- Footer -->
+    <div class="rack-footer">
+      <span class="rack-brand">inigo365</span>
+      <span class="rack-status">
+        <span class="rack-status-dot">●</span>5 modules ready
+      </span>
     </div>
 
   </div>
 
   <script>
-    function loadTool(src, btn) {
-      document.getElementById('hub-view').style.display = 'none';
-      document.getElementById('tool-view').style.display = 'block';
-      document.getElementById('back-btn').style.display = 'block';
-      const frame = document.getElementById('tool-frame');
-      frame.style.display = 'block';
-      frame.src = src;
+    const TOOLS = [
+      'guitar-tuner.html',
+      'ear-training.html',
+      'song-analyser.html',
+      'scale-trainer.html',
+      'midi-studio.html'
+    ];
+
+    let activeRow = null;
+
+    function toggleRow(idx) {
+      if (activeRow === idx) {
+        closeRow(idx);
+        activeRow = null;
+      } else {
+        if (activeRow !== null) closeRow(activeRow);
+        openRow(idx);
+        activeRow = idx;
+      }
     }
+
+    function openRow(idx) {
+      const row      = document.getElementById('row-'       + idx);
+      const drawer   = document.getElementById('drawer-'    + idx);
+      const frame    = document.getElementById('frame-'     + idx);
+      const led      = document.getElementById('led-'       + idx);
+      const ledLabel = document.getElementById('led-label-' + idx);
+
+      row.classList.add('active');
+      drawer.classList.add('open');
+      led.classList.add('on');
+      ledLabel.textContent = 'on';
+      ledLabel.classList.add('on');
+
+      frame.style.minHeight = '0';
+      frame.src = TOOLS[idx];
+      frame.onload = function () {
+        const iframe = this;
+        try {
+          const doc = iframe.contentDocument;
+
+          function syncHeight() {
+            try {
+              const bodyH = doc.body            ? doc.body.scrollHeight            : 0;
+              const docH  = doc.documentElement ? doc.documentElement.scrollHeight : 0;
+              const h = Math.max(bodyH, docH);
+              iframe.style.height = (h > 0 ? h : 600) + 'px';
+            } catch (e) {}
+          }
+
+          syncHeight();
+          iframe.style.display = 'block';
+
+          if (window.ResizeObserver && doc.body) {
+            if (iframe._observer) iframe._observer.disconnect();
+            iframe._observer = new ResizeObserver(syncHeight);
+            iframe._observer.observe(doc.body);
+          }
+        } catch (e) {
+          iframe.style.height = '600px';
+          iframe.style.display = 'block';
+        }
+        setTimeout(() => {
+          row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      };
+    }
+
+    function closeRow(idx) {
+      const row      = document.getElementById('row-'       + idx);
+      const drawer   = document.getElementById('drawer-'    + idx);
+      const frame    = document.getElementById('frame-'     + idx);
+      const led      = document.getElementById('led-'       + idx);
+      const ledLabel = document.getElementById('led-label-' + idx);
+
+      row.classList.remove('active');
+      drawer.classList.remove('open');
+      led.classList.remove('on');
+      ledLabel.textContent = 'off';
+      ledLabel.classList.remove('on');
+
+      if (frame._observer) { frame._observer.disconnect(); frame._observer = null; }
+      frame.src = '';
+      frame.style.height = '';
+      frame.style.minHeight = '0';
+    }
+
+    function loadTool(src) {
+      const idx = TOOLS.indexOf(src);
+      if (idx === -1) return;
+      if (activeRow === idx) {
+        document.getElementById('row-' + idx).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        toggleRow(idx);
+      }
+    }
+
     function goBack() {
-      document.getElementById('hub-view').style.display = 'block';
-      document.getElementById('tool-view').style.display = 'none';
-      document.getElementById('tool-frame').src = '';
+      if (activeRow !== null) {
+        closeRow(activeRow);
+        activeRow = null;
+      }
     }
-    function goHome() {
-      goBack();
-    }
-    document.getElementById('tool-frame').onload = function() {
-      try {
-        const doc = this.contentDocument || this.contentWindow.document;
-        doc.documentElement.style.height = '100%';
-        doc.documentElement.style.overflowY = 'auto';
-        doc.documentElement.style.overflowX = 'hidden';
-        doc.body.style.height = '100%';
-        doc.body.style.overflowY = 'auto';
-        doc.body.style.overflowX = 'hidden';
-        doc.body.style.background = 'transparent';
-        doc.body.style.margin = '0';
-      } catch(e) {}
-    };
   </script>
 
 </body>

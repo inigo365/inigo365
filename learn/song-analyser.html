@@ -40,7 +40,7 @@
       border-radius: 2px;
       padding: 36px 20px;
       text-align: center;
-      cursor: pointer;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer;
       background: transparent;
       transition: all 0.15s;
       user-select: none;
@@ -80,7 +80,7 @@
       border-radius: 2px;
       background: var(--cream);
       color: var(--ink);
-      cursor: pointer;
+      cursor: url('../images/cursor/cursor-hover.png'), pointer;
       transition: all 0.12s;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
@@ -467,11 +467,7 @@ document.addEventListener('keydown', e => {
 </script>
 <script>
 if (window.self !== window.top) {
-  const nav = document.querySelector('.learn-nav');
-  if (nav) nav.style.display = 'none';
-  const header = document.querySelector('.tool-header');
-  if (header) header.style.marginTop = '0';
-
+  document.body.classList.add('in-iframe');
 }
 </script>
 </body>
