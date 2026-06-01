@@ -29,15 +29,29 @@
     }
 
     /* ── Rack panel ─────────────────────────────────────────────── */
-    .rack-panel {
+    .rack-wrap {
       width: 100%;
       max-width: 860px;
-      background: #FDFAF5;
+      background: #E8E0D0;
       border: 2px solid #1A3A5C;
       border-radius: 4px;
       overflow: hidden;
       position: relative;
       z-index: 20;
+    }
+    .rack-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(26,58,92,0.03) 2px, rgba(26,58,92,0.03) 3px),
+        repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(26,58,92,0.02) 3px, rgba(26,58,92,0.02) 4px);
+    }
+    .rack-wrap > * {
+      position: relative;
+      z-index: 1;
     }
 
     /* ── Banner ─────────────────────────────────────────────────── */
@@ -125,8 +139,6 @@
       font-size: 0.58rem;
       color: #8A9BB0;
       letter-spacing: 0.04em;
-      writing-mode: vertical-rl;
-      transform: rotate(180deg);
     }
     .rack-row.active .rack-unit-num { color: rgba(255,255,255,0.5); }
 
@@ -224,20 +236,28 @@
     }
     .rack-brand {
       font-family: 'RuneScape UF', monospace;
-      font-size: 0.88rem;
+      font-size: 15px;
       color: #4A7FD4;
-      letter-spacing: 1.5px;
+      letter-spacing: 0.15em;
     }
     .rack-status {
       font-family: 'RuneScape UF', monospace;
-      font-size: 0.62rem;
+      font-size: 15px;
       color: #8A9BB0;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.15em;
     }
     .rack-status-dot {
       color: #00ff00;
       margin-right: 3px;
     }
+    .rack-back {
+      font-family: 'RuneScape UF', monospace;
+      font-size: 15px;
+      color: #8A9BB0;
+      letter-spacing: 0.15em;
+      text-decoration: none;
+    }
+    .rack-back:hover { color: #1A3A5C; }
 
     /* ── Desktop layout ─────────────────────────────────────────── */
     @media (min-width: 701px) {
@@ -245,7 +265,7 @@
         align-items: center;
         justify-content: flex-end;
       }
-      .rack-panel {
+      .rack-wrap {
         margin-left: auto;
         margin-right: 4vw;
       }
@@ -275,7 +295,7 @@
 
   <img class="friend-sprite" src="../go/images/friend-spin.gif" alt="">
 
-  <div class="rack-panel">
+  <div class="rack-wrap">
 
     <!-- Banner -->
     <div class="rack-banner">
@@ -404,6 +424,7 @@
 
     <!-- Footer -->
     <div class="rack-footer">
+      <a href="../go/index.html" class="rack-back">← back</a>
       <span class="rack-brand">inigo365</span>
       <span class="rack-status">
         <span class="rack-status-dot">●</span>5 modules ready

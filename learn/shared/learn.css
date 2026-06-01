@@ -331,6 +331,7 @@ body.in-iframe {
 .in-iframe .tool-header  { display: none; }
 .in-iframe .learn-nav    { display: none; }
 .in-iframe .site-banner  { display: none; }
+.in-iframe body          { background: #E8E0D0 !important; }
 
 /* ── Overrides ───────────────────────────────────────────────────────────── */
 .st-btn.active, .btn-pill.active {
