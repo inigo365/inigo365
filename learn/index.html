@@ -18,14 +18,21 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
       font-family: 'RuneScape UF', monospace;
       min-height: 100vh;
+      height: 100vh;
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 20px;
-      padding-bottom: 80px;
+      justify-content: flex-end;
+      padding: 24px 40px 24px 24px;
+      overflow: hidden;
+      box-sizing: border-box;
     }
 
     .learn-panel {
@@ -36,22 +43,42 @@
       border-radius: 0;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
       padding: 22px 22px 18px;
-      width: 100%;
-      max-width: none;
+      width: 56vw;
+      min-width: 420px;
+      height: calc(100vh - 48px);
+      max-height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-sizing: border-box;
       position: relative;
       z-index: 20;
     }
 
-    .panel-brand {
-      font-family: 'RuneScape UF', monospace;
-      font-size: 3.2rem;
-      color: #1A3A5C;
-      letter-spacing: 2px;
-      margin-bottom: 20px;
-      font-weight: normal;
-      text-shadow:
-        3px 3px 0px #8BC4A8,
-        6px 6px 0px #8BB8E8;
+    .site-banner {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 0 18px;
+      flex: 0 0 auto;
+      flex-shrink: 0;
+    }
+    .site-banner img {
+      width: min(980px, 100%);
+      height: auto;
+      max-height: clamp(60px, 10vw, 120px);
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .site-banner {
+        margin-bottom: 14px;
+      }
+      .site-banner img {
+        max-height: clamp(50px, 14vw, 90px);
+      }
     }
 
     .pill-stack {
@@ -61,52 +88,75 @@
     }
 
     #tool-frame {
-      width: 100%;
-      border: none;
       display: none;
+      width: 100%;
+      height: calc(100vh - 180px);
+      min-height: 300px;
+      border: none;
       background: transparent;
-      overflow: hidden;
-      transition: height 0.2s ease;
+      flex-shrink: 0;
     }
 
     .pokemon-pill {
       display: flex;
+      flex-direction: row;
       align-items: center;
-      gap: 12px;
       width: 100%;
-      padding: 16px 14px;
+      padding: 14px 16px;
       background: white;
       border: 2px solid #000;
       border-radius: 0;
       font-family: 'RuneScape UF', monospace;
-      font-size: 1rem;
       color: #1A3A5C;
       text-decoration: none;
       cursor: url('../../images/cursor/cursor-hover.png'), pointer;
-      position: relative;
       transition: background 0.12s;
+      gap: 0;
     }
     .pokemon-pill:hover, .pokemon-pill.active {
       background: #D6E8F7;
     }
-    .pokemon-pill::before {
-      content: '▶';
-      color: #00ff00;
-      font-size: 0.8rem;
-      opacity: 0;
-      transition: opacity 0.1s;
-      margin-right: -4px;
+    .pill-icon {
+      width: 36px;
+      min-width: 36px;
+      text-align: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
     }
-    .pokemon-pill:hover::before, .pokemon-pill.active::before {
-      opacity: 1;
+    .pill-label {
+      flex: 1;
+      font-family: 'RuneScape UF', monospace;
+      font-size: 1rem;
+      color: #1A3A5C;
+      text-align: center;
+    }
+    .pill-desc {
+      width: 140px;
+      min-width: 140px;
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.75rem;
+      color: #8A9BB0;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    #hub-view {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 4px;
     }
 
     #tool-view {
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
       padding-top: 4px;
     }
 
     .back-btn {
       display: none;
+      flex-shrink: 0;
       font-family: 'RuneScape UF', monospace;
       font-size: 0.85rem;
       color: #1A3A5C;
@@ -119,91 +169,32 @@
     }
     .back-btn:hover { color: #4A7FD4; }
 
-    /* Mobile bottom nav */
-    .bottom-nav {
-      display: none;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 70px;
-      background: rgba(253, 250, 245, 0.25);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border-top: 2px solid #1A3A5C;
-      z-index: 100;
-      align-items: center;
-      justify-content: space-around;
-      padding: 0 8px;
-    }
-    .bottom-nav button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      padding: 6px 10px;
-      border-radius: 10px;
-      transition: background 0.1s;
-    }
-    .bottom-nav button.active {
-      background: rgba(74,127,212,0.18);
-    }
-    .bottom-nav button img {
-      width: 36px;
-      height: 36px;
-      image-rendering: pixelated;
-      object-fit: contain;
-    }
-    .bottom-nav button span {
-      font-family: 'RuneScape UF', monospace;
-      font-size: 0.55rem;
-      color: #1A3A5C;
-    }
-    .home-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      padding: 6px 10px;
-    }
-    .home-btn span {
-      font-family: 'RuneScape UF', monospace;
-      font-size: 0.55rem;
-      color: #1A3A5C;
-    }
-
     @media (max-width: 700px) {
-      .bottom-nav { display: flex; }
+      html, body {
+        height: auto;
+        overflow: auto;
+      }
       body {
         justify-content: center;
+        align-items: flex-start;
         padding: 16px;
-        padding-bottom: 90px;
+        min-height: 100vh;
+        height: auto;
       }
       .learn-panel {
         width: 100%;
-        padding: 24px 16px;
+        height: auto;
+        max-height: none;
+        overflow: visible;
       }
-      .panel-brand { font-size: 2rem; }
+      #hub-view, #tool-view, #tool-frame {
+        overflow: visible;
+        flex: none;
+        height: auto;
+      }
     }
 
     @media (min-width: 701px) {
-      .bottom-nav { display: none; }
-      body {
-        align-items: center;
-        justify-content: flex-end;
-        padding-right: 40px;
-      }
-      .learn-panel {
-        width: 56vw;
-        max-width: none;
-        min-width: 420px;
-      }
       .friend-sprite {
         position: fixed;
         left: 0;
@@ -228,7 +219,9 @@
 
     <!-- Hub view -->
     <div id="hub-view">
-      <p class="panel-brand">inigo365</p>
+      <div class="site-banner" aria-label="inigo365 banner">
+        <img src="../go/images/inigo365-banner.png" alt="inigo365">
+      </div>
       <div class="pill-stack">
         <button class="pokemon-pill" onclick="loadTool('guitar-tuner.html', this)">
           <span class="pill-icon">♩</span>
@@ -250,40 +243,24 @@
           <span class="pill-label">scale trainer</span>
           <span class="pill-desc">scales, chords + progressions</span>
         </button>
+        <button class="pokemon-pill" onclick="loadTool('midi-studio.html', this)">
+          <span class="pill-icon">♫</span>
+          <span class="pill-label">midi studio</span>
+          <span class="pill-desc">compose + export</span>
+        </button>
       </div>
     </div>
 
     <!-- Tool view -->
     <div id="tool-view" style="display:none;">
+      <div class="site-banner" aria-label="inigo365 banner">
+        <img src="../go/images/inigo365-banner.png" alt="inigo365">
+      </div>
       <button class="back-btn" id="back-btn" onclick="goBack()">← back</button>
       <iframe id="tool-frame" class="tool-frame" src="" title="tool"></iframe>
     </div>
 
   </div>
-
-  <!-- Mobile bottom nav -->
-  <nav class="bottom-nav" id="bottom-nav">
-    <button onclick="goHome()" class="home-btn" id="nav-home">
-      <img src="../go/images/chess2-spin.gif" alt="home">
-      <span>home</span>
-    </button>
-    <button onclick="loadTool('guitar-tuner.html', this)" id="nav-tuner">
-      <img src="../go/images/friend-spin.gif" alt="tuner">
-      <span>tuner</span>
-    </button>
-    <button onclick="loadTool('ear-training.html', this)" id="nav-ear">
-      <img src="../go/images/brain-spin.gif" alt="ear training">
-      <span>ear</span>
-    </button>
-    <button onclick="loadTool('song-analyser.html', this)" id="nav-song">
-      <img src="../go/images/chess-spin.gif" alt="song analyser">
-      <span>analyser</span>
-    </button>
-    <button onclick="loadTool('scale-trainer.html', this)" id="nav-scale">
-      <img src="../go/images/bag-spin.gif" alt="scale trainer">
-      <span>scales</span>
-    </button>
-  </nav>
 
   <script>
     function loadTool(src, btn) {
@@ -293,30 +270,27 @@
       const frame = document.getElementById('tool-frame');
       frame.style.display = 'block';
       frame.src = src;
-      // update bottom nav active state
-      document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
-      if (btn && btn.closest('.bottom-nav')) btn.classList.add('active');
     }
     function goBack() {
       document.getElementById('hub-view').style.display = 'block';
       document.getElementById('tool-view').style.display = 'none';
       document.getElementById('tool-frame').src = '';
-      document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
     }
     function goHome() {
       goBack();
     }
     document.getElementById('tool-frame').onload = function() {
-      this.style.height = '0px';
       try {
         const doc = this.contentDocument || this.contentWindow.document;
-        const body = doc.body;
-        body.style.overflow = 'hidden';
-        const height = body.getBoundingClientRect().height || body.scrollHeight;
-        this.style.height = Math.ceil(height) + 'px';
-      } catch(e) {
-        this.style.height = '600px';
-      }
+        doc.documentElement.style.height = '100%';
+        doc.documentElement.style.overflowY = 'auto';
+        doc.documentElement.style.overflowX = 'hidden';
+        doc.body.style.height = '100%';
+        doc.body.style.overflowY = 'auto';
+        doc.body.style.overflowX = 'hidden';
+        doc.body.style.background = 'transparent';
+        doc.body.style.margin = '0';
+      } catch(e) {}
     };
   </script>
 

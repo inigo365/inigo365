@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>scale trainer — learn</title>
+  <title>midi studio — learn</title>
   <link rel="icon" type="image/png" href="../images/icon.png">
   <link rel="stylesheet" href="shared/learn.css">
   <style>
@@ -214,11 +214,34 @@
       padding: 0 !important;
     }
     .page { background: transparent !important; padding-top: 8px !important; }
-    /* scale-trainer.html — hide the MIDI studio card, show only quiz */
-    #st-root > .card:last-child { display: none !important; }
+    /* midi-studio.html — hide the quiz card, show only MIDI studio */
+    #st-root > .card:first-child { display: none !important; }
+    .site-banner {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 0 18px;
+      flex: 0 0 auto;
+    }
+    .site-banner img {
+      width: min(980px, 100%);
+      height: auto;
+      max-height: clamp(60px, 10vw, 120px);
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+    @media (max-width: 768px) {
+      .site-banner { margin-bottom: 14px; }
+      .site-banner img { max-height: clamp(50px, 14vw, 90px); }
+    }
   </style>
 </head>
 <body>
+<div class="site-banner" aria-label="inigo365 banner">
+  <img src="../go/images/inigo365-banner.png" alt="inigo365">
+</div>
 <img class="friend-sprite" src="../go/images/friend-spin.gif" alt="" style="position:fixed;left:32px;bottom:40px;width:140px;pointer-events:none;z-index:10;image-rendering:pixelated;">
 <div class="page">
 
@@ -227,14 +250,14 @@
     <span class="sep">/</span>
     <a href="index.html">← learn</a>
     <span class="sep">/</span>
-    <span>scale trainer</span>
+    <span>midi studio</span>
     <span class="sep">·</span>
-    <a href="midi-studio.html">midi studio</a>
+    <a href="scale-trainer.html">scale trainer</a>
   </nav>
 
   <div class="tool-header">
-    <h1 class="tool-title">scale trainer</h1>
-    <p class="tool-subtitle">scales, chords and progressions</p>
+    <h1 class="tool-title">midi studio</h1>
+    <p class="tool-subtitle">compose and export midi progressions</p>
   </div>
 
   <div id="st-root"></div>
@@ -2157,7 +2180,8 @@ if (window.self !== window.top) {
   if (nav) nav.style.display = 'none';
   const header = document.querySelector('.tool-header');
   if (header) header.style.marginTop = '0';
-
+  const banner = document.querySelector('.site-banner');
+  if (banner) banner.style.display = 'none';
 }
 </script>
 </body>
