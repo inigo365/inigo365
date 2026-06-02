@@ -18,26 +18,49 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .rack-wrap, .friend-sprite {
+      animation: fadeIn 0.45s ease both;
+    }
+
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      overflow-x: hidden;
+      overscroll-behavior: none;
+      background-image: url('../images/background.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
     body {
       font-family: 'RuneScape UF', monospace;
-      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-      padding-bottom: 80px;
     }
 
     /* ── Rack panel ─────────────────────────────────────────────── */
     .rack-wrap {
-      width: 100%;
-      max-width: 860px;
-      background: #E8E0D0;
-      border: 2px solid #1A3A5C;
-      border-radius: 4px;
-      overflow: hidden;
       position: relative;
-      z-index: 20;
+      width: min(900px, 100%);
+      border: 2px solid #000;
+      border-radius: 0;
+      background: rgba(255,255,255,0.69);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: calc(var(--vh, 1vh) * 100 - 40px);
+      max-height: calc(var(--vh, 1vh) * 100 - 40px);
     }
     .rack-wrap::before {
       content: '';
@@ -52,6 +75,15 @@
     .rack-wrap > * {
       position: relative;
       z-index: 1;
+    }
+
+    /* ── Scroll area ────────────────────────────────────────────── */
+    .rack-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      min-height: 0;
     }
 
     /* ── Banner ─────────────────────────────────────────────────── */
@@ -215,7 +247,7 @@
     /* ── Drawer ─────────────────────────────────────────────────── */
     .rack-drawer {
       display: none;
-      background: #FDFAF5;
+      background: transparent;
       border-bottom: 1px solid rgba(26, 58, 92, 0.3);
       padding: 16px 16px 0;
     }
@@ -281,8 +313,13 @@
 
     /* ── Mobile ─────────────────────────────────────────────────── */
     @media (max-width: 700px) {
-      body                { padding: 8px; padding-bottom: 20px; }
-      .rack-wrap          { width: 100%; max-width: none; }
+      body        { background-attachment: scroll; }
+      .rack-wrap  {
+        width: 100%;
+        height: calc(var(--vh, 1vh) * 100);
+        max-height: calc(var(--vh, 1vh) * 100);
+        margin: 0;
+      }
       .rack-row       { height: 48px; }
       .rack-ear       { width: 24px; }
       .rack-name      { font-size: 18px; white-space: normal; }
@@ -302,6 +339,8 @@
     <div class="site-banner" aria-label="inigo365 banner">
       <img src="../go/images/inigo365-banner.png" alt="inigo365">
     </div>
+
+    <div class="rack-scroll">
 
     <!-- ── 01 Guitar Tuner ───────────────────────────────────── -->
     <div class="rack-row" id="row-0" onclick="toggleRow(0)">
@@ -423,6 +462,8 @@
       <iframe id="frame-4" class="rack-iframe" src="" title="midi studio"></iframe>
     </div>
 
+    </div><!-- /.rack-scroll -->
+
     <!-- Footer -->
     <div class="rack-footer">
       <a href="../go/index.html" class="rack-back">← back</a>
@@ -432,6 +473,14 @@
     </div>
 
   </div>
+
+  <script>
+    function setVH() {
+      document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+    }
+    setVH();
+    window.addEventListener('resize', setVH);
+  </script>
 
   <script>
     const TOOLS = [
