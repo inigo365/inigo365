@@ -818,6 +818,15 @@ video {
   transform: translateX(-6px) scale(1.6);
 }
 
+img.portal-sprite-gif[src*="bart-spin"]{
+  filter: saturate(2.0) brightness(1.1) contrast(1.1);
+  transform: translateX(-6px) scale(2.0);
+}
+
+img.portal-sprite-gif[src*="chess2-spin"]{
+  transform: translateX(-6px) translateY(-1px) scale(1.6);
+}
+
 @media (max-width: 768px) {
   .portal-sprite-gif-brain  { transform: translateX(-12px) scale(1.65); }
   .portal-sprite-gif-chess  { transform: translateX(-9px) scale(1.6); }
@@ -1819,11 +1828,11 @@ const actions = {
 const DOCK_VIEWS = {
   main: [
     { key: "home",        title: "creative",              sub: "portfolio", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.png" },
-    { key: "games",       title: "music tools",           sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    redirect: "../learn/index.html", bgImage: "images/10.png" },
-    { key: "kintsugi", title: "games/music",              sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif",  viewSwitch: "games", bgImage: "images/20k.png" }
+    { key: "games",       title: "the lab",               sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    redirect: "../learn/index.html", bgImage: "images/10.png" },
+    { key: "kintsugi", title: "the b-sides",              sub: "[wip]",      glyph: "→", sprite: "images/bart-spin.gif",  viewSwitch: "games", bgImage: "images/20k.png" }
   ],
   games: [
-    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main", bgImage: "images/20m.png" },
+    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess2-spin.gif",      viewSwitch: "main", bgImage: "images/20m.png" },
     { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",   glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/50.png" },
     { key: "bag",           title: "put the bag",            sub: "in the bag",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/100.png" },
   ]
