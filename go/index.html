@@ -677,8 +677,7 @@ video {
     text-decoration: none;
   }
 }
-/* ── HIDE ALL BUTTON TEXT (comment out the two lines below to restore) ── */
-.portal-title, .portal-sub { display: none; }
+/* .portal-title, .portal-sub { display: none; } */
 
 /* shared typography for all bg buttons */
 .portal-tile--bg .portal-title,
@@ -716,12 +715,20 @@ video {
 [data-key="mediaplayer"] .portal-sub   { text-shadow: 1px 1px 0 #5c3800; /* ← M3 SHADOW COLOUR */ }
 
 /* =============================================
+   MAIN VIEW — BUTTON 3  (games/music) — matches main menu palette
+   ============================================= */
+[data-key="kintsugi"] .portal-title { color: #b4ff6e; }
+[data-key="kintsugi"] .portal-sub   { color: #b4ff6e; }
+[data-key="kintsugi"] .portal-title,
+[data-key="kintsugi"] .portal-sub   { text-shadow: 1px 1px 0 #1a5c00; }
+
+/* =============================================
    GAMES VIEW — BUTTON 1  (put the bag in the bag)
    ============================================= */
-[data-key="bag"] .portal-title  { color: rgb(25, 22, 231);    /* ← G1 MAIN TEXT COLOUR  */ }
-[data-key="bag"] .portal-sub    { color: rgb(25, 22, 231);    /* ← G1 SUB TEXT COLOUR   */ }
+[data-key="bag"] .portal-title  { color: #6edfff;              /* ← G1 MAIN TEXT COLOUR  */ }
+[data-key="bag"] .portal-sub    { color: #6edfff;              /* ← G1 SUB TEXT COLOUR   */ }
 [data-key="bag"] .portal-title,
-[data-key="bag"] .portal-sub    { text-shadow: 1px 1px 0 #34fcff; /* ← G1 SHADOW COLOUR   */ }
+[data-key="bag"] .portal-sub    { text-shadow: 1px 1px 0 #003d52; /* ← G1 SHADOW COLOUR   */ }
 /* sub row at title size — gap:0 + line-height:0.9 keeps total height identical */
 [data-key="bag"] .portal-left   { gap: 0; }
 [data-key="bag"] .portal-sub    { font-size: 24px; line-height: 0.9; }
@@ -729,10 +736,10 @@ video {
 /* =============================================
    GAMES VIEW — BUTTON 2  (1millionfrogs)
    ============================================= */
-[data-key="1millionfrogs"] .portal-title { color: #39ff14;                  /* ← G2 MAIN TEXT COLOUR  */ }
-[data-key="1millionfrogs"] .portal-sub   { color: #39ff14;                  /* ← G2 SUB TEXT COLOUR   */ }
+[data-key="1millionfrogs"] .portal-title { color: #ffe06e;                  /* ← G2 MAIN TEXT COLOUR  */ }
+[data-key="1millionfrogs"] .portal-sub   { color: #ffe06e;                  /* ← G2 SUB TEXT COLOUR   */ }
 [data-key="1millionfrogs"] .portal-title,
-[data-key="1millionfrogs"] .portal-sub   { text-shadow: 1px 1px 0 #1a5c00; /* ← G2 SHADOW COLOUR */ }
+[data-key="1millionfrogs"] .portal-sub   { text-shadow: 1px 1px 0 #5c3800; /* ← G2 SHADOW COLOUR */ }
 
 /* =============================================
    GAMES VIEW — BUTTON 3  (main menu)
@@ -1813,8 +1820,8 @@ const actions = {
 const DOCK_VIEWS = {
   main: [
     { key: "home",        title: "creative",              sub: "portfolio", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.png" },
-    { key: "games",       title: "games",                 sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    viewSwitch: "games", bgImage: "images/10.png" },
-    { key: "kintsugi", title: "kintsugi",                  sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif",  bgImage: "images/20k.png" }
+    { key: "games",       title: "music tools",           sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    redirect: "../learn/index.html", bgImage: "images/10.png" },
+    { key: "kintsugi", title: "games/music",              sub: "[wip]",      glyph: "→", sprite: "images/brain-spin.gif",  viewSwitch: "games", bgImage: "images/20k.png" }
   ],
   games: [
     { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess-spin.gif",      viewSwitch: "main", bgImage: "images/20m.png" },
@@ -1874,6 +1881,14 @@ function renderPortalDock(viewName) {
         SFX.unlockNow();
         SFX.play("click");
         renderPortalDock(target);
+      });
+    } else if (item.redirect) {
+      const dest = item.redirect;
+      btn.addEventListener("click", () => {
+        SFX.unlockNow();
+        document.body.style.transition = "opacity 0.4s ease";
+        document.body.style.opacity = "0";
+        setTimeout(() => { window.location.href = dest; }, 400);
       });
     } else {
       btn.addEventListener("click", () => {
