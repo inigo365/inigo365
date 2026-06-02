@@ -32,7 +32,18 @@
       overflow: hidden;
       overflow-x: hidden;
       overscroll-behavior: none;
-      background-image: url('../images/background.png');
+    }
+
+    html {
+      background-image: url('../go/images/background.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    body {
+      background-image: url('../go/images/background.png');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -312,7 +323,7 @@
     }
 
     /* ── Mobile ─────────────────────────────────────────────────── */
-    @media (max-width: 700px) {
+    @media (max-width: 768px) {
       body        { background-attachment: scroll; }
       .rack-wrap  {
         width: 100%;
