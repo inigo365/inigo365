@@ -55,22 +55,26 @@
     }
 
     /* ── Banner ─────────────────────────────────────────────────── */
-    .rack-banner {
+    .site-banner {
       width: 100%;
-      background: #1A3A5C;
-      border-bottom: 3px solid #1A3A5C;
       display: flex;
       justify-content: center;
       align-items: center;
+      margin: 0;
       flex: 0 0 auto;
     }
-    .rack-banner img {
+    .site-banner img {
       width: min(980px, 100%);
       height: auto;
-      max-height: clamp(60px, 10vw, 120px);
+      max-height: clamp(96px, 18vw, 200px);
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       display: block;
+    }
+    @media (max-width: 768px) {
+      .site-banner img {
+        max-height: clamp(110px, 18vw, 180px);
+      }
     }
 
     /* ── Rack row ───────────────────────────────────────────────── */
@@ -234,17 +238,12 @@
       background: rgba(26, 58, 92, 0.06);
       border-top: 2px solid #1A3A5C;
     }
-    .rack-brand {
-      font-family: 'RuneScape UF', monospace;
-      font-size: 15px;
-      color: #4A7FD4;
-      letter-spacing: 0.15em;
-    }
     .rack-status {
       font-family: 'RuneScape UF', monospace;
-      font-size: 15px;
+      font-size: 0.58rem;
       color: #8A9BB0;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
     }
     .rack-status-dot {
       color: #00ff00;
@@ -252,9 +251,10 @@
     }
     .rack-back {
       font-family: 'RuneScape UF', monospace;
-      font-size: 15px;
+      font-size: 0.58rem;
       color: #8A9BB0;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
       text-decoration: none;
     }
     .rack-back:hover { color: #1A3A5C; }
@@ -281,10 +281,11 @@
 
     /* ── Mobile ─────────────────────────────────────────────────── */
     @media (max-width: 700px) {
-      body            { padding-bottom: 20px; }
+      body                { padding: 8px; padding-bottom: 20px; }
+      .rack-wrap          { width: 100%; max-width: none; }
       .rack-row       { height: 48px; }
-      .rack-ear       { width: 28px; }
-      .rack-name      { font-size: 1.1rem; white-space: normal; }
+      .rack-ear       { width: 24px; }
+      .rack-name      { font-size: 18px; white-space: normal; }
       .rack-desc      { display: none; }
       .rack-unit-num  { width: 20px; font-size: 0.52rem; }
       .rack-led-wrap  { padding: 0 8px; }
@@ -298,7 +299,7 @@
   <div class="rack-wrap">
 
     <!-- Banner -->
-    <div class="rack-banner">
+    <div class="site-banner" aria-label="inigo365 banner">
       <img src="../go/images/inigo365-banner.png" alt="inigo365">
     </div>
 
@@ -425,7 +426,6 @@
     <!-- Footer -->
     <div class="rack-footer">
       <a href="../go/index.html" class="rack-back">← back</a>
-      <span class="rack-brand">inigo365</span>
       <span class="rack-status">
         <span class="rack-status-dot">●</span>5 modules ready
       </span>
