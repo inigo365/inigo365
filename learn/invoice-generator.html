@@ -20,6 +20,10 @@
       --shadow:       0 2px 16px rgba(0,0,0,0.08);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Custom cursors ── */
+    html, body { cursor: url('../images/cursor/cursor.png'), auto; }
+    button, input, a, select, [onclick], label { cursor: url('../images/cursor/cursor-hover.png'), pointer; }
     body {
       font-family: var(--font);
       background: var(--bg);
@@ -772,8 +776,10 @@
       /* Hide desktop-only regions */
       .page-content,
       .colour-picker-bar { display: none !important; }
-      /* Controls bar: hide action buttons (replaced by sticky bar) */
+      /* Controls bar: hide action buttons and title (replaced by sticky bar) */
       .controls-bar .btn { display: none !important; }
+      .controls-bar .btn-back { display: inline-flex !important; }
+      .app-title { display: none !important; }
 
       /* ── Mobile form container ── */
       #mobileForm {
@@ -1157,7 +1163,7 @@
      CONTROLS BAR
 ═══════════════════════════════════════ -->
 <div class="controls-bar">
-  <a href="index.html" class="btn btn-secondary" style="text-decoration:none">← Back</a>
+  <a href="index.html" class="btn btn-secondary btn-back" style="text-decoration:none">← Back</a>
   <span class="app-title">Invoice Generator</span>
 
   <select class="currency-select" id="currencySelect" onchange="setCurrency(this.value)">
