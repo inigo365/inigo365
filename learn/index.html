@@ -95,6 +95,7 @@
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
       min-height: 0;
+      border-top: 1px solid rgba(26, 58, 92, 0.3);
     }
 
     /* ── Banner ─────────────────────────────────────────────────── */
@@ -131,7 +132,6 @@
       user-select: none;
       -webkit-user-select: none;
     }
-    .rack-row:last-of-type { border-bottom: none; }
     .rack-row:hover        { background: rgba(74, 127, 212, 0.10); }
     .rack-row.active       { background: #4A7FD4; }
 
@@ -353,125 +353,7 @@
 
     <div class="rack-scroll">
 
-    <!-- ── 01 Guitar Tuner ───────────────────────────────────── -->
-    <div class="rack-row" id="row-0" onclick="toggleRow(0)">
-      <div class="rack-ear left">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-      <div class="rack-unit-num">01</div>
-      <div class="rack-main">
-        <span class="rack-name">guitar tuner</span>
-        <span class="rack-desc">pitch detection</span>
-      </div>
-      <div class="rack-led-wrap">
-        <div class="rack-led" id="led-0"></div>
-        <div class="rack-led-label" id="led-label-0">off</div>
-      </div>
-      <div class="rack-ear right">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-    </div>
-    <div class="rack-drawer" id="drawer-0">
-      <iframe id="frame-0" class="rack-iframe" src="" title="guitar tuner"></iframe>
-    </div>
-
-    <!-- ── 02 Ear Training ──────────────────────────────────── -->
-    <div class="rack-row" id="row-1" onclick="toggleRow(1)">
-      <div class="rack-ear left">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-      <div class="rack-unit-num">02</div>
-      <div class="rack-main">
-        <span class="rack-name">ear training</span>
-        <span class="rack-desc">interval recognition</span>
-      </div>
-      <div class="rack-led-wrap">
-        <div class="rack-led" id="led-1"></div>
-        <div class="rack-led-label" id="led-label-1">off</div>
-      </div>
-      <div class="rack-ear right">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-    </div>
-    <div class="rack-drawer" id="drawer-1">
-      <iframe id="frame-1" class="rack-iframe" src="" title="ear training"></iframe>
-    </div>
-
-    <!-- ── 03 Song Analyser ─────────────────────────────────── -->
-    <div class="rack-row" id="row-2" onclick="toggleRow(2)">
-      <div class="rack-ear left">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-      <div class="rack-unit-num">03</div>
-      <div class="rack-main">
-        <span class="rack-name">song analyser</span>
-        <span class="rack-desc">key + bpm detection</span>
-      </div>
-      <div class="rack-led-wrap">
-        <div class="rack-led" id="led-2"></div>
-        <div class="rack-led-label" id="led-label-2">off</div>
-      </div>
-      <div class="rack-ear right">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-    </div>
-    <div class="rack-drawer" id="drawer-2">
-      <iframe id="frame-2" class="rack-iframe" src="" title="song analyser"></iframe>
-    </div>
-
-    <!-- ── 04 Scale Trainer ─────────────────────────────────── -->
-    <div class="rack-row" id="row-3" onclick="toggleRow(3)">
-      <div class="rack-ear left">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-      <div class="rack-unit-num">04</div>
-      <div class="rack-main">
-        <span class="rack-name">scale trainer</span>
-        <span class="rack-desc">scales + progressions</span>
-      </div>
-      <div class="rack-led-wrap">
-        <div class="rack-led" id="led-3"></div>
-        <div class="rack-led-label" id="led-label-3">off</div>
-      </div>
-      <div class="rack-ear right">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-    </div>
-    <div class="rack-drawer" id="drawer-3">
-      <iframe id="frame-3" class="rack-iframe" src="" title="scale trainer"></iframe>
-    </div>
-
-    <!-- ── 05 MIDI Studio ──────────────────────────────────── -->
-    <div class="rack-row" id="row-4" onclick="toggleRow(4)">
-      <div class="rack-ear left">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-      <div class="rack-unit-num">05</div>
-      <div class="rack-main">
-        <span class="rack-name">midi studio</span>
-        <span class="rack-desc">compose + export</span>
-      </div>
-      <div class="rack-led-wrap">
-        <div class="rack-led" id="led-4"></div>
-        <div class="rack-led-label" id="led-label-4">off</div>
-      </div>
-      <div class="rack-ear right">
-        <div class="screw"></div>
-        <div class="screw"></div>
-      </div>
-    </div>
-    <div class="rack-drawer" id="drawer-4">
-      <iframe id="frame-4" class="rack-iframe" src="" title="midi studio"></iframe>
-    </div>
+    <div id="rack-units"></div>
 
     </div><!-- /.rack-scroll -->
 
@@ -479,7 +361,7 @@
     <div class="rack-footer">
       <a href="../go/index.html" class="rack-back">← back</a>
       <span class="rack-status">
-        <span class="rack-status-dot">●</span>5 modules ready
+        <span class="rack-status-dot">●</span><span id="module-count"></span> modules ready
       </span>
     </div>
 
@@ -495,12 +377,67 @@
 
   <script>
     const TOOLS = [
-      'guitar-tuner.html',
-      'ear-training.html',
-      'song-analyser.html',
-      'scale-trainer.html',
-      'midi-studio.html'
+      { id: 'guitar-tuner',  name: 'guitar tuner',     desc: 'pitch detection',       src: 'guitar-tuner.html'  },
+      { id: 'ear-training',  name: 'ear training',     desc: 'interval recognition',  src: 'ear-training.html'  },
+      { id: 'song-analyser', name: 'song analyser',    desc: 'key + bpm detection',   src: 'song-analyser.html' },
+      { id: 'scale-trainer', name: 'scale trainer',    desc: 'scales + progressions', src: 'scale-trainer.html' },
+      { id: 'midi-studio',   name: 'midi studio',      desc: 'compose + export',      src: 'midi-studio.html'   },
+      { id: 'invoice',       name: 'invoice generator', desc: 'create + export pdf',  url: 'invoice-generator.html' },
     ];
+
+    // ── Build rack units from TOOLS array ──────────────────────────
+    (function buildRack() {
+      const container = document.getElementById('rack-units');
+      TOOLS.forEach(function (tool, idx) {
+        const num = String(idx + 1).padStart(2, '0');
+
+        const row = document.createElement('div');
+        row.className = 'rack-row';
+        row.id = 'row-' + idx;
+
+        if (tool.url) {
+          row.setAttribute('onclick', 'window.location.href="' + tool.url + '"');
+          row.innerHTML =
+            '<div class="rack-ear left"><div class="screw"></div><div class="screw"></div></div>' +
+            '<div class="rack-unit-num">' + num + '</div>' +
+            '<div class="rack-main">' +
+              '<span class="rack-name">' + tool.name + '</span>' +
+              '<span class="rack-desc">' + tool.desc + '</span>' +
+            '</div>' +
+            '<div class="rack-led-wrap">' +
+              '<div class="rack-led-label" style="font-size:1rem">→</div>' +
+            '</div>' +
+            '<div class="rack-ear right"><div class="screw"></div><div class="screw"></div></div>';
+        } else {
+          row.setAttribute('onclick', 'toggleRow(' + idx + ')');
+          row.innerHTML =
+            '<div class="rack-ear left"><div class="screw"></div><div class="screw"></div></div>' +
+            '<div class="rack-unit-num">' + num + '</div>' +
+            '<div class="rack-main">' +
+              '<span class="rack-name">' + tool.name + '</span>' +
+              '<span class="rack-desc">' + tool.desc + '</span>' +
+            '</div>' +
+            '<div class="rack-led-wrap">' +
+              '<div class="rack-led" id="led-' + idx + '"></div>' +
+              '<div class="rack-led-label" id="led-label-' + idx + '">off</div>' +
+            '</div>' +
+            '<div class="rack-ear right"><div class="screw"></div><div class="screw"></div></div>';
+
+          const drawer = document.createElement('div');
+          drawer.className = 'rack-drawer';
+          drawer.id = 'drawer-' + idx;
+          drawer.innerHTML =
+            '<iframe id="frame-' + idx + '" class="rack-iframe" src="" title="' + tool.name + '"></iframe>';
+          container.appendChild(row);
+          container.appendChild(drawer);
+          return;
+        }
+
+        container.appendChild(row);
+      });
+
+      document.getElementById('module-count').textContent = TOOLS.length;
+    })();
 
     let activeRow = null;
 
@@ -529,7 +466,7 @@
       ledLabel.classList.add('on');
 
       frame.style.minHeight = '0';
-      frame.src = TOOLS[idx];
+      frame.src = TOOLS[idx].src;
       frame.onload = function () {
         const iframe = this;
         try {
@@ -582,7 +519,7 @@
     }
 
     function loadTool(src) {
-      const idx = TOOLS.indexOf(src);
+      const idx = TOOLS.findIndex(t => t.src === src);
       if (idx === -1) return;
       if (activeRow === idx) {
         document.getElementById('row-' + idx).scrollIntoView({ behavior: 'smooth', block: 'start' });
