@@ -714,6 +714,22 @@ video {
 [data-key="mediaplayer"] .portal-sub   { text-shadow: 1px 1px 0 #5c3800; /* ← M3 SHADOW COLOUR */ }
 
 /* =============================================
+   B-SIDES VIEW — BUTTON 2  (games — purple 50.png bg)
+   ============================================= */
+[data-key="bsides-games"] .portal-title { color: #d4a0ff; }
+[data-key="bsides-games"] .portal-sub   { color: #d4a0ff; }
+[data-key="bsides-games"] .portal-title,
+[data-key="bsides-games"] .portal-sub   { text-shadow: 1px 1px 0 #3d0080; }
+
+/* =============================================
+   B-SIDES VIEW — BUTTON 3  (kintsugi — pink 100.png bg)
+   ============================================= */
+[data-key="bsides-kintsugi"] .portal-title { color: #ffb3d9; }
+[data-key="bsides-kintsugi"] .portal-sub   { color: #ffb3d9; }
+[data-key="bsides-kintsugi"] .portal-title,
+[data-key="bsides-kintsugi"] .portal-sub   { text-shadow: 1px 1px 0 #7a0038; }
+
+/* =============================================
    MAIN VIEW — BUTTON 3  (games/music) — matches main menu palette
    ============================================= */
 [data-key="kintsugi"] .portal-title { color: #b4ff6e; }
@@ -1829,12 +1845,17 @@ const DOCK_VIEWS = {
   main: [
     { key: "home",        title: "creative",              sub: "portfolio", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.png" },
     { key: "games",       title: "the palace",               sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    redirect: "../learn/index.html", bgImage: "images/10.png" },
-    { key: "kintsugi", title: "b-sides",              sub: "[wip]",      glyph: "→", sprite: "images/bart-spin.gif",  viewSwitch: "games", bgImage: "images/20k.png" }
+    { key: "kintsugi", title: "b-sides",              sub: "[wip]",      glyph: "→", sprite: "images/bart-spin.gif",  viewSwitch: "bsides", bgImage: "images/20k.png" }
   ],
   games: [
-    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess2-spin.gif",      viewSwitch: "main", bgImage: "images/20m.png" },
+    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess2-spin.gif",      viewSwitch: "bsides", bgImage: "images/20m.png" },
     { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",   glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/50.png" },
     { key: "bag",           title: "put the bag",            sub: "in the bag",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/100.png" },
+  ],
+  bsides: [
+    { key: "mainmenu",        title: "main menu",  sub: "back",     glyph: "←", sprite: "images/chess2-spin.gif", viewSwitch: "main",  bgImage: "images/20m.png" },
+    { key: "bsides-games",    title: "games",      sub: "inigo365", glyph: "→", sprite: "images/bart-spin.gif",   viewSwitch: "games", bgImage: "images/50.png" },
+    { key: "bsides-kintsugi", title: "kintsugi",   sub: "[wip]",    glyph: "→", sprite: "images/brain-spin.gif",  redirect: "kintsugi/kintsugi.html", bgImage: "images/100.png" },
   ]
 };
 
@@ -1844,6 +1865,7 @@ const portalHint = document.getElementById("portalHint");
 function renderPortalDock(viewName) {
   if (!portalDock) return;
   const items = DOCK_VIEWS[viewName] || DOCK_VIEWS.main;
+  try { sessionStorage.setItem("portal_view", viewName); } catch {}
   portalDock.innerHTML = "";
 
   for (const item of items) {
@@ -1909,7 +1931,7 @@ function renderPortalDock(viewName) {
   }
 }
 
-renderPortalDock("main");
+renderPortalDock((function(){ try { return sessionStorage.getItem("portal_view") || "main"; } catch { return "main"; } })());
 
 /**
  * Cheat sequences -> unlocks.
@@ -2175,7 +2197,7 @@ function resetToPassword() {
   closeAllOverlays();
   if (portalHint) portalHint.textContent = "hint: find hidden passwords around the site...";
 
-  renderPortalDock("main");
+  renderPortalDock((function(){ try { return sessionStorage.getItem("portal_view") || "main"; } catch { return "main"; } })());
   setButtonsForInputState();
   passwordInput.focus();
 }
@@ -2210,7 +2232,7 @@ function hardResetPasswordUI() {
   hasWrongAttempt = false;
   closeAllOverlays();
 
-  renderPortalDock("main");
+  renderPortalDock((function(){ try { return sessionStorage.getItem("portal_view") || "main"; } catch { return "main"; } })());
   setButtonsForInputState();
   requestAnimationFrame(() => passwordInput.focus());
 }
