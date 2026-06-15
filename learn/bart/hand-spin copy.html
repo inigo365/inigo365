@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hand spin</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; overflow: hidden; font-family: monospace; }
+  #container { position: relative; width: 100vw; height: 100vh; }
+  canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+  #hand-overlay { pointer-events: none; }
+  #ui { position: absolute; inset: 0; pointer-events: none; }
+  #status {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; white-space: nowrap;
+  }
+  #pinch-dot {
+    position: absolute; top: 20px; right: 20px; width: 10px; height: 10px;
+    border-radius: 50%; background: rgba(255,255,255,0.12); transition: background 0.08s, box-shadow 0.08s;
+  }
+  #pinch-dot.active { background: #7F77DD; box-shadow: 0 0 10px #7F77DD88; }
+  #cam-label {
+    position: absolute; top: 20px; left: 20px; display: flex; align-items: center;
+    gap: 6px; font-size: 11px; color: rgba(255,255,255,0.25); letter-spacing: 0.06em;
+  }
+  #cam-label span { width: 7px; height: 7px; border-radius: 50%; background: #1D9E75; }
+  #vel-bar {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    width: 100px; height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; overflow: hidden;
+  }
+  #vel-fill { height: 100%; width: 0%; background: #7F77DD; border-radius: 1px; transition: width 0.08s; }
+  #overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; pointer-events: all;
+  }
+  #overlay h1 { font-size: 13px; color: rgba(255,255,255,0.4); font-weight: 400; letter-spacing: 0.12em; }
+  #overlay button {
+    padding: 10px 28px; background: rgba(127,119,221,0.12); border: 1px solid rgba(127,119,221,0.4);
+    color: #AFA9EC; font-size: 13px; font-family: monospace; letter-spacing: 0.06em;
+    border-radius: 6px; cursor: pointer; transition: background 0.15s;
+  }
+  #overlay button:hover { background: rgba(127,119,221,0.22); }
+  #overlay p { font-size: 11px; color: rgba(255,255,255,0.2); letter-spacing: 0.06em; }
+  #loading {
+    position: absolute; inset: 0; display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px; pointer-events: none;
+  }
+  #loading p { font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 0.08em; }
+  #loading-bar { width: 120px; height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; overflow: hidden; }
+  #loading-fill { height: 100%; background: #7F77DD; border-radius: 1px; animation: loadpulse 1.4s ease-in-out infinite; }
+  @keyframes loadpulse { 0%,100%{width:10%} 50%{width:80%} }
+
+  /* debug panel */
+  #dbg {
+    position: absolute; bottom: 60px; left: 12px; right: 12px; max-height: 180px;
+    overflow-y: auto; background: rgba(0,0,0,0.72); border: 1px solid rgba(127,119,221,0.25);
+    border-radius: 6px; padding: 8px 10px; font-size: 10px; color: #9b9; line-height: 1.6;
+    pointer-events: all; display: none; z-index: 999;
+  }
+  #dbg .err { color: #f77; }
+  #dbg .warn { color: #fa7; }
+  #dbg .ok { color: #7f7; }
+  #dbg-toggle {
+    position: absolute; bottom: 48px; right: 12px; font-size: 10px;
+    color: rgba(255,255,255,0.25); cursor: pointer; pointer-events: all;
+    letter-spacing: 0.06em; z-index: 1000; padding: 4px 8px;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <canvas id="canvas3d"></canvas>
+  <canvas id="hand-overlay"></canvas>
+  <div id="ui">
+    <div id="cam-label"><span></span>cam</div>
+    <div id="pinch-dot"></div>
+    <div id="vel-bar"><div id="vel-fill"></div></div>
+    <div id="status">loading model...</div>
+    <div id="overlay">
+      <h1>hand spin</h1>
+      <button id="start-btn">enable camera + hand tracking</button>
+      <p>camera feed hidden · pinch + drag to spin</p>
+    </div>
+    <div id="loading">
+      <p id="load-msg">loading...</p>
+      <div id="loading-bar"><div id="loading-fill"></div></div>
+    </div>
+    <div id="dbg-toggle">debug</div>
+    <div id="dbg"></div>
+  </div>
+</div>
+
+<!-- import map must come before any module script -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+  }
+}
+</script>
+
+<!-- debug logger — available before module loads -->
+<script>
+(function(){
+  const dbgEl = document.getElementById('dbg');
+  const toggle = document.getElementById('dbg-toggle');
+  toggle.addEventListener('click', () => {
+    dbgEl.style.display = dbgEl.style.display === 'none' ? 'block' : 'none';
+  });
+
+  window._dbg = function(msg, type) {
+    const line = document.createElement('div');
+    if (type) line.className = type;
+    const t = new Date().toISOString().slice(11,23);
+    line.textContent = `[${t}] ${msg}`;
+    dbgEl.appendChild(line);
+    dbgEl.scrollTop = dbgEl.scrollHeight;
+    console.log(`[dbg] ${msg}`);
+  };
+
+  // Catch any uncaught errors (including module crashes)
+  window.addEventListener('error', e => {
+    dbgEl.style.display = 'block';
+    window._dbg(`UNCAUGHT: ${e.message} (${e.filename?.split('/').pop()}:${e.lineno})`, 'err');
+  });
+  window.addEventListener('unhandledrejection', e => {
+    dbgEl.style.display = 'block';
+    window._dbg(`UNHANDLED PROMISE: ${e.reason}`, 'err');
+  });
+
+  window._dbg('page loaded, scripts starting', 'ok');
+})();
+</script>
+
+<!-- MediaPipe: plain scripts, not modules -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js"
+  onload="window._dbg('mediapipe hands loaded','ok')"
+  onerror="window._dbg('mediapipe hands FAILED to load','err')"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"
+  onload="window._dbg('mediapipe camera_utils loaded','ok')"
+  onerror="window._dbg('mediapipe camera_utils FAILED to load','err')"></script>
+
+<script type="module">
+window._dbg('module script started');
+
+let THREE, GLTFLoader, DRACOLoader;
+try {
+  const threeModule = await import('https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js');
+  THREE = threeModule;
+  window._dbg('three.js loaded', 'ok');
+} catch(e) {
+  window._dbg('three.js FAILED: ' + e.message, 'err');
+  throw e;
+}
+try {
+  const m = await import('https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js');
+  GLTFLoader = m.GLTFLoader;
+  window._dbg('GLTFLoader loaded', 'ok');
+} catch(e) {
+  window._dbg('GLTFLoader FAILED: ' + e.message, 'err');
+  throw e;
+}
+try {
+  const m = await import('https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/DRACOLoader.js');
+  DRACOLoader = m.DRACOLoader;
+  window._dbg('DRACOLoader loaded', 'ok');
+} catch(e) {
+  window._dbg('DRACOLoader FAILED: ' + e.message, 'warn');
+  DRACOLoader = null; // non-fatal: GLB may not need Draco
+}
+
+const statusEl = document.getElementById('status');
+const pinchDot = document.getElementById('pinch-dot');
+const velFill = document.getElementById('vel-fill');
+
+// --- rotation state declared at module top level, no TDZ issue ---
+let isPinching = false;
+let lastPinchX = 0;
+let lastPinchY = 0;
+let pinchVelX = 0;
+let pinchVelY = 0;
+let velX = 0;
+let velY = 0;
+let rotX = 0;
+let rotY = 0;
+
+const PINCH_ON  = 0.11;   // fingers must be this close to start pinching
+const PINCH_OFF = 0.15;   // fingers must be this far apart to release (hysteresis)
+const DAMPING = 0.88;       // how fast momentum fades after release
+const IDLE_SPEED = 0.003;   // constant background Y rotation
+const DRAG_SCALE = 1.8;     // how much wrist movement maps to rotation
+const MOMENTUM_SCALE = 0.6; // how much pinch velocity carries over on release
+
+// --- Three.js setup ---
+const canvas = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x0a0a0f, 1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+const cam3d = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
+cam3d.position.set(0, 0, 3);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+keyLight.position.set(2, 3, 4);
+scene.add(keyLight);
+const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
+fillLight.position.set(-3, 0, -2);
+scene.add(fillLight);
+const rimLight = new THREE.DirectionalLight(0xAFA9EC, 0.8);
+rimLight.position.set(0, -2, -3);
+scene.add(rimLight);
+
+const pivot = new THREE.Group();
+scene.add(pivot);
+
+// --- Load GLB ---
+const gltfLoader = new GLTFLoader();
+if (DRACOLoader) {
+  try {
+    const draco = new DRACOLoader();
+    draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    gltfLoader.setDRACOLoader(draco);
+    window._dbg('DRACOLoader attached to GLTFLoader', 'ok');
+  } catch(e) {
+    window._dbg('DRACOLoader setup failed: ' + e.message, 'warn');
+  }
+} else {
+  window._dbg('Skipping DRACOLoader (will fail if GLB uses Draco compression)', 'warn');
+}
+
+window._dbg('Loading GLB: bartagainagainagain.glb');
+gltfLoader.load('./bartagainagainagain.glb', (gltf) => {
+  window._dbg('GLB loaded successfully', 'ok');
+  const model = gltf.scene;
+  const box = new THREE.Box3().setFromObject(model);
+  const centre = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = 2.0 / maxDim;
+  model.scale.setScalar(scale);
+  model.position.sub(centre.multiplyScalar(scale));
+  pivot.add(model);
+  statusEl.textContent = 'show your hand · pinch + drag to spin';
+}, (xhr) => {
+  if (xhr.total) window._dbg(`GLB progress: ${Math.round(xhr.loaded/xhr.total*100)}%`);
+}, (err) => {
+  window._dbg('GLB load error: ' + (err.message || err), 'err');
+  statusEl.textContent = 'glb load failed — is the file in the same folder?';
+});
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  cam3d.aspect = window.innerWidth / window.innerHeight;
+  cam3d.updateProjectionMatrix();
+  resizeOverlay();
+});
+
+// --- Hand overlay canvas ---
+const overlayCanvas = document.getElementById('hand-overlay');
+const ctx2d = overlayCanvas.getContext('2d');
+let lastHandLandmarks = null;
+
+function resizeOverlay() {
+  overlayCanvas.width = window.innerWidth;
+  overlayCanvas.height = window.innerHeight;
+}
+resizeOverlay();
+
+const HAND_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20],
+  [0,17],[0,5]
+];
+const FINGERTIPS = [4, 8, 12, 16, 20];
+
+function drawHandOverlay() {
+  const W = overlayCanvas.width, H = overlayCanvas.height;
+  ctx2d.clearRect(0, 0, W, H);
+  if (!lastHandLandmarks) return;
+  const lm = lastHandLandmarks;
+
+  // MediaPipe x is mirrored (0=right of frame from user POV), flip it
+  const lx = i => (1 - lm[i].x) * W;
+  const ly = i => lm[i].y * H;
+
+  // skeleton lines
+  ctx2d.strokeStyle = isPinching ? 'rgba(127,119,221,0.55)' : 'rgba(255,255,255,0.18)';
+  ctx2d.lineWidth = 1.5;
+  ctx2d.lineCap = 'round';
+  for (const [a, b] of HAND_CONNECTIONS) {
+    ctx2d.beginPath();
+    ctx2d.moveTo(lx(a), ly(a));
+    ctx2d.lineTo(lx(b), ly(b));
+    ctx2d.stroke();
+  }
+
+  // joints
+  for (let i = 0; i < 21; i++) {
+    const isTip = FINGERTIPS.includes(i);
+    const isPinchFinger = (i === 4 || i === 8);
+    ctx2d.beginPath();
+    ctx2d.arc(lx(i), ly(i), isTip ? 4 : 2.5, 0, Math.PI * 2);
+    if (isPinching && isPinchFinger) {
+      ctx2d.fillStyle = '#7F77DD';
+      ctx2d.shadowColor = '#7F77DD';
+      ctx2d.shadowBlur = 10;
+    } else {
+      ctx2d.fillStyle = isTip ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)';
+      ctx2d.shadowBlur = 0;
+    }
+    ctx2d.fill();
+    ctx2d.shadowBlur = 0;
+  }
+
+  // pinch midpoint indicator
+  if (isPinching) {
+    const mx = (lx(4) + lx(8)) / 2;
+    const my = (ly(4) + ly(8)) / 2;
+    ctx2d.beginPath();
+    ctx2d.arc(mx, my, 6, 0, Math.PI * 2);
+    ctx2d.strokeStyle = 'rgba(127,119,221,0.9)';
+    ctx2d.lineWidth = 1.5;
+    ctx2d.stroke();
+  }
+}
+
+// --- Render loop ---
+function animate() {
+  requestAnimationFrame(animate);
+
+  // hand-driven momentum fades out when not pinching
+  if (!isPinching) {
+    rotX += velX;
+    rotY += velY;
+    velX *= DAMPING;
+    velY *= DAMPING;
+  }
+
+  pivot.rotation.x = rotX;
+  pivot.rotation.y = rotY;
+  renderer.render(scene, cam3d);
+  drawHandOverlay();
+}
+animate();
+
+// --- Hand tracking ---
+function pdist(a, b) {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+function releasePinch() {
+  // carry momentum forward — will decay via DAMPING in render loop
+  velX = pinchVelY * Math.PI * MOMENTUM_SCALE;
+  velY = -pinchVelX * Math.PI * MOMENTUM_SCALE;
+  isPinching = false;
+}
+
+function onResults(results) {
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    if (isPinching) releasePinch();
+    lastHandLandmarks = null;
+    pinchDot.classList.remove('active');
+    velFill.style.width = '0%';
+    statusEl.textContent = 'no hand · bring your hand into frame';
+    return;
+  }
+
+  const lm = results.multiHandLandmarks[0];
+  lastHandLandmarks = lm;
+
+  const thumbTip = lm[4];
+  const indexTip = lm[8];
+  const dist = pdist(thumbTip, indexTip);
+  const pinching = isPinching ? dist < PINCH_OFF : dist < PINCH_ON;
+
+  // track the midpoint of the pinch rather than the wrist —
+  // means any pinch+drag anywhere on screen drives the spin
+  const pinchMidX = (thumbTip.x + indexTip.x) / 2;
+  const pinchMidY = (thumbTip.y + indexTip.y) / 2;
+
+  if (pinching) {
+    pinchDot.classList.add('active');
+    if (!isPinching) {
+      isPinching = true;
+      lastPinchX = pinchMidX;
+      lastPinchY = pinchMidY;
+      pinchVelX = 0;
+      pinchVelY = 0;
+      velX = 0;
+      velY = 0;
+    } else {
+      // smooth the per-frame velocity with a light low-pass
+      const rawVX = (pinchMidX - lastPinchX) * DRAG_SCALE;
+      const rawVY = (pinchMidY - lastPinchY) * DRAG_SCALE;
+      pinchVelX = pinchVelX * 0.5 + rawVX * 0.5;
+      pinchVelY = pinchVelY * 0.5 + rawVY * 0.5;
+      lastPinchX = pinchMidX;
+      lastPinchY = pinchMidY;
+      rotY -= pinchVelX * Math.PI;
+      rotX += pinchVelY * Math.PI;
+    }
+    const spd = Math.sqrt(pinchVelX ** 2 + pinchVelY ** 2);
+    velFill.style.width = Math.min(spd * 800, 100) + '%';
+    statusEl.textContent = 'pinching · drag to spin';
+  } else {
+    pinchDot.classList.remove('active');
+    if (isPinching) releasePinch();
+    velFill.style.width = '0%';
+    statusEl.textContent = 'hand detected · pinch + drag to spin';
+  }
+}
+
+window._dbg('registering start-btn click handler', 'ok');
+document.getElementById('start-btn').addEventListener('click', async () => {
+  window._dbg('start-btn clicked');
+  document.getElementById('overlay').style.display = 'none';
+  const loadingEl = document.getElementById('loading');
+  loadingEl.style.display = 'flex';
+  document.getElementById('load-msg').textContent = 'requesting camera...';
+
+  const video = document.createElement('video');
+  video.setAttribute('playsinline', '');
+  video.style.display = 'none';
+  document.body.appendChild(video);
+
+  try {
+    window._dbg('calling getUserMedia...');
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    window._dbg('camera stream acquired', 'ok');
+    video.srcObject = stream;
+    await video.play();
+    window._dbg('video playing', 'ok');
+  } catch (e) {
+    window._dbg('camera error: ' + e.name + ' — ' + e.message, 'err');
+    statusEl.textContent = 'camera denied: ' + e.name;
+    loadingEl.style.display = 'none';
+    document.getElementById('overlay').style.display = 'flex';
+    return;
+  }
+
+  document.getElementById('load-msg').textContent = 'loading hand model...';
+
+  try {
+    window._dbg('checking Hands global: ' + typeof Hands);
+    window._dbg('checking Camera global: ' + typeof Camera);
+
+    if (typeof Hands === 'undefined') throw new Error('Hands global not defined — mediapipe script failed to load');
+    if (typeof Camera === 'undefined') throw new Error('Camera global not defined — camera_utils script failed to load');
+
+    const hands = new Hands({
+      locateFile: f => {
+        const url = `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`;
+        window._dbg('mediapipe locateFile: ' + f);
+        return url;
+      }
+    });
+    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.75, minTrackingConfidence: 0.65 });
+    hands.onResults(onResults);
+    window._dbg('Hands instance created', 'ok');
+
+    const mpCamera = new Camera(video, {
+      onFrame: async () => { await hands.send({ image: video }); },
+      width: 640, height: 480
+    });
+
+    window._dbg('starting mpCamera...');
+    mpCamera.start().then(() => {
+      window._dbg('mpCamera started', 'ok');
+      loadingEl.style.display = 'none';
+      statusEl.textContent = 'show your hand · pinch + drag to spin';
+    }).catch(e => {
+      window._dbg('mpCamera.start() failed: ' + e.message, 'err');
+    });
+  } catch(e) {
+    window._dbg('hand tracking setup error: ' + e.message, 'err');
+    statusEl.textContent = 'hand tracking failed — see debug panel';
+    loadingEl.style.display = 'none';
+  }
+});
+
+window._dbg('module fully initialised', 'ok');
+</script>
+</body>
+</html>
