@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hand spin</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; overflow: hidden; font-family: monospace; }
+  #container { position: relative; width: 100vw; height: 100vh; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  #ui { position: absolute; inset: 0; pointer-events: none; }
+
+  #status {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  #pinch-dot {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    transition: background 0.08s, box-shadow 0.08s;
+  }
+  #pinch-dot.active {
+    background: #7F77DD;
+    box-shadow: 0 0 10px #7F77DD88;
+  }
+
+  #cam-label {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.06em;
+  }
+  #cam-label span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #1D9E75;
+  }
+
+  #vel-bar {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  #vel-fill {
+    height: 100%;
+    width: 0%;
+    background: #7F77DD;
+    border-radius: 1px;
+    transition: width 0.08s;
+  }
+
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    pointer-events: all;
+  }
+  #overlay h1 {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+  }
+  #overlay button {
+    padding: 10px 28px;
+    background: rgba(127,119,221,0.12);
+    border: 1px solid rgba(127,119,221,0.4);
+    color: #AFA9EC;
+    font-size: 13px;
+    font-family: monospace;
+    letter-spacing: 0.06em;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  #overlay button:hover { background: rgba(127,119,221,0.22); }
+  #overlay p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 0.06em;
+  }
+
+  #loading {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    pointer-events: none;
+  }
+  #loading p { font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 0.08em; }
+  #loading-bar {
+    width: 120px;
+    height: 2px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  #loading-fill {
+    height: 100%;
+    width: 0%;
+    background: #7F77DD;
+    border-radius: 1px;
+    animation: loadpulse 1.4s ease-in-out infinite;
+  }
+  @keyframes loadpulse {
+    0%, 100% { width: 10%; }
+    50% { width: 80%; }
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <canvas id="canvas3d"></canvas>
+
+  <div id="ui">
+    <div id="cam-label"><span></span>cam</div>
+    <div id="pinch-dot"></div>
+    <div id="vel-bar"><div id="vel-fill"></div></div>
+    <div id="status">initialising...</div>
+
+    <div id="overlay">
+      <h1>hand spin</h1>
+      <button onclick="startTracking()">enable camera + hand tracking</button>
+      <p>camera feed hidden · pinch + drag to spin</p>
+    </div>
+
+    <div id="loading">
+      <p id="load-msg">loading hand model...</p>
+      <div id="loading-bar"><div id="loading-fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Note: put bartagainagainagain.glb in the same folder as this HTML file -->
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+const statusEl = document.getElementById('status');
+const pinchDot = document.getElementById('pinch-dot');
+const velFill = document.getElementById('vel-fill');
+
+// --- Three.js setup ---
+const canvas = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x0a0a0f, 1);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
+camera.position.set(0, 0, 3);
+
+function resize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Lighting
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
+const key = new THREE.DirectionalLight(0xffffff, 2.0);
+key.position.set(2, 3, 4);
+scene.add(key);
+const fill = new THREE.DirectionalLight(0x8888ff, 0.4);
+fill.position.set(-3, 0, -2);
+scene.add(fill);
+const rim = new THREE.DirectionalLight(0xAFA9EC, 0.8);
+rim.position.set(0, -2, -3);
+scene.add(rim);
+
+// Pivot for rotation
+const pivot = new THREE.Group();
+scene.add(pivot);
+
+// Load GLB
+const loader = new GLTFLoader();
+const draco = new DRACOLoader();
+draco.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
+loader.setDRACOLoader(draco);
+
+loader.load('./bartagainagainagain.glb', (gltf) => {
+  const model = gltf.scene;
+
+  // Centre and scale the model
+  const box = new THREE.Box3().setFromObject(model);
+  const centre = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = 2.0 / maxDim;
+  model.scale.setScalar(scale);
+  model.position.sub(centre.multiplyScalar(scale));
+
+  pivot.add(model);
+}, undefined, (err) => {
+  console.error('GLB load error:', err);
+  statusEl.textContent = 'glb load failed — make sure file is in the same folder';
+});
+
+// --- Rotation state ---
+let rotX = 0, rotY = 0;
+let velX = 0, velY = 0;
+const DAMPING = 0.92;
+const IDLE_SPEED = 0.004;
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (Math.abs(velX) < 0.0002 && Math.abs(velY) < 0.0002 && !isPinching) {
+    rotY += IDLE_SPEED;
+  } else {
+    rotX += velX;
+    rotY += velY;
+    velX *= DAMPING;
+    velY *= DAMPING;
+  }
+  pivot.rotation.x = rotX;
+  pivot.rotation.y = rotY;
+  renderer.render(scene, camera);
+}
+animate();
+
+// --- Hand tracking state ---
+let isPinching = false;
+let lastPinchX = 0;
+let lastPinchY = 0;
+let pinchVelX = 0;
+let pinchVelY = 0;
+const PINCH_THRESH = 0.07;
+
+function dist(a, b) {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+function onResults(results) {
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    if (isPinching) releasePinch();
+    pinchDot.classList.remove('active');
+    velFill.style.width = '0%';
+    statusEl.textContent = 'no hand detected · bring your hand into frame';
+    return;
+  }
+
+  const lm = results.multiHandLandmarks[0];
+  const thumbTip = lm[4];
+  const indexTip = lm[8];
+  const pinchDist = dist(thumbTip, indexTip);
+  const pinching = pinchDist < PINCH_THRESH;
+
+  // Use wrist as anchor point for drag
+  const wrist = lm[0];
+
+  if (pinching) {
+    pinchDot.classList.add('active');
+    if (!isPinching) {
+      isPinching = true;
+      lastPinchX = wrist.x;
+      lastPinchY = wrist.y;
+      pinchVelX = 0;
+      pinchVelY = 0;
+      velX = 0; velY = 0;
+    } else {
+      pinchVelX = (wrist.x - lastPinchX) * 6;
+      pinchVelY = (wrist.y - lastPinchY) * 6;
+      lastPinchX = wrist.x;
+      lastPinchY = wrist.y;
+      rotY += pinchVelX * Math.PI * 1.5;
+      rotX += pinchVelY * Math.PI * 1.5;
+    }
+    const spd = Math.sqrt(pinchVelX ** 2 + pinchVelY ** 2);
+    velFill.style.width = Math.min(spd * 500, 100) + '%';
+    statusEl.textContent = `pinching · drag to spin`;
+  } else {
+    pinchDot.classList.remove('active');
+    if (isPinching) releasePinch();
+    velFill.style.width = '0%';
+    statusEl.textContent = 'hand detected · pinch + drag to spin';
+  }
+}
+
+function releasePinch() {
+  velX = pinchVelY * Math.PI * 1.5;
+  velY = pinchVelX * Math.PI * 1.5;
+  isPinching = false;
+}
+
+// --- Start ---
+window.startTracking = async function() {
+  document.getElementById('overlay').style.display = 'none';
+  const loadingEl = document.getElementById('loading');
+  loadingEl.style.display = 'flex';
+  document.getElementById('load-msg').textContent = 'requesting camera...';
+  statusEl.textContent = 'requesting camera access...';
+
+  const video = document.createElement('video');
+  video.style.display = 'none';
+  document.body.appendChild(video);
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+    video.srcObject = stream;
+    video.play();
+  } catch(e) {
+    statusEl.textContent = 'camera access denied';
+    loadingEl.style.display = 'none';
+    document.getElementById('overlay').style.display = 'flex';
+    return;
+  }
+
+  document.getElementById('load-msg').textContent = 'loading hand model...';
+
+  const hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}` });
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.75,
+    minTrackingConfidence: 0.65
+  });
+  hands.onResults(onResults);
+
+  const mpCamera = new Camera(video, {
+    onFrame: async () => { await hands.send({ image: video }); },
+    width: 640,
+    height: 480
+  });
+
+  mpCamera.start().then(() => {
+    loadingEl.style.display = 'none';
+    statusEl.textContent = 'show your hand · pinch + drag to spin';
+  });
+}
+</script>
+
+<!-- MediaPipe (non-module scripts) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js"></script>
+
+</body>
+</html>
