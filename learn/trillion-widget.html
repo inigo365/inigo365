@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>$1 Trillion — inigo365</title>
+<link rel="icon" type="image/png" href="../images/icon.png">
+<link rel="stylesheet" href="shared/learn.css">
+<style>
+  @font-face {
+    font-family: 'RuneScape UF';
+    src: url('../../fonts/RuneScape-UF.woff2') format('woff2'),
+         url('../../fonts/RuneScape-UF.woff')  format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+  body { font-family: 'RuneScape UF', monospace; }
+  .friend-sprite { display: none !important; }
+  html {
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    background: transparent !important;
+    background-image: none !important;
+  }
+  body {
+    height: auto !important;
+    min-height: unset !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-bottom: 24px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+  }
+  .page {
+    min-height: unset !important;
+    padding-bottom: 16px !important;
+    padding-top: 2px;
+  }
+  /* learn.css .card is 18% opacity — too transparent over the background image.
+     Override to solid cream so content is readable while the glass grid shows
+     around and between the cards through the transparent body. */
+  .card {
+    background: rgba(253, 250, 245, 0.96) !important;
+  }
+
+  /* ── Ticker ─────────────────────────────────────────────────────── */
+  .trillion-ticker {
+    border: 2px solid var(--ink);
+    border-radius: 2px;
+    background: var(--ink);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .ticker-badge {
+    font-size: 0.9rem;
+    font-family: 'RuneScape UF', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    background: var(--green-terminal);
+    color: var(--ink);
+    padding: 3px 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .ticker-text {
+    font-size: 1.1rem;
+    color: #fff;
+    font-family: 'RuneScape UF', monospace;
+    flex: 1;
+  }
+  .ticker-text strong {
+    color: var(--green-terminal);
+  }
+  .ticker-sub {
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.55);
+    font-family: 'RuneScape UF', monospace;
+    white-space: nowrap;
+  }
+
+  /* ── Module cards ────────────────────────────────────────────────── */
+  .module-label {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .module-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Stat grid ───────────────────────────────────────────────────── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 420px) {
+    .stat-grid { grid-template-columns: 1fr; }
+  }
+  .stat-cell {
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 10px 12px;
+    background: rgba(253,250,245,0.5);
+  }
+  .stat-cell-label {
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .stat-cell-value {
+    font-size: 1.85rem;
+    color: var(--blue-deep);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .stat-cell-value.red   { color: var(--red); }
+  .stat-cell-value.green { color: var(--green); }
+  .stat-cell-commentary {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ── Stat block (full-width rows) ───────────────────────────────── */
+  .stat-block {
+    border-top: 1px solid var(--border);
+    padding: 12px 0;
+  }
+  .stat-block:last-child { padding-bottom: 0; }
+  .stat-block-label {
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .stat-block-value {
+    font-size: 2rem;
+    color: var(--blue-deep);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+  .stat-block-value.red { color: var(--red); }
+  .stat-block-commentary {
+    font-size: 1.05rem;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .stat-block-commentary strong {
+    color: var(--blue-deep);
+    font-weight: normal;
+  }
+
+  /* ── Bar ─────────────────────────────────────────────────────────── */
+  .bar-track {
+    background: var(--blue-light);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    height: 7px;
+    margin: 8px 0 7px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--blue-deep);
+  }
+  .bar-fill.red   { background: var(--red); }
+  .bar-fill.green { background: var(--green); }
+
+  /* ── Alternatives list ───────────────────────────────────────────── */
+  .alt-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+  }
+  .alt-row:first-child { padding-top: 0; }
+  .alt-row:last-child  { border-bottom: none; padding-bottom: 0; }
+  .alt-what {
+    font-size: 1.05rem;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .alt-what small {
+    display: block;
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+  .alt-cost {
+    font-size: 1.05rem;
+    color: var(--green);
+    white-space: nowrap;
+    text-align: right;
+    font-weight: normal;
+  }
+  .alt-note {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 4px;
+    font-size: 1rem;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  /* ── Action items (contrast module) ─────────────────────────────── */
+  .action-item {
+    border-left: 2px solid var(--red);
+    padding: 8px 0 8px 12px;
+    margin-bottom: 12px;
+  }
+  .action-item:last-of-type { margin-bottom: 0; }
+  .action-date {
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .action-headline {
+    font-size: 1.05rem;
+    color: var(--ink);
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .action-kicker {
+    font-size: 0.95rem;
+    color: var(--red);
+    line-height: 1.5;
+  }
+  .elon-quote {
+    margin: 10px 0 6px;
+    padding: 10px 14px;
+    background: rgba(185, 64, 64, 0.06);
+    border-left: 3px solid var(--red);
+    font-size: 1.05rem;
+    color: var(--ink);
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .elon-quote cite {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.82rem;
+    font-style: normal;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  .contrast-intro {
+    font-size: 1rem;
+    color: var(--ink);
+    line-height: 1.6;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .contrast-outro {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 14px;
+    font-size: 1rem;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  /* ── Footer ─────────────────────────────────────────────────────── */
+  .widget-footer {
+    font-size: 0.92rem;
+    color: var(--muted);
+    line-height: 1.8;
+    margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <nav class="learn-nav">
+    <a href="../go/index.html">← home</a>
+    <span class="sep">/</span>
+    <a href="index.html">← learn</a>
+    <span class="sep">/</span>
+    <span>$1 trillion</span>
+  </nav>
+
+  <div class="tool-header">
+    <h1 class="tool-title">$1 trillion</h1>
+    <p class="tool-subtitle">what elon musk's wealth actually means</p>
+  </div>
+
+  <!-- Live ticker -->
+  <div class="trillion-ticker">
+    <span class="ticker-badge">live</span>
+    <span class="ticker-text">Musk gain since you opened this page: <strong>$<span id="ticker">0</span></strong></span>
+    <span class="ticker-sub">$2,083,333 / sec</span>
+  </div>
+
+  <!-- MODULE 1: SCALE -->
+  <div class="card col gap-14" style="margin-bottom:14px">
+    <div class="module-label">Module 01 — Scale &nbsp;·&nbsp; $1,000,000,000,000</div>
+
+    <div class="stat-grid">
+      <div class="stat-cell">
+        <div class="stat-cell-label">On £31k/year</div>
+        <div class="stat-cell-value">32M yrs</div>
+        <div class="stat-cell-commentary">to earn the same. Dinosaurs went extinct 66 million years ago. You'd be halfway there.</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Spending $1M/day</div>
+        <div class="stat-cell-value">2,738 yrs</div>
+        <div class="stat-cell-commentary">to spend it all. You'd outlast the Roman Empire. Twice.</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Give every Brit</div>
+        <div class="stat-cell-value">£15,000</div>
+        <div class="stat-cell-commentary">each. All 67 million of them. And still have change.</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-cell-label">Give every human</div>
+        <div class="stat-cell-value">$125</div>
+        <div class="stat-cell-commentary">The global average daily income is about $18. So that's a week's wages for everyone alive.</div>
+      </div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-block-label">IPO day gain — June 12, 2026</div>
+      <div class="stat-block-value">+$180,000,000,000</div>
+      <div class="bar-track"><div class="bar-fill" style="width:18%"></div></div>
+      <div class="stat-block-commentary">
+        $180 billion in one trading day. At that rate, he earned <strong>your annual salary in 15 seconds.</strong>
+        The bar above shows $180B as a proportion of his total trillion. It is 18%. In one day.
+      </div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-block-label">Physical scale — $100 bills stacked</div>
+      <div class="stat-block-value">1,000 km</div>
+      <div class="stat-block-commentary">
+        That stack goes from London to Rome — <strong>straight up.</strong>
+        In $1 bills, the weight would be around 1,000 tonnes. About 200 adult elephants.
+      </div>
+    </div>
+
+    <div class="stat-block">
+      <div class="stat-block-label">Next richest person</div>
+      <div class="stat-block-value">~$200B</div>
+      <div class="stat-block-commentary">
+        Jeff Bezos, Larry Ellison, Bernard Arnault. Combined, the next three richest people on Earth
+        have roughly the same wealth as Musk added <strong>in a single afternoon.</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 2: ALTERNATIVES -->
+  <div class="card col gap-14" style="margin-bottom:14px">
+    <div class="module-label">Module 02 — What Else &nbsp;·&nbsp; Opportunity Cost</div>
+
+    <div class="alt-row">
+      <div class="alt-what">
+        End global hunger
+        <small>UN World Food Programme estimate for one year of crisis response</small>
+      </div>
+      <div class="alt-cost">~$45B / yr</div>
+    </div>
+    <div class="alt-row">
+      <div class="alt-what">
+        Universal clean water access
+        <small>One-off cost to give the 2 billion people without safe water access to it</small>
+      </div>
+      <div class="alt-cost">~$114B</div>
+    </div>
+    <div class="alt-row">
+      <div class="alt-what">
+        UK NHS — fully funded for 8 years
+        <small>Annual NHS England budget ~£130B. 8 years, no cuts, no crisis.</small>
+      </div>
+      <div class="alt-cost">~$1.3T total</div>
+    </div>
+    <div class="alt-row">
+      <div class="alt-what">
+        Global solar transition
+        <small>IEA estimate to achieve net-zero electricity by 2050 — cumulative infrastructure cost</small>
+      </div>
+      <div class="alt-cost">~$4T total</div>
+    </div>
+    <div class="alt-row">
+      <div class="alt-what">
+        Build 10 million social homes in the UK
+        <small>At ~£100k average build cost — enough to end the housing crisis outright</small>
+      </div>
+      <div class="alt-cost">~$1.3T</div>
+    </div>
+    <div class="alt-row">
+      <div class="alt-what">
+        Fund WHO global disease surveillance for a century
+        <small>Annual WHO budget ~$6.7B — pandemic early warning, everywhere, forever</small>
+      </div>
+      <div class="alt-cost">$670B / 100yr</div>
+    </div>
+    <div class="alt-row">
+      <div class="alt-what">
+        Fully fund global primary education
+        <small>UNESCO estimate to achieve universal primary education in low-income countries</small>
+      </div>
+      <div class="alt-cost">~$39B / yr</div>
+    </div>
+
+    <div class="alt-note">
+      None of these require Musk specifically to do anything. They require the political will
+      to tax wealth at a rate that existed within living memory. His trillion is a policy choice
+      as much as a personal achievement.
+    </div>
+  </div>
+
+  <!-- MODULE 3: THE CONTRAST -->
+  <div class="card col gap-14" style="margin-bottom:14px">
+    <div class="module-label">Module 03 — The Contrast &nbsp;·&nbsp; Actions / Harm</div>
+
+    <div class="contrast-intro">
+      While accumulating wealth at a rate no individual in history has matched,
+      Musk has used his platform — X, formerly Twitter, with 200M+ followers —
+      to incite, amplify, and legitimise political violence internationally.
+      A selection:
+    </div>
+
+    <div class="action-item">
+      <div class="action-date">4 August 2024 — UK-wide riots</div>
+      <div class="action-headline">As far-right mobs attacked mosques and hotels housing asylum seekers across England, Musk posted directly to his 190M+ followers:</div>
+      <blockquote class="elon-quote">
+        "Civil war is inevitable."
+        <cite>@elonmusk, 4 August 2024 — viewed over 100 million times</cite>
+      </blockquote>
+      <div class="action-kicker">UK Prime Minister Keir Starmer publicly criticised him by name. No correction or retraction was issued. The post remains live.</div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-date">January 2025 — UK grooming gangs inquiry</div>
+      <div class="action-headline">During a politically charged debate about the grooming gangs inquiry, Musk targeted the sitting Prime Minister directly:</div>
+      <blockquote class="elon-quote">
+        "Starmer is a rape gangs enabler."
+        <cite>@elonmusk — posted repeatedly across multiple days in January 2025</cite>
+      </blockquote>
+      <blockquote class="elon-quote">
+        "Is the UK Prime Minister complicit in the rape of Britain?"
+        <cite>@elonmusk, January 2025</cite>
+      </blockquote>
+      <div class="action-kicker">The posts amplified far-right disinformation at scale and were directly cited by those planning further unrest. Cabinet ministers described them as "dangerous interference" in domestic politics.</div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-date">January 2025 — German federal election</div>
+      <div class="action-headline">Musk openly campaigned for the AfD — a party whose leaders have described the Nazi SS as "not all bad" and called for the end of Germany's post-war democratic consensus — and hosted their leader in a live X Spaces broadcast:</div>
+      <blockquote class="elon-quote">
+        "Only the AfD can save Germany."
+        <cite>@elonmusk, January 2025 — ahead of the German federal election</cite>
+      </blockquote>
+      <div class="action-kicker">Multiple EU governments opened formal investigations. The European Commission described the interference as "unprecedented." The AfD came second in the subsequent election.</div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-date">June 2025 — Belfast, Northern Ireland</div>
+      <div class="action-headline">During rioting in Belfast, Musk amplified far-right accounts and posted directly calling for the UK government to fall — including posts targeting Anas Sarwar, the Scottish Labour leader, with content that police described as incitement.</div>
+      <blockquote class="elon-quote">
+        "The British government must fall. They are traitors to their own people."
+        <cite>@elonmusk, June 2025</cite>
+      </blockquote>
+      <div class="action-kicker">Community organisations and journalists on the ground attributed the accelerated spread of disinformation directly to X's algorithmic amplification under his ownership. Police made dozens of arrests.</div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-date">2025 — United States, DOGE</div>
+      <div class="action-headline">As unofficial head of the "Department of Government Efficiency," Musk oversaw the dismantling of USAID, the CDC's global health programmes, and hundreds of federal programmes — with no elected mandate and little legal authority:</div>
+      <blockquote class="elon-quote">
+        "USAID is a criminal organisation. Time for it to die."
+        <cite>@elonmusk, February 2025</cite>
+      </blockquote>
+      <div class="action-kicker">Cuts to USAID's food, medicine, and disease-response programmes are estimated by aid organisations to result in hundreds of thousands of preventable deaths globally. Many cuts were later ruled unlawful by US federal courts.</div>
+    </div>
+
+    <div class="action-item">
+      <div class="action-date">Ongoing — X / Twitter</div>
+      <div class="action-headline">Since acquiring Twitter in 2022 for $44B, Musk has reinstated thousands of banned far-right accounts, gutted trust and safety teams by over 80%, and restructured the algorithm to preferentially boost his own posts.</div>
+      <div class="action-kicker">Hate speech, antisemitism, and harassment metrics on the platform increased sharply in the year following the acquisition, per multiple independent studies including from the EU Digital Services Act monitoring body. Advertisers fled. Users stayed.</div>
+    </div>
+
+    <div class="contrast-outro">
+      This is a person with a trillion dollars, no democratic accountability, ownership of a
+      global communications platform, significant influence over a sitting US administration,
+      and a stated interest in shaping the political future of multiple countries he does not live in.
+      <br><br>
+      The wealth and the harm are not separate stories.
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <p class="widget-footer" style="margin:0">
+      Sources: UN WFP, IEA, UNESCO, WHO, USAID impact estimates, UK ONS, NHS England.<br>
+      Wealth figures: Bloomberg Billionaires Index, June 2026. IPO-day gain rate used for ticker.
+    </p>
+  </div>
+
+</div>
+
+<script>
+  const start = Date.now();
+  const perMs = 2083333 / 1000;
+  function update() {
+    const gained = Math.floor((Date.now() - start) * perMs);
+    document.getElementById('ticker').textContent = gained.toLocaleString('en-GB');
+    requestAnimationFrame(update);
+  }
+  update();
+</script>
+<script>
+  if (window.self !== window.top) {
+    document.body.classList.add('in-iframe');
+  }
+</script>
+
+</body>
+</html>
