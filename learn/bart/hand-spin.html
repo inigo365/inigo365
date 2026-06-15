@@ -53,72 +53,71 @@
   #hand-overlay { pointer-events: none; }
   #ui { position: absolute; inset: 0; pointer-events: none; }
 
-  /* Status pill — opaque box so text is always readable over the canvas */
+  /* ── All UI boxes use the same cream card styling as trillion-widget ── */
   #status {
     position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-    font-size: 15px; color: rgba(255,255,255,0.7); letter-spacing: 0.08em; white-space: nowrap;
+    font-size: 15px; color: var(--ink); letter-spacing: 0.08em; white-space: nowrap;
     font-family: 'RuneScape UF', monospace;
-    background: rgba(10,10,15,0.78); border: 1px solid rgba(127,119,221,0.25);
+    background: rgba(253,250,245,0.96); border: 1px solid #1A3A5C;
     padding: 5px 14px; border-radius: 2px;
   }
   #pinch-dot {
     position: absolute; top: 18px; right: 18px; width: 10px; height: 10px;
-    border-radius: 50%; background: rgba(255,255,255,0.12); transition: background 0.08s, box-shadow 0.08s;
+    border-radius: 50%; background: rgba(26,58,92,0.2); transition: background 0.08s, box-shadow 0.08s;
   }
-  #pinch-dot.active { background: #7F77DD; box-shadow: 0 0 10px #7F77DD88; }
+  #pinch-dot.active { background: var(--blue-deep); box-shadow: 0 0 10px rgba(74,127,212,0.5); }
   #cam-label {
     position: absolute; top: 18px; left: 18px; display: flex; align-items: center;
-    gap: 6px; font-size: 13px; color: rgba(255,255,255,0.5); letter-spacing: 0.06em;
+    gap: 6px; font-size: 13px; color: var(--ink); letter-spacing: 0.06em;
     font-family: 'RuneScape UF', monospace;
-    background: rgba(10,10,15,0.6); padding: 4px 10px; border-radius: 2px;
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(253,250,245,0.96); padding: 4px 10px; border-radius: 2px;
+    border: 1px solid #1A3A5C;
   }
   #cam-label span { width: 7px; height: 7px; border-radius: 50%; background: #1D9E75; flex-shrink: 0; }
   #cam-off-btn {
     position: absolute; top: 52px; left: 18px; display: none;
     font-size: 13px; font-family: 'RuneScape UF', monospace;
-    color: rgba(255,120,120,0.75); letter-spacing: 0.06em;
-    background: rgba(10,10,15,0.75); border: 1px solid rgba(185,64,64,0.45);
+    color: var(--red); letter-spacing: 0.06em;
+    background: rgba(253,250,245,0.96); border: 1px solid rgba(185,64,64,0.55);
     padding: 4px 12px; border-radius: 2px;
     cursor: url('../../images/cursor/cursor-hover.png'), pointer;
     pointer-events: all; transition: background 0.15s;
   }
-  #cam-off-btn:hover { background: rgba(185,64,64,0.22); }
+  #cam-off-btn:hover { background: rgba(185,64,64,0.08); }
   #vel-bar {
     position: absolute; top: 24px; left: 50%; transform: translateX(-50%);
-    width: 100px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; overflow: hidden;
+    width: 100px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden;
   }
-  #vel-fill { height: 100%; width: 0%; background: #7F77DD; border-radius: 1px; transition: width 0.08s; }
+  #vel-fill { height: 100%; width: 0%; background: var(--blue-deep); border-radius: 1px; transition: width 0.08s; }
 
-  /* Overlay (before camera starts) — centred, full-area flex container */
+  /* Overlay — full-area flex, card box holds the content */
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; pointer-events: all;
   }
-  /* Inner card box — the opaque box holding the overlay text */
   #overlay-card {
     display: flex; flex-direction: column; align-items: center; gap: 18px;
-    background: rgba(10,10,15,0.92);
-    border: 2px solid rgba(127,119,221,0.35);
+    background: rgba(253,250,245,0.96);
+    border: 2px solid #1A3A5C;
     border-radius: 2px;
     padding: 36px 48px;
     max-width: 420px; width: 90%; text-align: center;
   }
   #overlay-card h1 {
-    font-size: 1.6rem; color: rgba(255,255,255,0.85); font-weight: 400;
+    font-size: 1.6rem; color: var(--ink); font-weight: 400;
     letter-spacing: 0.12em; font-family: 'RuneScape UF', monospace;
   }
   #overlay-card button {
     padding: 12px 32px;
-    background: rgba(127,119,221,0.15); border: 1px solid rgba(127,119,221,0.5);
-    color: #AFA9EC; font-size: 1rem; font-family: 'RuneScape UF', monospace;
+    background: var(--blue-deep); border: 2px solid #1A3A5C;
+    color: #fff; font-size: 1rem; font-family: 'RuneScape UF', monospace;
     letter-spacing: 0.06em; border-radius: 2px;
     cursor: url('../../images/cursor/cursor-hover.png'), pointer;
-    transition: background 0.15s;
+    transition: opacity 0.15s;
   }
-  #overlay-card button:hover { background: rgba(127,119,221,0.28); }
+  #overlay-card button:hover { opacity: 0.85; }
   #overlay-card p {
-    font-size: 0.88rem; color: rgba(255,255,255,0.35); letter-spacing: 0.06em;
+    font-size: 0.88rem; color: var(--muted); letter-spacing: 0.06em;
     font-family: 'RuneScape UF', monospace; line-height: 1.5;
   }
 
@@ -129,24 +128,24 @@
   }
   #loading-card {
     display: flex; flex-direction: column; align-items: center; gap: 14px;
-    background: rgba(10,10,15,0.92); border: 2px solid rgba(127,119,221,0.35);
+    background: rgba(253,250,245,0.96); border: 2px solid #1A3A5C;
     border-radius: 2px; padding: 32px 48px;
   }
-  #loading p { font-size: 1rem; color: rgba(255,255,255,0.55); letter-spacing: 0.08em; font-family: 'RuneScape UF', monospace; }
-  #loading-bar { width: 120px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; overflow: hidden; }
-  #loading-fill { height: 100%; background: #7F77DD; border-radius: 1px; animation: loadpulse 1.4s ease-in-out infinite; }
+  #loading p { font-size: 1rem; color: var(--ink); letter-spacing: 0.08em; font-family: 'RuneScape UF', monospace; }
+  #loading-bar { width: 120px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+  #loading-fill { height: 100%; background: var(--blue-deep); border-radius: 1px; animation: loadpulse 1.4s ease-in-out infinite; }
   @keyframes loadpulse { 0%,100%{width:10%} 50%{width:80%} }
 
-  /* Debug panel */
+  /* Debug panel (internal, no toggle button) */
   #dbg {
     position: absolute; bottom: 60px; left: 12px; right: 12px; max-height: 180px;
-    overflow-y: auto; background: rgba(0,0,0,0.85); border: 1px solid rgba(127,119,221,0.25);
-    border-radius: 2px; padding: 8px 10px; font-size: 10px; color: #9b9; line-height: 1.6;
+    overflow-y: auto; background: rgba(253,250,245,0.96); border: 1px solid #1A3A5C;
+    border-radius: 2px; padding: 8px 10px; font-size: 10px; color: var(--ink); line-height: 1.6;
     pointer-events: all; display: none; z-index: 999; font-family: monospace;
   }
-  #dbg .err { color: #f77; }
-  #dbg .warn { color: #fa7; }
-  #dbg .ok { color: #7f7; }
+  #dbg .err { color: var(--red); }
+  #dbg .warn { color: #b97a00; }
+  #dbg .ok { color: var(--green); }
 </style>
 </head>
 <body>
@@ -281,10 +280,10 @@ const MOMENTUM_SCALE = 0.6; // how much pinch velocity carries over on release
 
 // --- Three.js setup ---
 const canvas = document.getElementById('canvas3d');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x0a0a0f, 1);
+renderer.setClearColor(0x000000, 0); // fully transparent — rack glass shows through
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
@@ -378,8 +377,8 @@ function drawHandOverlay() {
   const lx = i => (1 - lm[i].x) * W;
   const ly = i => lm[i].y * H;
 
-  // skeleton lines
-  ctx2d.strokeStyle = isPinching ? 'rgba(127,119,221,0.55)' : 'rgba(255,255,255,0.18)';
+  // skeleton lines — dark ink on light glass background
+  ctx2d.strokeStyle = isPinching ? 'rgba(74,127,212,0.7)' : 'rgba(26,58,92,0.35)';
   ctx2d.lineWidth = 1.5;
   ctx2d.lineCap = 'round';
   for (const [a, b] of HAND_CONNECTIONS) {
@@ -396,11 +395,11 @@ function drawHandOverlay() {
     ctx2d.beginPath();
     ctx2d.arc(lx(i), ly(i), isTip ? 4 : 2.5, 0, Math.PI * 2);
     if (isPinching && isPinchFinger) {
-      ctx2d.fillStyle = '#7F77DD';
-      ctx2d.shadowColor = '#7F77DD';
+      ctx2d.fillStyle = '#4A7FD4';
+      ctx2d.shadowColor = '#4A7FD4';
       ctx2d.shadowBlur = 10;
     } else {
-      ctx2d.fillStyle = isTip ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)';
+      ctx2d.fillStyle = isTip ? 'rgba(26,58,92,0.8)' : 'rgba(26,58,92,0.4)';
       ctx2d.shadowBlur = 0;
     }
     ctx2d.fill();
@@ -413,7 +412,7 @@ function drawHandOverlay() {
     const my = (ly(4) + ly(8)) / 2;
     ctx2d.beginPath();
     ctx2d.arc(mx, my, 6, 0, Math.PI * 2);
-    ctx2d.strokeStyle = 'rgba(127,119,221,0.9)';
+    ctx2d.strokeStyle = 'rgba(74,127,212,0.9)';
     ctx2d.lineWidth = 1.5;
     ctx2d.stroke();
   }
