@@ -38,73 +38,115 @@
     height: 480px !important;
     overflow: hidden !important;
   }
-  body.in-iframe #container {
-    width: 100% !important;
-    height: 480px !important;
-  }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { overflow: hidden; font-family: 'RuneScape UF', monospace; }
-  #container { position: relative; width: 100vw; height: 100vh; }
+
+  /* Container: canvas provides its own dark WebGL background;
+     body is transparent so the rack glass shows in the drawer padding */
+  #container {
+    position: relative; width: 100%; height: 100vh;
+  }
+  body.in-iframe #container { height: 480px !important; }
+
   canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
   #hand-overlay { pointer-events: none; }
   #ui { position: absolute; inset: 0; pointer-events: none; }
+
+  /* Status pill — opaque box so text is always readable over the canvas */
   #status {
-    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
-    font-size: 12px; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; white-space: nowrap;
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    font-size: 15px; color: rgba(255,255,255,0.7); letter-spacing: 0.08em; white-space: nowrap;
+    font-family: 'RuneScape UF', monospace;
+    background: rgba(10,10,15,0.78); border: 1px solid rgba(127,119,221,0.25);
+    padding: 5px 14px; border-radius: 2px;
   }
   #pinch-dot {
-    position: absolute; top: 20px; right: 20px; width: 10px; height: 10px;
+    position: absolute; top: 18px; right: 18px; width: 10px; height: 10px;
     border-radius: 50%; background: rgba(255,255,255,0.12); transition: background 0.08s, box-shadow 0.08s;
   }
   #pinch-dot.active { background: #7F77DD; box-shadow: 0 0 10px #7F77DD88; }
   #cam-label {
-    position: absolute; top: 20px; left: 20px; display: flex; align-items: center;
-    gap: 6px; font-size: 11px; color: rgba(255,255,255,0.25); letter-spacing: 0.06em;
+    position: absolute; top: 18px; left: 18px; display: flex; align-items: center;
+    gap: 6px; font-size: 13px; color: rgba(255,255,255,0.5); letter-spacing: 0.06em;
+    font-family: 'RuneScape UF', monospace;
+    background: rgba(10,10,15,0.6); padding: 4px 10px; border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.08);
   }
-  #cam-label span { width: 7px; height: 7px; border-radius: 50%; background: #1D9E75; }
+  #cam-label span { width: 7px; height: 7px; border-radius: 50%; background: #1D9E75; flex-shrink: 0; }
+  #cam-off-btn {
+    position: absolute; top: 52px; left: 18px; display: none;
+    font-size: 13px; font-family: 'RuneScape UF', monospace;
+    color: rgba(255,120,120,0.75); letter-spacing: 0.06em;
+    background: rgba(10,10,15,0.75); border: 1px solid rgba(185,64,64,0.45);
+    padding: 4px 12px; border-radius: 2px;
+    cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+    pointer-events: all; transition: background 0.15s;
+  }
+  #cam-off-btn:hover { background: rgba(185,64,64,0.22); }
   #vel-bar {
-    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-    width: 100px; height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; overflow: hidden;
+    position: absolute; top: 24px; left: 50%; transform: translateX(-50%);
+    width: 100px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; overflow: hidden;
   }
   #vel-fill { height: 100%; width: 0%; background: #7F77DD; border-radius: 1px; transition: width 0.08s; }
+
+  /* Overlay (before camera starts) — centred, full-area flex container */
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 14px; pointer-events: all;
+    align-items: center; justify-content: center; pointer-events: all;
   }
-  #overlay h1 { font-size: 13px; color: rgba(255,255,255,0.4); font-weight: 400; letter-spacing: 0.12em; }
-  #overlay button {
-    padding: 10px 28px; background: rgba(127,119,221,0.12); border: 1px solid rgba(127,119,221,0.4);
-    color: #AFA9EC; font-size: 13px; font-family: monospace; letter-spacing: 0.06em;
-    border-radius: 6px; cursor: pointer; transition: background 0.15s;
+  /* Inner card box — the opaque box holding the overlay text */
+  #overlay-card {
+    display: flex; flex-direction: column; align-items: center; gap: 18px;
+    background: rgba(10,10,15,0.92);
+    border: 2px solid rgba(127,119,221,0.35);
+    border-radius: 2px;
+    padding: 36px 48px;
+    max-width: 420px; width: 90%; text-align: center;
   }
-  #overlay button:hover { background: rgba(127,119,221,0.22); }
-  #overlay p { font-size: 11px; color: rgba(255,255,255,0.2); letter-spacing: 0.06em; }
+  #overlay-card h1 {
+    font-size: 1.6rem; color: rgba(255,255,255,0.85); font-weight: 400;
+    letter-spacing: 0.12em; font-family: 'RuneScape UF', monospace;
+  }
+  #overlay-card button {
+    padding: 12px 32px;
+    background: rgba(127,119,221,0.15); border: 1px solid rgba(127,119,221,0.5);
+    color: #AFA9EC; font-size: 1rem; font-family: 'RuneScape UF', monospace;
+    letter-spacing: 0.06em; border-radius: 2px;
+    cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+    transition: background 0.15s;
+  }
+  #overlay-card button:hover { background: rgba(127,119,221,0.28); }
+  #overlay-card p {
+    font-size: 0.88rem; color: rgba(255,255,255,0.35); letter-spacing: 0.06em;
+    font-family: 'RuneScape UF', monospace; line-height: 1.5;
+  }
+
+  /* Loading card */
   #loading {
     position: absolute; inset: 0; display: none; flex-direction: column;
-    align-items: center; justify-content: center; gap: 10px; pointer-events: none;
+    align-items: center; justify-content: center; gap: 14px; pointer-events: none;
   }
-  #loading p { font-size: 12px; color: rgba(255,255,255,0.3); letter-spacing: 0.08em; }
-  #loading-bar { width: 120px; height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; overflow: hidden; }
+  #loading-card {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    background: rgba(10,10,15,0.92); border: 2px solid rgba(127,119,221,0.35);
+    border-radius: 2px; padding: 32px 48px;
+  }
+  #loading p { font-size: 1rem; color: rgba(255,255,255,0.55); letter-spacing: 0.08em; font-family: 'RuneScape UF', monospace; }
+  #loading-bar { width: 120px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 1px; overflow: hidden; }
   #loading-fill { height: 100%; background: #7F77DD; border-radius: 1px; animation: loadpulse 1.4s ease-in-out infinite; }
   @keyframes loadpulse { 0%,100%{width:10%} 50%{width:80%} }
 
-  /* debug panel */
+  /* Debug panel */
   #dbg {
     position: absolute; bottom: 60px; left: 12px; right: 12px; max-height: 180px;
-    overflow-y: auto; background: rgba(0,0,0,0.72); border: 1px solid rgba(127,119,221,0.25);
-    border-radius: 6px; padding: 8px 10px; font-size: 10px; color: #9b9; line-height: 1.6;
-    pointer-events: all; display: none; z-index: 999;
+    overflow-y: auto; background: rgba(0,0,0,0.85); border: 1px solid rgba(127,119,221,0.25);
+    border-radius: 2px; padding: 8px 10px; font-size: 10px; color: #9b9; line-height: 1.6;
+    pointer-events: all; display: none; z-index: 999; font-family: monospace;
   }
   #dbg .err { color: #f77; }
   #dbg .warn { color: #fa7; }
   #dbg .ok { color: #7f7; }
-  #dbg-toggle {
-    position: absolute; bottom: 48px; right: 12px; font-size: 10px;
-    color: rgba(255,255,255,0.25); cursor: pointer; pointer-events: all;
-    letter-spacing: 0.06em; z-index: 1000; padding: 4px 8px;
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
-  }
 </style>
 </head>
 <body>
@@ -113,19 +155,23 @@
   <canvas id="hand-overlay"></canvas>
   <div id="ui">
     <div id="cam-label"><span></span>cam</div>
+    <button id="cam-off-btn">■ stop camera</button>
     <div id="pinch-dot"></div>
     <div id="vel-bar"><div id="vel-fill"></div></div>
     <div id="status">loading model...</div>
     <div id="overlay">
-      <h1>hand spin</h1>
-      <button id="start-btn">enable camera + hand tracking</button>
-      <p>camera feed hidden · pinch + drag to spin</p>
+      <div id="overlay-card">
+        <h1>hand spin</h1>
+        <button id="start-btn">enable camera + hand tracking</button>
+        <p>camera feed hidden · pinch + drag to spin</p>
+      </div>
     </div>
     <div id="loading">
-      <p id="load-msg">loading...</p>
-      <div id="loading-bar"><div id="loading-fill"></div></div>
+      <div id="loading-card">
+        <p id="load-msg">loading...</p>
+        <div id="loading-bar"><div id="loading-fill"></div></div>
+      </div>
     </div>
-    <div id="dbg-toggle">debug</div>
     <div id="dbg"></div>
   </div>
 </div>
@@ -144,10 +190,6 @@
 <script>
 (function(){
   const dbgEl = document.getElementById('dbg');
-  const toggle = document.getElementById('dbg-toggle');
-  toggle.addEventListener('click', () => {
-    dbgEl.style.display = dbgEl.style.display === 'none' ? 'block' : 'none';
-  });
 
   window._dbg = function(msg, type) {
     const line = document.createElement('div');
@@ -213,6 +255,11 @@ try {
 const statusEl = document.getElementById('status');
 const pinchDot = document.getElementById('pinch-dot');
 const velFill = document.getElementById('vel-fill');
+
+// --- camera refs for the stop-camera button ---
+let streamRef = null;
+let videoRef  = null;
+let mpCameraRef = null;
 
 // --- rotation state declared at module top level, no TDZ issue ---
 let isPinching = false;
@@ -281,7 +328,7 @@ gltfLoader.load('./bartagainagainagain.glb', (gltf) => {
   const centre = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
   const maxDim = Math.max(size.x, size.y, size.z);
-  const scale = 2.0 / maxDim;
+  const scale = 1.6 / maxDim;
   model.scale.setScalar(scale);
   model.position.sub(centre.multiplyScalar(scale));
   pivot.add(model);
@@ -475,6 +522,8 @@ document.getElementById('start-btn').addEventListener('click', async () => {
     window._dbg('calling getUserMedia...');
     const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
     window._dbg('camera stream acquired', 'ok');
+    streamRef = stream;
+    videoRef  = video;
     video.srcObject = stream;
     await video.play();
     window._dbg('video playing', 'ok');
@@ -511,11 +560,13 @@ document.getElementById('start-btn').addEventListener('click', async () => {
       width: 640, height: 480
     });
 
+    mpCameraRef = mpCamera;
     window._dbg('starting mpCamera...');
     mpCamera.start().then(() => {
       window._dbg('mpCamera started', 'ok');
       loadingEl.style.display = 'none';
       statusEl.textContent = 'show your hand · pinch + drag to spin';
+      document.getElementById('cam-off-btn').style.display = 'block';
     }).catch(e => {
       window._dbg('mpCamera.start() failed: ' + e.message, 'err');
     });
@@ -524,6 +575,34 @@ document.getElementById('start-btn').addEventListener('click', async () => {
     statusEl.textContent = 'hand tracking failed — see debug panel';
     loadingEl.style.display = 'none';
   }
+});
+
+// --- Stop camera button ---
+document.getElementById('cam-off-btn').addEventListener('click', () => {
+  window._dbg('stopping camera');
+  if (streamRef) {
+    streamRef.getTracks().forEach(t => t.stop());
+    streamRef = null;
+  }
+  if (mpCameraRef && typeof mpCameraRef.stop === 'function') {
+    try { mpCameraRef.stop(); } catch(e) {}
+    mpCameraRef = null;
+  }
+  if (videoRef) {
+    videoRef.srcObject = null;
+    videoRef.remove();
+    videoRef = null;
+  }
+  // reset tracking state
+  lastHandLandmarks = null;
+  isPinching = false;
+  velX = 0; velY = 0;
+  ctx2d.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  pinchDot.classList.remove('active');
+  velFill.style.width = '0%';
+  statusEl.textContent = 'loading model...';
+  document.getElementById('cam-off-btn').style.display = 'none';
+  document.getElementById('overlay').style.display = 'flex';
 });
 
 window._dbg('module fully initialised', 'ok');
