@@ -35,7 +35,7 @@
      ResizeObserver in learn/index.html to sync correctly.
      100vh in an iframe causes a feedback loop. */
   body.in-iframe {
-    height: 560px !important;
+    height: 480px !important;
     overflow: hidden !important;
   }
 
@@ -47,7 +47,7 @@
   #container {
     position: relative; width: 100%; height: 100vh;
   }
-  body.in-iframe #container { height: 560px !important; }
+  body.in-iframe #container { height: 480px !important; }
 
   canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
   #hand-overlay { pointer-events: none; }
@@ -86,10 +86,9 @@
   #cam-off-btn:hover { background: rgba(185,64,64,0.08); }
   #vel-bar { display: none; }
 
-  /* Overlay — card pinned to bottom, model fills the upper portion */
   #overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: flex-end; padding-bottom: 24px;
+    align-items: center; justify-content: center;
     pointer-events: all;
   }
   #overlay-card {
@@ -328,7 +327,6 @@ gltfLoader.load('./bartagainagainagain.glb', (gltf) => {
   model.scale.setScalar(scale);
   model.position.sub(centre.multiplyScalar(scale));
   pivot.add(model);
-  pivot.position.y = 0.4; // shift model into upper portion of canvas
   statusEl.textContent = 'show your hand · pinch + drag to spin';
 }, (xhr) => {
   if (xhr.total) window._dbg(`GLB progress: ${Math.round(xhr.loaded/xhr.total*100)}%`);
