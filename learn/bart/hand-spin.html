@@ -124,6 +124,43 @@
     font-family: 'RuneScape UF', monospace; line-height: 1.5;
   }
 
+  /* ── Object picker (GLB selector) ──────────────────────────────── */
+  #object-picker-btn {
+    font-family: 'RuneScape UF', monospace;
+    font-size: 13px; color: var(--ink); letter-spacing: 0.06em;
+    background: rgba(253,250,245,0.96); border: 1px solid var(--border);
+    border-radius: 2px; padding: 5px 14px;
+    pointer-events: all;
+    cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+    transition: background 0.15s;
+  }
+  #object-picker-btn:hover { background: rgba(74,127,212,0.08); }
+  /* The standalone instance (direct child of #ui) is styled to match
+     #status exactly — same pill, just stacked above it — and stays
+     hidden until the camera/hand-tracking session is actually live.
+     The one inside #overlay-card stays in normal flex flow with the
+     rest of the card's contents and keeps the smaller shared style. */
+  #ui > #object-picker-btn {
+    display: none;
+    position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%);
+    font-size: 15px; letter-spacing: 0.08em; white-space: nowrap;
+  }
+  #object-picker-menu {
+    position: fixed; display: none; flex-direction: column;
+    background: rgba(253,250,245,0.96); border: 2px solid #1A3A5C;
+    border-radius: 2px; overflow: hidden; z-index: 1001; min-width: 160px;
+  }
+  #object-picker-menu.open { display: flex; }
+  .object-picker-row {
+    padding: 8px 16px; font-family: 'RuneScape UF', monospace;
+    font-size: 13px; color: var(--ink); letter-spacing: 0.06em;
+    cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+    pointer-events: all; border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .object-picker-row:last-child { border-bottom: none; }
+  .object-picker-row:hover { background: rgba(74,127,212,0.10); }
+
   /* Loading card */
   #loading {
     position: absolute; inset: 0; display: none; flex-direction: column;
@@ -161,9 +198,11 @@
     <div id="pinch-dot"></div>
     <div id="vel-bar"><div id="vel-fill"></div></div>
     <div id="status">loading model...</div>
+    <button id="object-picker-btn" type="button">object: bart</button>
     <div id="overlay">
       <div id="overlay-card">
         <h1>object viewer</h1>
+        <button id="object-picker-btn" type="button">object: bart</button>
         <button id="start-btn">enable camera + hand tracking</button>
         <p>camera feed hidden · pinch + drag to spin</p>
       </div>
@@ -175,6 +214,7 @@
       </div>
     </div>
     <div id="dbg"></div>
+    <div id="object-picker-menu"></div>
   </div>
 </div>
 
@@ -228,6 +268,14 @@
 <script type="module">
 window._dbg('module script started');
 
+let currentGlb = './bartagainagainagain.glb';
+
+const GLB_FILES = [
+  { label: 'bart', src: './bartagainagainagain.glb' },
+  { label: 'brain', src: './brain.glb' },
+  { label: 'friend', src: './friend.glb' },
+];
+
 let THREE, GLTFLoader, DRACOLoader;
 try {
   const threeModule = await import('https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js');
@@ -257,6 +305,7 @@ try {
 const statusEl = document.getElementById('status');
 const pinchDot = document.getElementById('pinch-dot');
 const velFill = document.getElementById('vel-fill');
+const uiPickerBtn = document.querySelector('#ui > #object-picker-btn');
 
 // --- camera refs for the stop-camera button ---
 let streamRef = null;
@@ -322,25 +371,35 @@ if (DRACOLoader) {
   window._dbg('Skipping DRACOLoader (will fail if GLB uses Draco compression)', 'warn');
 }
 
-window._dbg('Loading GLB: bartagainagainagain.glb');
-gltfLoader.load('./bartagainagainagain.glb', (gltf) => {
-  window._dbg('GLB loaded successfully', 'ok');
-  const model = gltf.scene;
-  const box = new THREE.Box3().setFromObject(model);
-  const centre = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3());
-  const maxDim = Math.max(size.x, size.y, size.z);
-  const scale = 1.6 / maxDim;
-  model.scale.setScalar(scale);
-  model.position.sub(centre.multiplyScalar(scale));
-  pivot.add(model);
-  statusEl.textContent = 'show your hand · pinch + drag to spin';
-}, (xhr) => {
-  if (xhr.total) window._dbg(`GLB progress: ${Math.round(xhr.loaded/xhr.total*100)}%`);
-}, (err) => {
-  window._dbg('GLB load error: ' + (err.message || err), 'err');
-  statusEl.textContent = 'glb load failed — is the file in the same folder?';
-});
+function loadModel(src) {
+  window._dbg('Loading GLB: ' + src);
+  statusEl.textContent = 'loading object...';
+  // clear out whatever's currently on the pivot before loading the next one
+  while (pivot.children.length) {
+    pivot.remove(pivot.children[0]);
+  }
+  gltfLoader.load(src, (gltf) => {
+    window._dbg('GLB loaded successfully', 'ok');
+    const model = gltf.scene;
+    const box = new THREE.Box3().setFromObject(model);
+    const centre = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 1.6 / maxDim;
+    if (src.includes('friend.glb')) model.scale.setScalar(scale * 0.8);
+    else model.scale.setScalar(scale);
+    model.position.sub(centre.multiplyScalar(model.scale.x));
+    pivot.add(model);
+    statusEl.textContent = 'show your hand · pinch + drag to spin';
+  }, (xhr) => {
+    if (xhr.total) window._dbg(`GLB progress: ${Math.round(xhr.loaded/xhr.total*100)}%`);
+  }, (err) => {
+    window._dbg('GLB load error: ' + (err.message || err), 'err');
+    statusEl.textContent = 'glb load failed — is the file in the same folder?';
+  });
+}
+
+loadModel(currentGlb);
 
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -569,6 +628,7 @@ document.getElementById('start-btn').addEventListener('click', async () => {
       loadingEl.style.display = 'none';
       statusEl.textContent = 'show your hand · pinch + drag to spin';
       document.getElementById('cam-off-btn').style.display = 'block';
+      uiPickerBtn.style.display = 'block';
     }).catch(e => {
       window._dbg('mpCamera.start() failed: ' + e.message, 'err');
     });
@@ -604,8 +664,69 @@ document.getElementById('cam-off-btn').addEventListener('click', () => {
   velFill.style.width = '0%';
   statusEl.textContent = 'loading model...';
   document.getElementById('cam-off-btn').style.display = 'none';
+  uiPickerBtn.style.display = 'none';
   document.getElementById('overlay').style.display = 'flex';
 });
+
+// --- Object picker (GLB selector) ---
+const objectPickerBtns = document.querySelectorAll('#object-picker-btn');
+const objectPickerMenu = document.getElementById('object-picker-menu');
+
+function updateObjectPickerLabel(label) {
+  objectPickerBtns.forEach(btn => { btn.textContent = 'object: ' + label; });
+}
+
+function closeObjectPickerMenu() {
+  objectPickerMenu.classList.remove('open');
+}
+
+function openObjectPickerMenu(btn) {
+  objectPickerMenu.classList.add('open');
+  const rect = btn.getBoundingClientRect();
+  const menuHeight = objectPickerMenu.offsetHeight;
+  objectPickerMenu.style.left = rect.left + 'px';
+  objectPickerMenu.style.top = (rect.top - menuHeight - 6) + 'px';
+}
+
+function toggleObjectPickerMenu(btn) {
+  if (objectPickerMenu.classList.contains('open')) {
+    closeObjectPickerMenu();
+  } else {
+    openObjectPickerMenu(btn);
+  }
+}
+
+GLB_FILES.forEach(entry => {
+  const row = document.createElement('div');
+  row.className = 'object-picker-row';
+  row.textContent = entry.label;
+  row.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentGlb = entry.src;
+    updateObjectPickerLabel(entry.label);
+    closeObjectPickerMenu();
+    loadModel(currentGlb);
+  });
+  objectPickerMenu.appendChild(row);
+});
+
+objectPickerBtns.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleObjectPickerMenu(btn);
+  });
+});
+
+// clicking inside the menu itself shouldn't trigger the outside-click close
+objectPickerMenu.addEventListener('click', (e) => { e.stopPropagation(); });
+
+document.addEventListener('click', () => {
+  closeObjectPickerMenu();
+});
+
+// sync initial label in case currentGlb default ever drifts from GLB_FILES[0]
+const initialEntry = GLB_FILES.find(f => f.src === currentGlb);
+if (initialEntry) updateObjectPickerLabel(initialEntry.label);
 
 window._dbg('module fully initialised', 'ok');
 </script>
