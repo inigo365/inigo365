@@ -496,11 +496,7 @@
           iframe.style.display = 'block';
         }
         setTimeout(() => {
-          if (window.innerWidth > 768) {
-            drawer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-          } else {
-            row.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
+          drawer.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }, 100);
       };
     }

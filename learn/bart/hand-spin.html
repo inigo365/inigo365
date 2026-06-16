@@ -84,6 +84,13 @@
     pointer-events: all; transition: background 0.15s;
   }
   #cam-off-btn:hover { background: rgba(185,64,64,0.08); }
+
+  /* On mobile, revert cam-label / cam-off-btn to their original top-left stack */
+  @media (max-width: 768px) {
+    #cam-label   { top: 12px; left: 12px; bottom: auto; }
+    #cam-off-btn { top: 52px; left: 12px; bottom: auto; }
+  }
+
   #vel-bar { display: none; }
 
   #overlay {
