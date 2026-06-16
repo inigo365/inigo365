@@ -388,7 +388,11 @@ function loadModel(src) {
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
     const baseScale = 1.6 / maxDim;
-    const scale = src.includes('friend.glb') ? baseScale * 0.8 : baseScale;
+    const isMobile = window.innerWidth <= 768;
+    const isSmallerModel = src.includes('friend.glb') || src.includes('brain.glb');
+    const scale = isSmallerModel
+      ? (isMobile ? baseScale * 0.64 : baseScale * 0.8)
+      : baseScale;
     model.scale.setScalar(scale);
     model.position.sub(centre.multiplyScalar(scale));
     pivot.add(model);
