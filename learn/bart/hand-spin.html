@@ -387,10 +387,10 @@ function loadModel(src) {
     const centre = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 1.6 / maxDim;
-    if (src.includes('friend.glb')) model.scale.setScalar(scale * 0.8);
-    else model.scale.setScalar(scale);
-    model.position.sub(centre.multiplyScalar(model.scale.x));
+    const baseScale = 1.6 / maxDim;
+    const scale = src.includes('friend.glb') ? baseScale * 0.8 : baseScale;
+    model.scale.setScalar(scale);
+    model.position.sub(centre.multiplyScalar(scale));
     pivot.add(model);
     statusEl.textContent = 'show your hand · pinch + drag to spin';
   }, (xhr) => {
