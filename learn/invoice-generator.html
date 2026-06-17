@@ -1195,6 +1195,14 @@
       overflow-x: hidden !important;
     }
 
+    /* Break the min-height:100vh feedback loop so syncHeight() can shrink the iframe.
+       Without this, body.scrollHeight = iframe height (via 1vh), so the iframe
+       never shrinks after content collapses. */
+    body.in-iframe {
+      min-height: 0 !important;
+      height: auto !important;
+    }
+
     /* In-iframe: hide ← Back link (drawer close is the back action) */
     body.in-iframe .btn-back { display: none !important; }
 
