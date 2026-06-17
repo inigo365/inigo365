@@ -293,6 +293,190 @@
     line-height: 1.8;
     margin-top: 14px;
   }
+
+  /* ── Pictogram grid (Module 02) ──────────────────────────────────── */
+  .picto-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .picto-btn {
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    background: var(--blue-light);
+    border: 1px solid rgba(74,127,212,0.4);
+    color: var(--c-main);
+    border-radius: 2px;
+    font-family: 'RuneScape UF', monospace;
+    cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+    line-height: 1.4;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+    text-align: left;
+  }
+  .picto-btn:hover { border-color: var(--c-main); }
+  .picto-btn.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+  .picto-pct-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-height: 2.4rem;
+    margin-bottom: 8px;
+  }
+  .picto-pct {
+    font-size: 1.85rem;
+    color: var(--blue-deep);
+    line-height: 1;
+    min-width: 5ch;
+  }
+  .picto-pct-of {
+    font-size: 0.88rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .picto-grid {
+    display: grid;
+    grid-template-columns: repeat(40, minmax(0, 1fr));
+    gap: 2px;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  @media (max-width: 480px) {
+    .picto-grid { grid-template-columns: repeat(20, minmax(0, 1fr)); }
+  }
+  .picto-sq {
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    background: rgba(253,250,245,0.5);
+    border-radius: 1px;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .picto-sq.filled {
+    background: var(--blue-deep);
+    border-color: var(--blue-deep);
+  }
+  .picto-caption {
+    font-size: 1rem;
+    color: var(--ink);
+    line-height: 1.6;
+    min-height: 1.6em;
+  }
+
+  /* ── Action carousel (Module 03) ────────────────────────────────── */
+  .action-carousel {
+    position: relative;
+    overflow: hidden;
+  }
+  .carousel-track {
+    display: flex;
+    transition: transform 0.3s ease;
+    will-change: transform;
+  }
+  .carousel-card {
+    min-width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 2px 0;
+  }
+  .carousel-date {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .carousel-type-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    background: var(--blue-light);
+    border: 1px solid rgba(74,127,212,0.35);
+    color: var(--c-main);
+    align-self: flex-start;
+  }
+  .carousel-headline {
+    font-size: 0.95rem;
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  .carousel-quote-box {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--c-main);
+    background: var(--blue-light);
+    border-radius: 4px;
+    padding: 12px 14px;
+  }
+  .carousel-quote-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .carousel-quote-text {
+    font-size: 0.93rem;
+    line-height: 1.55;
+    color: var(--ink);
+    font-style: italic;
+  }
+  .carousel-quote-cite {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 6px;
+    font-style: normal;
+    display: block;
+  }
+  .carousel-kicker {
+    font-size: 0.88rem;
+    color: var(--ink);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+  .carousel-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .carousel-arrow {
+    background: var(--blue-light);
+    border: 1px solid rgba(74,127,212,0.4);
+    color: var(--c-main);
+    font-size: 1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+    transition: background 0.12s, border-color 0.12s;
+    flex-shrink: 0;
+    font-family: inherit;
+    line-height: 1;
+  }
+  .carousel-arrow:hover:not(:disabled) { background: var(--border); border-color: var(--c-main); }
+  .carousel-arrow:disabled { opacity: 0.35; cursor: default; }
+  .carousel-pos {
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    flex: 1;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -361,16 +545,16 @@
       <div class="stat-block-value">1,000 km</div>
       <div class="stat-block-commentary">
         That stack goes from London to Rome — <strong>straight up.</strong>
-        In $1 bills, the weight would be around 1,000 tonnes. About 200 adult elephants.
+        In $1 bills, the weight would be around 1,000,000 tonnes. About 10 fully loaded Nimitz-class aircraft carriers.
       </div>
     </div>
 
     <div class="stat-block">
-      <div class="stat-block-label">Next richest person</div>
-      <div class="stat-block-value">~$200B</div>
+      <div class="stat-block-label">Next three richest people — June 2026</div>
+      <div class="stat-block-value">~$815B combined</div>
       <div class="stat-block-commentary">
-        Jeff Bezos, Larry Ellison, Bernard Arnault. Combined, the next three richest people on Earth
-        have roughly the same wealth as Musk added <strong>in a single afternoon.</strong>
+        Larry Page (~$293B), Sergey Brin (~$270B), Jeff Bezos (~$251.5B).
+        Combined, the next three richest people on Earth are <strong>still worth less than Musk alone.</strong>
       </div>
     </div>
   </div>
@@ -379,55 +563,16 @@
   <div class="card col gap-14" style="margin-bottom:14px">
     <div class="module-label">Module 02 — What Else &nbsp;·&nbsp; Opportunity Cost</div>
 
-    <div class="alt-row">
-      <div class="alt-what">
-        End global hunger
-        <small>UN World Food Programme estimate for one year of crisis response</small>
-      </div>
-      <div class="alt-cost">~$45B / yr</div>
+    <div class="picto-toggles" id="picto-toggles"><!-- buttons injected by JS --></div>
+
+    <div class="picto-pct-row">
+      <span class="picto-pct" id="picto-pct">–</span>
+      <span class="picto-pct-of" id="picto-pct-label">Select a comparison above</span>
     </div>
-    <div class="alt-row">
-      <div class="alt-what">
-        Universal clean water access
-        <small>One-off cost to give the 2 billion people without safe water access to it</small>
-      </div>
-      <div class="alt-cost">~$114B</div>
-    </div>
-    <div class="alt-row">
-      <div class="alt-what">
-        UK NHS — fully funded for 8 years
-        <small>Annual NHS England budget ~£130B. 8 years, no cuts, no crisis.</small>
-      </div>
-      <div class="alt-cost">~$1.3T total</div>
-    </div>
-    <div class="alt-row">
-      <div class="alt-what">
-        Global solar transition
-        <small>IEA estimate to achieve net-zero electricity by 2050 — cumulative infrastructure cost</small>
-      </div>
-      <div class="alt-cost">~$4T total</div>
-    </div>
-    <div class="alt-row">
-      <div class="alt-what">
-        Build 10 million social homes in the UK
-        <small>At ~£100k average build cost — enough to end the housing crisis outright</small>
-      </div>
-      <div class="alt-cost">~$1.3T</div>
-    </div>
-    <div class="alt-row">
-      <div class="alt-what">
-        Fund WHO global disease surveillance for a century
-        <small>Annual WHO budget ~$6.7B — pandemic early warning, everywhere, forever</small>
-      </div>
-      <div class="alt-cost">$670B / 100yr</div>
-    </div>
-    <div class="alt-row">
-      <div class="alt-what">
-        Fully fund global primary education
-        <small>UNESCO estimate to achieve universal primary education in low-income countries</small>
-      </div>
-      <div class="alt-cost">~$39B / yr</div>
-    </div>
+
+    <div class="picto-grid" id="picto-grid"><!-- squares injected by JS --></div>
+
+    <div class="picto-caption" id="picto-caption"></div>
 
     <div class="alt-note">
       None of these require Musk specifically to do anything. They require the political will
@@ -442,69 +587,83 @@
 
     <div class="contrast-intro">
       While accumulating wealth at a rate no individual in history has matched,
-      Musk has used his platform — X, formerly Twitter, with 200M+ followers —
+      Musk has used his platform — X, formerly Twitter, with hundreds of millions of followers —
       to incite, amplify, and legitimise political violence internationally.
       A selection:
     </div>
 
-    <div class="action-item">
-      <div class="action-date">4 August 2024 — UK-wide riots</div>
-      <div class="action-headline">As far-right mobs attacked mosques and hotels housing asylum seekers across England, Musk posted directly to his 190M+ followers:</div>
-      <blockquote class="elon-quote">
-        "Civil war is inevitable."
-        <cite>@elonmusk, 4 August 2024 — viewed over 100 million times</cite>
-      </blockquote>
-      <div class="action-kicker">UK Prime Minister Keir Starmer publicly criticised him by name. No correction or retraction was issued. The post remains live.</div>
+    <div class="action-carousel" id="action-carousel">
+      <div class="carousel-track" id="carousel-track">
+
+        <div class="carousel-card">
+          <div class="carousel-date">4 August 2024 — UK riots</div>
+          <span class="carousel-type-badge">Post</span>
+          <div class="carousel-headline">As far-right mobs attacked mosques and hotels housing asylum seekers across England, Musk posted:</div>
+          <div class="carousel-quote-box">
+            <div class="carousel-quote-label">Quote</div>
+            <div class="carousel-quote-text">"Civil war is inevitable."</div>
+            <span class="carousel-quote-cite">@elonmusk, 4 August 2024 · viewed over 100 million times</span>
+          </div>
+          <div class="carousel-kicker">A Downing Street spokesperson called the comment unacceptable. Starmer later said he wasn't going to "individualise this to Elon Musk." No correction or retraction was issued. The post remains live.</div>
+        </div>
+
+        <div class="carousel-card">
+          <div class="carousel-date">3 January 2025 — UK grooming gangs inquiry</div>
+          <span class="carousel-type-badge">Post</span>
+          <div class="carousel-headline">During a politically charged debate about the grooming gangs inquiry, Musk targeted the sitting Prime Minister directly:</div>
+          <div class="carousel-quote-box">
+            <div class="carousel-quote-label">Quote</div>
+            <div class="carousel-quote-text">"Starmer was complicit in the RAPE OF BRITAIN when he was head of Crown Prosecution for 6 years. Starmer must go and he must face charges for his complicity in the worst mass crime in the history of Britain."</div>
+            <span class="carousel-quote-cite">@elonmusk, 3 January 2025</span>
+          </div>
+          <div class="carousel-kicker">UK Health Secretary Wes Streeting called the attacks "misjudged and certainly misinformed." Starmer responded that those "spreading lies and misinformation... aren't interested in victims, they're interested in themselves."</div>
+        </div>
+
+        <div class="carousel-card">
+          <div class="carousel-date">January 2025 — German federal election</div>
+          <span class="carousel-type-badge">Livestream + Post</span>
+          <div class="carousel-headline">Musk openly campaigned for the AfD — a party whose leaders have described the Nazi SS as "not all bad" — and hosted their leader Alice Weidel in a live X Spaces broadcast:</div>
+          <div class="carousel-quote-box">
+            <div class="carousel-quote-label">Quote</div>
+            <div class="carousel-quote-text">"Only the AfD can save Germany."</div>
+            <span class="carousel-quote-cite">@elonmusk, January 2025 · ahead of the German federal election</span>
+          </div>
+          <div class="carousel-kicker">Multiple EU governments opened formal investigations. The European Commission described the interference as "unprecedented." The AfD came second in the subsequent election.</div>
+        </div>
+
+        <div class="carousel-card">
+          <div class="carousel-date">June 2026 — Belfast, Northern Ireland</div>
+          <span class="carousel-type-badge">Repost / Amplification</span>
+          <div class="carousel-headline">After Stephen Ogilvie, a 44-year-old disabled man, was stabbed in north Belfast on 8 June 2026, Musk re-shared footage of the attack alongside a directory of specific coordinates where demonstrations were scheduled, and separately reposted claims that Starmer "hates white people" and an image captioned "millions must go."</div>
+          <div class="carousel-kicker">Northern Ireland Secretary Hilary Benn called the resulting violence "racist thuggery." More than two dozen people lost their homes. 12 police officers were injured.</div>
+        </div>
+
+        <div class="carousel-card">
+          <div class="carousel-date">February 2025 — United States, DOGE</div>
+          <span class="carousel-type-badge">Post + Policy action</span>
+          <div class="carousel-headline">As unofficial head of the "Department of Government Efficiency," Musk oversaw the dismantling of USAID, the CDC's global health programmes, and hundreds of federal programmes — with no elected mandate:</div>
+          <div class="carousel-quote-box">
+            <div class="carousel-quote-label">Quote</div>
+            <div class="carousel-quote-text">"USAID is a criminal organisation. Time for it to die."</div>
+            <span class="carousel-quote-cite">@elonmusk, February 2025</span>
+          </div>
+          <div class="carousel-kicker">Cuts to USAID's food, medicine, and disease-response programmes are estimated by aid organisations to result in hundreds of thousands of preventable deaths globally. Many cuts were later ruled unlawful by US federal courts.</div>
+        </div>
+
+        <div class="carousel-card">
+          <div class="carousel-date">Ongoing — X / Twitter</div>
+          <span class="carousel-type-badge">Platform ownership</span>
+          <div class="carousel-headline">Since acquiring Twitter in 2022 for $44B, Musk has reinstated thousands of banned far-right accounts, gutted trust and safety teams by over 80%, and restructured the algorithm to preferentially boost his own posts.</div>
+          <div class="carousel-kicker">Hate speech, antisemitism, and harassment metrics on the platform increased sharply in the year following the acquisition, per multiple independent studies including from the EU Digital Services Act monitoring body. Advertisers fled. Users stayed.</div>
+        </div>
+
+      </div>
     </div>
 
-    <div class="action-item">
-      <div class="action-date">January 2025 — UK grooming gangs inquiry</div>
-      <div class="action-headline">During a politically charged debate about the grooming gangs inquiry, Musk targeted the sitting Prime Minister directly:</div>
-      <blockquote class="elon-quote">
-        "Starmer is a rape gangs enabler."
-        <cite>@elonmusk — posted repeatedly across multiple days in January 2025</cite>
-      </blockquote>
-      <blockquote class="elon-quote">
-        "Is the UK Prime Minister complicit in the rape of Britain?"
-        <cite>@elonmusk, January 2025</cite>
-      </blockquote>
-      <div class="action-kicker">The posts amplified far-right disinformation at scale and were directly cited by those planning further unrest. Cabinet ministers described them as "dangerous interference" in domestic politics.</div>
-    </div>
-
-    <div class="action-item">
-      <div class="action-date">January 2025 — German federal election</div>
-      <div class="action-headline">Musk openly campaigned for the AfD — a party whose leaders have described the Nazi SS as "not all bad" and called for the end of Germany's post-war democratic consensus — and hosted their leader in a live X Spaces broadcast:</div>
-      <blockquote class="elon-quote">
-        "Only the AfD can save Germany."
-        <cite>@elonmusk, January 2025 — ahead of the German federal election</cite>
-      </blockquote>
-      <div class="action-kicker">Multiple EU governments opened formal investigations. The European Commission described the interference as "unprecedented." The AfD came second in the subsequent election.</div>
-    </div>
-
-    <div class="action-item">
-      <div class="action-date">June 2025 — Belfast, Northern Ireland</div>
-      <div class="action-headline">During rioting in Belfast, Musk amplified far-right accounts and posted directly calling for the UK government to fall — including posts targeting Anas Sarwar, the Scottish Labour leader, with content that police described as incitement.</div>
-      <blockquote class="elon-quote">
-        "The British government must fall. They are traitors to their own people."
-        <cite>@elonmusk, June 2025</cite>
-      </blockquote>
-      <div class="action-kicker">Community organisations and journalists on the ground attributed the accelerated spread of disinformation directly to X's algorithmic amplification under his ownership. Police made dozens of arrests.</div>
-    </div>
-
-    <div class="action-item">
-      <div class="action-date">2025 — United States, DOGE</div>
-      <div class="action-headline">As unofficial head of the "Department of Government Efficiency," Musk oversaw the dismantling of USAID, the CDC's global health programmes, and hundreds of federal programmes — with no elected mandate and little legal authority:</div>
-      <blockquote class="elon-quote">
-        "USAID is a criminal organisation. Time for it to die."
-        <cite>@elonmusk, February 2025</cite>
-      </blockquote>
-      <div class="action-kicker">Cuts to USAID's food, medicine, and disease-response programmes are estimated by aid organisations to result in hundreds of thousands of preventable deaths globally. Many cuts were later ruled unlawful by US federal courts.</div>
-    </div>
-
-    <div class="action-item">
-      <div class="action-date">Ongoing — X / Twitter</div>
-      <div class="action-headline">Since acquiring Twitter in 2022 for $44B, Musk has reinstated thousands of banned far-right accounts, gutted trust and safety teams by over 80%, and restructured the algorithm to preferentially boost his own posts.</div>
-      <div class="action-kicker">Hate speech, antisemitism, and harassment metrics on the platform increased sharply in the year following the acquisition, per multiple independent studies including from the EU Digital Services Act monitoring body. Advertisers fled. Users stayed.</div>
+    <div class="carousel-nav">
+      <button class="carousel-arrow" id="carousel-prev" onclick="carouselMove(-1)" disabled>&#8592;</button>
+      <span class="carousel-pos" id="carousel-pos">1 / 6</span>
+      <button class="carousel-arrow" id="carousel-next" onclick="carouselMove(1)">&#8594;</button>
     </div>
 
     <div class="contrast-outro">
@@ -519,7 +678,7 @@
   <div class="card" style="margin-top:14px">
     <p class="widget-footer" style="margin:0">
       Sources: UN WFP, IEA, UNESCO, WHO, USAID impact estimates, UK ONS, NHS England.<br>
-      Wealth figures: Bloomberg Billionaires Index, June 2026. IPO-day gain rate used for ticker.
+      Musk $1T figure: Forbes Real Time, Reuters (June 2026, SpaceX IPO repricing). Bloomberg Billionaires Index carries a more conservative valuation. Individual wealth rankings: Forbes Real Time, June 2026.
     </p>
   </div>
 
@@ -539,6 +698,151 @@
   if (window.self !== window.top) {
     document.body.classList.add('in-iframe');
   }
+</script>
+<script>
+(function initPictogram() {
+  const SCALE_COMPARISONS = [
+    {
+      label: 'End global hunger',
+      sublabel: 'for 1 year (UN WFP)',
+      cost: 45e9,
+      caption: '$45 billion — what the UN World Food Programme estimates is needed to end acute hunger crises for one year.'
+    },
+    {
+      label: 'Universal clean water',
+      sublabel: 'one-off (WHO/World Bank)',
+      cost: 114e9,
+      caption: '$114 billion — one-off cost to give the 2 billion people without safe water access to it.'
+    },
+    {
+      label: 'UK NHS — 8 years',
+      sublabel: 'fully funded, no cuts',
+      cost: 1.3e12,
+      caption: '$1.3 trillion — fully funds NHS England (≈£130B/yr) for eight years, with no cuts and no crisis funding.'
+    },
+    {
+      label: 'Global solar transition',
+      sublabel: 'net-zero electricity by 2050',
+      cost: 4e12,
+      caption: '$4 trillion — IEA estimate for the cumulative infrastructure cost to achieve net-zero electricity globally by 2050.'
+    },
+    {
+      label: '10M social homes (UK)',
+      sublabel: '≈£100k build cost each',
+      cost: 1.3e12,
+      caption: '$1.3 trillion — build 10 million social homes in the UK at roughly £100,000 each. Enough to end the housing crisis outright.'
+    },
+    {
+      label: 'WHO surveillance × 100yr',
+      sublabel: 'pandemic early warning',
+      cost: 670e9,
+      caption: '$670 billion — funds the entire WHO global disease surveillance operation (≈$6.7B/yr) for a full century.'
+    },
+    {
+      label: 'Universal primary education',
+      sublabel: 'low-income countries / yr',
+      cost: 39e9,
+      caption: '$39 billion per year — UNESCO\'s estimate to achieve universal primary education in every low-income country.'
+    }
+  ];
+
+  const TRILLION = 1e12;
+  const TOTAL_SQUARES = 1000;
+
+  const grid = document.getElementById('picto-grid');
+  const togglesContainer = document.getElementById('picto-toggles');
+  const pctEl = document.getElementById('picto-pct');
+  const pctLabel = document.getElementById('picto-pct-label');
+  const captionEl = document.getElementById('picto-caption');
+
+  // Build squares
+  const squares = [];
+  for (let i = 0; i < TOTAL_SQUARES; i++) {
+    const sq = document.createElement('div');
+    sq.className = 'picto-sq';
+    sq.style.transitionDelay = (i * 0.5) + 'ms';
+    grid.appendChild(sq);
+    squares.push(sq);
+  }
+
+  let activeIdx = null;
+  let countUpRaf = null;
+
+  function fillSquares(targetCount) {
+    // Instant clear: suppress transitions, set all unfilled, then restore
+    squares.forEach(sq => {
+      sq.style.transition = 'none';
+      sq.classList.remove('filled');
+    });
+    // Force reflow
+    void grid.offsetWidth;
+    // Re-enable transitions
+    squares.forEach(sq => { sq.style.transition = ''; });
+    // Animate fill on next frame
+    requestAnimationFrame(() => {
+      for (let i = 0; i < targetCount; i++) {
+        squares[i].classList.add('filled');
+      }
+    });
+  }
+
+  function countUp(targetPct, duration) {
+    if (countUpRaf) cancelAnimationFrame(countUpRaf);
+    const start = performance.now();
+    function step(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const current = targetPct * progress;
+      pctEl.textContent = (current < 1 ? current.toFixed(1) : Math.round(current)) + '%';
+      if (progress < 1) countUpRaf = requestAnimationFrame(step);
+    }
+    countUpRaf = requestAnimationFrame(step);
+  }
+
+  function activate(idx) {
+    const comp = SCALE_COMPARISONS[idx];
+    const rawPct = (comp.cost / TRILLION) * 100;
+    const clampedPct = Math.min(rawPct, 100);
+    const squareCount = Math.round((clampedPct / 100) * TOTAL_SQUARES);
+
+    // Update buttons
+    buttons.forEach((btn, i) => btn.classList.toggle('active', i === idx));
+
+    fillSquares(squareCount);
+    countUp(rawPct, 700);
+
+    const overLabel = rawPct > 100 ? ` (${(rawPct / 100).toFixed(1)}× the total trillion)` : ' of $1 trillion';
+    pctLabel.textContent = overLabel;
+    captionEl.textContent = comp.caption;
+    activeIdx = idx;
+  }
+
+  function deactivate(idx) {
+    buttons[idx].classList.remove('active');
+    fillSquares(0);
+    if (countUpRaf) cancelAnimationFrame(countUpRaf);
+    pctEl.textContent = '–';
+    pctLabel.textContent = 'Select a comparison above';
+    captionEl.textContent = '';
+    activeIdx = null;
+  }
+
+  // Build toggle buttons
+  const buttons = SCALE_COMPARISONS.map((comp, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'picto-btn';
+    btn.innerHTML = comp.label + '<br><small style="opacity:0.75">' + comp.sublabel + '</small>';
+    btn.addEventListener('click', () => {
+      if (activeIdx === i) {
+        deactivate(i);
+      } else {
+        activate(i);
+      }
+    });
+    togglesContainer.appendChild(btn);
+    return btn;
+  });
+})();
 </script>
 
 </body>
