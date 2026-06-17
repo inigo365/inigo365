@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>$1 Trillion — inigo365</title>
+<title>what does $1 trillion look like? — inigo365</title>
 <link rel="icon" type="image/png" href="../images/icon.png">
 <link rel="stylesheet" href="shared/learn.css">
 <style>
@@ -79,10 +79,9 @@
     color: var(--green-terminal);
   }
   .ticker-sub {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     color: rgba(255,255,255,0.55);
     font-family: 'RuneScape UF', monospace;
-    white-space: nowrap;
   }
 
   /* ── Module cards ────────────────────────────────────────────────── */
@@ -286,6 +285,27 @@
     line-height: 1.6;
   }
 
+  /* ── Collapsible modules ─────────────────────────────────────────── */
+  button.module-label {
+    background: none;
+    border: none;
+    padding: 0;
+    width: 100%;
+    margin-bottom: 0;
+    cursor: url('../images/cursor/cursor-hover.png'), pointer !important;
+  }
+  .tw-chevron {
+    order: 1;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  .tw-module.open .tw-chevron { transform: rotate(180deg); }
+  .tw-module-body { display: none; padding-top: 12px; }
+  .tw-module.open .tw-module-body { display: block; }
+
   /* ── Footer ─────────────────────────────────────────────────────── */
   .widget-footer {
     font-size: 0.92rem;
@@ -316,9 +336,9 @@
     max-width: 400px;
     margin: 0 auto 10px;
   }
-  @media (max-width: 480px) {
+  @media (max-width: 560px) {
     .picto-grid {
-      grid-template-columns: repeat(20, minmax(0, 1fr));
+      grid-template-columns: repeat(16, minmax(0, 1fr));
       max-width: 100%;
     }
   }
@@ -544,20 +564,21 @@
   </nav>
 
   <div class="tool-header">
-    <h1 class="tool-title">$1 trillion</h1>
+    <h1 class="tool-title">what does $1 trillion look like?</h1>
     <p class="tool-subtitle">what elon musk's wealth actually means</p>
   </div>
 
   <!-- Live ticker -->
   <div class="trillion-ticker">
     <span class="ticker-badge">live</span>
-    <span class="ticker-text">This is what Elon Musk has made since you opened this page: <strong>$<span id="ticker">0</span></strong></span>
-    <span class="ticker-sub">$2,083,333 / sec</span>
+    <span class="ticker-text">This is what Elon Musk would have made since you opened this page, if his gains kept up with SpaceX's IPO-day rate: <strong>$<span id="ticker">0</span></strong></span>
+    <span class="ticker-sub">$2,083,333/sec — extrapolated from his $180B single-day gain when SpaceX went public, June 12 2026. Not his actual continuous earnings rate.</span>
   </div>
 
   <!-- MODULE 1: SCALE -->
-  <div class="card col gap-14" style="margin-bottom:14px">
-    <div class="module-label">Module 01 — Scale &nbsp;·&nbsp; $1,000,000,000,000</div>
+  <div id="mod-1" class="card col gap-14 tw-module" style="margin-bottom:14px">
+    <button class="module-label" onclick="toggleModule('mod-1')">Module 01 — Scale &nbsp;·&nbsp; $1,000,000,000,000<span class="tw-chevron">▾</span></button>
+    <div class="tw-module-body">
 
     <div class="stat-grid">
       <div class="stat-cell">
@@ -609,11 +630,13 @@
         Combined, the next three richest people on Earth are <strong>still worth less than Musk alone.</strong>
       </div>
     </div>
+    </div><!-- /.tw-module-body -->
   </div>
 
   <!-- MODULE 2: ALTERNATIVES -->
-  <div class="card col gap-14" style="margin-bottom:14px">
-    <div class="module-label">Module 02 — What Else &nbsp;·&nbsp; Opportunity Cost</div>
+  <div id="mod-2" class="card col gap-14 tw-module" style="margin-bottom:14px">
+    <button class="module-label" onclick="toggleModule('mod-2')">Module 02 — What Else &nbsp;·&nbsp; Opportunity Cost<span class="tw-chevron">▾</span></button>
+    <div class="tw-module-body">
 
     <div class="picto-blurb">Each square represents $1 billion. The full grid of 1,000 squares = $1 trillion.</div>
 
@@ -635,11 +658,13 @@
       to tax wealth at a rate that existed within living memory. His trillion is a policy choice
       as much as a personal achievement.
     </div>
+    </div><!-- /.tw-module-body -->
   </div>
 
   <!-- MODULE 3: THE CONTRAST -->
-  <div class="card col gap-14" style="margin-bottom:14px">
-    <div class="module-label">Module 03 — The Contrast &nbsp;·&nbsp; Actions / Harm</div>
+  <div id="mod-3" class="card col gap-14 tw-module" style="margin-bottom:14px">
+    <button class="module-label" onclick="toggleModule('mod-3')">Module 03 — The Contrast &nbsp;·&nbsp; Actions / Harm<span class="tw-chevron">▾</span></button>
+    <div class="tw-module-body">
 
     <div class="contrast-intro">
       While accumulating wealth at a rate no individual in history has matched,
@@ -723,6 +748,7 @@
       <br><br>
       The wealth and the harm are not separate stories.
     </div>
+    </div><!-- /.tw-module-body -->
   </div>
 
   <div class="card" style="margin-top:14px">
@@ -747,6 +773,9 @@
 <script>
   if (window.self !== window.top) {
     document.body.classList.add('in-iframe');
+  }
+  function toggleModule(id) {
+    document.getElementById(id).classList.toggle('open');
   }
 </script>
 <script>
