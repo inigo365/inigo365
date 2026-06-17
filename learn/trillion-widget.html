@@ -333,17 +333,34 @@
     background: var(--blue-deep);
     border-color: var(--blue-deep);
   }
+  .picto-blurb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .picto-pct-of {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+  }
   .picto-caption {
     font-size: 0.88rem;
     color: var(--muted);
     line-height: 1.5;
     min-height: 2.6em;
     margin-bottom: 4px;
-    max-width: 400px;
   }
-  .picto-select {
+  /* ── Custom comparison picker ──────────────────────────────────── */
+  .picto-picker-wrap {
+    position: relative;
     flex: 1;
     min-width: 0;
+  }
+  .picto-picker-btn {
+    width: 100%;
     padding: 7px 30px 7px 10px;
     font-size: 0.88rem;
     font-family: 'RuneScape UF', monospace;
@@ -354,14 +371,39 @@
     background-position: right 10px center;
     border: 1px solid var(--border);
     border-radius: 2px;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    outline: none;
+    text-align: left;
     line-height: 1.4;
     cursor: url('../images/cursor/cursor-hover.png'), pointer !important;
+    transition: border-color 0.12s, background-color 0.12s;
   }
-  .picto-select:focus { border-color: var(--ink); }
+  .picto-picker-btn:hover { border-color: var(--ink); background-color: rgba(74,127,212,0.06); }
+  .picto-picker-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    display: none;
+    flex-direction: column;
+    background: rgba(253,250,245,0.98);
+    border: 2px solid #1A3A5C;
+    border-radius: 2px;
+    overflow-y: auto;
+    max-height: 260px;
+    z-index: 50;
+  }
+  .picto-picker-menu.open { display: flex; }
+  .picto-picker-row {
+    padding: 8px 12px;
+    font-family: 'RuneScape UF', monospace;
+    font-size: 0.88rem;
+    color: var(--ink);
+    border-bottom: 1px solid var(--border);
+    cursor: url('../images/cursor/cursor-hover.png'), pointer !important;
+    transition: background 0.1s;
+  }
+  .picto-picker-row:last-child { border-bottom: none; }
+  .picto-picker-row:hover { background: rgba(74,127,212,0.10); }
+  .picto-picker-row.selected { background: rgba(74,127,212,0.14); font-weight: bold; }
 
   /* ── Action carousel (Module 03) ────────────────────────────────── */
   .action-carousel {
@@ -574,11 +616,15 @@
   <div class="card col gap-14" style="margin-bottom:14px">
     <div class="module-label">Module 02 — What Else &nbsp;·&nbsp; Opportunity Cost</div>
 
+    <div class="picto-blurb">Each square represents $1 billion. The full grid of 1,000 squares = $1 trillion.</div>
+
     <div class="picto-pct-row">
       <span class="picto-pct" id="picto-pct">–</span>
-      <select class="picto-select" id="picto-select">
-        <option value="">— choose a comparison —</option>
-      </select>
+      <span class="picto-pct-of">of $1 trillion</span>
+      <div class="picto-picker-wrap">
+        <button class="picto-picker-btn" id="picto-picker-btn" type="button">— choose a comparison —</button>
+        <div class="picto-picker-menu" id="picto-picker-menu"></div>
+      </div>
     </div>
     <div class="picto-grid" id="picto-grid"><!-- squares injected by JS --></div>
     <div class="picto-caption" id="picto-caption"></div>
@@ -723,7 +769,8 @@
   const grid = document.getElementById('picto-grid');
   const pctEl = document.getElementById('picto-pct');
   const captionEl = document.getElementById('picto-caption');
-  const select = document.getElementById('picto-select');
+  const pickerBtn = document.getElementById('picto-picker-btn');
+  const pickerMenu = document.getElementById('picto-picker-menu');
 
   // Build squares
   const squares = [];
@@ -774,23 +821,32 @@
     captionEl.textContent = comp.note + ' — ' + comp.source + '.';
   }
 
-  // Build select options
-  SCALE_COMPARISONS.forEach(function(comp, i) {
-    const opt = document.createElement('option');
-    opt.value = i;
-    opt.textContent = comp.label;
-    select.appendChild(opt);
-  });
+  // Custom picker
+  var pickerRows = [];
 
-  select.addEventListener('change', function() {
-    if (this.value === '') {
-      fillSquares(0);
-      if (countUpRaf) cancelAnimationFrame(countUpRaf);
-      pctEl.textContent = '–';
-      captionEl.textContent = '';
-    } else {
-      activate(parseInt(this.value, 10));
-    }
+  function closePicker() { pickerMenu.classList.remove('open'); }
+
+  pickerBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    pickerMenu.classList.toggle('open');
+  });
+  pickerMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+  document.addEventListener('click', closePicker);
+
+  SCALE_COMPARISONS.forEach(function(comp, i) {
+    var row = document.createElement('div');
+    row.className = 'picto-picker-row';
+    row.textContent = comp.label;
+    row.addEventListener('click', function(e) {
+      e.stopPropagation();
+      pickerRows.forEach(function(r) { r.classList.remove('selected'); });
+      row.classList.add('selected');
+      pickerBtn.textContent = comp.label;
+      closePicker();
+      activate(i);
+    });
+    pickerMenu.appendChild(row);
+    pickerRows.push(row);
   });
 })();
 </script>
