@@ -356,8 +356,7 @@
   /* ── Custom comparison picker ──────────────────────────────────── */
   .picto-picker-wrap {
     position: relative;
-    flex: 1;
-    min-width: 0;
+    width: 100%;
   }
   .picto-picker-btn {
     width: 100%;
@@ -618,14 +617,16 @@
 
     <div class="picto-blurb">Each square represents $1 billion. The full grid of 1,000 squares = $1 trillion.</div>
 
+    <div class="picto-picker-wrap">
+      <button class="picto-picker-btn" id="picto-picker-btn" type="button">— choose a comparison —</button>
+      <div class="picto-picker-menu" id="picto-picker-menu"></div>
+    </div>
+
     <div class="picto-pct-row">
       <span class="picto-pct" id="picto-pct">–</span>
       <span class="picto-pct-of">of $1 trillion</span>
-      <div class="picto-picker-wrap">
-        <button class="picto-picker-btn" id="picto-picker-btn" type="button">— choose a comparison —</button>
-        <div class="picto-picker-menu" id="picto-picker-menu"></div>
-      </div>
     </div>
+
     <div class="picto-grid" id="picto-grid"><!-- squares injected by JS --></div>
     <div class="picto-caption" id="picto-caption"></div>
 
