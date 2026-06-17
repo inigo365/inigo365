@@ -302,8 +302,8 @@
     margin-bottom: 14px;
   }
   .picto-btn {
-    padding: 4px 10px;
-    font-size: 0.78rem;
+    padding: 8px 14px;
+    font-size: 0.9rem;
     background: var(--blue-light);
     border: 1px solid rgba(74,127,212,0.4);
     color: var(--c-main);
@@ -344,7 +344,8 @@
     grid-template-columns: repeat(40, minmax(0, 1fr));
     gap: 2px;
     width: 100%;
-    margin-bottom: 10px;
+    max-width: 580px;
+    margin: 0 auto 10px;
   }
   @media (max-width: 480px) {
     .picto-grid { grid-template-columns: repeat(20, minmax(0, 1fr)); }
@@ -406,9 +407,9 @@
     align-self: flex-start;
   }
   .carousel-headline {
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     color: var(--ink);
-    line-height: 1.55;
+    line-height: 1.6;
   }
   .carousel-quote-box {
     border: 1px solid var(--border);
@@ -426,8 +427,8 @@
     font-weight: 700;
   }
   .carousel-quote-text {
-    font-size: 0.93rem;
-    line-height: 1.55;
+    font-size: 1rem;
+    line-height: 1.6;
     color: var(--ink);
     font-style: italic;
   }
@@ -439,7 +440,7 @@
     display: block;
   }
   .carousel-kicker {
-    font-size: 0.88rem;
+    font-size: 1rem;
     color: var(--ink);
     line-height: 1.6;
     border-top: 1px solid var(--border);
@@ -449,7 +450,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: 8px;
+    margin-bottom: 4px;
   }
   .carousel-arrow {
     background: var(--blue-light);
@@ -702,48 +704,16 @@
 <script>
 (function initPictogram() {
   const SCALE_COMPARISONS = [
-    {
-      label: 'End global hunger',
-      sublabel: 'for 1 year (UN WFP)',
-      cost: 45e9,
-      caption: '$45 billion — what the UN World Food Programme estimates is needed to end acute hunger crises for one year.'
-    },
-    {
-      label: 'Universal clean water',
-      sublabel: 'one-off (WHO/World Bank)',
-      cost: 114e9,
-      caption: '$114 billion — one-off cost to give the 2 billion people without safe water access to it.'
-    },
-    {
-      label: 'UK NHS — 8 years',
-      sublabel: 'fully funded, no cuts',
-      cost: 1.3e12,
-      caption: '$1.3 trillion — fully funds NHS England (≈£130B/yr) for eight years, with no cuts and no crisis funding.'
-    },
-    {
-      label: 'Global solar transition',
-      sublabel: 'net-zero electricity by 2050',
-      cost: 4e12,
-      caption: '$4 trillion — IEA estimate for the cumulative infrastructure cost to achieve net-zero electricity globally by 2050.'
-    },
-    {
-      label: '10M social homes (UK)',
-      sublabel: '≈£100k build cost each',
-      cost: 1.3e12,
-      caption: '$1.3 trillion — build 10 million social homes in the UK at roughly £100,000 each. Enough to end the housing crisis outright.'
-    },
-    {
-      label: 'WHO surveillance × 100yr',
-      sublabel: 'pandemic early warning',
-      cost: 670e9,
-      caption: '$670 billion — funds the entire WHO global disease surveillance operation (≈$6.7B/yr) for a full century.'
-    },
-    {
-      label: 'Universal primary education',
-      sublabel: 'low-income countries / yr',
-      cost: 39e9,
-      caption: '$39 billion per year — UNESCO\'s estimate to achieve universal primary education in every low-income country.'
-    }
+    { label: "End world hunger for good",                  amountB: 93,  note: "$93B a year — WFP's estimate to end hunger sustainably by 2030.",                                                                    source: "UN World Food Programme, Nov 2025" },
+    { label: "Universal clean water & sanitation",         amountB: 114, note: "$114B a year — to give everyone in low/middle-income countries safe water and sanitation.",                                           source: "UNESCO World Water Development Report 2021" },
+    { label: "Universal education (pre-primary–secondary)",amountB: 97,  note: "$97B a year — the financing gap to reach global education targets in low and lower-middle-income countries.",                         source: "UNESCO Global Education Monitoring Report" },
+    { label: "WFP 2026 emergency funding need",            amountB: 13,  note: "$13B — what the UN World Food Programme needs this year to reach 110 million of the hungriest people.",                              source: "WFP 2026 Global Outlook" },
+    { label: "WHO global budget, 1 year",                  amountB: 2,   note: "~$2B — the World Health Organization's entire annual operating budget after 2026 cuts.",                                             source: "WHO, May 2025 budget approval" },
+    { label: "USAID, former annual budget",                amountB: 43,  note: "$43B a year — the US foreign aid agency dismantled in 2025.",                                                                        source: "France24 / AFP" },
+    { label: "NHS England, 1 year",                        amountB: 244, note: "~$244B (£195.6B) — the UK's entire annual health budget, 2025/26.",                                                                  source: "NHS England financial performance update" },
+    { label: "Jeff Bezos net worth",                       amountB: 252, note: "~$252B — the world's 4th richest person, June 2026.",                                                                                source: "Forbes Real-Time Billionaires" },
+    { label: "Larry Page net worth",                       amountB: 293, note: "~$293B — the world's 2nd richest person, June 2026.",                                                                                source: "Forbes Real-Time Billionaires" },
+    { label: "SpaceX IPO single-day gain",                 amountB: 180, note: "$180B — what Musk personally gained in a single trading day.",                                                                       source: "CNBC, June 12 2026" }
   ];
 
   const TRILLION = 1e12;
@@ -801,7 +771,7 @@
 
   function activate(idx) {
     const comp = SCALE_COMPARISONS[idx];
-    const rawPct = (comp.cost / TRILLION) * 100;
+    const rawPct = (comp.amountB * 1e9 / TRILLION) * 100;
     const clampedPct = Math.min(rawPct, 100);
     const squareCount = Math.round((clampedPct / 100) * TOTAL_SQUARES);
 
@@ -813,7 +783,7 @@
 
     const overLabel = rawPct > 100 ? ` (${(rawPct / 100).toFixed(1)}× the total trillion)` : ' of $1 trillion';
     pctLabel.textContent = overLabel;
-    captionEl.textContent = comp.caption;
+    captionEl.textContent = comp.note + ' — ' + comp.source + '.';
     activeIdx = idx;
   }
 
@@ -831,7 +801,7 @@
   const buttons = SCALE_COMPARISONS.map((comp, i) => {
     const btn = document.createElement('button');
     btn.className = 'picto-btn';
-    btn.innerHTML = comp.label + '<br><small style="opacity:0.75">' + comp.sublabel + '</small>';
+    btn.textContent = comp.label;
     btn.addEventListener('click', () => {
       if (activeIdx === i) {
         deactivate(i);
@@ -842,6 +812,39 @@
     togglesContainer.appendChild(btn);
     return btn;
   });
+})();
+</script>
+<script>
+(function initCarousel() {
+  const track = document.getElementById('carousel-track');
+  const prevBtn = document.getElementById('carousel-prev');
+  const nextBtn = document.getElementById('carousel-next');
+  const posEl = document.getElementById('carousel-pos');
+  const total = track.children.length;
+  let idx = 0;
+
+  function go(n) {
+    idx = Math.max(0, Math.min(total - 1, n));
+    track.style.transform = 'translateX(' + (-idx * 100) + '%)';
+    posEl.textContent = (idx + 1) + ' / ' + total;
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === total - 1;
+  }
+
+  window.carouselMove = function(dir) { go(idx + dir); };
+
+  // Touch swipe
+  let touchX = null;
+  const el = document.getElementById('action-carousel');
+  el.addEventListener('touchstart', function(e) { touchX = e.touches[0].clientX; }, { passive: true });
+  el.addEventListener('touchend', function(e) {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 40) go(idx + (dx < 0 ? 1 : -1));
+    touchX = null;
+  }, { passive: true });
+
+  go(0);
 })();
 </script>
 
