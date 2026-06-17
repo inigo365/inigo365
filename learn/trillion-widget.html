@@ -295,60 +295,32 @@
   }
 
   /* ── Pictogram grid (Module 02) ──────────────────────────────────── */
-  .picto-toggles {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 14px;
-  }
-  .picto-btn {
-    padding: 8px 14px;
-    font-size: 0.9rem;
-    background: var(--blue-light);
-    border: 1px solid rgba(74,127,212,0.4);
-    color: var(--c-main);
-    border-radius: 2px;
-    font-family: 'RuneScape UF', monospace;
-    cursor: url('../../images/cursor/cursor-hover.png'), pointer;
-    line-height: 1.4;
-    transition: background 0.12s, border-color 0.12s, color 0.12s;
-    text-align: left;
-  }
-  .picto-btn:hover { border-color: var(--c-main); }
-  .picto-btn.active {
-    background: var(--ink);
-    border-color: var(--ink);
-    color: #fff;
-  }
   .picto-pct-row {
     display: flex;
-    align-items: baseline;
-    gap: 8px;
-    min-height: 2.4rem;
-    margin-bottom: 8px;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
   }
   .picto-pct {
     font-size: 1.85rem;
     color: var(--blue-deep);
     line-height: 1;
-    min-width: 5ch;
-  }
-  .picto-pct-of {
-    font-size: 0.88rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    min-width: 4ch;
+    flex-shrink: 0;
   }
   .picto-grid {
     display: grid;
     grid-template-columns: repeat(40, minmax(0, 1fr));
     gap: 2px;
     width: 100%;
-    max-width: 580px;
+    max-width: 400px;
     margin: 0 auto 10px;
   }
   @media (max-width: 480px) {
-    .picto-grid { grid-template-columns: repeat(20, minmax(0, 1fr)); }
+    .picto-grid {
+      grid-template-columns: repeat(20, minmax(0, 1fr));
+      max-width: 100%;
+    }
   }
   .picto-sq {
     aspect-ratio: 1;
@@ -362,20 +334,58 @@
     border-color: var(--blue-deep);
   }
   .picto-caption {
-    font-size: 1rem;
-    color: var(--ink);
-    line-height: 1.6;
-    min-height: 1.6em;
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+    min-height: 2.6em;
+    margin-bottom: 4px;
+    max-width: 400px;
   }
+  .picto-select {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 30px 7px 10px;
+    font-size: 0.88rem;
+    font-family: 'RuneScape UF', monospace;
+    color: var(--ink);
+    background-color: rgba(253,250,245,0.96);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231A3A5C' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    outline: none;
+    line-height: 1.4;
+    cursor: url('../images/cursor/cursor-hover.png'), pointer !important;
+  }
+  .picto-select:focus { border-color: var(--ink); }
 
   /* ── Action carousel (Module 03) ────────────────────────────────── */
   .action-carousel {
     position: relative;
     overflow: hidden;
   }
+  .carousel-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .carousel-card-header-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
   .carousel-track {
     display: flex;
-    transition: transform 0.3s ease;
+    align-items: flex-start;
+    transition: transform 0.3s ease, height 0.3s ease;
     will-change: transform;
   }
   .carousel-card {
@@ -449,9 +459,8 @@
   .carousel-nav {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    margin-bottom: 4px;
+    gap: 6px;
+    flex-shrink: 0;
   }
   .carousel-arrow {
     background: var(--blue-light);
@@ -464,14 +473,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: url('../../images/cursor/cursor-hover.png'), pointer;
+    cursor: url('../images/cursor/cursor-hover.png'), pointer !important;
     transition: background 0.12s, border-color 0.12s;
     flex-shrink: 0;
     font-family: inherit;
     line-height: 1;
   }
   .carousel-arrow:hover:not(:disabled) { background: var(--border); border-color: var(--c-main); }
-  .carousel-arrow:disabled { opacity: 0.35; cursor: default; }
+  .carousel-arrow:disabled { opacity: 0.35; cursor: not-allowed !important; }
   .carousel-pos {
     font-size: 0.82rem;
     color: var(--muted);
@@ -565,15 +574,13 @@
   <div class="card col gap-14" style="margin-bottom:14px">
     <div class="module-label">Module 02 — What Else &nbsp;·&nbsp; Opportunity Cost</div>
 
-    <div class="picto-toggles" id="picto-toggles"><!-- buttons injected by JS --></div>
-
     <div class="picto-pct-row">
       <span class="picto-pct" id="picto-pct">–</span>
-      <span class="picto-pct-of" id="picto-pct-label">Select a comparison above</span>
+      <select class="picto-select" id="picto-select">
+        <option value="">— choose a comparison —</option>
+      </select>
     </div>
-
     <div class="picto-grid" id="picto-grid"><!-- squares injected by JS --></div>
-
     <div class="picto-caption" id="picto-caption"></div>
 
     <div class="alt-note">
@@ -595,11 +602,21 @@
     </div>
 
     <div class="action-carousel" id="action-carousel">
+      <div class="carousel-card-header">
+        <div class="carousel-card-header-meta">
+          <div class="carousel-date" id="carousel-date-display"></div>
+          <span class="carousel-type-badge" id="carousel-badge-display"></span>
+        </div>
+        <div class="carousel-nav">
+          <button class="carousel-arrow" id="carousel-prev" onclick="carouselMove(-1)" disabled>&#8592;</button>
+          <span class="carousel-pos" id="carousel-pos">1 / 6</span>
+          <button class="carousel-arrow" id="carousel-next" onclick="carouselMove(1)">&#8594;</button>
+        </div>
+      </div>
+
       <div class="carousel-track" id="carousel-track">
 
         <div class="carousel-card">
-          <div class="carousel-date">4 August 2024 — UK riots</div>
-          <span class="carousel-type-badge">Post</span>
           <div class="carousel-headline">As far-right mobs attacked mosques and hotels housing asylum seekers across England, Musk posted:</div>
           <div class="carousel-quote-box">
             <div class="carousel-quote-label">Quote</div>
@@ -610,8 +627,6 @@
         </div>
 
         <div class="carousel-card">
-          <div class="carousel-date">3 January 2025 — UK grooming gangs inquiry</div>
-          <span class="carousel-type-badge">Post</span>
           <div class="carousel-headline">During a politically charged debate about the grooming gangs inquiry, Musk targeted the sitting Prime Minister directly:</div>
           <div class="carousel-quote-box">
             <div class="carousel-quote-label">Quote</div>
@@ -622,8 +637,6 @@
         </div>
 
         <div class="carousel-card">
-          <div class="carousel-date">January 2025 — German federal election</div>
-          <span class="carousel-type-badge">Livestream + Post</span>
           <div class="carousel-headline">Musk openly campaigned for the AfD — a party whose leaders have described the Nazi SS as "not all bad" — and hosted their leader Alice Weidel in a live X Spaces broadcast:</div>
           <div class="carousel-quote-box">
             <div class="carousel-quote-label">Quote</div>
@@ -634,15 +647,11 @@
         </div>
 
         <div class="carousel-card">
-          <div class="carousel-date">June 2026 — Belfast, Northern Ireland</div>
-          <span class="carousel-type-badge">Repost / Amplification</span>
           <div class="carousel-headline">After Stephen Ogilvie, a 44-year-old disabled man, was stabbed in north Belfast on 8 June 2026, Musk re-shared footage of the attack alongside a directory of specific coordinates where demonstrations were scheduled, and separately reposted claims that Starmer "hates white people" and an image captioned "millions must go."</div>
           <div class="carousel-kicker">Northern Ireland Secretary Hilary Benn called the resulting violence "racist thuggery." More than two dozen people lost their homes. 12 police officers were injured.</div>
         </div>
 
         <div class="carousel-card">
-          <div class="carousel-date">February 2025 — United States, DOGE</div>
-          <span class="carousel-type-badge">Post + Policy action</span>
           <div class="carousel-headline">As unofficial head of the "Department of Government Efficiency," Musk oversaw the dismantling of USAID, the CDC's global health programmes, and hundreds of federal programmes — with no elected mandate:</div>
           <div class="carousel-quote-box">
             <div class="carousel-quote-label">Quote</div>
@@ -653,19 +662,11 @@
         </div>
 
         <div class="carousel-card">
-          <div class="carousel-date">Ongoing — X / Twitter</div>
-          <span class="carousel-type-badge">Platform ownership</span>
           <div class="carousel-headline">Since acquiring Twitter in 2022 for $44B, Musk has reinstated thousands of banned far-right accounts, gutted trust and safety teams by over 80%, and restructured the algorithm to preferentially boost his own posts.</div>
           <div class="carousel-kicker">Hate speech, antisemitism, and harassment metrics on the platform increased sharply in the year following the acquisition, per multiple independent studies including from the EU Digital Services Act monitoring body. Advertisers fled. Users stayed.</div>
         </div>
 
       </div>
-    </div>
-
-    <div class="carousel-nav">
-      <button class="carousel-arrow" id="carousel-prev" onclick="carouselMove(-1)" disabled>&#8592;</button>
-      <span class="carousel-pos" id="carousel-pos">1 / 6</span>
-      <button class="carousel-arrow" id="carousel-next" onclick="carouselMove(1)">&#8594;</button>
     </div>
 
     <div class="contrast-outro">
@@ -720,10 +721,9 @@
   const TOTAL_SQUARES = 1000;
 
   const grid = document.getElementById('picto-grid');
-  const togglesContainer = document.getElementById('picto-toggles');
   const pctEl = document.getElementById('picto-pct');
-  const pctLabel = document.getElementById('picto-pct-label');
   const captionEl = document.getElementById('picto-caption');
+  const select = document.getElementById('picto-select');
 
   // Build squares
   const squares = [];
@@ -735,20 +735,15 @@
     squares.push(sq);
   }
 
-  let activeIdx = null;
   let countUpRaf = null;
 
   function fillSquares(targetCount) {
-    // Instant clear: suppress transitions, set all unfilled, then restore
     squares.forEach(sq => {
       sq.style.transition = 'none';
       sq.classList.remove('filled');
     });
-    // Force reflow
     void grid.offsetWidth;
-    // Re-enable transitions
     squares.forEach(sq => { sq.style.transition = ''; });
-    // Animate fill on next frame
     requestAnimationFrame(() => {
       for (let i = 0; i < targetCount; i++) {
         squares[i].classList.add('filled');
@@ -769,66 +764,65 @@
     countUpRaf = requestAnimationFrame(step);
   }
 
-  function activate(idx) {
-    const comp = SCALE_COMPARISONS[idx];
+  function activate(i) {
+    const comp = SCALE_COMPARISONS[i];
     const rawPct = (comp.amountB * 1e9 / TRILLION) * 100;
     const clampedPct = Math.min(rawPct, 100);
     const squareCount = Math.round((clampedPct / 100) * TOTAL_SQUARES);
-
-    // Update buttons
-    buttons.forEach((btn, i) => btn.classList.toggle('active', i === idx));
-
     fillSquares(squareCount);
     countUp(rawPct, 700);
-
-    const overLabel = rawPct > 100 ? ` (${(rawPct / 100).toFixed(1)}× the total trillion)` : ' of $1 trillion';
-    pctLabel.textContent = overLabel;
     captionEl.textContent = comp.note + ' — ' + comp.source + '.';
-    activeIdx = idx;
   }
 
-  function deactivate(idx) {
-    buttons[idx].classList.remove('active');
-    fillSquares(0);
-    if (countUpRaf) cancelAnimationFrame(countUpRaf);
-    pctEl.textContent = '–';
-    pctLabel.textContent = 'Select a comparison above';
-    captionEl.textContent = '';
-    activeIdx = null;
-  }
+  // Build select options
+  SCALE_COMPARISONS.forEach(function(comp, i) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = comp.label;
+    select.appendChild(opt);
+  });
 
-  // Build toggle buttons
-  const buttons = SCALE_COMPARISONS.map((comp, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'picto-btn';
-    btn.textContent = comp.label;
-    btn.addEventListener('click', () => {
-      if (activeIdx === i) {
-        deactivate(i);
-      } else {
-        activate(i);
-      }
-    });
-    togglesContainer.appendChild(btn);
-    return btn;
+  select.addEventListener('change', function() {
+    if (this.value === '') {
+      fillSquares(0);
+      if (countUpRaf) cancelAnimationFrame(countUpRaf);
+      pctEl.textContent = '–';
+      captionEl.textContent = '';
+    } else {
+      activate(parseInt(this.value, 10));
+    }
   });
 })();
 </script>
 <script>
 (function initCarousel() {
+  const CARD_META = [
+    { date: '4 August 2024 — UK riots',               badge: 'Post' },
+    { date: '3 January 2025 — UK grooming gangs inquiry', badge: 'Post' },
+    { date: 'January 2025 — German federal election',  badge: 'Livestream + Post' },
+    { date: 'June 2026 — Belfast, Northern Ireland',   badge: 'Repost / Amplification' },
+    { date: 'February 2025 — United States, DOGE',     badge: 'Post + Policy action' },
+    { date: 'Ongoing — X / Twitter',                   badge: 'Platform ownership' },
+  ];
+
   const track = document.getElementById('carousel-track');
   const prevBtn = document.getElementById('carousel-prev');
   const nextBtn = document.getElementById('carousel-next');
   const posEl = document.getElementById('carousel-pos');
+  const dateDisplay = document.getElementById('carousel-date-display');
+  const badgeDisplay = document.getElementById('carousel-badge-display');
   const total = track.children.length;
   let idx = 0;
 
   function go(n) {
     idx = Math.max(0, Math.min(total - 1, n));
     track.style.transform = 'translateX(' + (-idx * 100) + '%)';
+    track.style.height = track.children[idx].scrollHeight + 'px';
     posEl.textContent = (idx + 1) + ' / ' + total;
     prevBtn.disabled = idx === 0;
     nextBtn.disabled = idx === total - 1;
+    dateDisplay.textContent = CARD_META[idx].date;
+    badgeDisplay.textContent = CARD_META[idx].badge;
   }
 
   window.carouselMove = function(dir) { go(idx + dir); };
