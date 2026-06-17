@@ -305,6 +305,10 @@
   .tw-module.open .tw-chevron { transform: rotate(180deg); }
   .tw-module-body { display: none; padding-top: 12px; }
   .tw-module.open .tw-module-body { display: block; }
+  @media (max-width: 560px) {
+    .tw-label-sep { display: none; }
+    .tw-label-title, .tw-label-desc { display: block; }
+  }
 
   /* ── Footer ─────────────────────────────────────────────────────── */
   .widget-footer {
@@ -577,7 +581,7 @@
 
   <!-- MODULE 1: SCALE -->
   <div id="mod-1" class="card col gap-14 tw-module" style="margin-bottom:14px">
-    <button class="module-label" onclick="toggleModule('mod-1')">Module 01 — Scale &nbsp;·&nbsp; $1,000,000,000,000<span class="tw-chevron">▾</span></button>
+    <button class="module-label" onclick="toggleModule('mod-1')"><span class="tw-label-content"><span class="tw-label-title">Module 01 — Scale</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">$1,000,000,000,000</span></span><span class="tw-chevron">▾</span></button>
     <div class="tw-module-body">
 
     <div class="stat-grid">
@@ -635,7 +639,7 @@
 
   <!-- MODULE 2: ALTERNATIVES -->
   <div id="mod-2" class="card col gap-14 tw-module" style="margin-bottom:14px">
-    <button class="module-label" onclick="toggleModule('mod-2')">Module 02 — What Else &nbsp;·&nbsp; Opportunity Cost<span class="tw-chevron">▾</span></button>
+    <button class="module-label" onclick="toggleModule('mod-2')"><span class="tw-label-content"><span class="tw-label-title">Module 02 — What Else</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">Opportunity Cost</span></span><span class="tw-chevron">▾</span></button>
     <div class="tw-module-body">
 
     <div class="picto-blurb">Each square represents $1 billion. The full grid of 1,000 squares = $1 trillion.</div>
@@ -663,7 +667,7 @@
 
   <!-- MODULE 3: THE CONTRAST -->
   <div id="mod-3" class="card col gap-14 tw-module" style="margin-bottom:14px">
-    <button class="module-label" onclick="toggleModule('mod-3')">Module 03 — The Contrast &nbsp;·&nbsp; Actions / Harm<span class="tw-chevron">▾</span></button>
+    <button class="module-label" onclick="toggleModule('mod-3')"><span class="tw-label-content"><span class="tw-label-title">Module 03 — The Contrast</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">Actions / Harm</span></span><span class="tw-chevron">▾</span></button>
     <div class="tw-module-body">
 
     <div class="contrast-intro">
