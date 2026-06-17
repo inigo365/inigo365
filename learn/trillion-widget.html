@@ -306,8 +306,10 @@
   .tw-module-body { display: none; padding-top: 12px; }
   .tw-module.open .tw-module-body { display: block; }
   @media (max-width: 560px) {
+    .tw-label-content { flex: 1 1 0; min-width: 0; }
     .tw-label-sep { display: none; }
     .tw-label-title, .tw-label-desc { display: block; }
+    button.module-label::after { display: none; }
   }
 
   /* ── Footer ─────────────────────────────────────────────────────── */
@@ -342,7 +344,7 @@
   }
   @media (max-width: 560px) {
     .picto-grid {
-      grid-template-columns: repeat(16, minmax(0, 1fr));
+      grid-template-columns: repeat(30, minmax(0, 1fr));
       max-width: 100%;
     }
   }
