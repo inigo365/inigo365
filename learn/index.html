@@ -382,9 +382,9 @@
       { id: 'song-analyser', name: 'song analyser',    desc: 'key + bpm detection',   src: 'song-analyser.html' },
       { id: 'scale-trainer', name: 'scale trainer',    desc: 'scales + progressions', src: 'scale-trainer.html' },
       { id: 'midi-studio',   name: 'midi studio',      desc: 'compose + export',      src: 'midi-studio.html'   },
-      { id: 'invoice',       name: 'invoice generator', desc: 'create + export pdf',  url: 'invoice-generator.html' },
+      { id: 'invoice',       name: 'invoice generator', desc: 'create + export pdf',  src: 'invoice-generator.html' },
       { id: 'trillion',      name: '$1 trillion',       desc: 'what it means',        src: 'trillion-widget.html'   },
-      { id: 'hand-spin',    name: 'object viewer',     desc: 'pinch + drag · 3d',    src: 'bart/hand-spin.html'    },
+      { id: 'hand-spin',    name: 'object viewer',     desc: 'pinch + drag · 3d',    src: 'bart/hand-spin.html',    scrollToBottom: true },
     ];
 
     // ── Build rack units from TOOLS array ──────────────────────────
@@ -397,45 +397,27 @@
         row.className = 'rack-row';
         row.id = 'row-' + idx;
 
-        if (tool.url) {
-          row.setAttribute('onclick', 'window.location.href="' + tool.url + '"');
-          row.innerHTML =
-            '<div class="rack-ear left"><div class="screw"></div><div class="screw"></div></div>' +
-            '<div class="rack-unit-num">' + num + '</div>' +
-            '<div class="rack-main">' +
-              '<span class="rack-name">' + tool.name + '</span>' +
-              '<span class="rack-desc">' + tool.desc + '</span>' +
-            '</div>' +
-            '<div class="rack-led-wrap">' +
-              '<div class="rack-led-label" style="font-size:1rem">→</div>' +
-            '</div>' +
-            '<div class="rack-ear right"><div class="screw"></div><div class="screw"></div></div>';
-        } else {
-          row.setAttribute('onclick', 'toggleRow(' + idx + ')');
-          row.innerHTML =
-            '<div class="rack-ear left"><div class="screw"></div><div class="screw"></div></div>' +
-            '<div class="rack-unit-num">' + num + '</div>' +
-            '<div class="rack-main">' +
-              '<span class="rack-name">' + tool.name + '</span>' +
-              '<span class="rack-desc">' + tool.desc + '</span>' +
-            '</div>' +
-            '<div class="rack-led-wrap">' +
-              '<div class="rack-led" id="led-' + idx + '"></div>' +
-              '<div class="rack-led-label" id="led-label-' + idx + '">off</div>' +
-            '</div>' +
-            '<div class="rack-ear right"><div class="screw"></div><div class="screw"></div></div>';
+        row.setAttribute('onclick', 'toggleRow(' + idx + ')');
+        row.innerHTML =
+          '<div class="rack-ear left"><div class="screw"></div><div class="screw"></div></div>' +
+          '<div class="rack-unit-num">' + num + '</div>' +
+          '<div class="rack-main">' +
+            '<span class="rack-name">' + tool.name + '</span>' +
+            '<span class="rack-desc">' + tool.desc + '</span>' +
+          '</div>' +
+          '<div class="rack-led-wrap">' +
+            '<div class="rack-led" id="led-' + idx + '"></div>' +
+            '<div class="rack-led-label" id="led-label-' + idx + '">off</div>' +
+          '</div>' +
+          '<div class="rack-ear right"><div class="screw"></div><div class="screw"></div></div>';
 
-          const drawer = document.createElement('div');
-          drawer.className = 'rack-drawer';
-          drawer.id = 'drawer-' + idx;
-          drawer.innerHTML =
-            '<iframe id="frame-' + idx + '" class="rack-iframe" src="" title="' + tool.name + '"></iframe>';
-          container.appendChild(row);
-          container.appendChild(drawer);
-          return;
-        }
-
+        const drawer = document.createElement('div');
+        drawer.className = 'rack-drawer';
+        drawer.id = 'drawer-' + idx;
+        drawer.innerHTML =
+          '<iframe id="frame-' + idx + '" class="rack-iframe" src="" title="' + tool.name + '" allow="downloads"></iframe>';
         container.appendChild(row);
+        container.appendChild(drawer);
       });
 
       document.getElementById('module-count').textContent = TOOLS.length;
@@ -495,9 +477,19 @@
           iframe.style.height = '600px';
           iframe.style.display = 'block';
         }
-        setTimeout(() => {
-          drawer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 100);
+
+        // Scroll after syncHeight so rack-scroll has correct total content height.
+        // scrollToBottom (object viewer): pull drawer bottom into view.
+        // Default: scroll row heading to top of rack-scroll = directly under the banner.
+        if (TOOLS[idx].scrollToBottom) {
+          setTimeout(() => {
+            drawer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 100);
+        } else {
+          setTimeout(() => {
+            row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 50);
+        }
       };
     }
 

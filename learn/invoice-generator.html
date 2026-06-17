@@ -5,19 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Invoice Generator</title>
   <style>
+    @font-face {
+      font-family: 'RuneScape UF';
+      src: url('../fonts/RuneScape-UF.woff2') format('woff2'),
+           url('../fonts/RuneScape-UF.woff')  format('woff');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
-      --accent:       #2a7c7c;
-      --accent-light: #e6f4f4;
-      --accent-dark:  #1e5a5a;
-      --bg:           #f0f2f4;
-      --card:         #ffffff;
-      --text:         #1a1a2e;
-      --muted:        #6b7280;
-      --border:       #d1d5db;
+      --accent:       #2a7c7c;       /* invoice branding — DO NOT change */
+      --accent-light: #e6f4f4;       /* invoice branding — DO NOT change */
+      --accent-dark:  #1e5a5a;       /* invoice branding — DO NOT change */
+      --bg:           #f0f2f4;       /* invoice branding — DO NOT change */
+      --card:         rgba(253, 250, 245, 0.96); /* cream, matches rack */
+      --text:         #1A3A5C;       /* matches learn.css --ink */
+      --muted:        #8A9BB0;       /* matches learn.css --muted */
+      --border:       #C8DCF0;       /* matches learn.css --border */
       --danger:       #dc2626;
-      --font:         -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
-      --radius:       8px;
-      --shadow:       0 2px 16px rgba(0,0,0,0.08);
+      --font:         'RuneScape UF', monospace;
+      --radius:       2px;
+      --shadow:       none;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -35,16 +44,10 @@
 
     /* ── Controls bar ── */
     .controls-bar {
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      background: var(--accent-dark);
       padding: 8px 16px;
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }
     .app-title {
       color: #fff;
@@ -55,15 +58,19 @@
       min-width: 100px;
     }
     .currency-select {
+      display: inline-flex;
+      align-items: center;
       background: #fff;
-      border: none;
-      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
       padding: 0 12px;
       font-size: 0.88rem;
       font-weight: 600;
       cursor: url('../images/cursor/cursor-hover.png'), pointer;
       color: var(--text);
-      height: 44px;
+      font-family: var(--font);
+      height: 48px;
+      flex-shrink: 0;
     }
     .btn {
       display: inline-flex;
@@ -769,10 +776,10 @@
     }
 
     /* ════════════════════════════════════════════
-       MOBILE LAYOUT — max-width: 768px
-       Desktop layout (above) is untouched.
+       FORM LAYOUT — applied at all screen widths.
+       Desktop invoice preview is hidden; accordion
+       form is the only editing interface.
     ════════════════════════════════════════════ */
-    @media (max-width: 768px) {
       /* Hide desktop-only regions */
       .page-content,
       .colour-picker-bar { display: none !important; }
@@ -780,13 +787,49 @@
       .controls-bar .btn { display: none !important; }
       .controls-bar .btn-back { display: inline-flex !important; }
       .app-title { display: none !important; }
-      .currency-select { margin-left: auto; }
-
-      /* ── Mobile form container ── */
+      /* ── Form container ── */
       #mobileForm {
         display: block;
-        background: var(--bg);
-        padding-bottom: 90px; /* room for sticky bar */
+        background: transparent;
+        padding: 12px 16px 24px;
+        max-width: 640px;
+        margin: 0 auto;
+      }
+
+      /* ── Single outer card (matches trillion-widget .card pattern) ── */
+      .widget-card {
+        border: 2px solid #1A3A5C;
+        background: var(--card);
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+
+      /* ── Header row: Upload Logo (left) + currency selector (right) ── */
+      .widget-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 4px;
+      }
+      .widget-logo-area {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* ── Action row: New Invoice + Download PDF (non-fixed, inside card) ── */
+      .widget-action-row {
+        display: flex;
+        gap: 10px;
+        padding: 14px 0;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        margin: 4px 0;
       }
 
       /* ── Logo row ── */
@@ -1118,18 +1161,6 @@
       }
       .mob-add-exp:active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 
-      /* ── Sticky bottom bar ── */
-      #mobileStickyBar {
-        display: flex;
-        position: fixed;
-        bottom: 0; left: 0; right: 0;
-        z-index: 300;
-        padding: 10px 16px;
-        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-        background: var(--accent-dark);
-        gap: 10px;
-        box-shadow: 0 -2px 16px rgba(0,0,0,0.2);
-      }
       .mob-bar-btn {
         flex: 1;
         display: flex;
@@ -1149,13 +1180,104 @@
       .mob-bar-btn:active { opacity: .85; transform: scale(.98); }
       .mob-bar-new { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.3); }
       .mob-bar-pdf { background: #fff; color: var(--accent-dark); }
+
+    /* ══════════════════════════════════════════════════════════════
+       RACK INTEGRATION — matches trillion-widget.html visual style.
+       Transparent body, cream cards, RuneScape UF font via --font.
+       --accent / --accent-light / --accent-dark / --bg are untouched:
+       they drive the user's own invoice branding + PDF output.
+    ══════════════════════════════════════════════════════════════ */
+
+    /* Transparency — rack frosted-glass panel shows through iframe */
+    html, body {
+      background: transparent !important;
+      background-image: none !important;
+      overflow-x: hidden !important;
     }
 
-    /* Hide mobile-only elements on desktop */
-    @media (min-width: 769px) {
-      #mobileForm,
-      #mobileStickyBar { display: none !important; }
+    /* In-iframe: hide ← Back link (drawer close is the back action) */
+    body.in-iframe .btn-back { display: none !important; }
+
+    /* Controls bar — stripped down; only ← Back remains, hidden in-iframe */
+    .controls-bar { background: transparent; box-shadow: none; }
+
+    /* Invoice card — add rack border */
+    .invoice-card { border: 2px solid #1A3A5C; }
+
+    /* Colour picker bar */
+    .colour-picker-bar {
+      background: var(--card);
+      border: 2px solid #1A3A5C;
+      box-shadow: none;
     }
+
+    /* Drop zone */
+    .drop-zone { background: var(--card); border-color: #1A3A5C; }
+
+    /* Tracker scroll wrapper — subtle definition inside the card */
+    .tracker-scroll-wrapper {
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+
+    /* Currency select — cream background inside card */
+    .currency-select { background: var(--card); border-color: var(--border); }
+
+    /* Accordion — cream sections, no individual card treatment */
+    .mob-section { background: var(--card); }
+    .mob-section, .mob-section:last-child { border-color: var(--border); }
+    .widget-header-row { border-bottom-color: var(--border); }
+    .mob-input {
+      background: var(--card);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .mob-input:focus { border-color: #1A3A5C; box-shadow: none; }
+    .mob-line-card  { background: var(--card); border-color: var(--border); }
+    .mob-line-desc,
+    .mob-line-input { background: var(--card); border-color: var(--border); }
+    .mob-line-desc:focus,
+    .mob-line-input:focus { border-color: #1A3A5C; }
+    .mob-exp-label:focus { border-color: #1A3A5C; }
+    .mob-section-header:active { background: rgba(200,220,240,0.25); }
+
+    /* Action row buttons */
+    .mob-bar-new {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid #1A3A5C;
+    }
+    .mob-bar-new:active { opacity: 0.85; }
+    .mob-bar-pdf { background: var(--accent); color: #fff; border: none; }
+
+    /* Delete-confirm modal */
+    #deleteConfirmBox  { background: var(--card); border: 2px solid #1A3A5C; box-shadow: none; }
+    #deleteConfirmHead { background: var(--card); color: var(--text); }
+    #deleteConfirmBody { background: var(--card); }
+    #deleteConfirmFoot { background: var(--card); border-top-color: var(--border); }
+    #deleteConfirmCancel {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    /* #deleteConfirmOk bg is set by JS (danger colour) — leave colour: #fff in place */
+
+    /* PDF debug modal */
+    #debugModalBox  { background: var(--card); border: 2px solid #1A3A5C; box-shadow: none; }
+    #debugModalHead { background: var(--card); color: var(--text); }
+    #debugModalHead strong { color: var(--text); }
+    #debugModalHead span   { color: var(--muted); opacity: 1; }
+    #debugModalClose {
+      background: rgba(26,58,92,0.10);
+      color: var(--text);
+    }
+    #debugModalClose:hover { background: rgba(26,58,92,0.20); }
+    #debugRaw  { background: rgba(200,220,240,0.25); border-color: var(--border); }
+    #debugParsed { background: rgba(200,220,240,0.20); border-color: var(--border); }
+
+    /* Logo popover */
+    .logo-popover { border-color: var(--border); background: var(--card); }
   </style>
 </head>
 <body>
@@ -1165,32 +1287,31 @@
 ═══════════════════════════════════════ -->
 <div class="controls-bar">
   <a href="index.html" class="btn btn-secondary btn-back" style="text-decoration:none">← Back</a>
-  <span class="app-title">Invoice Generator</span>
-
-  <select class="currency-select" id="currencySelect" onchange="setCurrency(this.value)">
-    <option value="£">£  GBP</option>
-    <option value="$">$  USD</option>
-    <option value="€">€  EUR</option>
-    <option value="CA$">CA$  CAD</option>
-    <option value="A$">A$  AUD</option>
-    <option value="¥">¥  JPY</option>
-    <option value="Fr">Fr  CHF</option>
-  </select>
-
-  <button class="btn btn-secondary" onclick="newInvoice()">+ New Invoice</button>
-  <button class="btn btn-primary"   onclick="downloadPDF()">&#8595; Download PDF</button>
 </div>
 
 <!-- ══════════════════════════════════════════════
-     MOBILE FORM VIEW  (hidden on desktop via CSS)
+     WIDGET FORM
 ═══════════════════════════════════════════════ -->
 <div id="mobileForm">
+<div class="widget-card">
 
-  <!-- Logo row -->
-  <div class="mob-logo-section">
-    <img id="mobLogoThumb" class="mob-logo-thumb" alt="Logo">
-    <label class="mob-logo-upload-btn" for="logoInput">&#128247; Upload Logo</label>
-    <button class="mob-logo-remove" id="mobLogoRemove" onclick="removeLogo()">Remove</button>
+  <!-- Header row: Upload Logo (left) + Currency selector (right) -->
+  <div class="widget-header-row">
+    <div class="widget-logo-area">
+      <img id="mobLogoThumb" class="mob-logo-thumb" alt="Logo">
+      <label class="mob-logo-upload-btn" for="logoInput">&#128247; Upload Logo</label>
+      <button class="mob-logo-remove" id="mobLogoRemove" onclick="removeLogo()">Remove</button>
+    </div>
+    <select class="currency-select" id="currencySelect" onchange="setCurrency(this.value)">
+      <option value="£">£  GBP</option>
+      <option value="$">$  USD</option>
+      <option value="€">€  EUR</option>
+      <option value="CA$">CA$  CAD</option>
+      <option value="A$">A$  AUD</option>
+      <option value="¥">¥  JPY</option>
+      <option value="Fr">Fr  CHF</option>
+      <option value="NZ$">NZ$  NZD</option>
+    </select>
   </div>
 
   <!-- Accordion sections -->
@@ -1379,15 +1500,63 @@
     </div>
 
   </div><!-- /mob-accordion -->
-</div><!-- /mobileForm -->
 
-<!-- ══════════════════════════════════════════════
-     MOBILE STICKY BOTTOM BAR  (hidden on desktop)
-═══════════════════════════════════════════════ -->
-<div id="mobileStickyBar">
-  <button class="mob-bar-btn mob-bar-new" onclick="newInvoice()">+ New Invoice</button>
-  <button class="mob-bar-btn mob-bar-pdf" onclick="downloadPDF()">&#8595; Download PDF</button>
-</div>
+  <!-- Action row: New Invoice + Download PDF (non-fixed, inside card) -->
+  <div class="widget-action-row">
+    <button class="mob-bar-btn mob-bar-new" onclick="newInvoice()">+ New Invoice</button>
+    <button class="mob-bar-btn mob-bar-pdf" onclick="downloadPDF()">&#8595; Download PDF</button>
+  </div>
+
+  <!-- Tracker section (below action row, inside widget card) -->
+  <div class="mob-section" id="mob-sec-7">
+    <div class="mob-section-header" onclick="toggleMobSection(7)">
+      <span class="mob-section-title">Invoice Tracker</span>
+      <span class="mob-section-check" id="mob-chk-7"></span>
+      <span class="mob-section-chevron">&#9660;</span>
+    </div>
+    <div class="mob-section-body">
+      <p style="font-size:0.82rem;color:var(--muted);margin:0 0 12px;">Drop PDFs to auto-import invoice data, or add rows manually.</p>
+      <!-- Drop zone -->
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-icon">&#128194;</div>
+        <p class="drop-text">Drag &amp; drop PDF invoices here to import</p>
+        <label class="btn-upload" for="pdfInput">Choose PDFs</label>
+        <input type="file" id="pdfInput" class="file-input" accept=".pdf" multiple onchange="handlePDFFiles(this.files)">
+      </div>
+      <div id="uploadStatus"></div>
+      <!-- Export buttons -->
+      <div class="tracker-export-bar">
+        <button class="btn-export btn-export-excel" onclick="exportTrackerExcel()">&#8595; Export as Excel</button>
+        <button class="btn-export btn-export-pdf"   onclick="exportTrackerPDF()">&#8595; Export as PDF</button>
+      </div>
+      <!-- Tracker table (scrolls horizontally) -->
+      <div class="tracker-scroll-wrapper">
+        <table class="tracker-table">
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Date Issued</th>
+              <th>Client</th>
+              <th>Description</th>
+              <th>Amount</th>
+              <th>Paid</th>
+              <th>Date Paid</th>
+              <th>Expenses</th>
+              <th><div class="tracker-tax-rate-wrap">Tax&nbsp;(<input type="number" id="taxRateInput" class="tracker-tax-rate-input" value="20" min="0" max="100" step="0.1" title="Global tax rate %">%)</div></th>
+              <th>Tax Aside</th>
+              <th>Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="trackerBody"></tbody>
+          <tfoot id="trackerFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div><!-- /mob-sec-7 -->
+
+</div><!-- /.widget-card -->
+</div><!-- /mobileForm -->
 
 <div class="page-content">
 
@@ -1574,56 +1743,6 @@
 
 </div><!-- /page-content -->
 
-<!-- ══════════════════════════════════════
-     INVOICE TRACKER
-═══════════════════════════════════════ -->
-<hr class="section-divider" style="margin:0 16px 32px;">
-
-<div class="tracker-section">
-    <div class="section-header">
-      <h2>Invoice Tracker</h2>
-      <p>Track payments, expenses, and tax. Drop PDFs below to auto-import invoice data.</p>
-    </div>
-
-    <!-- Drop zone -->
-    <div class="drop-zone" id="dropZone">
-      <div class="drop-icon">&#128194;</div>
-      <p class="drop-text">Drag &amp; drop PDF invoices here to import</p>
-      <label class="btn-upload" for="pdfInput">Choose PDFs</label>
-      <input type="file" id="pdfInput" class="file-input" accept=".pdf" multiple onchange="handlePDFFiles(this.files)">
-    </div>
-    <div id="uploadStatus"></div>
-
-    <!-- Tracker export buttons -->
-    <div class="tracker-export-bar">
-      <button class="btn-export btn-export-excel" onclick="exportTrackerExcel()">&#8595; Export as Excel</button>
-      <button class="btn-export btn-export-pdf"   onclick="exportTrackerPDF()">&#8595; Export as PDF</button>
-    </div>
-
-    <!-- Tracker table -->
-    <div class="tracker-scroll-wrapper">
-      <table class="tracker-table">
-        <thead>
-          <tr>
-            <th>Invoice #</th>
-            <th>Date Issued</th>
-            <th>Client</th>
-            <th>Description</th>
-            <th>Amount</th>
-            <th>Paid</th>
-            <th>Date Paid</th>
-            <th>Expenses</th>
-            <th><div class="tracker-tax-rate-wrap">Tax&nbsp;(<input type="number" id="taxRateInput" class="tracker-tax-rate-input" value="20" min="0" max="100" step="0.1" title="Global tax rate %">%)</div></th>
-            <th>Tax Aside</th>
-            <th>Notes</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="trackerBody"></tbody>
-        <tfoot id="trackerFoot"></tfoot>
-      </table>
-    </div>
-  </div>
 
 <!-- ── Delete confirm modal ── -->
 <div id="deleteConfirmModal">
@@ -3752,6 +3871,11 @@ function renderMobileExpenses() {
   });
   updateMobCheckmarks();
 }
+</script>
+<script>
+  if (window.self !== window.top) {
+    document.body.classList.add('in-iframe');
+  }
 </script>
 </body>
 </html>
