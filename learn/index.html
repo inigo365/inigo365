@@ -458,9 +458,12 @@
 
           function syncHeight() {
             try {
-              const bodyH = doc.body            ? doc.body.scrollHeight            : 0;
-              const docH  = doc.documentElement ? doc.documentElement.scrollHeight : 0;
-              const h = Math.max(bodyH, docH);
+              // Use body.scrollHeight only — documentElement.scrollHeight on iOS Safari
+              // reports the iframe's rendered height (not content height), so Math.max
+              // would pin the iframe tall and prevent it from shrinking after collapse.
+              const h = doc.body
+                ? doc.body.scrollHeight
+                : (doc.documentElement ? doc.documentElement.scrollHeight : 0);
               iframe.style.height = (h > 0 ? h : 600) + 'px';
             } catch (e) {}
           }

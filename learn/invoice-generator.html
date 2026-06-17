@@ -1195,9 +1195,11 @@
       overflow-x: hidden !important;
     }
 
-    /* Break the min-height:100vh feedback loop so syncHeight() can shrink the iframe.
-       Without this, body.scrollHeight = iframe height (via 1vh), so the iframe
-       never shrinks after content collapses. */
+    /* Break the min-height:100vh / vh feedback loop so syncHeight() can shrink the iframe.
+       body has min-height:100vh; html has no explicit rule but iOS Safari still computes
+       documentElement.scrollHeight from the iframe viewport height when unconstrained.
+       Both must be zeroed so body.scrollHeight reflects actual content, not the iframe size. */
+    html.in-iframe,
     body.in-iframe {
       min-height: 0 !important;
       height: auto !important;
@@ -3882,6 +3884,7 @@ function renderMobileExpenses() {
 </script>
 <script>
   if (window.self !== window.top) {
+    document.documentElement.classList.add('in-iframe');
     document.body.classList.add('in-iframe');
   }
 </script>
