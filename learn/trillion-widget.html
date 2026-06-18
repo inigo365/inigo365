@@ -303,12 +303,12 @@
     transition: transform 0.2s ease;
   }
   .tw-module.open .tw-chevron { transform: rotate(180deg); }
-  .tw-module-body { display: none; padding-top: 12px; }
+  .tw-module-body { display: none; padding-top: 8px; }
   .tw-module.open .tw-module-body { display: block; }
+  .tw-label-mobile { display: none; }
   @media (max-width: 560px) {
-    .tw-label-content { flex: 1 1 0; min-width: 0; }
-    .tw-label-sep { display: none; }
-    .tw-label-title, .tw-label-desc { display: block; }
+    .tw-label-content { display: none; }
+    .tw-label-mobile { flex: 1 1 0; min-width: 0; display: block; }
     button.module-label::after { display: none; }
   }
 
@@ -325,7 +325,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 10px;
+    margin-top: 10px;
+    margin-bottom: 4px;
   }
   .picto-pct {
     font-size: 1.85rem;
@@ -339,8 +340,7 @@
     grid-template-columns: repeat(40, minmax(0, 1fr));
     gap: 2px;
     width: 100%;
-    max-width: 400px;
-    margin: 0 auto 10px;
+    margin: 0 0 6px;
   }
   @media (max-width: 560px) {
     .picto-grid {
@@ -363,7 +363,7 @@
     font-size: 0.88rem;
     color: var(--muted);
     line-height: 1.5;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
   .picto-pct-of {
     font-size: 0.78rem;
@@ -376,8 +376,8 @@
     font-size: 0.88rem;
     color: var(--muted);
     line-height: 1.5;
-    min-height: 2.6em;
-    margin-bottom: 4px;
+    min-height: 2.2em;
+    margin-bottom: 2px;
   }
   /* ── Custom comparison picker ──────────────────────────────────── */
   .picto-picker-wrap {
@@ -583,7 +583,7 @@
 
   <!-- MODULE 1: SCALE -->
   <div id="mod-1" class="card col gap-14 tw-module" style="margin-bottom:14px">
-    <button class="module-label" onclick="toggleModule('mod-1')"><span class="tw-label-content"><span class="tw-label-title">Module 01 — Scale</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">$1,000,000,000,000</span></span><span class="tw-chevron">▾</span></button>
+    <button class="module-label" onclick="toggleModule('mod-1')"><span class="tw-label-content"><span class="tw-label-title">Module 01 — Scale</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">$1,000,000,000,000</span></span><span class="tw-label-mobile">Scale</span><span class="tw-chevron">▾</span></button>
     <div class="tw-module-body">
 
     <div class="stat-grid">
@@ -641,7 +641,7 @@
 
   <!-- MODULE 2: ALTERNATIVES -->
   <div id="mod-2" class="card col gap-14 tw-module" style="margin-bottom:14px">
-    <button class="module-label" onclick="toggleModule('mod-2')"><span class="tw-label-content"><span class="tw-label-title">Module 02 — What Else</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">Opportunity Cost</span></span><span class="tw-chevron">▾</span></button>
+    <button class="module-label" onclick="toggleModule('mod-2')"><span class="tw-label-content"><span class="tw-label-title">Module 02 — What Else</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">Opportunity Cost</span></span><span class="tw-label-mobile">The Cost</span><span class="tw-chevron">▾</span></button>
     <div class="tw-module-body">
 
     <div class="picto-blurb">Each square represents $1 billion. The full grid of 1,000 squares = $1 trillion.</div>
@@ -669,7 +669,7 @@
 
   <!-- MODULE 3: THE CONTRAST -->
   <div id="mod-3" class="card col gap-14 tw-module" style="margin-bottom:14px">
-    <button class="module-label" onclick="toggleModule('mod-3')"><span class="tw-label-content"><span class="tw-label-title">Module 03 — The Contrast</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">Actions / Harm</span></span><span class="tw-chevron">▾</span></button>
+    <button class="module-label" onclick="toggleModule('mod-3')"><span class="tw-label-content"><span class="tw-label-title">Module 03 — The Contrast</span><span class="tw-label-sep"> &nbsp;·&nbsp; </span><span class="tw-label-desc">Actions / Harm</span></span><span class="tw-label-mobile">Actions/Harm</span><span class="tw-chevron">▾</span></button>
     <div class="tw-module-body">
 
     <div class="contrast-intro">
@@ -781,7 +781,11 @@
     document.body.classList.add('in-iframe');
   }
   function toggleModule(id) {
-    document.getElementById(id).classList.toggle('open');
+    const el = document.getElementById(id);
+    el.classList.toggle('open');
+    if (id === 'mod-3' && el.classList.contains('open') && typeof carouselRefresh === 'function') {
+      requestAnimationFrame(carouselRefresh);
+    }
   }
 </script>
 <script>
@@ -918,6 +922,7 @@
   }
 
   window.carouselMove = function(dir) { go(idx + dir); };
+  window.carouselRefresh = function() { go(idx); };
 
   // Touch swipe
   let touchX = null;
