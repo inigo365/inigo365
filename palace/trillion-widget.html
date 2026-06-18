@@ -310,6 +310,8 @@
     .tw-label-content { display: none; }
     .tw-label-mobile { flex: 1 1 0; min-width: 0; display: block; }
     button.module-label::after { display: none; }
+    button.module-label { text-align: left; }
+    .tw-label-src { flex: 1 1 0; min-width: 0; }
   }
 
   /* ── Footer ─────────────────────────────────────────────────────── */
@@ -777,7 +779,7 @@
   </div>
 
   <div class="card tw-module" id="mod-sources" style="margin-top:14px">
-    <button class="module-label" onclick="toggleModule('mod-sources')">sources<span class="tw-chevron">▾</span></button>
+    <button class="module-label" onclick="toggleModule('mod-sources')"><span class="tw-label-src">sources</span><span class="tw-chevron">▾</span></button>
     <div class="tw-module-body">
       <p class="widget-footer" style="margin:0">
         UN WFP, IEA, UNESCO, WHO, USAID impact estimates, UK ONS, NHS England.<br>
