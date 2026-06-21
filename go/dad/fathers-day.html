@@ -399,7 +399,7 @@
     dial.setAttribute('aria-valuenow', freq.toFixed(1));
 
     const distance = Math.abs(freq - TARGET_F);
-    const closeness = Math.max(0, 1 - distance / 4); // 0 far, 1 right on it
+    const closeness = Math.pow(Math.max(0, 1 - distance / 2.5), 0.35); // clears quickly within ~2.5 MHz
 
     photo.style.filter = `blur(${16 * (1 - closeness)}px) grayscale(${0.6 * (1 - closeness)}) brightness(${0.8 + 0.2 * closeness})`;
     staticOverlay.style.opacity = (1 - closeness).toFixed(2);
