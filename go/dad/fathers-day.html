@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dad FM</title>
+<style>
+  /* ---------------------------------------------------------
+     PALETTE
+     Cream + navy to match the rest of inigo365.com, with a
+     warm gold for the "live" / tuned-in state.
+  ----------------------------------------------------------*/
+  :root{
+    --cream: #F4EFE3;
+    --cream-dim: #E7E0D0;
+    --navy: #1B2A4A;
+    --navy-deep: #11192B;
+    --gold: #C9A24B;
+    --lock-green: #6E9B6E;
+  }
+
+  /* ---------------------------------------------------------
+     FONT
+     RuneScape-UF should already be loaded site-wide on
+     inigo365.com. If you're previewing this file on its own
+     (outside the site), it'll fall back to the mono stack.
+     If it's NOT already loaded globally, add your existing
+     @font-face block here before the body rule.
+  ----------------------------------------------------------*/
+  @font-face{
+    font-family: 'RuneScape-UF';
+    src: local('RuneScape-UF');
+    font-display: swap;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--navy-deep);
+    font-family: 'DejaVu Sans Mono', 'RuneScape-UF', monospace;
+    padding: 24px;
+  }
+
+  .rack{
+    width: min(420px, 100%);
+    background: var(--cream);
+    border: 3px solid var(--navy);
+    border-radius: 10px;
+    padding: 22px 22px 26px;
+    position: relative;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+  }
+
+  /* corner screws, small nod to the rack-module look */
+  .screw{
+    position: absolute;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--navy);
+    opacity: 0.5;
+  }
+  .screw.tl{ top: 10px; left: 10px; }
+  .screw.tr{ top: 10px; right: 10px; }
+  .screw.bl{ bottom: 10px; left: 10px; }
+  .screw.br{ bottom: 10px; right: 10px; }
+
+  .plate{
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .plate h1{
+    font-family: 'RuneScape-UF', monospace;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--navy);
+    margin: 0;
+  }
+  .plate p{
+    margin: 4px 0 0;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--navy);
+    opacity: 0.6;
+    text-transform: uppercase;
+  }
+
+  /* LCD-style frequency readout */
+  .readout{
+    background: var(--navy-deep);
+    color: var(--gold);
+    font-family: 'RuneScape-UF', monospace;
+    font-size: 26px;
+    text-align: center;
+    padding: 8px 0;
+    border-radius: 6px;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+    border: 2px solid var(--navy);
+  }
+  .readout span.unit{ font-size: 12px; opacity: 0.7; margin-left: 4px; }
+
+  /* the dial itself */
+  .dial-wrap{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 18px;
+    user-select: none;
+  }
+  .dial{
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #2b3e63, var(--navy) 70%);
+    border: 4px solid var(--navy);
+    position: relative;
+    cursor: grab;
+    touch-action: none;
+  }
+  .dial:active{ cursor: grabbing; }
+  .dial-indicator{
+    position: absolute;
+    top: 8px; left: 50%;
+    width: 4px; height: 38px;
+    background: var(--gold);
+    border-radius: 2px;
+    transform-origin: 50% 57px; /* roughly dial center */
+    transform: translateX(-50%) rotate(0deg);
+  }
+  .dial-cap{
+    position: absolute;
+    inset: 38px;
+    border-radius: 50%;
+    background: var(--cream-dim);
+    border: 2px solid var(--navy);
+  }
+  .lock-light{
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #5a4a2a;
+    margin-top: 10px;
+    box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .lock-light.live{
+    background: var(--lock-green);
+    box-shadow: 0 0 10px var(--lock-green);
+  }
+  .hint{
+    font-size: 10px;
+    color: var(--navy);
+    opacity: 0.55;
+    margin-top: 8px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  /* photo viewport, starts buried in static */
+  .viewport{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid var(--navy);
+    background: #888;
+    margin-bottom: 16px;
+  }
+  .photo{
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: blur(16px) grayscale(0.6) brightness(0.8);
+    transform: scale(1.05);
+    transition: filter 0.15s linear;
+  }
+  /* swap this image for your actual photo. e.g.
+     <img class="photo" id="photo" src="dad-mum-baby.jpg" alt="..."> */
+  .static-overlay{
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, transparent 2px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0px, transparent 2px);
+    opacity: 1;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    transition: opacity 0.15s linear;
+  }
+  .viewport-caption{
+    position: absolute;
+    bottom: 6px; left: 8px;
+    font-size: 10px;
+    color: var(--cream);
+    background: rgba(0,0,0,0.4);
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+  }
+
+  /* message card, hidden until locked */
+  .message{
+    background: var(--cream-dim);
+    border: 2px solid var(--navy);
+    border-radius: 6px;
+    padding: 16px 18px;
+    color: var(--navy);
+    font-size: 14px;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .message.show{
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .message h2{
+    font-family: 'RuneScape-UF', monospace;
+    font-size: 16px;
+    margin: 0 0 8px;
+    letter-spacing: 1px;
+  }
+  .message p{ margin: 0 0 10px; }
+  .message .sign{
+    font-size: 13px;
+    opacity: 0.8;
+  }
+
+  .retune{
+    display: block;
+    margin: 14px auto 0;
+    background: var(--navy);
+    color: var(--cream);
+    border: none;
+    font-family: 'RuneScape-UF', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 8px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .retune.show{ opacity: 0.7; }
+  .retune:hover{ opacity: 1; }
+
+  /* confetti */
+  .confetti{
+    position: fixed;
+    top: -10px;
+    width: 8px; height: 8px;
+    border-radius: 1px;
+    pointer-events: none;
+    animation: fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform: translateY(100vh) rotate(540deg); opacity: 0.2; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .photo{ transition: none; }
+    .static-overlay{ transition: none; }
+    .message{ transition: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="rack">
+    <div class="screw tl"></div>
+    <div class="screw tr"></div>
+    <div class="screw bl"></div>
+    <div class="screw br"></div>
+
+    <div class="plate">
+      <h1>DAD FM</h1>
+      <p>tune in to find him</p>
+    </div>
+
+    <div class="readout" id="readout">88.0<span class="unit">MHz</span></div>
+
+    <div class="dial-wrap">
+      <div class="dial" id="dial" tabindex="0" role="slider"
+           aria-label="Tuning dial, use left and right arrow keys to tune"
+           aria-valuemin="88" aria-valuemax="99" aria-valuenow="88">
+        <div class="dial-indicator" id="indicator"></div>
+        <div class="dial-cap"></div>
+      </div>
+      <div class="lock-light" id="lockLight"></div>
+      <div class="hint">drag the dial &nbsp;&middot;&nbsp; arrow keys also work</div>
+    </div>
+
+    <div class="viewport">
+      <!-- Swap the src below for your actual photo before this goes live -->
+      <img class="photo" id="photo"
+           src="https://placehold.co/600x450/9a9a9a/efefef?text=your+photo+here"
+           alt="Dad, Mum and baby Iggy">
+      <div class="static-overlay" id="staticOverlay"></div>
+      <div class="viewport-caption" id="caption">signal weak</div>
+    </div>
+
+    <div class="message" id="message">
+      <h2>Happy Father's Day, Dad</h2>
+      <p>Thank you for everything you've done for us, the big things and the
+         quiet, easy-to-miss ones too. We love you so much, and we're so
+         proud of you.</p>
+      <p class="sign">Love, Iggy</p>
+    </div>
+
+    <button class="retune" id="retuneBtn">retune</button>
+  </div>
+
+<script>
+(function(){
+  const dial = document.getElementById('dial');
+  const indicator = document.getElementById('indicator');
+  const readout = document.getElementById('readout');
+  const photo = document.getElementById('photo');
+  const staticOverlay = document.getElementById('staticOverlay');
+  const lockLight = document.getElementById('lockLight');
+  const message = document.getElementById('message');
+  const retuneBtn = document.getElementById('retuneBtn');
+  const caption = document.getElementById('caption');
+
+  // Dial range: 88.0 to 99.0 MHz, mapped to -135deg .. 135deg
+  const MIN_F = 88.0, MAX_F = 99.0;
+  const TARGET_F = 94.5;     // "Dad's frequency" - change if you like
+  const TOLERANCE = 0.6;     // how close counts as locked
+  let angle = -135;          // current rotation, starts at MIN_F
+  let locked = false;
+  let lockTimer = null;
+
+  function angleToFreq(a){
+    const t = (a + 135) / 270;
+    return MIN_F + t * (MAX_F - MIN_F);
+  }
+
+  function updateFromAngle(a){
+    angle = Math.max(-135, Math.min(135, a));
+    const freq = angleToFreq(angle);
+    indicator.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+    readout.innerHTML = freq.toFixed(1) + '<span class="unit">MHz</span>';
+    dial.setAttribute('aria-valuenow', freq.toFixed(1));
+
+    const distance = Math.abs(freq - TARGET_F);
+    const closeness = Math.max(0, 1 - distance / 4); // 0 far, 1 right on it
+
+    photo.style.filter = `blur(${16 * (1 - closeness)}px) grayscale(${0.6 * (1 - closeness)}) brightness(${0.8 + 0.2 * closeness})`;
+    staticOverlay.style.opacity = (1 - closeness).toFixed(2);
+
+    if (distance <= TOLERANCE){
+      caption.textContent = 'locked on';
+      lockLight.classList.add('live');
+      if (!locked && !lockTimer){
+        lockTimer = setTimeout(reveal, 500);
+      }
+    } else {
+      caption.textContent = distance < 1.5 ? 'almost there' : 'signal weak';
+      lockLight.classList.remove('live');
+      if (lockTimer){ clearTimeout(lockTimer); lockTimer = null; }
+    }
+  }
+
+  function reveal(){
+    locked = true;
+    message.classList.add('show');
+    retuneBtn.classList.add('show');
+    burstConfetti();
+  }
+
+  function reset(){
+    locked = false;
+    message.classList.remove('show');
+    retuneBtn.classList.remove('show');
+    updateFromAngle(-135);
+  }
+
+  function burstConfetti(){
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const colors = ['#C9A24B', '#1B2A4A', '#6E9B6E', '#E7E0D0'];
+    const rackRect = dial.getBoundingClientRect();
+    for (let i = 0; i < 26; i++){
+      const piece = document.createElement('div');
+      piece.className = 'confetti';
+      piece.style.left = (rackRect.left + Math.random() * 200 - 50) + 'px';
+      piece.style.background = colors[i % colors.length];
+      piece.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 3000);
+    }
+  }
+
+  // Drag handling
+  let dragging = false;
+  let startAngle = 0;
+  let startPointerAngle = 0;
+
+  function pointerAngle(e){
+    const rect = dial.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    return Math.atan2(dx, -dy) * (180 / Math.PI);
+  }
+
+  dial.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    startAngle = angle;
+    startPointerAngle = pointerAngle(e);
+    dial.setPointerCapture(e.pointerId);
+  });
+
+  dial.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const delta = pointerAngle(e) - startPointerAngle;
+    updateFromAngle(startAngle + delta);
+  });
+
+  dial.addEventListener('pointerup', () => { dragging = false; });
+  dial.addEventListener('pointercancel', () => { dragging = false; });
+
+  dial.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp'){
+      updateFromAngle(angle + 4); e.preventDefault();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown'){
+      updateFromAngle(angle - 4); e.preventDefault();
+    }
+  });
+
+  retuneBtn.addEventListener('click', reset);
+
+  updateFromAngle(angle);
+})();
+</script>
+
+</body>
+</html>
