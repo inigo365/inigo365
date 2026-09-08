@@ -166,27 +166,37 @@ body{ animation: pgFadeIn 0.5s ease forwards; }
    ===================================================================== */
 .gseed{ width: 4px; height: 4px; background: transparent; }
 
-/* ▶ filled right-triangle (play) */
+/* Every pixel carries a 0.5px spread so neighbours overlap ~1px — no
+   subpixel seams/holes between blocks at any DPR, corners stay square. */
+
+/* ▶ solid filled right-triangle (play) — cols -4/0/4, heights 5/3/1 */
 .play-sprite{
   box-shadow:
-    -4px -8px 0 0 var(--btn), -4px -4px 0 0 var(--btn), -4px 0 0 0 var(--btn), -4px 4px 0 0 var(--btn), -4px 8px 0 0 var(--btn),
-     0   -4px 0 0 var(--btn),  0    0  0 0 var(--btn),  0   4px 0 0 var(--btn),
-     4px  0   0 0 var(--btn);
+    -4px -8px 0 0.5px var(--btn), -4px -4px 0 0.5px var(--btn), -4px 0 0 0.5px var(--btn), -4px 4px 0 0.5px var(--btn), -4px 8px 0 0.5px var(--btn),
+     0   -4px 0 0.5px var(--btn),  0    0  0 0.5px var(--btn),  0   4px 0 0.5px var(--btn),
+     4px  0   0 0.5px var(--btn);
 }
-/* ❚❚ two bars (pause) */
+/* ❚❚ two solid bars (pause) — 2-col bars, 5px centre gap, fixed px so
+   they're identical at every viewport width */
 .pause-sprite{
   box-shadow:
-    -8px -8px 0 0 var(--btn), -8px -4px 0 0 var(--btn), -8px 0 0 0 var(--btn), -8px 4px 0 0 var(--btn), -8px 8px 0 0 var(--btn),
-    -4px -8px 0 0 var(--btn), -4px -4px 0 0 var(--btn), -4px 0 0 0 var(--btn), -4px 4px 0 0 var(--btn), -4px 8px 0 0 var(--btn),
-     4px -8px 0 0 var(--btn),  4px -4px 0 0 var(--btn),  4px 0 0 0 var(--btn),  4px 4px 0 0 var(--btn),  4px 8px 0 0 var(--btn),
-     8px -8px 0 0 var(--btn),  8px -4px 0 0 var(--btn),  8px 0 0 0 var(--btn),  8px 4px 0 0 var(--btn),  8px 8px 0 0 var(--btn);
+    -9px -8px 0 0.5px var(--btn), -9px -4px 0 0.5px var(--btn), -9px 0 0 0.5px var(--btn), -9px 4px 0 0.5px var(--btn), -9px 8px 0 0.5px var(--btn),
+    -5px -8px 0 0.5px var(--btn), -5px -4px 0 0.5px var(--btn), -5px 0 0 0.5px var(--btn), -5px 4px 0 0.5px var(--btn), -5px 8px 0 0.5px var(--btn),
+     5px -8px 0 0.5px var(--btn),  5px -4px 0 0.5px var(--btn),  5px 0 0 0.5px var(--btn),  5px 4px 0 0.5px var(--btn),  5px 8px 0 0.5px var(--btn),
+     9px -8px 0 0.5px var(--btn),  9px -4px 0 0.5px var(--btn),  9px 0 0 0.5px var(--btn),  9px 4px 0 0.5px var(--btn),  9px 8px 0 0.5px var(--btn);
 }
-/* ✦ four-point sparkle/star (links) */
+/* ⛓ pixel chain-link (links) — two hollow 3×3 rings interlocking on a
+   down-right diagonal (ring A upper-left, ring B lower-right) */
 .link-sprite{
   box-shadow:
-     0  -8px 0 0 var(--btn),  0 -4px 0 0 var(--btn),
-    -8px  0  0 0 var(--btn), -4px 0 0 0 var(--btn),  0 0 0 0 var(--btn),  4px 0 0 0 var(--btn),  8px 0 0 0 var(--btn),
-     0   4px 0 0 var(--btn),  0  8px 0 0 var(--btn);
+    /* ring A (centre -4,-2) */
+    -8px -6px 0 0.5px var(--btn), -4px -6px 0 0.5px var(--btn),  0 -6px 0 0.5px var(--btn),
+    -8px -2px 0 0.5px var(--btn),                                0 -2px 0 0.5px var(--btn),
+    -8px  2px 0 0.5px var(--btn), -4px  2px 0 0.5px var(--btn),  0  2px 0 0.5px var(--btn),
+    /* ring B (centre 4,2) */
+     4px -2px 0 0.5px var(--btn),  8px -2px 0 0.5px var(--btn),
+                                   8px  2px 0 0.5px var(--btn),
+     0   6px 0 0.5px var(--btn),  4px  6px 0 0.5px var(--btn),  8px 6px 0 0.5px var(--btn);
 }
 
 /* scrubber + time group */
@@ -429,7 +439,17 @@ function bindMediaSession(){
   navigator.mediaSession.metadata = new MediaMetadata({
     title: TRACK_TITLE,
     artist: TRACK_ARTIST,
-    album: TRACK_TITLE
+    album: TRACK_TITLE,
+    // cover art shown on the lock screen / notification media player.
+    // lifemaxxing.png is 600x600; sizes listed so each OS picks a match.
+    artwork: [
+      { src: "lifemaxxing.png", sizes: "96x96",   type: "image/png" },
+      { src: "lifemaxxing.png", sizes: "192x192", type: "image/png" },
+      { src: "lifemaxxing.png", sizes: "256x256", type: "image/png" },
+      { src: "lifemaxxing.png", sizes: "384x384", type: "image/png" },
+      { src: "lifemaxxing.png", sizes: "512x512", type: "image/png" },
+      { src: "lifemaxxing.png", sizes: "600x600", type: "image/png" }
+    ]
   });
 
   navigator.mediaSession.setActionHandler("play", () => {
