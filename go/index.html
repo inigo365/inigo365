@@ -113,8 +113,13 @@ button {
   width: 100%;
   min-height: 100vh;
   background: transparent;
-  transition: opacity 0.4s ease;
   position: relative;
+
+  /* Hidden by default from the very first paint — this is a static rule in
+     <head>, so the element is already invisible before any content paints
+     (nothing to flash). Deliberately NO transition here, so the hidden state
+     snaps instantly and the accidental pre-ready flip can never animate. */
+  opacity: 0;
 
   display: flex;
   justify-content: center;
@@ -127,16 +132,11 @@ button {
   overflow-y: auto;
 }
 
-/* Hold the whole password screen invisible until fonts, banner image and
-   the portal tiles are all ready, so the box never visibly resizes/reflows
-   after first paint. Revealed by JS once everything has settled. */
-.password-screen.pw-gated{
-  opacity: 0 !important;
-  transition: none !important;
-  pointer-events: none;
-}
-/* one clean fade-in once ready (no layout animation) */
-.password-screen.pw-reveal{
+/* The ONLY place opacity ever becomes 1, and the ONLY transition. Added by JS
+   exactly once — after fonts.ready + banner image load + initial
+   renderPortalDock() have all completed — for a single clean fade-in. */
+.password-screen.ready{
+  opacity: 1;
   transition: opacity 180ms ease;
 }
 
@@ -1396,7 +1396,7 @@ body{
 
 <body>
 
-<div class="password-screen pw-gated" id="passwordScreen">
+<div class="password-screen" id="passwordScreen">
   <div class="password-row">
     <div class="password-box">
       <div class="site-banner" aria-label="inigo365 banner">
@@ -2025,14 +2025,17 @@ function whenPasswordReady(done) {
 }
 
 function revealPasswordScreen() {
-  // Arm the fade transition, then drop the gate on the next frame so the
-  // final, fully-sized layout fades in without any visible resize.
-  passwordScreen.classList.add("pw-reveal");
+  // The single, canonical "become visible" step: base state is opacity:0 with
+  // no transition, so adding .ready fades the fully-sized layout in exactly
+  // once. Any inline opacity from the content-view fade is cleared so the
+  // class governs. This is the ONLY code that makes the screen visible.
+  passwordScreen.style.opacity = "";
+  passwordScreen.classList.add("ready");
   requestAnimationFrame(() => {
-    passwordScreen.classList.remove("pw-gated");
     // Only after the first view is visible, warm the cache for the other
     // views' tile images so viewSwitch clicks paint instantly.
     preloadDockImages();
+    passwordInput.focus();
   });
 }
 
@@ -2286,7 +2289,10 @@ function resetToPassword() {
 
   contentPage.style.display = "none";
   passwordScreen.style.display = "flex";
-  passwordScreen.style.opacity = 1;
+  // Don't set opacity here — the .ready class (still present) is the single
+  // authority for visibility. Just clear the inline opacity the content-view
+  // fade set, so .ready fades it back in.
+  passwordScreen.style.opacity = "";
 
   videoWrapper.style.display = "none";
   videoWrapper.style.opacity = 0;
@@ -2320,12 +2326,13 @@ function hardResetPasswordUI() {
 
   contentPage.style.display = "none";
   passwordScreen.style.display = "flex";
-  passwordScreen.style.opacity = 1;
 
-  // Re-hold the screen invisible until it's ready again, so a back/forward
-  // (BFCache) restore doesn't show the resize glitch either.
-  passwordScreen.classList.remove("pw-reveal");
-  passwordScreen.classList.add("pw-gated");
+  // Re-hide instantly: removing .ready snaps back to the base opacity:0 state,
+  // which has NO transition, so there is no visible fade-out. Clear any inline
+  // opacity so the base rule governs. The screen becomes visible again only
+  // through revealPasswordScreen() once the ready-gate passes.
+  passwordScreen.classList.remove("ready");
+  passwordScreen.style.opacity = "";
 
   videoWrapper.style.display = "none";
   videoWrapper.style.opacity = 0;
@@ -2344,13 +2351,17 @@ function hardResetPasswordUI() {
 
   renderPortalDock((function(){ try { return sessionStorage.getItem("portal_view") || "main"; } catch { return "main"; } })());
   setButtonsForInputState();
+  // Same single gate as first load: become visible only when ready.
+  // (revealPasswordScreen() also handles focus.)
   whenPasswordReady(revealPasswordScreen);
-  requestAnimationFrame(() => passwordInput.focus());
 }
 
 window.addEventListener("pageshow", (e) => {
-  hardResetPasswordUI();
+  // Only re-run the reset + ready-gate on a genuine BFCache restore. On the
+  // first (non-persisted) load, the inline ready-gate already handled the
+  // single reveal — running it again here would hide-then-reveal and flash.
   if (e.persisted) {
+    hardResetPasswordUI();
     // BFCache restore — body opacity may have been faded out before navigating away
     document.body.style.transition = 'none';
     document.body.style.opacity = '1';
