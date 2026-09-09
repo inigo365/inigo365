@@ -127,6 +127,19 @@ button {
   overflow-y: auto;
 }
 
+/* Hold the whole password screen invisible until fonts, banner image and
+   the portal tiles are all ready, so the box never visibly resizes/reflows
+   after first paint. Revealed by JS once everything has settled. */
+.password-screen.pw-gated{
+  opacity: 0 !important;
+  transition: none !important;
+  pointer-events: none;
+}
+/* one clean fade-in once ready (no layout animation) */
+.password-screen.pw-reveal{
+  transition: opacity 180ms ease;
+}
+
 /* If screen is small, top-align so it feels like an app and doesn't look cramped */
 @media (max-width: 768px){
   .password-screen{
@@ -937,7 +950,7 @@ body{
 .password-box{
   position: relative; /* needed for tray layering */
   padding: 18px 18px 16px;     /* breathing room inside the tray */
-  border: 2px solid #000;
+  border: 3px solid #000;
 
   /* frosted tray */
   background: rgba(255,255,255,0.69);
@@ -1383,7 +1396,7 @@ body{
 
 <body>
 
-<div class="password-screen" id="passwordScreen">
+<div class="password-screen pw-gated" id="passwordScreen">
   <div class="password-row">
     <div class="password-box">
       <div class="site-banner" aria-label="inigo365 banner">
@@ -1947,6 +1960,56 @@ function renderPortalDock(viewName) {
 
 renderPortalDock((function(){ try { return sessionStorage.getItem("portal_view") || "main"; } catch { return "main"; } })());
 
+/* =========================================================
+   REVEAL GATING — hold .password-screen invisible until the
+   webfont, the banner image and the portal tiles are all
+   ready, then fade the fully-sized box in once (no reflow).
+   ========================================================= */
+function whenPasswordReady(done) {
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    clearTimeout(safety);
+    done();
+  };
+
+  // Safety net so the UI never hangs forever if a font/image never resolves,
+  // and the fallback path for browsers without the Font Loading API.
+  const safety = setTimeout(finish, 800);
+
+  // 1) Webfont loaded (feature-detected; falls back to the safety timeout).
+  const fontsReady = (document.fonts && document.fonts.ready)
+    ? document.fonts.ready.catch(() => {})
+    : Promise.resolve();
+
+  // 2) Banner image has loaded (or errored) — no fixed timeout.
+  const bannerImg = passwordScreen.querySelector(".site-banner img");
+  const imgReady = new Promise((resolve) => {
+    if (!bannerImg || bannerImg.complete) return resolve();
+    const onDone = () => {
+      bannerImg.removeEventListener("load", onDone);
+      bannerImg.removeEventListener("error", onDone);
+      resolve();
+    };
+    bannerImg.addEventListener("load", onDone);
+    bannerImg.addEventListener("error", onDone);
+  });
+
+  // 3) renderPortalDock() has already run synchronously above, so the tiles
+  //    are attached before we wait on the async conditions.
+  Promise.all([fontsReady, imgReady]).then(finish);
+}
+
+function revealPasswordScreen() {
+  // Arm the fade transition, then drop the gate on the next frame so the
+  // final, fully-sized layout fades in without any visible resize.
+  passwordScreen.classList.add("pw-reveal");
+  requestAnimationFrame(() => passwordScreen.classList.remove("pw-gated"));
+}
+
+whenPasswordReady(revealPasswordScreen);
+
 /**
  * Cheat sequences -> unlocks.
  * Tokens: U D L R A B
@@ -2231,6 +2294,11 @@ function hardResetPasswordUI() {
   passwordScreen.style.display = "flex";
   passwordScreen.style.opacity = 1;
 
+  // Re-hold the screen invisible until it's ready again, so a back/forward
+  // (BFCache) restore doesn't show the resize glitch either.
+  passwordScreen.classList.remove("pw-reveal");
+  passwordScreen.classList.add("pw-gated");
+
   videoWrapper.style.display = "none";
   videoWrapper.style.opacity = 0;
   videoWrapper.classList.remove("mobile-fill");
@@ -2248,6 +2316,7 @@ function hardResetPasswordUI() {
 
   renderPortalDock((function(){ try { return sessionStorage.getItem("portal_view") || "main"; } catch { return "main"; } })());
   setButtonsForInputState();
+  whenPasswordReady(revealPasswordScreen);
   requestAnimationFrame(() => passwordInput.focus());
 }
 
