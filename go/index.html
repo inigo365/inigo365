@@ -1886,6 +1886,29 @@ const DOCK_VIEWS = {
   ]
 };
 
+/* Preload every unique tile bgImage/sprite across all views so switching
+   between main / games / bsides paints from cache with no pop-in. Runs once,
+   in the background, and never throws or blocks if an image fails to load. */
+let _dockImagesPreloaded = false;
+function preloadDockImages() {
+  if (_dockImagesPreloaded) return;
+  _dockImagesPreloaded = true;
+  try {
+    const urls = new Set();
+    for (const view of Object.values(DOCK_VIEWS)) {
+      for (const item of view) {
+        if (item.bgImage) urls.add(item.bgImage);
+        if (item.sprite)  urls.add(item.sprite);
+      }
+    }
+    for (const url of urls) {
+      const img = new Image();
+      img.decoding = "async";
+      img.src = url; // fetch into cache; failures are ignored
+    }
+  } catch {}
+}
+
 const portalDock = document.getElementById("portalDock");
 const portalHint = document.getElementById("portalHint");
 
@@ -2005,7 +2028,12 @@ function revealPasswordScreen() {
   // Arm the fade transition, then drop the gate on the next frame so the
   // final, fully-sized layout fades in without any visible resize.
   passwordScreen.classList.add("pw-reveal");
-  requestAnimationFrame(() => passwordScreen.classList.remove("pw-gated"));
+  requestAnimationFrame(() => {
+    passwordScreen.classList.remove("pw-gated");
+    // Only after the first view is visible, warm the cache for the other
+    // views' tile images so viewSwitch clicks paint instantly.
+    preloadDockImages();
+  });
 }
 
 whenPasswordReady(revealPasswordScreen);
