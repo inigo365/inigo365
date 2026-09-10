@@ -899,7 +899,7 @@ body { animation: pgFadeIn 0.4s ease forwards; }
    Put the file at: images/background.jpg
    ========================= */
 html {
-  background-image: url("images/background.png");
+  background-image: url("images/background.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -907,7 +907,7 @@ html {
 }
 
 body{
-  background-image: url("images/background.png");
+  background-image: url("images/background.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -1400,7 +1400,7 @@ body{
   <div class="password-row">
     <div class="password-box">
       <div class="site-banner" aria-label="inigo365 banner">
-    <img src="images/inigo365-banner.png" alt="inigo365">
+    <img src="images/inigo365-banner.webp" alt="inigo365">
   </div>
 
       <div class="portal-dock" id="portalDock" aria-label="quick portal links"></div>
@@ -1870,19 +1870,19 @@ const actions = {
 // ===== PUBLIC DOCK (two views: main / games) =====
 const DOCK_VIEWS = {
   main: [
-    { key: "home",        title: "creative",              sub: "portfolio", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.png" },
-    { key: "games",       title: "the palace",               sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    redirect: "../palace/index.html", bgImage: "images/10.png" },
-    { key: "kintsugi", title: "b-sides",              sub: "[wip]",      glyph: "→", sprite: "images/bart-spin.gif",  viewSwitch: "bsides", bgImage: "images/20k.png" }
+    { key: "home",        title: "creative",              sub: "portfolio", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.webp" },
+    { key: "games",       title: "the palace",               sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    redirect: "../palace/index.html", bgImage: "images/10.webp" },
+    { key: "kintsugi", title: "b-sides",              sub: "[wip]",      glyph: "→", sprite: "images/bart-spin.gif",  viewSwitch: "bsides", bgImage: "images/20k.webp" }
   ],
   games: [
-    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess2-spin.gif",      viewSwitch: "bsides", bgImage: "images/20m.png" },
-    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",   glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/50.png" },
-    { key: "bag",           title: "put the bag",            sub: "in the bag",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/100.png" },
+    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess2-spin.gif",      viewSwitch: "bsides", bgImage: "images/20m.webp" },
+    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",   glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/50.webp" },
+    { key: "bag",           title: "put the bag",            sub: "in the bag",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/100.webp" },
   ],
   bsides: [
-    { key: "mainmenu",        title: "main menu",  sub: "back",     glyph: "←", sprite: "images/chess2-spin.gif", viewSwitch: "main",  bgImage: "images/20m.png" },
-    { key: "bsides-games",    title: "games",      sub: "inigo365", glyph: "→", sprite: "images/bart-spin.gif",   viewSwitch: "games", bgImage: "images/50.png" },
-    { key: "bsides-kintsugi", title: "kintsugi",   sub: "[wip]",    glyph: "→", sprite: "images/brain-spin.gif",  redirect: "kintsugi/kintsugi.html", bgImage: "images/100.png" },
+    { key: "mainmenu",        title: "main menu",  sub: "back",     glyph: "←", sprite: "images/chess2-spin.gif", viewSwitch: "main",  bgImage: "images/20m.webp" },
+    { key: "bsides-games",    title: "games",      sub: "inigo365", glyph: "→", sprite: "images/bart-spin.gif",   viewSwitch: "games", bgImage: "images/50.webp" },
+    { key: "bsides-kintsugi", title: "kintsugi",   sub: "[wip]",    glyph: "→", sprite: "images/brain-spin.gif",  redirect: "kintsugi/kintsugi.html", bgImage: "images/100.webp" },
   ]
 };
 
