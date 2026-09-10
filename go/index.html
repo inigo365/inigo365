@@ -1870,19 +1870,19 @@ const actions = {
 // ===== PUBLIC DOCK (two views: main / games) =====
 const DOCK_VIEWS = {
   main: [
-    { key: "home",        title: "creative",              sub: "portfolio", glyph: "→", sprite: "images/chess-spin.gif",  bgImage: "images/5.webp" },
-    { key: "games",       title: "the palace",               sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.gif",    redirect: "../palace/index.html", bgImage: "images/10.webp" },
-    { key: "kintsugi", title: "b-sides",              sub: "[wip]",      glyph: "→", sprite: "images/bart-spin.gif",  viewSwitch: "bsides", bgImage: "images/20k.webp" }
+    { key: "home",        title: "creative",              sub: "portfolio", glyph: "→", sprite: "images/chess-spin.webp",  bgImage: "images/5.webp" },
+    { key: "games",       title: "the palace",               sub: "inigo365",  glyph: "→", sprite: "images/friend-spin.webp",    redirect: "../palace/index.html", bgImage: "images/10.webp" },
+    { key: "kintsugi", title: "b-sides",              sub: "[wip]",      glyph: "→", sprite: "images/bart-spin.webp",  viewSwitch: "bsides", bgImage: "images/20k.webp" }
   ],
   games: [
-    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess2-spin.gif",      viewSwitch: "bsides", bgImage: "images/20m.webp" },
-    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",   glyph: "→", sprite: "images/frog-spin.gif",  bgImage: "images/50.webp" },
-    { key: "bag",           title: "put the bag",            sub: "in the bag",  glyph: "→", sprite: "images/bag-spin.gif",   bgImage: "images/100.webp" },
+    { key: "mainmenu",      title: "main menu",              sub: "back",  glyph: "←", sprite: "images/chess2-spin.webp",      viewSwitch: "bsides", bgImage: "images/20m.webp" },
+    { key: "1millionfrogs", title: "1millionfrogs",          sub: "minigame",   glyph: "→", sprite: "images/frog-spin.webp",  bgImage: "images/50.webp" },
+    { key: "bag",           title: "put the bag",            sub: "in the bag",  glyph: "→", sprite: "images/bag-spin.webp",   bgImage: "images/100.webp" },
   ],
   bsides: [
-    { key: "mainmenu",        title: "main menu",  sub: "back",     glyph: "←", sprite: "images/chess2-spin.gif", viewSwitch: "main",  bgImage: "images/20m.webp" },
-    { key: "bsides-games",    title: "games",      sub: "inigo365", glyph: "→", sprite: "images/bart-spin.gif",   viewSwitch: "games", bgImage: "images/50.webp" },
-    { key: "bsides-kintsugi", title: "kintsugi",   sub: "[wip]",    glyph: "→", sprite: "images/brain-spin.gif",  redirect: "kintsugi/kintsugi.html", bgImage: "images/100.webp" },
+    { key: "mainmenu",        title: "main menu",  sub: "back",     glyph: "←", sprite: "images/chess2-spin.webp", viewSwitch: "main",  bgImage: "images/20m.webp" },
+    { key: "bsides-games",    title: "games",      sub: "inigo365", glyph: "→", sprite: "images/bart-spin.webp",   viewSwitch: "games", bgImage: "images/50.webp" },
+    { key: "bsides-kintsugi", title: "kintsugi",   sub: "[wip]",    glyph: "→", sprite: "images/brain-spin.webp",  redirect: "kintsugi/kintsugi.html", bgImage: "images/100.webp" },
   ]
 };
 
@@ -1932,7 +1932,9 @@ function renderPortalDock(viewName) {
       btn.style.backgroundRepeat = "no-repeat";
     }
 
-    const spriteClass = !item.sprite || !item.sprite.endsWith(".gif")
+    const isAnimatedSprite = !!item.sprite &&
+      (item.sprite.endsWith(".gif") || item.sprite.endsWith(".webp"));
+    const spriteClass = !isAnimatedSprite
       ? "portal-sprite"
       : item.sprite.includes("brain-spin")
         ? "portal-sprite-gif portal-sprite-gif-brain"
