@@ -195,11 +195,11 @@
       'go/images/chess2-spin.webp'
     ];
 
+    let placementGen = 0;
     function placeChessPieces() {
+      const myGen = ++placementGen;
       const portfolio = document.querySelector('.portfolio');
       if (!portfolio) return;
-
-      portfolio.querySelectorAll('.chess-intersection').forEach(el => el.remove());
 
       const tiles = Array.from(portfolio.querySelectorAll('.tile'));
       const rect = portfolio.getBoundingClientRect();
@@ -221,6 +221,9 @@
       }
 
       const size = isDesktop ? '200px' : '210px';
+
+      if (myGen !== placementGen) return; // a newer call superseded this one
+      portfolio.querySelectorAll('.chess-intersection').forEach(el => el.remove());
 
       intersections.forEach(function (pos, idx) {
         const img = document.createElement('img');
@@ -244,6 +247,7 @@
     }
 
     // Place pieces once images are loaded (heights settled), then scroll seam to centre
+    let readyForResize = false;
     window.addEventListener('load', function () {
       placeChessPieces();
 
@@ -261,9 +265,20 @@
         }
         document.body.scrollTop = seamDocY - window.innerHeight / 2;
       }
+
+      // Ignore the burst of address-bar-driven resize events that fire right
+      // after the initial placement + auto-scroll, before layout has settled.
+      setTimeout(() => { readyForResize = true; }, 500);
     });
 
-    window.addEventListener('resize', placeChessPieces);
+    // Debounced + grace-period-gated so rapid resize events (mobile address-bar
+    // show/hide, and the burst right after load) collapse into one recalculation.
+    let resizeTimer = null;
+    window.addEventListener('resize', function () {
+      if (!readyForResize) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(placeChessPieces, 150);
+    });
   })();
 </script>
 
