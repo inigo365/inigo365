@@ -191,8 +191,8 @@
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
     const GIFS = [
-      'go/images/chess-spin.gif',
-      'go/images/chess2-spin.gif'
+      'go/images/chess-spin.webp',
+      'go/images/chess2-spin.webp'
     ];
 
     function placeChessPieces() {
@@ -231,7 +231,10 @@
           'position:absolute;' +
           'left:' + pos.x + 'px;' +
           'top:' + pos.y + 'px;' +
-          'transform:translate(-50%,-50%);' +
+          'transform:translate(-50%,-50%) translateZ(0);' +
+          '-webkit-backface-visibility:hidden;' +
+          'backface-visibility:hidden;' +
+          'will-change:transform;' +
           'height:' + size + ';' +
           'width:auto;' +
           'pointer-events:none;' +

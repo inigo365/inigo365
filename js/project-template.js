@@ -62,8 +62,8 @@
 
   function showFlankers() {
     if (flankerLeft) return;
-    flankerLeft  = makeFlanker('chess2-spin.gif', 'left');
-    flankerRight = makeFlanker('chess2-spin.gif', 'right');
+    flankerLeft  = makeFlanker('chess2-spin.webp', 'left');
+    flankerRight = makeFlanker('chess2-spin.webp', 'right');
     document.body.appendChild(flankerLeft);
     document.body.appendChild(flankerRight);
   }
@@ -238,7 +238,7 @@
     homeA.className = 'proj-nav-btn proj-nav-home';
     homeA.setAttribute('aria-label', 'Back to portfolio');
     var homeImg = document.createElement('img');
-    homeImg.src    = '../go/images/chess-spin.gif';
+    homeImg.src    = '../go/images/chess-spin.webp';
     homeImg.alt    = '';
     homeImg.setAttribute('aria-hidden', 'true');
     homeImg.className = 'proj-nav-home-img';
