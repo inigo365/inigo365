@@ -91,34 +91,6 @@
   wrap.style.zIndex = '6';
   document.body.appendChild(wrap);
 
-  // ── Chess-piece clones ────────────────────────────────────────────────────
-  // .portfolio has transform:translateZ(0) → own stacking context → chess gifs
-  // (z-index 10 inside it) are trapped below the overlay (z-index 5 at root).
-  // Clone each as position:fixed at its current viewport coordinates instead.
-  var chessClones = [];
-
-  function cloneChessPieces() {
-    var portfolio = document.querySelector('.portfolio');
-    if (!portfolio) return;
-    var pr = portfolio.getBoundingClientRect();
-
-    document.querySelectorAll('.chess-intersection').forEach(function(img) {
-      // The original is position:absolute inside .portfolio with left/top set
-      // directly in its inline style by placeChessPieces(). Read those values
-      // directly so we don't depend on the GIF image having loaded its dimensions.
-      // Convert to viewport coords by adding the portfolio's getBoundingClientRect offset.
-      var origLeft = parseFloat(img.style.left) || 0;
-      var origTop  = parseFloat(img.style.top)  || 0;
-      var cl = img.cloneNode(true);
-      cl.style.position = 'absolute';
-      cl.style.left     = (pr.left + window.scrollX + origLeft) + 'px';
-      cl.style.top      = (pr.top  + window.scrollY + origTop)  + 'px';
-      // height, width, transform, pointerEvents, zIndex all inherited from cloneNode
-      document.body.appendChild(cl);
-      chessClones.push(cl);
-    });
-  }
-
   // ── Dismiss ───────────────────────────────────────────────────────────────
   function dismiss() {
     // Hide the cursor wrap as the overlay fades — nothing persists after.
@@ -127,9 +99,6 @@
     overlay.classList.add('fading');
     setTimeout(function() {
       overlay.style.display = 'none';
-      // Remove fixed clones — originals in .portfolio take over
-      chessClones.forEach(function(c) { c.parentNode && c.parentNode.removeChild(c); });
-      chessClones = [];
       // Force-reload original GIFs: browsers throttle GIF animation behind an
       // opaque overlay; toggling src off/on restarts the animation loop.
       document.querySelectorAll('.chess-intersection').forEach(function(img) {
@@ -142,12 +111,10 @@
 
   // ── bfcache: clean up overlay on browser back-navigation restore ──────────
   // If the user navigated away before/during the overlay sequence, bfcache
-  // may restore the page with the overlay still showing and clones in the DOM.
+  // may restore the page with the overlay still showing.
   // Hide everything immediately — the page content is already fully visible.
   window.addEventListener('pageshow', function(e) {
     if (e.persisted) {
-      chessClones.forEach(function(c) { c.parentNode && c.parentNode.removeChild(c); });
-      chessClones = [];
       overlay.style.display = 'none';
       wrap.style.display = 'none'; /* hide cursor wrap wherever it lives */
     }
@@ -211,7 +178,7 @@
   document.addEventListener('click',      onAnyClick);
   document.addEventListener('touchstart', onAnyTouch, { passive: false });
 
-  // ── On load: position text (mobile) + clone chess pieces ─────────────────
+  // ── On load: position text (mobile) ──────────────────────────────────────
   window.addEventListener('load', function() {
     // Set flag on every tile click so the overlay is skipped on return
     document.querySelectorAll('a.tile').forEach(function(tile) {
@@ -234,6 +201,5 @@
         wrap.style.transform = 'translateX(-50%)';
       }
     }
-    cloneChessPieces();
   });
 }());

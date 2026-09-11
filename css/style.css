@@ -126,8 +126,6 @@ section {
   margin: 0;
   padding: 0;
   position: relative;
-  -webkit-transform: translateZ(0); /* force compositing layer — fixes position:absolute children on iOS */
-  transform: translateZ(0);
   -webkit-backface-visibility: hidden; /* belt-and-braces: stabilise compositing so absolutely-positioned children repaint correctly during iOS scroll */
   backface-visibility: hidden;
   overflow: hidden;
