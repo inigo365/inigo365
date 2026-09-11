@@ -110,9 +110,9 @@
       var origLeft = parseFloat(img.style.left) || 0;
       var origTop  = parseFloat(img.style.top)  || 0;
       var cl = img.cloneNode(true);
-      cl.style.position = 'fixed';
-      cl.style.left     = (pr.left + origLeft) + 'px';
-      cl.style.top      = (pr.top  + origTop)  + 'px';
+      cl.style.position = 'absolute';
+      cl.style.left     = (pr.left + window.scrollX + origLeft) + 'px';
+      cl.style.top      = (pr.top  + window.scrollY + origTop)  + 'px';
       // height, width, transform, pointerEvents, zIndex all inherited from cloneNode
       document.body.appendChild(cl);
       chessClones.push(cl);
