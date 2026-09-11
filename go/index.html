@@ -191,6 +191,22 @@ button {
   border-radius: 0;
   -webkit-appearance: none;
   appearance: none;
+
+  /* Fixed height so Safari's injected credentials-autofill icon can't
+     inflate the input's box and grow .password-box (see icon rule below). */
+  height: 44px;
+  box-sizing: border-box; /* already global via *, but explicit here too */
+  line-height: 1.2;
+}
+
+/* Pull Safari's injected password-autofill icon out of the input's normal
+   flow so its intrinsic size can never affect the input's rendered height —
+   it only overlays the existing box. */
+.password-box input::-webkit-credentials-auto-fill-button,
+#codeEntry::-webkit-credentials-auto-fill-button {
+  position: absolute;
+  right: 8px;
+  margin: 0;
 }
 /* =========================
    TOP BANNER (title screen)
@@ -1073,6 +1089,10 @@ body{
   min-width: 0;
   max-width: 520px;
   text-align: center;
+  /* Containing block for the absolutely-positioned Safari autofill icon
+     pseudo-element (#codeEntry is not inside .input-wrap), so the icon
+     lands inside the input's own right edge. */
+  position: relative;
 }
 
 /* action sits to the right on desktop */
