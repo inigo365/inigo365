@@ -388,13 +388,16 @@
 
     .section-label {
       font-family: 'RuneScape UF', monospace;
-      font-size: 0.58rem;
-      color: #8A9BB0;
-      letter-spacing: 0.11em;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #1A3A5C;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      padding: 4px 16px;
+      padding: 14px 16px 6px;
       flex: 0 0 auto;
+      border-top: 1px solid rgba(26, 58, 92, 0.25);
     }
+    .section-label:first-child { border-top: none; }
 
     @media (max-width: 700px) {
       .featured-grid { grid-template-columns: 1fr; padding: 10px; }
@@ -480,11 +483,23 @@
       .rack-row       { height: 48px; }
       .rack-ear       { width: 24px; }
       .rack-name      { font-size: 18px; white-space: normal; }
-      .rack-desc      { display: none; }
+      .rack-row .rack-desc { display: none; } /* plain rows only — keep featured card subtext */
       .rack-unit-num  { width: 20px; font-size: 0.52rem; }
       .rack-icon      { width: 20px; }
       .rack-icon svg  { width: 15px; height: 15px; }
       .rack-led-wrap  { padding: 0 8px; }
+
+      /* Goal 3: boot friend gif noticeably larger on phones */
+      #palace-boot-gif { width: min(85vw, 420px); }
+
+      /* Goal 6: featured cards proportionate to the smaller mobile layout */
+      .featured-card {
+        min-height: 90px;
+        padding: 14px 14px;
+      }
+      .featured-card .rack-name { font-size: 1.3rem; }
+      .featured-card .rack-desc { font-size: 0.58rem; }
+
       .friend-sprite {
         display: none; /* the boot-sequence intro (Goal 4) now owns the friend
                           gif's "first impression" moment on mobile — showing
@@ -503,16 +518,17 @@
   <div class="rack-wrap">
 
     <!-- Banner -->
-    <div class="site-banner" aria-label="inigo365 banner">
+    <a class="site-banner hoverable" href="../go/index.html" aria-label="inigo365 banner — back to home">
       <img src="../go/images/inigo365-banner.webp" alt="inigo365">
-    </div>
+    </a>
 
     <div class="rack-scroll">
 
     <!-- Featured (headline) units — inside the scroll area so a tall open
          drawer becomes scrollable instead of spilling past .rack-wrap. -->
+    <div class="section-label">featured</div>
     <div id="featured-units" class="featured-grid"></div>
-    <div class="section-label">music tools</div>
+    <div class="section-label section-label--tools">music tools</div>
 
     <div id="rack-units"></div>
 
@@ -696,6 +712,12 @@
           setTimeout(() => {
             drawer.scrollIntoView({ behavior: 'smooth', block: 'end' });
           }, 100);
+        } else if (TOOLS[idx].featured) {
+          // Featured cards' drawer is a separate full-width grid row below the
+          // cards — scroll the DRAWER into view, not the (already-at-top) card.
+          setTimeout(() => {
+            drawer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 50);
         } else {
           setTimeout(() => {
             row.scrollIntoView({ behavior: 'smooth', block: 'start' });
