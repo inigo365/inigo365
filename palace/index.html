@@ -96,7 +96,9 @@
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
       min-height: 0;
-      border-top: 1px solid rgba(26, 58, 92, 0.3);
+      /* No border-top: the first child (the "featured" .section-label band)
+         now provides the boundary under the banner with its own black rule,
+         so this faint 1px line would just double it. */
     }
 
     /* ── Banner ─────────────────────────────────────────────────── */
@@ -387,17 +389,20 @@
     .featured-grid > .rack-drawer.open { grid-column: 1 / -1; }
 
     .section-label {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 8px 16px;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      background: #1A3A5C;
+      color: #fff;
       font-family: 'RuneScape UF', monospace;
       font-size: 0.85rem;
       font-weight: bold;
-      color: #1A3A5C;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      padding: 14px 16px 6px;
-      flex: 0 0 auto;
-      border-top: 1px solid rgba(26, 58, 92, 0.25);
     }
-    .section-label:first-child { border-top: none; }
 
     @media (max-width: 700px) {
       .featured-grid { grid-template-columns: 1fr; padding: 10px; }
