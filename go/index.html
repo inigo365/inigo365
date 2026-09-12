@@ -2059,9 +2059,67 @@ function revealPasswordScreen() {
     preloadDockImages();
     passwordInput.focus();
   });
+  // Lock the box's rendered size AFTER it has settled at its final size —
+  // the delay also gives Safari's autofill-icon injection time to happen
+  // first, so we lock the size after the icon appears, not before.
+  setTimeout(lockBoxSize, 250);
 }
 
 whenPasswordReady(revealPasswordScreen);
+
+// ── Lock .password-box outer size (immovable after first reveal) ────────────
+// Once revealed, measure the box's real rendered size and pin it as inline
+// width/height with overflow:hidden, so nothing inside it (Safari's autofill
+// icon, etc.) can ever grow the outer boundary. Only recalculated on a genuine
+// window resize, so responsive breakpoints still work.
+let resizeTimer = null;
+let allowResize = false;
+let lockedW = 0, lockedH = 0;
+
+function lockBoxSize() {
+  const box = document.querySelector('.password-box');
+  if (!box) return;
+  // Clear any existing lock first so we measure natural content size.
+  box.style.width  = '';
+  box.style.height = '';
+  // Force a layout read to get the true natural size at this viewport.
+  const rect = box.getBoundingClientRect();
+  lockedW = rect.width;
+  lockedH = rect.height;
+  box.style.width    = lockedW + 'px';
+  box.style.height   = lockedH + 'px';
+  box.style.overflow = 'hidden'; // contain anything that would push past the lock
+}
+
+// Hard backstop: if the box is ever caught rendering at a size other than the
+// lock (outside of a genuine, allowed window resize), immediately re-clamp it.
+const boxObserver = new ResizeObserver(function () {
+  if (allowResize) return;
+  // Nothing to clamp to until the first lock has established a size.
+  if (!lockedW && !lockedH) return;
+  const box = document.querySelector('.password-box');
+  if (!box) return;
+  const rect = box.getBoundingClientRect();
+  if (Math.abs(rect.width - lockedW) > 0.5 || Math.abs(rect.height - lockedH) > 0.5) {
+    box.style.width  = lockedW + 'px';
+    box.style.height = lockedH + 'px';
+  }
+});
+
+// Watch from the start (set up once at page init, not inside reveal-gating).
+const boxEl = document.querySelector('.password-box');
+if (boxEl) boxObserver.observe(boxEl);
+
+// Re-lock on genuine window resize (debounced) so breakpoints still work; the
+// allowResize flag lets that one legitimate resize through the observer.
+window.addEventListener('resize', function () {
+  clearTimeout(resizeTimer);
+  allowResize = true;
+  resizeTimer = setTimeout(function () {
+    lockBoxSize();
+    allowResize = false;
+  }, 200);
+});
 
 /**
  * Cheat sequences -> unlocks.
