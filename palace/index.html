@@ -128,13 +128,31 @@
       align-items: stretch;
       height: 64px;
       border-bottom: 1px solid rgba(26, 58, 92, 0.3);
+      border-left: 4px solid var(--accent, transparent);
       transition: background 0.15s;
-      background: transparent;
+      background: color-mix(in srgb, var(--accent, transparent) 6%, transparent);
       user-select: none;
       -webkit-user-select: none;
     }
-    .rack-row:hover        { background: rgba(74, 127, 212, 0.10); }
-    .rack-row.active       { background: #4A7FD4; }
+    .rack-row:hover {
+      background: color-mix(in srgb, var(--accent, transparent) 14%, transparent);
+    }
+    /* the strong "on" state stays a solid, consistent blue regardless of each
+       row's own accent — the accent is a resting-state identity cue, not
+       something that should compete with the active/on feedback */
+    .rack-row.active            { background: #4A7FD4; border-left-color: #4A7FD4; }
+    .rack-row.active .rack-icon { color: #fff; }
+
+    /* ── Row accent icon ────────────────────────────────────────── */
+    .rack-icon {
+      width: 26px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent, #8A9BB0);
+    }
+    .rack-icon svg { width: 18px; height: 18px; }
 
     /* ── Ear columns ────────────────────────────────────────────── */
     .rack-ear {
@@ -464,6 +482,8 @@
       .rack-name      { font-size: 18px; white-space: normal; }
       .rack-desc      { display: none; }
       .rack-unit-num  { width: 20px; font-size: 0.52rem; }
+      .rack-icon      { width: 20px; }
+      .rack-icon svg  { width: 15px; height: 15px; }
       .rack-led-wrap  { padding: 0 8px; }
       .friend-sprite {
         display: none; /* the boot-sequence intro (Goal 4) now owns the friend
@@ -522,12 +542,21 @@
       { id: 'hand-spin',    name: 'object gallery',    desc: 'pinch + drag · 3d',    src: 'bart/hand-spin.html',    scrollToBottom: true, featured: true, bgImage: '../go/images/20m.webp' },
       { id: 'trillion',      name: 'what $1 trillion looks like', desc: 'what it means', src: 'trillion-widget.html', featured: true, bgImage: '../go/images/100.webp'   },
       { id: 'invoice',       name: 'invoice generator', desc: 'create + export pdf',  src: 'invoice-generator.html', enabled: false },
-      { id: 'midi-studio',   name: 'midi studio',      desc: 'compose + export',      src: 'midi-studio.html'   },
-      { id: 'scale-trainer', name: 'scale trainer',    desc: 'scales + progressions', src: 'scale-trainer.html' },
-      { id: 'guitar-tuner',  name: 'guitar tuner',     desc: 'pitch detection',       src: 'guitar-tuner.html'  },
-      { id: 'song-analyser', name: 'song analyser',    desc: 'key + bpm detection',   src: 'song-analyser.html' },
-      { id: 'ear-training',  name: 'ear training',     desc: 'interval recognition',  src: 'ear-training.html'  },
+      { id: 'midi-studio',   name: 'midi studio',      desc: 'compose + export',      src: 'midi-studio.html',   accent: '#8B5CF6', icon: 'midi'     },
+      { id: 'scale-trainer', name: 'scale trainer',    desc: 'scales + progressions', src: 'scale-trainer.html', accent: '#E8A33D', icon: 'scale'    },
+      { id: 'guitar-tuner',  name: 'guitar tuner',     desc: 'pitch detection',       src: 'guitar-tuner.html',  accent: '#4FA8E0', icon: 'tuner'    },
+      { id: 'song-analyser', name: 'song analyser',    desc: 'key + bpm detection',   src: 'song-analyser.html', accent: '#E85D75', icon: 'analyser' },
+      { id: 'ear-training',  name: 'ear training',     desc: 'interval recognition',  src: 'ear-training.html',  accent: '#4CAF7D', icon: 'ear'      },
     ];
+
+    // ── Line icons for music-tool rows (24x24, stroke via currentColor) ──────
+    const ICONS = {
+      midi:     '<rect x="2" y="4" width="20" height="16" rx="1"/><line x1="7" y1="4" x2="7" y2="14"/><line x1="12" y1="4" x2="12" y2="14"/><line x1="17" y1="4" x2="17" y2="14"/>',
+      scale:    '<path d="M3 20h4v-4h4v-4h4v-4h4v-4"/>',
+      tuner:    '<circle cx="12" cy="12" r="8"/><line x1="12" y1="12" x2="12" y2="6"/>',
+      analyser: '<line x1="3" y1="12" x2="3" y2="12"/><line x1="6" y1="8" x2="6" y2="16"/><line x1="10" y1="4" x2="10" y2="20"/><line x1="14" y1="9" x2="14" y2="15"/><line x1="18" y1="6" x2="18" y2="18"/><line x1="21" y1="10" x2="21" y2="14"/>',
+      ear:      '<path d="M4 13a8 8 0 0116 0v5a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h2M4 13v3a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H4"/>',
+    };
 
     // ── Build rack units from TOOLS array ──────────────────────────
     // Keyed by ORIGINAL array index (idx) for element ids / TOOLS[idx] lookups
@@ -572,9 +601,15 @@
           // 3. Regular music-tool row — running display number 01-05.
           const num = String(++musicNum).padStart(2, '0');
           row.className = 'rack-row hoverable';
+          // Per-row accent (resting-state identity cue) drives the icon color,
+          // left border, and background tint via the --accent custom property.
+          if (tool.accent) row.style.setProperty('--accent', tool.accent);
           row.innerHTML =
             '<div class="rack-ear left"><div class="screw"></div><div class="screw"></div></div>' +
             '<div class="rack-unit-num">' + num + '</div>' +
+            '<div class="rack-icon" style="--accent:' + tool.accent + '">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICONS[tool.icon] + '</svg>' +
+            '</div>' +
             '<div class="rack-main">' +
               '<span class="rack-name">' + tool.name + '</span>' +
               '<span class="rack-desc">' + tool.desc + '</span>' +
