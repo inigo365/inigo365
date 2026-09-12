@@ -156,8 +156,9 @@ body{ animation: pgFadeIn 0.5s ease forwards; }
   cursor: url("../../images/cursor/cursor-hover.png"), pointer;
 }
 .pctl:hover{ opacity: 0.55; }
-#linksToggle.open{ opacity: 1; }
-#linksToggle.open .ctl-icon{ filter: drop-shadow(0 0 3px rgba(45,147,234,0.9)); }
+
+/* mobile-only controls — hidden on desktop, shown in the max-width:600px block */
+.mobile-only{ display: none; }
 
 /* =====================================================================
    CONTROL ICONS — raster pixel-art PNGs (32×32 source). Kept crisp with
@@ -231,25 +232,16 @@ body{ animation: pgFadeIn 0.5s ease forwards; }
 }
 .spinner.playing{ opacity: 1; }
 
-/* ===== LINK PANEL — 2×2 grid, opens below the bar (bar stays put) ===== */
+/* ===== LINK PANEL — 2×2 grid, always visible directly beneath the bar ===== */
 .link-panel{
   position: absolute;
   top: calc(100% + 14px);
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
+  transform: translateX(-50%);
 
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-.link-panel.open{
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
 }
 
 /* RuneScape inventory-slot look — hard edges, stepped corners, inset bevel */
@@ -277,12 +269,22 @@ body{ animation: pgFadeIn 0.5s ease forwards; }
   box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.18),
               inset -2px -2px 4px rgba(255, 255, 255, 0.55);
 }
-.link-slot:hover{ opacity: 0.72; }
-.link-slot:active{ transform: translateY(1px); }
+.link-slot:not(.disabled):hover{ opacity: 0.72; }
+.link-slot:not(.disabled):active{ transform: translateY(1px); }
+
+/* slots that aren't live yet — greyed out + inert (inigo365.com stays active) */
+.link-slot.disabled{
+  opacity: 0.4;
+  filter: grayscale(1);
+  pointer-events: none;
+  cursor: default;
+}
 
 /* =====================================================================
    MOBILE — 2-row stack (pattern from kintsugiOLD mobile #player).
-   Row 1: play — spinner — links.   Row 2: scrubber (full width) + time.
+   Row 1: play.png ---- chess-spin.gif ---- pause.png (evenly spaced).
+   Row 2: scrubber (full width) + time.
+   The single desktop toggle is hidden; two dedicated buttons take over.
    Bar width is calc(100% - 32px) so it can never overflow.
    ===================================================================== */
 @media (max-width: 600px){
@@ -293,16 +295,20 @@ body{ animation: pgFadeIn 0.5s ease forwards; }
 
   .player-panel{
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: space-between;   /* spreads play / spinner / pause across the row */
+    align-items: center;
     white-space: normal;
     width: 100%;
-    padding: 12px 16px;
+    padding: 12px 20px;
     gap: 12px 18px;
   }
 
-  #playPause   { order: 1; }
+  #playPause     { display: none; }   /* desktop single toggle hidden on mobile */
+  .mobile-only   { display: flex; }   /* dedicated play + pause buttons shown */
+
+  #playBtn     { order: 1; }
   .spinner     { order: 2; }
-  #linksToggle { order: 3; }
+  #pauseBtn    { order: 3; }
   .scrub-row   { order: 4; flex-basis: 100%; width: 100%; }
 
   .scrub-row #scrub{ flex: 1; width: auto; }
@@ -320,8 +326,14 @@ body{ animation: pgFadeIn 0.5s ease forwards; }
 
   <!-- MAIN PLAYER ROW -->
   <div class="player-panel pixel-box">
+    <!-- desktop: single play/pause toggle -->
     <button class="pctl" id="playPause" type="button" aria-label="play">
       <img class="ctl-icon" id="playIcon" src="play.png" alt="play">
+    </button>
+
+    <!-- mobile: dedicated play button -->
+    <button class="pctl mobile-only" id="playBtn" type="button" aria-label="play">
+      <img class="ctl-icon" src="play.png" alt="play">
     </button>
 
     <div class="scrub-row">
@@ -331,16 +343,17 @@ body{ animation: pgFadeIn 0.5s ease forwards; }
 
     <img class="spinner" id="spinner" src="../images/chess-spin.gif" alt="">
 
-    <button class="pctl" id="linksToggle" type="button" aria-label="links" aria-expanded="false">
-      <img class="ctl-icon" src="link.png" alt="links">
+    <!-- mobile: dedicated pause button -->
+    <button class="pctl mobile-only" id="pauseBtn" type="button" aria-label="pause">
+      <img class="ctl-icon" src="pause.png" alt="pause">
     </button>
   </div>
 
-  <!-- LINK PANEL (2×2) -->
-  <div class="link-panel" id="linkPanel" aria-hidden="true">
-    <a class="link-slot pixel-box" href="#">spotify</a>
-    <a class="link-slot pixel-box" href="#">apple music</a>
-    <a class="link-slot pixel-box" href="#">bandcamp</a>
+  <!-- LINK PANEL (2×2) — always visible; three slots inert until live -->
+  <div class="link-panel" id="linkPanel">
+    <a class="link-slot pixel-box disabled" aria-disabled="true">spotify</a>
+    <a class="link-slot pixel-box disabled" aria-disabled="true">apple music</a>
+    <a class="link-slot pixel-box disabled" aria-disabled="true">bandcamp</a>
     <a class="link-slot pixel-box" href="../index.html">inigo365.com</a>
   </div>
 
@@ -359,8 +372,8 @@ const playIcon   = document.getElementById("playIcon");
 const scrub      = document.getElementById("scrub");
 const playerTime = document.getElementById("playerTime");
 const spinner    = document.getElementById("spinner");
-const linksToggle= document.getElementById("linksToggle");
-const linkPanel  = document.getElementById("linkPanel");
+const playBtn    = document.getElementById("playBtn");   // mobile-only
+const pauseBtn   = document.getElementById("pauseBtn");  // mobile-only
 
 const TRACK_TITLE  = "lifemaxxing";
 const TRACK_ARTIST = "inigo365";
@@ -456,6 +469,11 @@ playPause.addEventListener("click", () => {
   else audioEl.play().catch(() => {});
 });
 
+// mobile: dedicated play / pause buttons (state still flows through the
+// audio play/pause events -> syncUI, same as the desktop toggle)
+playBtn.addEventListener("click", () => { bindMediaSession(); audioEl.play().catch(() => {}); });
+pauseBtn.addEventListener("click", () => { audioEl.pause(); });
+
 audioEl.addEventListener("play",  () => { isPlaying = true;  syncUI(); });
 audioEl.addEventListener("pause", () => { isPlaying = false; syncUI(); });
 audioEl.addEventListener("ended", () => {
@@ -480,26 +498,6 @@ scrub.addEventListener("input", () => {
 scrub.addEventListener("mouseup",  () => { _scrubbing = false; });
 scrub.addEventListener("touchend", () => { _scrubbing = false; }, { passive: true });
 scrub.addEventListener("change",   () => { _scrubbing = false; });
-
-// ===== link panel toggle =====
-function setLinks(open){
-  linkPanel.classList.toggle("open", open);
-  linksToggle.classList.toggle("open", open);
-  linkPanel.setAttribute("aria-hidden", open ? "false" : "true");
-  linksToggle.setAttribute("aria-expanded", open ? "true" : "false");
-}
-
-linksToggle.addEventListener("click", (e) => {
-  e.stopPropagation();
-  setLinks(!linkPanel.classList.contains("open"));
-});
-
-// close on click-elsewhere
-document.addEventListener("click", (e) => {
-  if (!linkPanel.classList.contains("open")) return;
-  if (linkPanel.contains(e.target) || linksToggle.contains(e.target)) return;
-  setLinks(false);
-});
 </script>
 </body>
 </html>
