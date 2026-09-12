@@ -303,6 +303,133 @@
     }
     .rack-back:hover { color: #1A3A5C; }
 
+    /* ── Featured (headline) cards ──────────────────────────────── */
+    .featured-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      padding: 16px;
+      flex: 0 0 auto;
+    }
+    /* Headline cards — money-texture background (go/index.html .portal-tile--bg
+       approach), NOT the rack's frosted-glass/screws/LED chrome. Texture image
+       is set inline per-card in buildRack(); a dark overlay + light bold text
+       with a text-shadow keep the labels legible over the busy note art. */
+    .featured-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 120px;
+      padding: 18px 16px;
+      border: 2px solid #000;              /* consistent black tile border */
+      background-color: #1A3A5C;           /* fallback behind the texture */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      /* interactive cursor handled by the shared .hoverable rule (learn.css) */
+    }
+    .featured-card::before {               /* dark legibility overlay */
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+      transition: background 0.15s;
+    }
+    .featured-card:hover::before  { background: rgba(0, 0, 0, 0.32); }
+    .featured-card.active::before { background: rgba(74, 127, 212, 0.55); }
+    .featured-card .rack-name {
+      position: relative;
+      z-index: 1;
+      font-size: 1.7rem;                   /* larger than the regular 1.375rem */
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      line-height: 1.05;
+      color: #fff;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.65);
+      white-space: normal;
+    }
+    .featured-card .rack-desc {
+      position: relative;
+      z-index: 1;
+      margin-top: 6px;
+      font-size: 0.62rem;
+      text-align: left;
+      color: rgba(255, 255, 255, 0.85);
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
+    }
+    .featured-card:hover .rack-name {
+      text-decoration: underline;
+      text-decoration-color: gold;
+    }
+    /* Goal 3a: an open featured drawer spans the full grid width (its own row)
+       instead of being squeezed into one column beside its card. */
+    .featured-grid > .rack-drawer.open { grid-column: 1 / -1; }
+
+    .section-label {
+      font-family: 'RuneScape UF', monospace;
+      font-size: 0.58rem;
+      color: #8A9BB0;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      padding: 4px 16px;
+      flex: 0 0 auto;
+    }
+
+    @media (max-width: 700px) {
+      .featured-grid { grid-template-columns: 1fr; padding: 10px; }
+    }
+
+    /* ── Boot-sequence overlay (Goal 4) ─────────────────────────── */
+    #palace-boot-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 9999;
+      opacity: 1;
+      transition: opacity 1400ms ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+    #palace-boot-overlay.fading {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #palace-boot-gif {
+      width: min(50vw, 420px);
+      height: auto;
+      display: block;
+    }
+    #palace-boot-text {
+      font-family: "RuneScape UF", Arial, Helvetica, sans-serif;
+      font-size: 28px;
+      font-weight: bold;
+      color: #00ff41;
+      white-space: nowrap;
+      line-height: 1;
+      text-align: center;
+    }
+    #palace-boot-cursor {
+      display: inline-block;
+      width: 0.55em;
+      height: 0.85em;
+      background: #00ff41;
+      vertical-align: text-bottom;
+      margin-left: 1px;
+    }
+    #palace-boot-cursor.waiting {
+      animation: cursorBlink 900ms steps(1, end) infinite;
+    }
+    @keyframes cursorBlink {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0; }
+    }
+
     /* ── Desktop layout ─────────────────────────────────────────── */
     @media (min-width: 701px) {
       body {
@@ -338,6 +465,14 @@
       .rack-desc      { display: none; }
       .rack-unit-num  { width: 20px; font-size: 0.52rem; }
       .rack-led-wrap  { padding: 0 8px; }
+      .friend-sprite {
+        display: none; /* the boot-sequence intro (Goal 4) now owns the friend
+                          gif's "first impression" moment on mobile — showing
+                          a second copy behind/beside the full-width rack on
+                          small screens would just look like clutter, not a
+                          companion visual the way it does on wide desktop
+                          layouts where there's spare space beside the rack */
+      }
     }
   </style>
 </head>
@@ -354,13 +489,18 @@
 
     <div class="rack-scroll">
 
+    <!-- Featured (headline) units — inside the scroll area so a tall open
+         drawer becomes scrollable instead of spilling past .rack-wrap. -->
+    <div id="featured-units" class="featured-grid"></div>
+    <div class="section-label">music tools</div>
+
     <div id="rack-units"></div>
 
     </div><!-- /.rack-scroll -->
 
     <!-- Footer -->
     <div class="rack-footer">
-      <a href="../go/index.html" class="rack-back">← back</a>
+      <a href="../go/index.html" class="rack-back hoverable">← back</a>
       <span class="rack-status">
         <span class="rack-status-dot">●</span><span id="module-count"></span> modules ready
       </span>
@@ -378,10 +518,10 @@
 
   <script>
     const TOOLS = [
-      { id: 'about',         name: 'what is inigo365?',  desc: 'on ai, art, and this site', src: 'what-is-inigo365.html' },
-      { id: 'hand-spin',    name: 'object gallery',    desc: 'pinch + drag · 3d',    src: 'bart/hand-spin.html',    scrollToBottom: true },
-      { id: 'trillion',      name: 'what $1 trillion looks like', desc: 'what it means', src: 'trillion-widget.html'   },
-      { id: 'invoice',       name: 'invoice generator', desc: 'create + export pdf',  src: 'invoice-generator.html' },
+      { id: 'about',         name: 'what is inigo365?',  desc: 'on ai, art, and this site', src: 'what-is-inigo365.html', enabled: false },
+      { id: 'hand-spin',    name: 'object gallery',    desc: 'pinch + drag · 3d',    src: 'bart/hand-spin.html',    scrollToBottom: true, featured: true, bgImage: '../go/images/20m.webp' },
+      { id: 'trillion',      name: 'what $1 trillion looks like', desc: 'what it means', src: 'trillion-widget.html', featured: true, bgImage: '../go/images/100.webp'   },
+      { id: 'invoice',       name: 'invoice generator', desc: 'create + export pdf',  src: 'invoice-generator.html', enabled: false },
       { id: 'midi-studio',   name: 'midi studio',      desc: 'compose + export',      src: 'midi-studio.html'   },
       { id: 'scale-trainer', name: 'scale trainer',    desc: 'scales + progressions', src: 'scale-trainer.html' },
       { id: 'guitar-tuner',  name: 'guitar tuner',     desc: 'pitch detection',       src: 'guitar-tuner.html'  },
@@ -390,39 +530,70 @@
     ];
 
     // ── Build rack units from TOOLS array ──────────────────────────
+    // Keyed by ORIGINAL array index (idx) for element ids / TOOLS[idx] lookups
+    // used by toggleRow/openRow/closeRow. Display numbering for the music-tool
+    // list is a separate running counter so it reads 01-05 with no gaps.
     (function buildRack() {
-      const container = document.getElementById('rack-units');
+      const rackContainer     = document.getElementById('rack-units');
+      const featuredContainer = document.getElementById('featured-units');
+      const featuredDrawers   = [];
+      let musicNum = 0;
+
       TOOLS.forEach(function (tool, idx) {
-        const num = String(idx + 1).padStart(2, '0');
+        // 1. Hidden tools: render nothing, don't count.
+        if (tool.enabled === false) return;
 
-        const row = document.createElement('div');
-        row.className = 'rack-row';
-        row.id = 'row-' + idx;
-
-        row.setAttribute('onclick', 'toggleRow(' + idx + ')');
-        row.innerHTML =
-          '<div class="rack-ear left"><div class="screw"></div><div class="screw"></div></div>' +
-          '<div class="rack-unit-num">' + num + '</div>' +
-          '<div class="rack-main">' +
-            '<span class="rack-name">' + tool.name + '</span>' +
-            '<span class="rack-desc">' + tool.desc + '</span>' +
-          '</div>' +
-          '<div class="rack-led-wrap">' +
-            '<div class="rack-led" id="led-' + idx + '"></div>' +
-            '<div class="rack-led-label" id="led-label-' + idx + '">off</div>' +
-          '</div>' +
-          '<div class="rack-ear right"><div class="screw"></div><div class="screw"></div></div>';
-
+        // Shared drawer markup (same structure for featured + regular rows).
         const drawer = document.createElement('div');
         drawer.className = 'rack-drawer';
         drawer.id = 'drawer-' + idx;
         drawer.innerHTML =
           '<iframe id="frame-' + idx + '" class="rack-iframe" src="" title="' + tool.name + '" allow="downloads"></iframe>';
-        container.appendChild(row);
-        container.appendChild(drawer);
+
+        const row = document.createElement('div');
+        row.id = 'row-' + idx;
+        row.setAttribute('onclick', 'toggleRow(' + idx + ')');
+
+        if (tool.featured === true) {
+          // 2. Featured headline card — money-texture tile, NO rack chrome
+          //    (no ears/screws/LED). '.hoverable' gives it the shared custom
+          //    cursor. Texture image applied inline per-card.
+          row.className = 'featured-card hoverable';
+          if (tool.bgImage) row.style.backgroundImage = 'url("' + tool.bgImage + '")';
+          row.innerHTML =
+            '<span class="rack-name">' + tool.name + '</span>' +
+            '<span class="rack-desc">' + tool.desc + '</span>';
+          featuredContainer.appendChild(row);
+          // Defer the drawer: appended after BOTH cards (below) so an open
+          // drawer forms its own clean full-width row (with grid-column:1/-1)
+          // rather than landing between the two cards.
+          featuredDrawers.push(drawer);
+        } else {
+          // 3. Regular music-tool row — running display number 01-05.
+          const num = String(++musicNum).padStart(2, '0');
+          row.className = 'rack-row hoverable';
+          row.innerHTML =
+            '<div class="rack-ear left"><div class="screw"></div><div class="screw"></div></div>' +
+            '<div class="rack-unit-num">' + num + '</div>' +
+            '<div class="rack-main">' +
+              '<span class="rack-name">' + tool.name + '</span>' +
+              '<span class="rack-desc">' + tool.desc + '</span>' +
+            '</div>' +
+            '<div class="rack-led-wrap">' +
+              '<div class="rack-led" id="led-' + idx + '"></div>' +
+              '<div class="rack-led-label" id="led-label-' + idx + '">off</div>' +
+            '</div>' +
+            '<div class="rack-ear right"><div class="screw"></div><div class="screw"></div></div>';
+          rackContainer.appendChild(row);
+          rackContainer.appendChild(drawer);
+        }
       });
 
-      document.getElementById('module-count').textContent = TOOLS.length;
+      // Featured drawers go after both featured cards (see note above).
+      featuredDrawers.forEach(function (d) { featuredContainer.appendChild(d); });
+
+      document.getElementById('module-count').textContent =
+        TOOLS.filter(t => t.enabled !== false).length;
     })();
 
     let activeRow = null;
@@ -447,9 +618,9 @@
 
       row.classList.add('active');
       drawer.classList.add('open');
-      led.classList.add('on');
-      ledLabel.textContent = 'on';
-      ledLabel.classList.add('on');
+      // Featured cards have no LED chrome — guard so the drawer still opens.
+      if (led) led.classList.add('on');
+      if (ledLabel) { ledLabel.textContent = 'on'; ledLabel.classList.add('on'); }
 
       frame.style.minHeight = '0';
       frame.src = TOOLS[idx].src;
@@ -507,9 +678,8 @@
 
       row.classList.remove('active');
       drawer.classList.remove('open');
-      led.classList.remove('on');
-      ledLabel.textContent = 'off';
-      ledLabel.classList.remove('on');
+      if (led) led.classList.remove('on');
+      if (ledLabel) { ledLabel.textContent = 'off'; ledLabel.classList.remove('on'); }
 
       if (frame._observer) { frame._observer.disconnect(); frame._observer = null; }
       frame.src = '';
@@ -534,6 +704,9 @@
       }
     }
   </script>
+
+  <!-- Boot-sequence intro (Goal 4) — friend gif + typewriter, once per session -->
+  <script src="js/palace-boot.js"></script>
 
 </body>
 </html>

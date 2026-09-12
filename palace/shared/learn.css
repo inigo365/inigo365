@@ -34,7 +34,12 @@
 html, body {
   cursor: url('../../images/cursor/cursor.png'), auto;
 }
-button, input, a, select, [onclick], .rack-row {
+/* Custom hover cursor. Interactive elements opt in via the shared `.hoverable`
+   class (applied to every clickable thing on the page) instead of a growing
+   hand-maintained selector list — so new interactive elements are covered by
+   construction. Generic element selectors stay for other tool pages that don't
+   use `.hoverable`. */
+button, input, a, select, [onclick], .hoverable {
   cursor: url('../../images/cursor/cursor-hover.png'), pointer;
 }
 label {
