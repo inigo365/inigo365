@@ -1478,7 +1478,7 @@ body{
   #passwordForm .hint-row .portal-hint{ pointer-events: none; }
   #passwordForm .hint-row .ts-hint-play{
     position: absolute;
-    right: 9%;                    /* in the open space to the right of the text */
+    right: 24%;                   /* in the open space to the right of the text */
     top: 50%;
     transform: translateY(-50%);
     margin: 0;
@@ -2973,7 +2973,10 @@ setButtonsForInputState();
   const TRACK_TITLE  = "lifemaxxing";
   const TRACK_ARTIST = "inigo365";
 
+  const isMobile = () => window.matchMedia("(max-width: 768px)").matches;
+
   let scrubbing = false;
+  let redirectTimer = null;
   let mediaBound = false;
 
   function fmt(s){
@@ -3031,6 +3034,17 @@ setButtonsForInputState();
     } catch (e) {}
   }
 
+  function startRedirectTimer(){
+    clearRedirectTimer();
+    // Mobile only: uninterrupted playback for 15s -> open the full player.
+    if (isMobile()){
+      redirectTimer = setTimeout(navigateToLife, 15000);
+    }
+  }
+  function clearRedirectTimer(){
+    if (redirectTimer){ clearTimeout(redirectTimer); redirectTimer = null; }
+  }
+
   function navigateToLife(){
     document.body.style.transition = "opacity 0.4s ease";
     document.body.style.opacity = "0";
@@ -3051,12 +3065,14 @@ setButtonsForInputState();
     hintIcon.src = PAUSE_ICON;
     hintBtn.setAttribute("aria-label", "pause lifemaxxing");
     mini.classList.add("show");   // shown on desktop AND mobile
+    startRedirectTimer();
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
   });
   audio.addEventListener("pause", () => {
     hintIcon.src = PLAY_ICON;
     hintBtn.setAttribute("aria-label", "play lifemaxxing");
     mini.classList.remove("show");
+    clearRedirectTimer();   // user paused -> don't auto-redirect
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   });
   audio.addEventListener("ended", () => {
@@ -3064,6 +3080,7 @@ setButtonsForInputState();
     hintBtn.setAttribute("aria-label", "play lifemaxxing");
     scrub.value = 0;
     mini.classList.remove("show");
+    clearRedirectTimer();
     updateTime();
   });
 
@@ -3094,5 +3111,6 @@ setButtonsForInputState();
 })();
 </script>
 
+<style id="ts-force">.ts-miniplayer{transform:translate(-50%,0)!important;opacity:1!important;pointer-events:auto!important;}</style>
 </body>
 </html>
