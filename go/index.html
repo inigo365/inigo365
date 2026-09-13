@@ -3148,45 +3148,58 @@ setButtonsForInputState();
   if (!amb || !btn) return;
 
   const KEY        = "ambience_muted_v1";
-  const CEILING    = 0.17;   // background texture, deliberately below the SFX
-  const FADE_MS    = 2500;   // gentle initial fade-in
-  const DUCK_LEVEL = 0.05;   // faintly audible while something else plays
+  const CEILING    = 0.08;   // genuinely subtle background texture (not foreground)
+  const FADE_MS    = 2500;   // gentle initial / return fade-in
+  const DUCK_LEVEL = 0.008;  // effectively inaudible under other audio
   const DUCK_MS    = 650;    // quick duck / un-duck ramp
 
   let muted = false;
   try { muted = localStorage.getItem(KEY) === "1"; } catch (e) {}
 
-  amb.volume = 0;
-  let fadeTimer = null;
+  // ---- dedicated Web Audio graph (SEPARATE from the SFX context, so SFX
+  //      independence is unchanged). iOS Safari locks HTMLMediaElement.volume
+  //      to 1, so every level change goes through this GainNode instead. ----
+  let ambCtx = null, ambGain = null;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC){
+      ambCtx = new AC();
+      const ambSource = ambCtx.createMediaElementSource(amb);
+      ambGain = ambCtx.createGain();
+      ambGain.gain.value = 0;                        // start silent
+      ambSource.connect(ambGain).connect(ambCtx.destination);
+    }
+  } catch (e){ ambCtx = null; ambGain = null; }
 
-  function stopFade(){ if (fadeTimer){ clearInterval(fadeTimer); fadeTimer = null; } }
-
-  // Shared volume ramp (setInterval .volume stepping). duration is optional.
-  function fadeTo(target, duration){
-    stopFade();
-    const dur = duration || FADE_MS;
-    const start = amb.volume;
-    const stepMs = 30;
-    const steps = Math.max(1, Math.round(dur / stepMs));
-    let i = 0;
-    fadeTimer = setInterval(() => {
-      i++;
-      const t = Math.min(1, i / steps);
-      amb.volume = Math.max(0, Math.min(1, start + (target - start) * t));
-      if (t >= 1) stopFade();
-    }, stepMs);
+  function resumeCtx(){
+    if (ambCtx && ambCtx.state === "suspended") ambCtx.resume().catch(() => {});
   }
 
-  // ---- ducking: one set of "reasons"; ambience ducks while ANY is active,
+  // Sample-accurate gain ramp on the audio thread — smooth on every platform,
+  // iOS included. Cancels/anchors first so overlapping ramps never jump or
+  // fight. fromZero snaps to 0 first for a real perceptible fade-in.
+  function rampGain(target, durationMs, fromZero){
+    if (ambGain && ambCtx){
+      const now = ambCtx.currentTime;
+      const g = ambGain.gain;
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(fromZero ? 0 : g.value, now);
+      g.linearRampToValueAtTime(Math.max(0, target), now + Math.max(0.01, durationMs / 1000));
+    } else {
+      try { amb.volume = Math.max(0, Math.min(1, target)); } catch (e){} // non-iOS fallback only
+    }
+  }
+
+  // ---- ducking: one shared reason-set; ambience ducks while ANY is active,
   //      returns to CEILING only when they all clear. Both triggers share it,
   //      so they can't fight or double-apply. ----
   const duckReasons = new Set();
   function targetVolume(){ return duckReasons.size ? DUCK_LEVEL : CEILING; }
-  function applyDuck(duration){
-    // nothing to ramp if muted or not yet playing (the fade-in will pick the
-    // right target when it eventually starts, via startAmbience()).
+  function applyDuck(){
+    // nothing to ramp if muted or not currently playing (start/resume will
+    // pick the right target via targetVolume()).
     if (muted || amb.paused) return;
-    fadeTo(targetVolume(), duration || DUCK_MS);
+    rampGain(targetVolume(), DUCK_MS, false);
   }
   function setDuck(reason, on){
     if (on) duckReasons.add(reason); else duckReasons.delete(reason);
@@ -3195,14 +3208,14 @@ setButtonsForInputState();
 
   function startAmbience(){
     if (muted) return;
+    resumeCtx();
     if (amb.paused){
-      amb.volume = 0;
       const p = amb.play();
       if (p && typeof p.catch === "function") p.catch(() => {}); // silent on block
     }
-    // fade in to whatever the current state calls for (full, or ducked if
-    // something is already playing / a screen is already open)
-    fadeTo(targetVolume(), FADE_MS);
+    // fade in from 0 to whatever the current state calls for (full, or ducked
+    // if something is already playing / a screen is already open)
+    rampGain(targetVolume(), FADE_MS, true);
   }
 
   // Label reflects what you can actually HEAR: "off" until playback truly
@@ -3228,7 +3241,8 @@ setButtonsForInputState();
     if (started) return;
     started = true;
     removeGesture();
-    startAmbience(); // no-op if muted -> stays "off"
+    resumeCtx();       // AudioContext also needs a gesture to start on iOS
+    startAmbience();   // no-op if muted -> stays "off"
   }
   document.addEventListener("pointerdown", onFirstGesture, true);
   document.addEventListener("touchstart",  onFirstGesture, true);
@@ -3240,9 +3254,8 @@ setButtonsForInputState();
     e.preventDefault();
     e.stopPropagation();
     if (!amb.paused){
-      // currently playing -> turn OFF
+      // currently playing -> turn OFF (pausing the element silences the graph)
       muted = true;
-      stopFade();
       amb.pause();               // fires "pause" -> updateBtn -> "off"
     } else {
       // currently silent -> turn ON (this click is itself a user gesture)
@@ -3277,6 +3290,22 @@ setButtonsForInputState();
     new MutationObserver(syncScreenDuck)
       .observe(contentPage, { attributes: true, attributeFilter: ["style"] });
   }
+
+  // ---- FOREGROUND-ONLY: fully stop while the page is hidden (phone lock, tab
+  //      background, app switch). This is separate from muting — it's automatic
+  //      and temporary, and never touches the persisted `muted` choice. ----
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden){
+      amb.pause();                       // hard stop, no fade
+    } else if (started && !muted){
+      resumeCtx();
+      if (amb.paused){
+        const p = amb.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      }
+      rampGain(targetVolume(), FADE_MS, true); // fade back in, honouring duck state
+    }
+  });
 })();
 </script>
 
