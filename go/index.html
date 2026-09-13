@@ -1634,6 +1634,33 @@ body{
   flex-shrink: 0;
 }
 
+/* ===== BACKGROUND AMBIENCE MUTE TOGGLE (additive + isolated) ===== */
+/* anchor the toggle to the banner so it overlaps its bottom-right corner */
+.site-banner{ position: relative; }
+.ts-amb-toggle{
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 5;
+
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: "RuneScape UF", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.1;
+  text-transform: lowercase;
+
+  /* plain white text, no box */
+  color: #fff;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);  /* legibility over the banner */
+
+  cursor: url("../images/cursor/cursor-hover.png"), pointer;
+}
+.ts-amb-toggle:hover{ text-decoration: underline; }
+
 </style>
 </head>
 
@@ -1644,6 +1671,7 @@ body{
     <div class="password-box">
       <div class="site-banner" aria-label="inigo365 banner">
     <img src="images/inigo365-banner.webp" alt="inigo365">
+    <button type="button" class="ts-amb-toggle" id="ambienceToggle" aria-label="unmute ambience" aria-pressed="true">♪ off</button>
   </div>
 
       <div class="portal-dock" id="portalDock" aria-label="quick portal links"></div>
@@ -3091,6 +3119,164 @@ setButtonsForInputState();
   panel.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " "){ e.preventDefault(); navigateToLife(); }
   });
+})();
+</script>
+
+<!-- =========================================================
+     BACKGROUND AMBIENCE (additive + isolated)
+     Plain <audio>, NOT routed through the SFX Web Audio context,
+     so it plays alongside the click/password/correct SFX with no
+     conflict. Native loop for a seamless, gap-free loop point.
+     ========================================================= -->
+<audio id="ambience" loop preload="auto">
+  <source src="../sfx/rainforest-loop.mp3" type="audio/mpeg">
+  <source src="../sfx/rainforest-loop.ogg" type="audio/ogg">
+</audio>
+
+<script>
+/* =====================================================================
+   BACKGROUND AMBIENCE — self-contained, touches nothing else.
+   - starts on the FIRST user gesture (pointerdown / touchstart / keydown),
+     listener removed after a single fire
+   - fades 0 -> modest ceiling over ~2.5s via native .volume stepping
+   - mute toggle persisted in localStorage; if muted, never fades in
+     (this visit or future visits) until unmuted
+   ===================================================================== */
+(function(){
+  const amb = document.getElementById("ambience");
+  const btn = document.getElementById("ambienceToggle");
+  if (!amb || !btn) return;
+
+  const KEY        = "ambience_muted_v1";
+  const CEILING    = 0.17;   // background texture, deliberately below the SFX
+  const FADE_MS    = 2500;   // gentle initial fade-in
+  const DUCK_LEVEL = 0.05;   // faintly audible while something else plays
+  const DUCK_MS    = 650;    // quick duck / un-duck ramp
+
+  let muted = false;
+  try { muted = localStorage.getItem(KEY) === "1"; } catch (e) {}
+
+  amb.volume = 0;
+  let fadeTimer = null;
+
+  function stopFade(){ if (fadeTimer){ clearInterval(fadeTimer); fadeTimer = null; } }
+
+  // Shared volume ramp (setInterval .volume stepping). duration is optional.
+  function fadeTo(target, duration){
+    stopFade();
+    const dur = duration || FADE_MS;
+    const start = amb.volume;
+    const stepMs = 30;
+    const steps = Math.max(1, Math.round(dur / stepMs));
+    let i = 0;
+    fadeTimer = setInterval(() => {
+      i++;
+      const t = Math.min(1, i / steps);
+      amb.volume = Math.max(0, Math.min(1, start + (target - start) * t));
+      if (t >= 1) stopFade();
+    }, stepMs);
+  }
+
+  // ---- ducking: one set of "reasons"; ambience ducks while ANY is active,
+  //      returns to CEILING only when they all clear. Both triggers share it,
+  //      so they can't fight or double-apply. ----
+  const duckReasons = new Set();
+  function targetVolume(){ return duckReasons.size ? DUCK_LEVEL : CEILING; }
+  function applyDuck(duration){
+    // nothing to ramp if muted or not yet playing (the fade-in will pick the
+    // right target when it eventually starts, via startAmbience()).
+    if (muted || amb.paused) return;
+    fadeTo(targetVolume(), duration || DUCK_MS);
+  }
+  function setDuck(reason, on){
+    if (on) duckReasons.add(reason); else duckReasons.delete(reason);
+    applyDuck();
+  }
+
+  function startAmbience(){
+    if (muted) return;
+    if (amb.paused){
+      amb.volume = 0;
+      const p = amb.play();
+      if (p && typeof p.catch === "function") p.catch(() => {}); // silent on block
+    }
+    // fade in to whatever the current state calls for (full, or ducked if
+    // something is already playing / a screen is already open)
+    fadeTo(targetVolume(), FADE_MS);
+  }
+
+  // Label reflects what you can actually HEAR: "off" until playback truly
+  // starts (which can't happen before the first user gesture), "on" once it is.
+  function updateBtn(){
+    const on = !amb.paused;
+    btn.textContent = on ? "♪ on" : "♪ off";
+    btn.setAttribute("aria-label", on ? "mute ambience" : "unmute ambience");
+    btn.setAttribute("aria-pressed", on ? "false" : "true");
+  }
+  amb.addEventListener("play",  updateBtn);
+  amb.addEventListener("pause", updateBtn);
+  updateBtn(); // paused on load -> shows "off"
+
+  // ---- first-gesture gate (single fire, all three listeners removed) ----
+  let started = false;
+  function removeGesture(){
+    document.removeEventListener("pointerdown", onFirstGesture, true);
+    document.removeEventListener("touchstart",  onFirstGesture, true);
+    document.removeEventListener("keydown",     onFirstGesture, true);
+  }
+  function onFirstGesture(){
+    if (started) return;
+    started = true;
+    removeGesture();
+    startAmbience(); // no-op if muted -> stays "off"
+  }
+  document.addEventListener("pointerdown", onFirstGesture, true);
+  document.addEventListener("touchstart",  onFirstGesture, true);
+  document.addEventListener("keydown",     onFirstGesture, true);
+
+  // ---- toggle: acts on the CURRENT audible state, persists the choice ----
+  btn.addEventListener("pointerdown", (e) => e.stopPropagation()); // don't trigger password submit
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!amb.paused){
+      // currently playing -> turn OFF
+      muted = true;
+      stopFade();
+      amb.pause();               // fires "pause" -> updateBtn -> "off"
+    } else {
+      // currently silent -> turn ON (this click is itself a user gesture)
+      muted = false;
+      started = true;
+      removeGesture();
+      startAmbience();           // fires "play" -> updateBtn -> "on"
+    }
+    try { localStorage.setItem(KEY, muted ? "1" : "0"); } catch (e2) {}
+    updateBtn();
+  });
+
+  // ---- DUCK TRIGGER 1: the lifemaxxing teaser audio (independent element) ----
+  const life = document.getElementById("tsAudio");
+  if (life){
+    life.addEventListener("play",  () => setDuck("life", true));
+    life.addEventListener("pause", () => setDuck("life", false));
+    life.addEventListener("ended", () => setDuck("life", false));
+  }
+
+  // ---- DUCK TRIGGER 2: in-page screen change. runActionByKey() reveals
+  //      #contentPage (display:block) on a correct entry; resetToPassword()
+  //      hides it again on the way back — watch that inline style flip.
+  //      (Passwords that navigate to another URL just unload this page, so
+  //      there's nothing to duck for those.) ----
+  const contentPage = document.getElementById("contentPage");
+  if (contentPage){
+    const syncScreenDuck = () => {
+      const shown = getComputedStyle(contentPage).display !== "none";
+      setDuck("screen", shown);   // duck while the content screen is up; lift on return
+    };
+    new MutationObserver(syncScreenDuck)
+      .observe(contentPage, { attributes: true, attributeFilter: ["style"] });
+  }
 })();
 </script>
 
